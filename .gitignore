@@ -1,0 +1,12 @@
+.vs/
+
+[Bb]in/
+[Oo]bj/
+
+Inventario.AplicacionWeb/appsettings.json
+Inventario.AplicacionWeb/appsettings.Development.json
+
+# Visual Studio user files
+*.csproj.user
+*.pubxml
+*.pubxml.user
