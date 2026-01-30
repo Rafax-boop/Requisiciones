@@ -1,0 +1,29 @@
+﻿@model Inventario.AplicacionWeb.Models.ViewModels.VMUsuarioLogin
+@{
+    Layout = null;
+    ViewData["Title"] = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Requisiciones</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="~/css/SweetAlert.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    Bienvenido
+    <form asp-controller="Acceso" asp-action="Login" method="post" id="loginForm">
+    <label for="txtUsuario">Usuario:</label>
+    <input type="text" id="txtUsuario"  placeholder="Usuario" asp-for="Usuario"/>
+    <label for="txtContrasena">Contraseña:</label>
+    <input type="password" id="txtContrasena" placeholder="Contraseña" asp-for="Password"/>
+    <button type="submit" id="btnIngresar">
+        Ingresar
+    </button>
+    </form>
+</body>
