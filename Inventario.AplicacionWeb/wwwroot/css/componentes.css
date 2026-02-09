@@ -1,0 +1,58 @@
+﻿.glass-effect {
+    background: rgb(255, 213, 226, 0.10);
+    backdrop-filter: blur(25px) saturate(200%);
+    border: 1px solid rgb(255, 213, 226, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(255, 165, 197, 0.5);
+}
+
+.boton-rosa {
+    background-color: #fdf3f6;
+    color: var(--color-principal);
+    border-radius: 5px 5px 5px 5px;
+    font-size: 20px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    font-weight: 500;
+    box-shadow: 0 5px 8px 0 var(--color-principal);
+    transition: box-shadow 0.1s ease;
+    border: 1px solid var(--color-principal) !important;
+}
+
+    .boton-rosa:hover {
+        box-shadow: none !important;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .boton-rosa:active {
+        transform: translateY(2px);
+        transition: all 0.1s ease;
+    }
+
+.boton-gris {
+    background-color: #fdf3f6;
+    color: var(--color-amarillo);
+    border-radius: 5px 5px 5px 5px;
+    font-size: 20px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    font-weight: 500;
+    box-shadow: 0 5px 8px 0 var(--color-amarillo);
+    transition: box-shadow 0.1s ease;
+    border: 1px solid var(--color-amarillo) !important;
+}
+
+    .boton-gris:hover {
+        box-shadow: none !important;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .boton-gris:active {
+        transform: translateY(2px);
+        transition: all 0.1s ease;
+    }

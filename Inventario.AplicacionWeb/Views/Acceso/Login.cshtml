@@ -10,20 +10,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Requisiciones</title>
+    <link rel="stylesheet" href="~/css/main.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="~/css/SweetAlert.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
 </head>
 <body>
-    Bienvenido
-    <form asp-controller="Acceso" asp-action="Login" method="post" id="loginForm">
-    <label for="txtUsuario">Usuario:</label>
-    <input type="text" id="txtUsuario"  placeholder="Usuario" asp-for="Usuario"/>
-    <label for="txtContrasena">Contraseña:</label>
-    <input type="password" id="txtContrasena" placeholder="Contraseña" asp-for="Password"/>
-    <button type="submit" id="btnIngresar">
-        Ingresar
-    </button>
-    </form>
+    <div class="container-login glass-effect">
+        <form asp-controller="Acceso" asp-action="Login" method="post" id="loginForm">
+            <div class="img-login">
+                <img src="~/img/corazon.png" alt="" />
+            </div>
+            <div class="title-logo">
+                <h1 class="title-principal">Inicio de sesion</h1>
+                <h3 class="subtitle-principal">Dirección de Administración y Finanzas</h3>
+                <h3 class="subtitle-principal">Departamento de Recursos Materiales</h3>
+                <p class="txt-principal">2024 - 2030</p>
+            </div>
+            <div class="register">
+                <input type="text" class="input" id="txtUsuario" required asp-for="Usuario" />
+                <label class="input-label" for="txtUsuario">Usuario</label>
+            </div>
+            <div class="register">
+                <input type="password" class="input" id="txtContrasena" required asp-for="Password" />
+                <label class="input-label" for="txtContrasena">Contraseña</label>
+            </div>
+            
+            <button class="btn-login boton-rosa" type="submit" id="btnIngresar">
+                Ingresar
+            </button>
+        </form>
+    </div>
+
 </body>
