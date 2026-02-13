@@ -1,0 +1,25 @@
+﻿.nav-bar {
+    display:flex;
+    width: 100%;
+    height: 65px;
+}
+
+
+.nav-bar-user {
+    margin: 0 15px;
+    margin-left: auto;
+}
+
+
+.user-close a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff0000 !important;
+    font-weight: 600;
+}
+
+    .user-close a:active {
+        background-color: var(--color-secundario);
+        color: white !important;
+    }

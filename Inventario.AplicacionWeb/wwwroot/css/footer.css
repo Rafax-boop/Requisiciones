@@ -1,0 +1,13 @@
+﻿.footer-container {
+    display: flex;
+    flex-direction: row;
+    gap: 55px;
+    justify-content: center;
+    align-items: center;
+}
+
+.img-footer {
+    width: auto;
+    height: 40px;
+    margin: 20px 5px;
+}

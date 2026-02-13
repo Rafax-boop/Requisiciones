@@ -9,38 +9,43 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Inventario.AplicacionWeb.styles.css" asp-append-version="true" />
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 </head>
-<body>
+<body style="background-color: rgba(241, 235, 227, 0.05);">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Inventario.AplicacionWeb</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+       <nav class="nav-bar glass-effect">
+            <div class="nav-bar-user">
+                <li class="nav-item dropdown list-unstyled">
+                    <a class="nav-link dropdown-toggle p-1" href="#" id="navbarDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="line-md--account"></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end glass-effect-pestaña" aria-labelledby="navbarDropdown">
+                        <li class="dropdown-item-text px-3 py-2 text-center">
+                            <small class="text-muted">Conectado como:</small>
+                            <div class="fw-semibold" style="color: deeppink;">@User.Identity.Name</div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        <li class="user-close">
+                            <a class="dropdown-item " href="@Url.Action("CerrarSesion", "Acceso")">
+                                <span class="line-md--alert-circle-loop"></span>Cerrar Sesión
+                            </a>
                         </li>
                     </ul>
-                </div>
+                </li>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Inventario.AplicacionWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="glass-effect">
+        <div class="footer-container">
+            <img class="img-footer" src="~/img/familias-dif.png" alt="FamiliasDif" />
+            <img class="img-footer" src="~/img/pensargrande.png" alt="PensarenGrande" />
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

@@ -2,7 +2,25 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container animacion-home" style="margin-top: 150px;">
+    <div class="text-center">
+        <div class="mb-4">
+            <img src="~/img/puebla-gob-blanco.png" style="width: auto; height:250px" alt="Gobierno de Puebla" />
+        </div>
+
+        <h1 class="display-4 fw-bold mb-3 texto-rosa">
+            ¡Bienvenido!
+        </h1>
+
+        <p class="lead text-muted mb-4">
+            Control de Seguimiento de Metas
+        </p>
+
+        <div class="glass-effect-extras rounded-3 p-3 d-inline-block calendario-home" style="align-content: center;">
+            <small class="text-muted">
+                <span class="line-md--calendar"></span>
+                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+            </small>
+        </div>
+    </div>
 </div>
