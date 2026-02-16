@@ -32,6 +32,20 @@ namespace Inventario.DAL.Implementacion
             return entidad;
         }
 
+        public async Task<IEnumerable<TEntity>> CrearRango(IEnumerable<TEntity> entidades)
+        {
+            try
+            {
+                _dbContext.Set<TEntity>().AddRange(entidades);
+                await _dbContext.SaveChangesAsync();
+                return entidades;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al crear las entidades", ex);
+            }
+        }
+
         public async Task<bool> Editar(TEntity entidad)
         {
             try

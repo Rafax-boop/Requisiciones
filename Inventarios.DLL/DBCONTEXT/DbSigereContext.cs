@@ -18,11 +18,15 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblArticulo> TblArticulos { get; set; }
 
+    public virtual DbSet<TblArticulo1> TblArticulos1 { get; set; }
+
     public virtual DbSet<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; }
 
     public virtual DbSet<TblDepartamento> TblDepartamentos { get; set; }
 
     public virtual DbSet<TblEstatus> TblEstatuses { get; set; }
+
+    public virtual DbSet<TblInventario> TblInventarios { get; set; }
 
     public virtual DbSet<TblPartidaPresupuestal> TblPartidaPresupuestals { get; set; }
 
@@ -83,6 +87,22 @@ public partial class DbSigereContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<TblArticulo1>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tblArtic__3214EC07CBCDD3F4");
+
+            entity.ToTable("tblArticulos");
+
+            entity.Property(e => e.Cog).HasColumnName("COG");
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.Marca).HasMaxLength(30);
+            entity.Property(e => e.Modelo).HasMaxLength(50);
+            entity.Property(e => e.Tipo)
+                .HasMaxLength(1)
+                .IsUnicode(false);
+            entity.Property(e => e.UnidadMedida).HasMaxLength(20);
+        });
+
         modelBuilder.Entity<TblBitacoraEstatus>(entity =>
         {
             entity
@@ -136,6 +156,21 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NombreEstatus)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblInventario>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tblInven__3214EC074AE24CDA");
+
+            entity.ToTable("tblInventario");
+
+            entity.Property(e => e.Clave).HasMaxLength(15);
+            entity.Property(e => e.Costo).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CostoUnitario).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.Iva).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Total).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.UnidadMedida).HasMaxLength(15);
         });
 
         modelBuilder.Entity<TblPartidaPresupuestal>(entity =>

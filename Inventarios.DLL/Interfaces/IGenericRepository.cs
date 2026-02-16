@@ -14,5 +14,6 @@ namespace Inventario.DAL.Interfaces
         Task<bool> Editar(TEntity entidad);
         Task<bool> Eliminar(TEntity entidad);
         Task<IQueryable<TEntity>> Consultar(Expression<Func<TEntity, bool>> filtro = null);
+        Task<IEnumerable<TEntity>> CrearRango(IEnumerable<TEntity> entidades);
     }
 }
