@@ -23,6 +23,8 @@ namespace Inventario.IOC
 
             services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUsuarioService, UsuarioService>();
+            services.AddScoped<IRequisicionesService, RequisicionService>();
+            services.AddScoped<IArticulosService, ArticulosService>();
         }
     }
 }

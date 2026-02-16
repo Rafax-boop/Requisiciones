@@ -1,3 +1,4 @@
+using Inventario.AplicacionWeb.Utilidades.AutoMapper;
 using Inventario.IOC;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -14,6 +15,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.InyectarDependencias(builder.Configuration);
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 var app = builder.Build();
 

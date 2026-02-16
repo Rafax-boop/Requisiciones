@@ -1,0 +1,307 @@
+﻿@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@{
+    ViewData["Title"] = "Crear Requisición";
+}
+<div class="mt-3">
+    <div class="info-requisicion">
+        <div class="fantasma">
+            <div class="d-inline-block">
+                <p class="m-0 info-body">FECHA DE EMISIÓN:</p>
+                <small class="text-muted">
+                    @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+                </small>
+            </div>
+        </div>
+        <div class="container-info">
+            <p class="info-titulo mt-3">REQUISICIÓN DE MATERIALES</p>
+        </div>
+        <div class="requisicion-info">
+            <div class="requisicion">
+                <p class="info-body">Requisición:</p>
+                <label class="info-body">-----------------</label>
+            </div>
+        </div>
+    </div>
+    <form asp-action="CrearRequisicion" method="post">
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Departamento solicitante:</label>
+                    <input type="text" placeholder="Ej: Recursos Humanos" />
+                </div>
+                <div class="formulario-input">
+                    <label>Responsable:</label>
+                    <input type="text" name="NomResponsableDepartamento" placeholder="Nombre completo" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Correo:</label>
+                    <input type="email" placeholder="correo@ejemplo.com" />
+                </div>
+                <div class="formulario-input">
+                    <label>Teléfono:</label>
+                    <input type="tel" name="Telefono" placeholder="(222) 000-0000" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <div class="formulario-input">
+                    <label>Lugar de entrega:</label>
+                    <input type="text" name="LugarEntrega" placeholder="Dirección o área de entrega" />
+                </div>
+                <div class="formulario-input">
+                    <label>Uso específico del material:</label>
+                    <input type="text" name="UsoEspecifico" placeholder="Describa el uso del material" />
+                </div>
+                <div class="formulario-input">
+                    <label>Justificación:</label>
+                    <textarea name="Justificacion" placeholder="Justifique la requisición" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Periodo del uso del material:</label>
+                    <input type="text" placeholder="Ej: Enero - Diciembre" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Anual / Mensual:</label>
+                    <div class="formulario-opciones">
+                        <label class="opcion">
+                            <input type="radio" value="anual" />
+                            <span>Anual</span>
+                        </label>
+                        <label class="opcion">
+                            <input type="radio" value="mensual" />
+                            <span>Mensual</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa text-center">
+                <div class="formulario-input">
+                    <label>¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
+                    <div class="formulario-opciones-presupuesto">
+                        <label class="opcion">
+                            <input type="radio" value="si" />
+                            <span>Sí</span>
+                        </label>
+                        <label class="opcion">
+                            <input type="radio" value="no" />
+                            <span>No</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <h5 class="mb-3">Artículos solicitados</h5>
+                <table class="table table-bordered" id="tablaArticulos">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%">ID</th>
+                            <th style="width: 10%">COG</th>
+                            <th style="width: 15%">Clave</th>
+                            <th style="width: 30%">Descripción</th>
+                            <th style="width: 15%">Unidad</th>
+                            <th style="width: 10%">Cantidad</th>
+                            <th style="width: 10%">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Las filas se agregarán dinámicamente -->
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-primary" onclick="agregarArticulo()">
+                    <i class="fa-solid fa-plus"></i> Agregar Artículo
+                </button>
+            </div>
+        </div>
+
+        <div class="container-formulario mt-4">
+            <div class="seccion-completa text-center">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fa-solid fa-save"></i> Crear Requisición
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+
+    <script>
+        let contadorArticulos = 0;
+
+        $(document).ready(function () {
+            // Agregar una fila inicial
+            agregarArticulo();
+        });
+
+        function agregarArticulo() {
+            const index = contadorArticulos++;
+
+            const fila = `
+                <tr data-index="${index}">
+                    <td class="id-${index}">-</td>
+                    <td class="cog-${index}">-</td>
+                    <td class="clave-${index}">-</td>
+                    <td>
+                        <select name="Articulos[${index}].IdArticulo"
+                                class="form-select select-articulo"
+                                data-index="${index}"
+                                style="width: 100%;"
+                                required>
+                        </select>
+                        <input type="hidden" name="Articulos[${index}].Descripcion" class="descripcion-hidden-${index}" />
+                        <input type="hidden" name="Articulos[${index}].Cog" class="cog-hidden-${index}" />
+                        <input type="hidden" name="Articulos[${index}].ClaveMaterial" class="clave-hidden-${index}" />
+                        <input type="hidden" name="Articulos[${index}].UnidadMedida" class="unidad-hidden-${index}" />
+                    </td>
+                    <td class="unidad-${index}">-</td>
+                    <td>
+                        <input type="number"
+                               name="Articulos[${index}].Cantidad"
+                               class="form-control cantidad-input"
+                               min="1"
+                               value="1"
+                               required />
+                    </td>
+                    <td class="text-center">
+                        <button type="button"
+                                class="btn btn-danger btn-sm"
+                                onclick="eliminarArticulo(this)">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $('#tablaArticulos tbody').append(fila);
+            inicializarSelect2($(`.select-articulo[data-index="${index}"]`));
+        }
+
+        function eliminarArticulo(btn) {
+            $(btn).closest('tr').remove();
+        }
+
+        function inicializarSelect2($elemento) {
+            $elemento.select2({
+                width: 'resolve',
+                placeholder: 'Buscar artículo...',
+                minimumInputLength: 2,
+                language: 'es',
+                ajax: {
+                    url: '@Url.Action("BuscarArticulos", "Requisicion")', // Ajusta el controlador según tu caso
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            term: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return { results: data };
+                    },
+                    cache: true
+                }
+            });
+        }
+
+        // Evento: cuando se selecciona un artículo
+        $('#tablaArticulos').on('change', '.select-articulo', function () {
+            const select = $(this);
+            const index = select.data('index');
+            const idArticulo = select.val();
+
+            if (idArticulo) {
+                $.get('@Url.Action("ObtenerInfoArticulo", "Requisicion")',
+                { id: idArticulo },
+                    function (data) {
+
+                        // Mostrar en columnas visibles
+                        $(`.id-${index}`).text(data.id);
+                        $(`.cog-${index}`).text(data.cog);
+                        $(`.clave-${index}`).text(data.clave);
+                        $(`.unidad-${index}`).text(data.unidadMedida);
+
+                        // Guardar en hidden para el POST
+                        $(`.descripcion-hidden-${index}`).val(data.descripcion);
+                        $(`.cog-hidden-${index}`).val(data.cog);
+                        $(`.clave-hidden-${index}`).val(data.clave);
+                        $(`.unidad-hidden-${index}`).val(data.unidadMedida);
+                    });
+               }
+        });
+
+        // Evento: cuando cambia la cantidad
+        $('#tablaArticulos').on('input', '.cantidad-input', function () {
+            const index = $(this).data('index');
+            calcularSubtotal(index);
+        });
+
+        // Validación del formulario
+                $('form').on('submit', function(e) {
+            let valido = true;
+            let mensajes = [];
+
+            // Validaciones
+            if (!$('input[name="DepartamentoSolicitante"]').val()) {
+                valido = false;
+                mensajes.push("Debe ingresar el departamento solicitante.");
+            }
+            if (!$('input[name="NomResponsableDepartamento"]').val()) {
+                valido = false;
+                mensajes.push("Debe ingresar el nombre del responsable.");
+            }
+            if ($('#tablaArticulos tbody tr').length === 0) {
+                valido = false;
+                mensajes.push("Debe agregar al menos un artículo.");
+            }
+            $('#tablaArticulos tbody tr').each(function() {
+                const select = $(this).find('.select-articulo');
+                const cantidad = $(this).find('.cantidad-input');
+                if (!select.val()) {
+                    valido = false;
+                    mensajes.push("Debe seleccionar un artículo en todas las filas.");
+                    return false;
+                }
+                if (!cantidad.val() || parseFloat(cantidad.val()) <= 0) {
+                    valido = false;
+                    mensajes.push("La cantidad debe ser mayor a cero.");
+                    return false;
+                }
+            });
+
+            if (!valido) {
+                e.preventDefault(); // Solo bloquea el submit si hay errores
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Campos incompletos',
+                    html: `<ul style="text-align:left;">${mensajes.map(m => `<li>${m}</li>`).join('')}</ul>`,
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            // Si todo está bien, no bloqueamos el submit
+        });
+
+    </script>
+}

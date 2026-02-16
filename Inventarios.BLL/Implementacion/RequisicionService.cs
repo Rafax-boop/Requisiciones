@@ -52,7 +52,7 @@ namespace Inventario.BLL.Implementacion
                 var detalle = new TblRequisicionDetalle
                 {
                     IdRequisicion = requiCreada.IdRequisicion,
-                    NumPartida = item.NumPartida,
+                    NumPartida = item.Cog,
                     IdArticulo = item.IdArticulo,
                     Cantidad = item.Cantidad,
                     UnidadMedida = item.UnidadMedida,

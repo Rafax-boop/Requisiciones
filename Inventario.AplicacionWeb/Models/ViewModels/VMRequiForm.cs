@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Inventario.BLL.DTO;
 
-namespace Inventario.BLL.DTO
+namespace Inventario.AplicacionWeb.Models.ViewModels
 {
-    public class FormularioRequisicionDTO
+    public class VMRequiForm
     {
         public int? IdProvedor { get; set; }
         public string? NumRequisicion { get; set; }
@@ -25,23 +21,17 @@ namespace Inventario.BLL.DTO
         public int? IdEstatus { get; set; }
         public bool? Activo { get; set; }
         public DateTime? FechaSistema { get; set; }
-        public List<FormularioRequisicionDetalleDTO> Articulos { get; set; } = new();
+        public List<ItemRequiVM> Articulos { get; set; } = new();
     }
 
-    public class FormularioRequisicionDetalleDTO
+    public class ItemRequiVM
     {
         public int IdRequisicion { get; set; }
-
         public int? Cog { get; set; }
-
         public int? IdArticulo { get; set; }
-
         public decimal? Cantidad { get; set; }
-
         public string? UnidadMedida { get; set; }
-
         public string? Descripcion { get; set; }
-
         public DateTime? FechaRegistro { get; set; }
     }
 }
