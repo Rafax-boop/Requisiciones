@@ -1,0 +1,167 @@
+﻿@{
+    ViewData["Title"] = "TablaRequisiciones";
+}
+
+<div class="tabla-requi-page">
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="tabla-requi-titulo">Requisiciones</h1>
+            <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones</p>
+        </div>
+        <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="boton-rosa">
+            <i class="fa-solid fa-plus"></i> Nueva Requisición
+        </a>
+    </div>
+
+    <div class="container-formulario filtros-container">
+        <div class="filtro-grupo">
+            <label>Buscar</label>
+            <input type="text" placeholder="Buscar por folio, responsable..." />
+        </div>
+        <div class="filtro-grupo">
+            <label>Fecha</label>
+            <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly />
+        </div>
+        <div class="filtro-grupo">
+            <label>Nº Requisición</label>
+            <input type="text" placeholder="REC-000000" />
+        </div>
+        <div class="filtro-grupo">
+            <label>Departamento</label>
+            <div class="filtro-dropdown">
+                <button type="button" class="filtro-dropdown-btn">
+                    <span>Todos</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <ul class="filtro-dropdown-menu">
+                    <li class="filtro-dropdown-item active">Todos</li>
+                    <li class="filtro-dropdown-item">Departamento 1</li>
+                    <li class="filtro-dropdown-item">Departamento 2</li>
+                    <li class="filtro-dropdown-item">Departamento 3</li>
+                    <li class="filtro-dropdown-item">Departamento 4</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-formulario tabla-container">
+        <table class="tabla-requisiciones">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Fecha de emisión</th>
+                    <th>Departamento</th>
+                    <th>Responsable</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="folio-badge">REC-000012</span></td>
+                    <td>14 / Feb / 2026</td>
+                    <td>Recursos Humanos</td>
+                    <td>Lic. María González</td>
+                    <td><span class="estado-badge estado-aprobada">Aprobada</span></td>
+                    <td>
+                        <div class="acciones-grupo">
+                            <button class="btn-accion btn-ver" title="Ver detalle">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button class="btn-accion btn-editar" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="folio-badge">REC-000011</span></td>
+                    <td>12 / Feb / 2026</td>
+                    <td>Informática</td>
+                    <td>Ing. Rafael Miñón</td>
+                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
+                    <td>
+                        <div class="acciones-grupo">
+                            <button class="btn-accion btn-ver" title="Ver detalle">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button class="btn-accion btn-editar" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="folio-badge">REC-000010</span></td>
+                    <td>10 / Feb / 2026</td>
+                    <td>Dirección General</td>
+                    <td>Lic. Eduardo Pérez</td>
+                    <td><span class="estado-badge estado-revision">En revisión</span></td>
+                    <td>
+                        <div class="acciones-grupo">
+                            <button class="btn-accion btn-ver" title="Ver detalle">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button class="btn-accion btn-editar" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="folio-badge">REC-000009</span></td>
+                    <td>08 / Feb / 2026</td>
+                    <td>Administración</td>
+                    <td>C.P. Ana López</td>
+                    <td><span class="estado-badge estado-rechazada">Rechazada</span></td>
+                    <td>
+                        <div class="acciones-grupo">
+                            <button class="btn-accion btn-ver" title="Ver detalle">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button class="btn-accion btn-editar" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.filtro-dropdown-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.closest('.filtro-dropdown').classList.toggle('open');
+            });
+        });
+
+        document.querySelectorAll('.filtro-dropdown-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const dropdown = this.closest('.filtro-dropdown');
+                const btnText = dropdown.querySelector('.filtro-dropdown-btn span');
+
+                dropdown.querySelectorAll('.filtro-dropdown-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                btnText.textContent = this.textContent;
+
+                dropdown.classList.remove('open');
+            });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.filtro-dropdown')) {
+                document.querySelectorAll('.filtro-dropdown').forEach(d => d.classList.remove('open'));
+            }
+        });
+
+        flatpickr('#filtroFecha', {
+            locale: 'es',
+            dateFormat: 'd / M / Y',
+            allowInput: false,
+            disableMobile: true
+        });
+    </script>
+}

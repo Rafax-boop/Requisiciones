@@ -20,12 +20,12 @@ namespace Inventario.AplicacionWeb.Controllers
             _articulosService = articulosService;
         }
 
-        public IActionResult Index()
+        public IActionResult FormularioRequisiciones()
         {
             return View();
         }
 
-        public IActionResult FormularioRequisiciones()
+        public IActionResult TablaRequisiciones()
         {
             return View();
         }

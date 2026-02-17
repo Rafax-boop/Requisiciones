@@ -1,29 +1,329 @@
-﻿.container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+﻿/* ══════════════════════════════════════
+           FONDO ANIMADO
+══════════════════════════════════════ */
+.home-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
 }
 
-.calendario-home {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
+.orbe {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: flotar 20s ease-in-out infinite;
 }
 
-    .calendario-home small {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+.orbe-1 {
+    width: 500px;
+    height: 500px;
+    background: var(--rosa-200);
+    top: -10%;
+    right: -5%;
+    animation-duration: 22s;
+}
+
+.orbe-2 {
+    width: 400px;
+    height: 400px;
+    background: var(--rosa-300);
+    bottom: -15%;
+    left: -8%;
+    animation-duration: 18s;
+    animation-delay: -5s;
+}
+
+.orbe-3 {
+    width: 300px;
+    height: 300px;
+    background: var(--rosa-100);
+    top: 40%;
+    left: 50%;
+    animation-duration: 25s;
+    animation-delay: -10s;
+}
+
+.orbe-4 {
+    width: 200px;
+    height: 200px;
+    background: var(--rosa-400);
+    opacity: 0.25;
+    top: 20%;
+    left: 20%;
+    animation-duration: 16s;
+    animation-delay: -3s;
+}
+
+@keyframes flotar {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
     }
 
-.animacion-home {
-    animation: fadeInUp 1.5s ease-out;
+    25% {
+        transform: translate(40px, -30px) scale(1.05);
+    }
+
+    50% {
+        transform: translate(-20px, 20px) scale(0.95);
+    }
+
+    75% {
+        transform: translate(30px, 40px) scale(1.02);
+    }
 }
 
-@keyframes fadeInUp {
+/* Textura de puntos sutiles sobre todo */
+.home-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255, 64, 129, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+/* ══════════════════════════════════════
+   CONTENIDO CENTRAL
+══════════════════════════════════════ */
+.home-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: auto;
+    padding: 40px;
+}
+
+/* Badge superior — "Sistema DIF Puebla" */
+.home-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--rosa-500);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s var(--ease-premium) both;
+}
+
+    .home-badge .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--rosa-400);
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: scale(0.7);
+    }
+}
+
+/* Título principal */
+.home-titulo {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1.05;
+    margin-bottom: 20px;
+    animation: fadeUp 0.7s var(--ease-premium) 0.1s both;
+}
+
+    .home-titulo .texto-gradiente {
+        background: linear-gradient(135deg, var(--rosa-400) 0%, var(--rosa-500) 40%, var(--rosa-accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .home-titulo .texto-dark {
+        color: var(--slate-800);
+    }
+
+/* Subtítulo */
+.home-subtitulo {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--slate-400);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+    animation: fadeUp 0.7s var(--ease-premium) 0.2s both;
+}
+
+/* Fecha */
+.home-fecha {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--slate-500);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 48px;
+    animation: fadeUp 0.7s var(--ease-premium) 0.3s both;
+}
+
+    .home-fecha .icono-cal {
+        font-size: 18px;
+        color: var(--rosa-400);
+    }
+
+/* Accesos rápidos */
+.home-acciones {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    animation: fadeUp 0.7s var(--ease-premium) 0.4s both;
+}
+
+/* Botón principal */
+.home-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-500), var(--rosa-accent));
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: var(--shadow-rosa);
+    transition: all 0.4s var(--ease-premium);
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+    .home-btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transition: left 0.6s var(--ease-premium);
+    }
+
+    .home-btn-primary:hover {
+        box-shadow: 0 12px 40px rgba(255, 64, 129, 0.25);
+        transform: translateY(-2px);
+    }
+
+        .home-btn-primary:hover::before {
+            left: 100%;
+        }
+
+/* Botón secundario */
+.home-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    color: var(--slate-600);
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s var(--ease-premium);
+    text-decoration: none;
+}
+
+    .home-btn-secondary:hover {
+        border-color: var(--rosa-200);
+        color: var(--rosa-500);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+/* ══════════════════════════════════════
+    STATS — Línea inferior decorativa
+    "tarjetas flotantes" con datos del sistema
+══════════════════════════════════════ */
+.home-stats {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 56px;
+    animation: fadeUp 0.7s var(--ease-premium) 0.55s both;
+}
+
+.stat-card {
+    padding: 20px 28px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-md);
+    text-align: center;
+    transition: all 0.35s var(--ease-premium);
+    min-width: 140px;
+}
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--rosa-200);
+    }
+
+.stat-numero {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.stat-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-400);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════
+   ANIMACIÓN DE ENTRADA
+══════════════════════════════════════ */
+@keyframes fadeUp {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(24px);
     }
 
     to {

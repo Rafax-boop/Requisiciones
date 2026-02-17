@@ -2,22 +2,54 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="container animacion-home" style="margin-top: 150px;">
-    <div class="text-center">
+<!-- NAV simulado -->
+<div class="nav-sim"></div>
 
-        <h1 class="display-4 fw-bold mb-3 mt-5 texto-rosa">
-            ¡Bienvenido!
+<!-- HOME -->
+<div class="home">
+
+    <!-- Contenido -->
+    <div class="home-content">
+        <div class="home-badge">
+            <span class="dot"></span>
+            Sistema DIF Puebla
+        </div>
+
+        <h1 class="home-titulo">
+            <span class="texto-dark">¡Bienvenido al</span><br>
+            <span class="texto-gradiente">Sistema de Recursos</span><br>
+            <span class="texto-gradiente">Materiales</span>
         </h1>
 
-        <p class="lead text-muted mb-4" style="text-transform: uppercase;">
-            Sistema de recursos materiales
-        </p>
+        <p class="home-subtitulo">Departamento de Recursos Materiales</p>
 
-        <div class="glass-effect-extras rounded-3 p-3 d-inline-block calendario-home" style="align-content: center;">
-            <small class="text-muted">
-                <span class="line-md--calendar"></span>
-                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
-            </small>
+        <div class="home-fecha">
+            <span class="line-md--calendar"></span>
+            Lunes, 16 de febrero 2026
+        </div>
+
+        <div class="home-acciones">
+            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="home-btn-primary">
+                Nueva Requisición →
+            </a>
+            <a href="@Url.Action("TablaRequisiciones", "Requisicion")" class="home-btn-secondary">
+                Ver Requisiciones
+            </a>
+        </div>
+
+        <div class="home-stats">
+            <div class="stat-card">
+                <div class="stat-numero">-</div>
+                <div class="stat-label">Requisiciones</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-numero">-</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-numero">-</div>
+                <div class="stat-label">Artículos</div>
+            </div>
         </div>
     </div>
 </div>

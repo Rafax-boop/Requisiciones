@@ -1,10 +1,10 @@
 ﻿/* ══════════════════════════════════════════════
-   📋 REQUISICIONES 
+   📋 FORMULARIO REQUISICIONES 
 ══════════════════════════════════════════════ */
 
 
 /* ──────────────────────────────────────────
-   1. HEADER
+   HEADER
 ────────────────────────────────────────── */
 .info-requisicion {
     display: flex;
@@ -428,3 +428,52 @@
             background: #fef2f2;
             border-color: #fca5a5;
         }
+
+.info-requisicion,
+.container-formulario {
+    animation: fadeUp 0.5s var(--ease-premium) both;
+}
+
+.info-requisicion {
+    animation-delay: 0s;
+}
+
+.container-formulario:nth-child(1) {
+    animation-delay: 0.06s;
+}
+
+.container-formulario:nth-child(2) {
+    animation-delay: 0.12s;
+}
+
+.container-formulario:nth-child(3) {
+    animation-delay: 0.18s;
+}
+
+.container-formulario:nth-child(4) {
+    animation-delay: 0.24s;
+}
+
+.container-formulario:nth-child(5) {
+    animation-delay: 0.30s;
+}
+
+.container-formulario:nth-child(6) {
+    animation-delay: 0.36s;
+}
+
+.container-formulario:nth-child(7) {
+    animation-delay: 0.42s;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -7,6 +7,7 @@
     <script type="importmap"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="~/css/main.css"/>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -17,28 +18,53 @@
     <header>
        <nav class="nav-bar glass-effect">
             <div class="nav-bar-user">
-                <li class="nav-item dropdown list-unstyled">
-                    <a class="nav-link dropdown-toggle p-1" href="#" id="navbarDropdown"
-                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="line-md--account"></span>
+                <div class="nav-spacer">
+                    <img src="~/img/corazon.png" alt="corazon" />
+                </div>
+
+                <li class="nav-buttons">
+                    <a href="@Url.Action("Index", "Home")"
+                       class="@(ViewData["Title"]?.ToString() == "Home Page" ? "active" : "")">
+                        Inicio
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end glass-effect-pestaña" aria-labelledby="navbarDropdown">
-                        <li class="dropdown-item-text px-3 py-2 text-center">
-                            <small class="text-muted">Conectado como:</small>
-                            <div class="fw-semibold" style="color: deeppink;">@User.Identity.Name</div>
-                        </li>
-                        <li class="user-close">
-                            <a class="dropdown-item " href="@Url.Action("CerrarSesion", "Acceso")">
-                                <span class="line-md--alert-circle-loop"></span>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
+                    <a href="@Url.Action("TablaRequisiciones", "Requisicion")"
+                       class="@(ViewData["Title"]?.ToString() == "TablaRequisiciones" ? "active" : "")">
+                        Requisición
+                    </a>
+                    <a href="#">Almacén</a>
+                    <a href="#">Reportes</a>
                 </li>
+
+                <div class="nav-bar-user">
+                    <li class="nav-item dropdown list-unstyled">
+                        <a class="nav-link dropdown-toggle p-1" href="#" id="navbarDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="line-md--account"></span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end glass-effect-pestaña" aria-labelledby="navbarDropdown">
+                            <li class="dropdown-item-text px-3 py-2 text-center">
+                                <small class="text-muted">Conectado como:</small>
+                                <div class="fw-semibold" style="color: deeppink;">@User.Identity.Name</div>
+                            </li>
+                            <li class="user-close">
+                                <a class="dropdown-item " href="@Url.Action("CerrarSesion", "Acceso")">
+                                    <span class="line-md--alert-circle-loop"></span>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </div>
             </div>
         </nav>
     </header>
 
     <div class="container">
+        <div class="home-bg">
+            <div class="orbe orbe-1"></div>
+            <div class="orbe orbe-2"></div>
+            <div class="orbe orbe-3"></div>
+            <div class="orbe orbe-4"></div>
+        </div>
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -53,6 +79,9 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
