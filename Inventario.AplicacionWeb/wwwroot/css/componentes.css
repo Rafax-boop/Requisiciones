@@ -1,77 +1,118 @@
-﻿.glass-effect {
-    border-radius: 20px;
-    background: rgb(255, 213, 226, 0.10) !important;
-    backdrop-filter: blur(25px) saturate(200%);
-    border: 1px solid rgb(255, 213, 226, 0.2);
-    box-shadow: 0 0 15px 0 rgba(255, 165, 197, 0.5);
+﻿/* ══════════════════════════════════════
+   🪟 GLASS EFFECTS
+══════════════════════════════════════ */
+.glass-effect {
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--rosa-100);
+    box-shadow: var(--shadow-lg);
 }
 
 .glass-effect-pestaña {
-    background: rgb(255, 213, 226, 0.2) !important;
-    backdrop-filter: blur(25px) saturate(100%);
-    border: 2px solid rgb(255, 213, 226, 1) !important;
-    box-shadow: 0 8px 32px 0 rgba(255, 165, 197, 0.2);
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(25px) saturate(160%);
+    border: 1.5px solid var(--rosa-200) !important;
+    box-shadow: var(--shadow-md);
 }
 
 .glass-effect-extras {
-    background: rgb(255, 213, 226, 0.1) !important;
-    backdrop-filter: blur(25px) saturate(100%);
-    border: 1px solid rgb(255, 213, 226, 0.7) !important;
-    box-shadow: 0 0 15px 0 rgba(255, 165, 197, 0.4);
+    background: rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--rosa-200) !important;
+    box-shadow: var(--shadow-md);
 }
 
+/* ══════════════════════════════════════
+   🔘 BOTÓN ROSA 
+══════════════════════════════════════ */
 .boton-rosa {
-    background-color: #fdf3f6;
-    color: var(--color-principal);
-    border-radius: 5px 5px 5px 5px;
-    font-size: 20px;
-    padding-bottom: 4px;
-    padding-top: 4px;
-    padding-left: 6px;
-    padding-right: 6px;
-    font-weight: 500;
-    box-shadow: 0 5px 8px 0 var(--color-principal);
-    transition: box-shadow 0.1s ease;
-    border: 1px solid var(--color-principal) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: auto;
+    width: auto !important;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-500), var(--rosa-accent));
+    color: white !important;
+    border: none !important;
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: var(--shadow-rosa);
+    transition: all 0.4s var(--ease-premium);
+    position: relative;
+    overflow: hidden;
 }
+
+    .boton-rosa::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transition: left 0.6s var(--ease-premium);
+    }
 
     .boton-rosa:hover {
-        box-shadow: none !important;
-        cursor: pointer;
-        transition: box-shadow 0.3s ease;
+        box-shadow: var(--shadow-rosa-hover);
+        transform: translateY(-2px);
     }
+
+        .boton-rosa:hover::before {
+            left: 100%;
+        }
 
     .boton-rosa:active {
-        transform: translateY(2px);
-        transition: all 0.1s ease;
+        transform: translateY(0);
+        box-shadow: var(--shadow-rosa);
     }
 
+/* ══════════════════════════════════════
+   🔘 BOTÓN GRIS
+══════════════════════════════════════ */
 .boton-gris {
-    background-color: #fdf3f6;
-    color: var(--color-amarillo);
-    border-radius: 5px 5px 5px 5px;
-    font-size: 20px;
-    padding-bottom: 4px;
-    padding-top: 4px;
-    padding-left: 6px;
-    padding-right: 6px;
-    font-weight: 500;
-    box-shadow: 0 5px 8px 0 var(--color-amarillo);
-    transition: box-shadow 0.1s ease;
-    border: 1px solid var(--color-amarillo) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: auto;
+    width: auto !important;
+    padding: 12px 28px;
+    background: white;
+    color: var(--slate-600) !important;
+    border: 1.5px solid var(--slate-200) !important;
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.35s var(--ease-premium);
 }
 
     .boton-gris:hover {
-        box-shadow: none !important;
-        cursor: pointer;
-        transition: box-shadow 0.3s ease;
+        border-color: var(--rosa-200) !important;
+        color: var(--rosa-500) !important;
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
     }
 
     .boton-gris:active {
-        transform: translateY(2px);
-        transition: all 0.1s ease;
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
     }
 
+/* ══════════════════════════════════════
+   📝 UTILIDAD DE TEXTO
+══════════════════════════════════════ */
 .texto-rosa {
-    color: rgb(255, 117, 166);
+    color: var(--rosa-500);
 }

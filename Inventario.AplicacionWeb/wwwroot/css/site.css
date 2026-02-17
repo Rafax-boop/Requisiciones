@@ -8,8 +8,16 @@ html {
     scroll-behavior: smooth;
 }
 
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
 body {
-    line-height: 1.6;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
 ul,
@@ -40,3 +48,4 @@ textarea {
     border: none;
     outline: none;
 }
+
