@@ -262,14 +262,14 @@
             let mensajes = [];
 
             // Validaciones
-            if (!$('input[name="DepartamentoSolicitante"]').val()) {
-                valido = false;
-                mensajes.push("Debe ingresar el departamento solicitante.");
-            }
-            if (!$('input[name="NomResponsableDepartamento"]').val()) {
-                valido = false;
-                mensajes.push("Debe ingresar el nombre del responsable.");
-            }
+            // if (!$('input[name="DepartamentoSolicitante"]').val()) {
+            //     valido = false;
+            //     mensajes.push("Debe ingresar el departamento solicitante.");
+            // }
+            // if (!$('input[name="NomResponsableDepartamento"]').val()) {
+            //     valido = false;
+            //     mensajes.push("Debe ingresar el nombre del responsable.");
+            // }
             if ($('#tablaArticulos tbody tr').length === 0) {
                 valido = false;
                 mensajes.push("Debe agregar al menos un artículo.");

@@ -293,11 +293,10 @@ public partial class DbSigereContext : DbContext
 
         modelBuilder.Entity<TblRequisicionDetalle>(entity =>
         {
-            entity.HasKey(e => e.IdRequisicionDetalle);
+            entity.HasKey(e => e.IdRequisicionDetalle).HasName("PK__TblRequi__1ECF53CA649517A9");
 
-            entity.ToTable("tblRequisicionDetalle");
+            entity.ToTable("TblRequisicionDetalle");
 
-            entity.Property(e => e.IdRequisicionDetalle).ValueGeneratedNever();
             entity.Property(e => e.Cantidad).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(150)

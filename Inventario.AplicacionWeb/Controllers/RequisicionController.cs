@@ -13,9 +13,9 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMapper _mapper;
         private readonly IArticulosService _articulosService;
 
-        public RequisicionController(IRequisicionesService _requisicionesService, IMapper mapper, IArticulosService articulosService)
+        public RequisicionController(IRequisicionesService requisicionesService, IMapper mapper, IArticulosService articulosService)
         {
-            _requisicionesService = _requisicionesService;
+            _requisicionService = requisicionesService;
             _mapper = mapper;
             _articulosService = articulosService;
         }
