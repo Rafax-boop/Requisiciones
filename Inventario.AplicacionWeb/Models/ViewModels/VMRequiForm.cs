@@ -18,7 +18,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public bool? CuentaProgramaPresupuestario { get; set; }
         public int? IdPrioridad { get; set; }
         public int? IdUsuario { get; set; }
-        public int? IdEstatus { get; set; }
         public bool? Activo { get; set; }
         public DateTime? FechaSistema { get; set; }
         public List<ItemRequiVM> Articulos { get; set; } = new();

@@ -20,14 +20,22 @@ namespace Inventario.AplicacionWeb.Controllers
             _articulosService = articulosService;
         }
 
-        public IActionResult Index()
+        public IActionResult FormularioRequisiciones()
         {
             return View();
         }
 
-        public IActionResult FormularioRequisiciones()
+        public async Task<IActionResult> TablaRequisiciones()
         {
-            return View();
+            var listaDTO = await _requisicionService.ListarRequisiciones();
+            var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
+            return View(viewModel);
+        }
+
+        public async Task<JsonResult> ObtenerDetalles(int idMaestro)
+        {
+            var detalles = await _requisicionService.ObtenerDetallePorIdMaestro(idMaestro);
+            return Json(detalles);
         }
 
         [HttpPost]
@@ -39,7 +47,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (exito)
             {
-                return RedirectToAction("Index", "Requisicion");
+                return RedirectToAction("TablaRequisiciones", "Requisicion");
             }
             else
             {

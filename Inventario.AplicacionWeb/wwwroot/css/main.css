@@ -6,6 +6,9 @@
 @import url("nav-bar.css");
 @import url("footer.css");
 @import url("home.css");
-@import url("requisiciones.css");
+@import url("formulario-requisiciones.css");
+@import url("tabla-requisiciones.css");
+@import url("calendario.css");
+@import url("select2.css");
 
 

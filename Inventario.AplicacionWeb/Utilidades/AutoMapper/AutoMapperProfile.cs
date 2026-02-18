@@ -12,6 +12,8 @@ namespace Inventario.AplicacionWeb.Utilidades.AutoMapper
             CreateMap<VMRequiForm, FormularioRequisicionDTO>();
 
             CreateMap<ItemRequiVM, FormularioRequisicionDetalleDTO>();
+
+            CreateMap<RequisicionMaestraDTO, VMRequisicionMaestra>();
         }
     }
 }

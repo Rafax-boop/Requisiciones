@@ -7,6 +7,7 @@ using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Inventario.BLL.Implementacion
 {
@@ -39,7 +40,7 @@ namespace Inventario.BLL.Implementacion
                 CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
                 IdPrioridad = modelo.IdPrioridad,
                 IdUsuario = modelo.IdUsuario,
-                IdEstatus = modelo.IdEstatus,
+                IdEstatus = 1,
                 Activo = true,
                 FechaSistema = DateTime.Now
             };
@@ -65,6 +66,46 @@ namespace Inventario.BLL.Implementacion
             await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
 
             return true;
+        }
+
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones()
+        {
+            var query = await _repositoryRequisicion.Consultar();
+
+            var resultado = await query
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    Departamento = r.IdDepartamento.ToString(),
+                    Responsable = r.NomResponsableDepartamento,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus
+                })
+                .ToListAsync();
+
+            return resultado;
+        }
+
+        public async Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro)
+        {
+            var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
+
+            var lista = await query
+                .Select(r => new DetalleArticuloDTO
+                {
+                    NumPartida = r.NumPartida,
+                    IdArticulo = r.IdArticulo,
+                    Cantidad = r.Cantidad,
+                    UnidadMedida = r.UnidadMedida,
+                    Descripcion = r.Descripcion
+                })
+                .ToListAsync();
+
+            return new DetallesRequiDTO
+            {
+                Articulos = lista
+            };
         }
     }
 }
