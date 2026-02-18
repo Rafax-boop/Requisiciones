@@ -3,45 +3,62 @@
     Layout = null;
     ViewData["Title"] = "Login";
 }
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Requisiciones</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/main.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="~/css/SweetAlert.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
 </head>
-<body>
-    <div class="container-login glass-effect">
+<body class="login-body">
+    <div class="home-bg">
+        <div class="orbe orbe-1"></div>
+        <div class="orbe orbe-2"></div>
+        <div class="orbe orbe-3"></div>
+        <div class="orbe orbe-4"></div>
+    </div>
+    <div class="login-dots"></div>
+
+    <div class="container-login">
+
         <form asp-controller="Acceso" asp-action="Login" method="post" id="loginForm">
-            <div class="img-login">
-                <img src="~/img/corazon.png" alt="" />
+
+            <div class="login-logo">
+                <img src="~/img/corazon.png" alt="DIF Puebla" />
             </div>
-            <div class="title-logo">
-                <h1 class="title-principal" style="color: var(--rosa-500)">Inicio de sesion</h1>
-                <h3 class="subtitle-principal">Dirección de Administración y Finanzas</h3>
-                <h3 class="subtitle-principal">Departamento de Recursos Materiales</h3>
-                <p class="txt-principal">2024 - 2030</p>
+
+            <div class="login-titulos">
+                <h1 class="login-titulo-principal">Bienvenido</h1>
+                <div class="login-separador"></div>
+                <p class="login-subtitulo">Dirección de Administración y Finanzas</p>
+                <p class="login-subtitulo">Departamento de Recursos Materiales</p>
+                <span class="login-periodo">2024 — 2030</span>
             </div>
-            <div class="register">
-                <input type="text" class="input" id="txtUsuario" required asp-for="Usuario" />
-                <label class="input-label" for="txtUsuario">Usuario</label>
+
+            <div class="login-campos">
+                <div class="login-input-grupo">
+                    <i class="fa-regular fa-user login-input-icono"></i>
+                    <input type="text" class="login-input" id="txtUsuario" required asp-for="Usuario" placeholder=" " />
+                    <label class="login-input-label" for="txtUsuario">Usuario</label>
+                </div>
+                <div class="login-input-grupo">
+                    <i class="fa-solid fa-lock login-input-icono"></i>
+                    <input type="password" class="login-input" id="txtContrasena" required asp-for="Password" placeholder=" " />
+                    <label class="login-input-label" for="txtContrasena">Contraseña</label>
+                </div>
             </div>
-            <div class="register">
-                <input type="password" class="input" id="txtContrasena" required asp-for="Password" />
-                <label class="input-label" for="txtContrasena">Contraseña</label>
-            </div>
-            
-            <button class="btn-login boton-rosa" type="submit" id="btnIngresar">
+
+            <button class="login-btn" type="submit" id="btnIngresar">
                 Ingresar
+                <i class="fa-solid fa-arrow-right"></i>
             </button>
         </form>
     </div>
-
 </body>
+</html>

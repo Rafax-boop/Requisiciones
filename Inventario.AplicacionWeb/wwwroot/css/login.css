@@ -1,89 +1,299 @@
-﻿.container-login {
-    width: 490px;
-    height: 650px;
+﻿/* ══════════════════════════════════════════════
+   🔐 LOGIN 
+══════════════════════════════════════════════ */
+
+
+/* ──────────────────────────────────────────
+   BODY
+────────────────────────────────────────── */
+.login-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--slate-50);
+    overflow: hidden;
+    position: relative;
+}
+
+.login-bg {
     position: fixed;
     inset: 0;
-    margin: auto;
-    border-radius:12px;
+    z-index: 0;
 }
 
-.img-login {
-    display: block;
-    margin: 0 auto;
-    width: 170px;
-    padding-top: 28px;
-}
 
-.title-principal {
-    display: flex;
-    justify-content: center;
-    margin: 0 auto;
-    text-transform: uppercase;
-    padding-top: var(--space-4);
-    color: var(--color-principal);
-    font-size: var(--text-3xl);
-    font-weight: 650;
-    letter-spacing: 0.05em;
-}
-
-.subtitle-principal {
-    margin-top: 5px;
-    text-align: center;
-    font-size: var(--text-base);
-    color: rgba(0, 0, 0, 0.6);
-}
-
-.txt-principal {
-    padding: var(--space-4);
-    text-align: center;
-    font-size: var(--text-base);
-    color: rgba(0, 0, 0, 0.6);
-}
-
-.input-group {
+/* ──────────────────────────────────────────
+   CARD PRINCIPAL
+────────────────────────────────────────── */
+.container-login {
     position: relative;
+    z-index: 1;
+    width: 460px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 60px rgba(255, 74, 134, 0.2), 0 8px 20px rgba(255, 74, 134, 0.04);
+    padding: 48px 44px;
+    animation: loginEntrar 0.7s var(--ease-premium) both;
 }
 
-.register {
-    position: relative;
-    width: 400px;
-    margin: 0 auto 2rem auto;
-}
-
-.input {
-    width: 100%;
-    border: solid 1.5px var(--color-secundario);
-    border-radius: 1rem;
-    background: none;
-    padding: 1rem;
-    font-size: 1rem;
-    color: var(--color-principal);
-    transition: border 150ms cubic-bezier(0.4,0,0.2,1);
-}
-    .input:focus {
-        border: solid 1.5px var(--color-principal);
+@keyframes loginEntrar {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
     }
 
-.input-label {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+/* ──────────────────────────────────────────
+   3. LOGO Y TÍTULOS
+────────────────────────────────────────── */
+.login-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s var(--ease-premium) 0.1s both;
+}
+
+    .login-logo img {
+        width: 120px;
+        height: auto;
+    }
+
+.login-titulos {
+    text-align: center;
+    margin-bottom: 36px;
+    animation: fadeUp 0.6s var(--ease-premium) 0.2s both;
+}
+
+.login-titulo-principal {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin: 0 0 12px 0;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-500), var(--rosa-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Línea decorativa rosa degradada */
+.login-separador {
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rosa-400), var(--rosa-200));
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.login-subtitulo {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-500);
+    margin: 2px 0;
+    line-height: 1.5;
+}
+
+.login-periodo {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 16px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--rosa-500);
+    background: var(--rosa-50);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-full);
+    letter-spacing: 1.5px;
+}
+
+
+/* ──────────────────────────────────────────
+   4. INPUTS CON LABEL FLOTANTE + ÍCONO
+   
+   El label empieza dentro del input como
+   placeholder. Cuando el input tiene focus
+   o ya tiene texto (placeholder-shown trick),
+   el label sube arriba con animación.
+   
+   Es como una etiqueta que se levanta de
+   su silla cuando le hablas.
+────────────────────────────────────────── */
+.login-campos {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s var(--ease-premium) 0.3s both;
+}
+
+.login-input-grupo {
+    position: relative;
+}
+
+.login-input-icono {
     position: absolute;
-    left: 15px;
-    color: var(--color-secundario);
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--slate-300);
+    transition: color 0.3s var(--ease-premium);
+    z-index: 1;
+}
+
+.login-input {
+    width: 100%;
+    padding: 16px 18px 16px 46px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--slate-800);
+    background: var(--slate-50);
+    outline: none;
+    transition: all 0.35s var(--ease-premium);
+}
+
+    .login-input::placeholder {
+        color: transparent;
+    }
+
+    .login-input:hover {
+        border-color: var(--rosa-200);
+        background: white;
+    }
+
+    .login-input:focus {
+        border-color: var(--rosa-400);
+        background: white;
+        box-shadow: 0 0 0 4px rgba(255, 64, 129, 0.08);
+    }
+
+/* Label flotante */
+.login-input-label {
+    position: absolute;
+    left: 46px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--slate-400);
     pointer-events: none;
-    transform: translateY(1rem);
-    transition: 150ms cubic-bezier(0.4,0,0.2,1);
+    transition: all 0.3s var(--ease-premium);
+    background: transparent;
+    padding: 0;
 }
 
-.btn-login {
-    display: block;
-    margin: 0 auto;
-}
-
-
-.input:focus ~ .input-label,
-.input:valid ~ .input-label {
+/* Cuando el input tiene focus o tiene texto */
+.login-input:focus ~ .login-input-label,
+.login-input:not(:placeholder-shown) ~ .login-input-label {
     top: 0;
-    color: var(--color-principal);
     transform: translateY(-50%) scale(0.85);
-    background: #FFFBFC;
-    padding: 0 0.3em;
+    left: 14px;
+    color: var(--rosa-500);
+    font-weight: 600;
+    background: white;
+    padding: 0 8px;
+}
+
+/* Ícono cambia de color con focus */
+.login-input:focus ~ .login-input-icono {
+    color: var(--rosa-400);
+}
+
+
+/* ──────────────────────────────────────────
+   5. BOTÓN DE INGRESO
+   
+   Igual que el boton-rosa global pero 
+   a ancho completo para el login.
+   El ícono de flecha se mueve a la derecha
+   al hacer hover — te invita a "entrar"
+────────────────────────────────────────── */
+.login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-500), var(--rosa-accent));
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: var(--shadow-rosa);
+    transition: all 0.4s var(--ease-premium);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.6s var(--ease-premium) 0.4s both;
+}
+
+    /* Shine effect */
+    .login-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transition: left 0.6s var(--ease-premium);
+    }
+
+    .login-btn:hover {
+        box-shadow: var(--shadow-rosa-hover);
+        transform: translateY(-2px);
+    }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+    /* Flechita se mueve al hover */
+    .login-btn i {
+        transition: transform 0.3s var(--ease-premium);
+    }
+
+    .login-btn:hover i {
+        transform: translateX(4px);
+    }
+
+    .login-btn:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow-rosa);
+    }
+
+
+/* ──────────────────────────────────────────
+   6. ANIMACIÓN GENERAL
+────────────────────────────────────────── */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

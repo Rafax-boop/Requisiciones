@@ -101,26 +101,31 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="detalleLabel">Artículos de la requisción</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
+            <div class="modal-body modal-body-premium">
+                <table class="tabla-requisiciones" id="tablaModalDetalle">
                     <thead>
                         <tr>
-                            <th>NUM PARTIDA</th>
-                            <th>ID ARTICULO</th>
-                            <th>CANTIDAD</th>
-                            <th>UNIDAD MEDIDA</th>
-                            <th>DESCRIPCIÓN</th>
+                            <th>Nº Partida</th>
+                            <th>ID Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Unidad Medida</th>
+                            <th>Descripción</th>
                         </tr>
                     </thead>
                     <tbody id="tablaDetalle">
-                        <!-- Se carga con el scrip de abajo -->
+                        <!-- Se carga dinámicamente -->
                     </tbody>
                 </table>
             </div>
