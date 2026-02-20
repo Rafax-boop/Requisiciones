@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
@@ -26,7 +26,9 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public async Task<IActionResult> FormularioRequisiciones()
         {
-            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return RedirectToAction("Login", "Acceso");
 
             var dto = await _usuarioService.ObtenerDatosDepartamento(idUsuario);
 
@@ -48,6 +50,40 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var detalles = await _requisicionService.ObtenerDetallePorIdMaestro(idMaestro);
             return Json(detalles);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> VerParaPdf(int id)
+        {
+            var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var vm = new VMRequiForm
+            {
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                LugarEntrega = dto.LugarEntrega,
+                UsoEspecifico = dto.UsoEspecifico,
+                Justificacion = dto.Justificacion,
+                CuentaProgramaPresupuestario = dto.CuentaProgramaPresupuestario,
+                Articulos = dto.Articulos.Select(a => new ItemRequiVM
+                {
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    Cantidad = a.Cantidad,
+                    UnidadMedida = a.UnidadMedida,
+                    Descripcion = a.Descripcion,
+                    DescripcionDetallada = a.DescripcionDetallada
+                }).ToList()
+            };
+
+            return View("RequisicionParaPdf", vm);
         }
 
         [HttpPost]

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,5 +13,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario);
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones();
         Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro);
+        Task<RequisicionCompletaDTO?> ObtenerRequisicionCompletaPorId(int idRequisicion);
     }
 }
