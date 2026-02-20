@@ -13,11 +13,11 @@ namespace Inventario.BLL.Implementacion
 {
     public class RequisicionService : IRequisicionesService
     {
-        private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
+        private readonly IRequisicionRepository _repositoryRequisicion;
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
 
-        public RequisicionService(IGenericRepository<TblRequisicion> repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
+        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
@@ -28,7 +28,6 @@ namespace Inventario.BLL.Implementacion
         {
             var requisicion = new TblRequisicion
             {
-                NumRequisicion = modelo.NumRequisicion,
                 FechaEmision = modelo.FechaEmision,
                 IdDepartamento = modelo.IdDepartamento,
                 NomResponsableDepartamento = modelo.NomResponsableDepartamento,
@@ -44,7 +43,7 @@ namespace Inventario.BLL.Implementacion
                 Activo = true,
                 FechaSistema = DateTime.Now
             };
-            var requiCreada = await _repositoryRequisicion.Crear(requisicion);
+            var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
 
             var bitacora = new TblBitacoraEstatus
             {
