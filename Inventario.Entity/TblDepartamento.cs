@@ -25,5 +25,7 @@ public partial class TblDepartamento
 
     public string? CveRf { get; set; }
 
+    public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
+
     public virtual ICollection<TblUsuario> TblUsuarios { get; set; } = new List<TblUsuario>();
 }

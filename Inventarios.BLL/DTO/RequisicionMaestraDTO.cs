@@ -10,7 +10,7 @@ namespace Inventario.BLL.DTO
     {
         public int IdRequi { get; set; }
         public string? NumRequi { get; set; }
-        public DateTime? FechaEmision { get; set; }
+        public DateOnly? FechaEmision { get; set; }
         public string? Departamento { get; set; }
         public string? Responsable { get; set; }
         public string? Estatus { get; set; }

@@ -9,7 +9,7 @@ public partial class TblRequisicion
 
     public string? NumRequisicion { get; set; }
 
-    public DateTime? FechaEmision { get; set; }
+    public DateOnly? FechaEmision { get; set; }
 
     public int? IdDepartamento { get; set; }
 
@@ -36,7 +36,10 @@ public partial class TblRequisicion
     public bool? Activo { get; set; }
 
     public DateTime? FechaSistema { get; set; }
+
     public int Consecutivo { get; set; }
+
+    public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 
     public virtual TblEstatus? IdEstatusNavigation { get; set; }
 

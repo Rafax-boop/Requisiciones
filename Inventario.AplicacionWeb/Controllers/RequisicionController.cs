@@ -34,8 +34,6 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var vm = _mapper.Map<VMRequiForm>(dto);
 
-            vm.FechaEmision = DateTime.Now;
-
             return View(vm);
         }
 

@@ -9,7 +9,7 @@
             <div class="fantasma">
                 <div class="filtro-grupo">
                     <label asp-for="FechaEmision" class="m-0 info-body"> Fecha de emisión:</label>
-                    <input asp-for="FechaEmision" type="text" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly />
+                    <input asp-for="FechaEmision" type="date" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly value="@DateTime.Now"/>
                 </div>
             </div>
             <div class="container-info">

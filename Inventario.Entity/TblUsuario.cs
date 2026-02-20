@@ -15,13 +15,13 @@ public partial class TblUsuario
 
     public string? Correo { get; set; }
 
-    public int? Area { get; set; }
+    public int? IdDepartamento { get; set; }
 
     public int? IdRol { get; set; }
 
     public bool? Activo { get; set; }
 
-    public virtual TblDepartamento? AreaNavigation { get; set; }
+    public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 
     public virtual TblRol? IdRolNavigation { get; set; }
 

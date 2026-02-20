@@ -17,32 +17,24 @@
 
     <div class="container-formulario filtros-container">
         <div class="filtro-grupo">
-            <label>Buscar</label>
-            <input type="text" placeholder="Buscar por folio, responsable..." />
+            <label>Nº Requisición</label>
+            <input type="text" id="filtroNumReq" placeholder="REC-000000" />
         </div>
         <div class="filtro-grupo">
             <label>Fecha</label>
-            <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly />
-        </div>
-        <div class="filtro-grupo">
-            <label>Nº Requisición</label>
-            <input type="text" placeholder="REC-000000" />
-        </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly
+                       style="width:100%;" />
+                <button type="button" id="btnLimpiarFecha" onclick="limpiarFecha()"
+                        style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
+                        title="Limpiar fecha">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>        
         <div class="filtro-grupo">
             <label>Departamento</label>
-            <div class="filtro-dropdown">
-                <button type="button" class="filtro-dropdown-btn">
-                    <span>Todos</span>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-                <ul class="filtro-dropdown-menu">
-                    <li class="filtro-dropdown-item active">Todos</li>
-                    <li class="filtro-dropdown-item">Departamento 1</li>
-                    <li class="filtro-dropdown-item">Departamento 2</li>
-                    <li class="filtro-dropdown-item">Departamento 3</li>
-                    <li class="filtro-dropdown-item">Departamento 4</li>
-                </ul>
-            </div>
+            <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
         </div>
     </div>
 
@@ -133,38 +125,82 @@
 
 @section Scripts {
     <script>
-        document.querySelectorAll('.filtro-dropdown-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                this.closest('.filtro-dropdown').classList.toggle('open');
-            });
-        });
-
-        document.querySelectorAll('.filtro-dropdown-item').forEach(item => {
-            item.addEventListener('click', function () {
-                const dropdown = this.closest('.filtro-dropdown');
-                const btnText = dropdown.querySelector('.filtro-dropdown-btn span');
-
-                dropdown.querySelectorAll('.filtro-dropdown-item').forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
-                btnText.textContent = this.textContent;
-
-                dropdown.classList.remove('open');
-            });
-        });
-
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.filtro-dropdown')) {
                 document.querySelectorAll('.filtro-dropdown').forEach(d => d.classList.remove('open'));
             }
         });
 
-        flatpickr('#filtroFecha', {
+        // ── Flatpickr — formato idéntico al de la celda ───────────────────
+        let fechaSeleccionada = '';
+
+        let fpInstance = flatpickr('#filtroFecha', {
             locale: 'es',
-            dateFormat: 'd / M / Y',
+            dateFormat: 'd/m/Y',
             allowInput: false,
-            disableMobile: true
+            disableMobile: true,
+            onChange: function (selectedDates, dateStr) {
+            fechaSeleccionada = dateStr;
+            document.getElementById('btnLimpiarFecha').style.display = dateStr ? 'inline' : 'none';
+            filtrarTabla();
+        }
         });
 
+        function limpiarFecha() {
+            fpInstance.clear();
+            fechaSeleccionada = '';
+            document.getElementById('btnLimpiarFecha').style.display = 'none';
+            filtrarTabla();
+        }
+
+        // ── Filtrado ──────────────────────────────────────────────────────
+        function filtrarTabla() {
+            const textoNumReq  = (document.getElementById('filtroNumReq')?.value || '').toLowerCase().trim();
+            const textoDepto   = (document.getElementById('filtroDepartamento')?.value || '').toLowerCase().trim();
+
+            const filas = document.querySelectorAll('.tabla-requisiciones:not(#tablaModalDetalle) tbody tr');
+
+            filas.forEach(fila => {
+                if (fila.classList.contains('fila-vacia')) return;
+                const celdas = fila.querySelectorAll('td');
+                if (!celdas.length) return;
+
+                const folio = celdas[0]?.textContent.toLowerCase() || '';
+                const fecha = celdas[1]?.textContent.trim()        || '';
+                const depto = celdas[2]?.textContent.toLowerCase() || '';
+
+                const pasaNumReq = !textoNumReq       || folio.includes(textoNumReq);
+                const pasaFecha  = !fechaSeleccionada || fecha === fechaSeleccionada;
+                const pasaDepto  = !textoDepto        || depto.includes(textoDepto);
+
+                fila.style.display = (pasaNumReq && pasaFecha && pasaDepto) ? '' : 'none';
+            });
+
+            mostrarMensajeVacio();
+        }
+
+        function mostrarMensajeVacio() {
+            const tbody = document.querySelector('.tabla-requisiciones:not(#tablaModalDetalle) tbody');
+            const filasVisibles = [...tbody.querySelectorAll('tr')]
+                .filter(f => f.style.display !== 'none' && !f.classList.contains('fila-vacia'));
+
+            let filaVacia = tbody.querySelector('.fila-vacia');
+            if (filasVisibles.length === 0) {
+                if (!filaVacia) {
+                    filaVacia = document.createElement('tr');
+                    filaVacia.className = 'fila-vacia';
+                    filaVacia.innerHTML = '<td colspan="6" class="text-center">Sin resultados para los filtros aplicados</td>';
+                    tbody.appendChild(filaVacia);
+                }
+            } else {
+                filaVacia?.remove();
+            }
+        }
+
+        document.getElementById('filtroNumReq')?.addEventListener('input', filtrarTabla);
+        document.getElementById('filtroDepartamento')?.addEventListener('input', filtrarTabla);
+
+        // ── URLs y funciones de modal ─────────────────────────────────────
         const obtenerDetallesUrl = '@Url.Action("ObtenerDetalles", "Requisicion")';
         const verPdfUrl = '@Url.Action("VerParaPdf", "Requisicion")';
 
@@ -177,15 +213,12 @@
         function verDescDetalleModal(el) {
             const panel = document.getElementById('desc-panel-modal');
             const textarea = document.getElementById('desc-textarea-modal');
-
             textarea.value = el.dataset.full || '(Sin descripción detallada)';
-
             const rect = el.getBoundingClientRect();
             panel.style.top = (rect.bottom + 4) + 'px';
             panel.style.left = rect.left + 'px';
             panel.style.minWidth = Math.max(rect.width, 320) + 'px';
             panel.style.display = 'block';
-
             _descPanelModalTrigger = el;
             textarea.focus();
         }
@@ -205,7 +238,6 @@
 
         function verDetalle(idMaestro) {
             $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
-                let total = 0;
                 let contenido = '';
                 let articulos = data.articulos;
 
@@ -238,8 +270,6 @@
                 }
 
                 $('#tablaDetalle').html(contenido);
-
-                // Mostrar modal
                 $('#modalDetalle').modal('show');
             });
         }

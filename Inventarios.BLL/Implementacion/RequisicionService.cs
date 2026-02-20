@@ -18,7 +18,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
         private readonly IGenericRepository<TblDepartamento> _repositoryDepartamento;
 
-        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
+        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblDepartamento> repositoryDepartamento)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
@@ -90,7 +90,7 @@ namespace Inventario.BLL.Implementacion
                     IdRequi = r.IdRequisicion,
                     NumRequi = r.NumRequisicion,
                     FechaEmision = r.FechaEmision,
-                    Departamento = r.IdDepartamento.ToString(),
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
                     Responsable = r.NomResponsableDepartamento,
                     Estatus = r.IdEstatusNavigation.NombreEstatus
                 })

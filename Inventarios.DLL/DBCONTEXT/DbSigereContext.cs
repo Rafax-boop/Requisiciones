@@ -44,12 +44,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblUsuario> TblUsuarios { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
-    }
-
-    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TblArticulo>(entity =>
@@ -216,7 +212,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Correo)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaEmision).HasColumnType("datetime");
             entity.Property(e => e.FechaSistema).HasColumnType("datetime");
             entity.Property(e => e.IdUsuario).HasColumnName("idUsuario");
             entity.Property(e => e.Justificacion).IsUnicode(false);
@@ -236,6 +231,10 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(25)
                 .IsUnicode(false);
             entity.Property(e => e.UsoEspecifico).IsUnicode(false);
+
+            entity.HasOne(d => d.IdDepartamentoNavigation).WithMany(p => p.TblRequisicions)
+                .HasForeignKey(d => d.IdDepartamento)
+                .HasConstraintName("FK_tblRequisicion_TblDepartamento");
 
             entity.HasOne(d => d.IdEstatusNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdEstatus)
@@ -257,7 +256,7 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.DescripcionDetallada)
-                .HasMaxLength(150)
+                .HasMaxLength(1500)
                 .IsUnicode(false);
             entity.Property(e => e.FechaRegistro).HasColumnType("datetime");
             entity.Property(e => e.UnidadMedida)
@@ -307,8 +306,8 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
 
-            entity.HasOne(d => d.AreaNavigation).WithMany(p => p.TblUsuarios)
-                .HasForeignKey(d => d.Area)
+            entity.HasOne(d => d.IdDepartamentoNavigation).WithMany(p => p.TblUsuarios)
+                .HasForeignKey(d => d.IdDepartamento)
                 .HasConstraintName("FK_TblUsuario_TblDepartamento");
 
             entity.HasOne(d => d.IdRolNavigation).WithMany(p => p.TblUsuarios)

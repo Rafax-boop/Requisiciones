@@ -51,7 +51,7 @@ namespace Inventario.BLL.Implementacion
                 usuarioEditar.Pasword = entidad.Pasword;
                 usuarioEditar.Telefono = entidad.Telefono;
                 usuarioEditar.Correo = entidad.Correo;
-                usuarioEditar.Area = entidad.Area;
+                usuarioEditar.IdDepartamento = entidad.IdDepartamento;
                 usuarioEditar.IdRol = entidad.IdRol;
                 usuarioEditar.Activo = entidad.Activo;
 
@@ -95,7 +95,7 @@ namespace Inventario.BLL.Implementacion
             var usuario = await _repositorioUsuarios.Obtener(u => u.IdUsuario == idUsuario);
 
             var departamento = await _repositorioDepartamentos
-                .Obtener(d => d.IdDepartamento == usuario.Area);
+                .Obtener(d => d.IdDepartamento == usuario.IdDepartamento);
 
             return new FormularioRequisicionDTO
             {
