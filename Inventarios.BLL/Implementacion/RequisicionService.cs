@@ -15,36 +15,46 @@ namespace Inventario.BLL.Implementacion
     {
         private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
+        private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
 
-        public RequisicionService(IGenericRepository<TblRequisicion> repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle)
+        public RequisicionService(IGenericRepository<TblRequisicion> repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
+            _repositoryBitacora = repositoryBitacora;
         }
 
-        public async Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo)
+        public async Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
         {
             var requisicion = new TblRequisicion
             {
-                IdProvedor = modelo.IdProvedor,
                 NumRequisicion = modelo.NumRequisicion,
-                FechaEmision = DateTime.Now.Date,
+                FechaEmision = modelo.FechaEmision,
                 IdDepartamento = modelo.IdDepartamento,
                 NomResponsableDepartamento = modelo.NomResponsableDepartamento,
-                Domicilio = modelo.Domicilio,
+                NombreDirector = modelo.NomDirector,
+                Correo = modelo.Correo,
                 Telefono = modelo.Telefono,
                 LugarEntrega = modelo.LugarEntrega,
                 UsoEspecifico = modelo.UsoEspecifico,
                 Justificacion = modelo.Justificacion,
-                IdPeriodo = modelo.IdPeriodo,
                 CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
-                IdPrioridad = modelo.IdPrioridad,
-                IdUsuario = modelo.IdUsuario,
+                IdUsuario = idUsuario,
                 IdEstatus = 1,
                 Activo = true,
                 FechaSistema = DateTime.Now
             };
             var requiCreada = await _repositoryRequisicion.Crear(requisicion);
+
+            var bitacora = new TblBitacoraEstatus
+            {
+                IdRequisicion = requiCreada.IdRequisicion,
+                IdEstatus = requiCreada.IdEstatus,
+                FechaEstatus = requiCreada.FechaSistema,
+                Observacion = "FormularioRequisiciones",
+                IdUsuario = idUsuario
+            };
+            var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
 
             var listaArticulos = new List<TblRequisicionDetalle>();
 
@@ -58,6 +68,7 @@ namespace Inventario.BLL.Implementacion
                     Cantidad = item.Cantidad,
                     UnidadMedida = item.UnidadMedida,
                     Descripcion = item.Descripcion,
+                    DescripcionDetallada = item.DescripcionDetallada,
                     FechaRegistro = DateTime.Now.Date
                 };
                 listaArticulos.Add(detalle);

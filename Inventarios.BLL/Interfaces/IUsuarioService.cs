@@ -1,4 +1,5 @@
-﻿using Inventario.Entity;
+﻿using Inventario.BLL.DTO;
+using Inventario.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,5 +15,6 @@ namespace Inventario.BLL.Interfaces
         Task<TblUsuario> Crear(TblUsuario entidad);
         Task<TblUsuario> Editar(TblUsuario entidad);
         Task<bool> Eliminar(int idUsuario);
+        Task<FormularioRequisicionDTO> ObtenerDatosDepartamento(int? idUsuario);
     }
 }

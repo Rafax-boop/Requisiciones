@@ -9,7 +9,7 @@ namespace Inventario.AplicacionWeb.Utilidades.AutoMapper
     {
         public AutoMapperProfile()
         {
-            CreateMap<VMRequiForm, FormularioRequisicionDTO>();
+            CreateMap<VMRequiForm, FormularioRequisicionDTO>().ReverseMap();
 
             CreateMap<ItemRequiVM, FormularioRequisicionDetalleDTO>();
 

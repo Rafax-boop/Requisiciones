@@ -18,8 +18,6 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblArticulo> TblArticulos { get; set; }
 
-    public virtual DbSet<TblArticulo1> TblArticulos1 { get; set; }
-
     public virtual DbSet<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; }
 
     public virtual DbSet<TblDepartamento> TblDepartamentos { get; set; }
@@ -29,8 +27,6 @@ public partial class DbSigereContext : DbContext
     public virtual DbSet<TblInventario> TblInventarios { get; set; }
 
     public virtual DbSet<TblPartidaPresupuestal> TblPartidaPresupuestals { get; set; }
-
-    public virtual DbSet<TblPerido> TblPeridos { get; set; }
 
     public virtual DbSet<TblPrioridad> TblPrioridads { get; set; }
 
@@ -48,46 +44,13 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblUsuario> TblUsuarios { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=ECI-DIF-076; DataBase=dbSIGERE; User Id=sa; Password=root; TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TblArticulo>(entity =>
-        {
-            entity.HasKey(e => e.IdArticulo);
-
-            entity.ToTable("tblArticulo");
-
-            entity.Property(e => e.IdArticulo).ValueGeneratedNever();
-            entity.Property(e => e.Articulo)
-                .HasMaxLength(6)
-                .IsUnicode(false);
-            entity.Property(e => e.Capitulo)
-                .HasMaxLength(5)
-                .IsUnicode(false);
-            entity.Property(e => e.ClaveActividadEspecifica)
-                .HasMaxLength(5)
-                .IsUnicode(false);
-            entity.Property(e => e.ClaveUnidadMedida)
-                .HasMaxLength(15)
-                .IsUnicode(false);
-            entity.Property(e => e.CostoEstimado).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.CostoPromedio).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Descripcion)
-                .HasMaxLength(500)
-                .IsUnicode(false);
-            entity.Property(e => e.DescripcionUnidadMedida)
-                .HasMaxLength(150)
-                .IsUnicode(false);
-            entity.Property(e => e.NombreActividadEspecifica)
-                .HasMaxLength(150)
-                .IsUnicode(false);
-            entity.Property(e => e.PartidaEspecifica)
-                .HasMaxLength(5)
-                .IsUnicode(false);
-        });
-
-        modelBuilder.Entity<TblArticulo1>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__tblArtic__3214EC07CBCDD3F4");
 
@@ -105,20 +68,25 @@ public partial class DbSigereContext : DbContext
 
         modelBuilder.Entity<TblBitacoraEstatus>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("TblBitacoraEstatus");
+            entity.HasKey(e => e.IdBitacoraEstatus);
+
+            entity.ToTable("TblBitacoraEstatus");
 
             entity.Property(e => e.FechaEstatus).HasColumnType("datetime");
             entity.Property(e => e.Observacion).HasMaxLength(100);
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblBitacoraEstatuses)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblBitacoraEstatus_tblRequisicion");
         });
 
         modelBuilder.Entity<TblDepartamento>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("TblDepartamento");
+            entity.HasKey(e => e.IdDepartamento);
 
+            entity.ToTable("TblDepartamento");
+
+            entity.Property(e => e.IdDepartamento).ValueGeneratedNever();
             entity.Property(e => e.CargoDirector)
                 .HasMaxLength(150)
                 .IsUnicode(false);
@@ -185,15 +153,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Disponible).HasColumnType("decimal(18, 4)");
         });
 
-        modelBuilder.Entity<TblPerido>(entity =>
-        {
-            entity.HasKey(e => e.IdPeriodo);
-
-            entity.ToTable("tblPerido");
-
-            entity.Property(e => e.IdPeriodo).HasColumnName("idPeriodo");
-        });
-
         modelBuilder.Entity<TblPrioridad>(entity =>
         {
             entity.HasKey(e => e.IdPrioridad);
@@ -252,18 +211,20 @@ public partial class DbSigereContext : DbContext
             entity.ToTable("tblRequisicion");
 
             entity.Property(e => e.IdRequisicion).HasColumnName("idRequisicion");
-            entity.Property(e => e.Domicilio)
-                .HasMaxLength(150)
+            entity.Property(e => e.Correo)
+                .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.FechaEmision).HasColumnType("datetime");
             entity.Property(e => e.FechaSistema).HasColumnType("datetime");
-            entity.Property(e => e.IdPrioridad).HasColumnName("idPrioridad");
             entity.Property(e => e.IdUsuario).HasColumnName("idUsuario");
             entity.Property(e => e.Justificacion).IsUnicode(false);
             entity.Property(e => e.LugarEntrega)
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.NomResponsableDepartamento)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.NombreDirector)
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.NumRequisicion)
@@ -278,14 +239,6 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdEstatus)
                 .HasConstraintName("FK_tblRequisicion_TblEstatus");
 
-            entity.HasOne(d => d.IdPeriodoNavigation).WithMany(p => p.TblRequisicions)
-                .HasForeignKey(d => d.IdPeriodo)
-                .HasConstraintName("FK_tblRequisicion_tblPerido");
-
-            entity.HasOne(d => d.IdPrioridadNavigation).WithMany(p => p.TblRequisicions)
-                .HasForeignKey(d => d.IdPrioridad)
-                .HasConstraintName("FK_tblRequisicion_tblPrioridad");
-
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK_tblRequisicion_TblUsuario");
@@ -299,6 +252,9 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.Cantidad).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Descripcion)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.DescripcionDetallada)
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.FechaRegistro).HasColumnType("datetime");
@@ -316,7 +272,6 @@ public partial class DbSigereContext : DbContext
         {
             entity.ToTable("TblRol");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -339,25 +294,20 @@ public partial class DbSigereContext : DbContext
 
             entity.ToTable("TblUsuario");
 
-            entity.Property(e => e.Area)
-                .HasMaxLength(200)
-                .IsUnicode(false);
-            entity.Property(e => e.CargoEnlace)
-                .HasMaxLength(200)
-                .IsUnicode(false);
-            entity.Property(e => e.Correoenlace)
+            entity.Property(e => e.Correo)
                 .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("correoenlace");
-            entity.Property(e => e.NombreEnlace)
-                .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.Pasword)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Telefono).HasMaxLength(20);
             entity.Property(e => e.Usuario)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.AreaNavigation).WithMany(p => p.TblUsuarios)
+                .HasForeignKey(d => d.Area)
+                .HasConstraintName("FK_TblUsuario_TblDepartamento");
 
             entity.HasOne(d => d.IdRolNavigation).WithMany(p => p.TblUsuarios)
                 .HasForeignKey(d => d.IdRol)

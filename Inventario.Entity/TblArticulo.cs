@@ -5,29 +5,27 @@ namespace Inventario.Entity;
 
 public partial class TblArticulo
 {
-    public int IdArticulo { get; set; }
+    public int Id { get; set; }
 
-    public short? EjercicioFiscal { get; set; }
+    public int Cog { get; set; }
 
-    public string? Capitulo { get; set; }
+    public int ClaveDivision { get; set; }
 
-    public string? PartidaEspecifica { get; set; }
+    public int ClaveMaterial { get; set; }
 
-    public string? ClaveActividadEspecifica { get; set; }
+    public string Descripcion { get; set; } = null!;
 
-    public string? NombreActividadEspecifica { get; set; }
+    public string UnidadMedida { get; set; } = null!;
 
-    public string? Articulo { get; set; }
+    public string? Marca { get; set; }
 
-    public string? Descripcion { get; set; }
+    public string? Modelo { get; set; }
 
-    public string? ClaveUnidadMedida { get; set; }
+    public string? Tipo { get; set; }
 
-    public string? DescripcionUnidadMedida { get; set; }
+    public int? Ano { get; set; }
 
-    public decimal? CostoPromedio { get; set; }
+    public int? Maximo { get; set; }
 
-    public decimal? CostoEstimado { get; set; }
-
-    public bool? Activo { get; set; }
+    public int? Estatus { get; set; }
 }

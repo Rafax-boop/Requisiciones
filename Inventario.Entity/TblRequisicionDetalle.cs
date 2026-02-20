@@ -19,6 +19,8 @@ public partial class TblRequisicionDetalle
 
     public string? Descripcion { get; set; }
 
+    public string? DescripcionDetallada { get; set; }
+
     public DateTime? FechaRegistro { get; set; }
 
     public bool? Activo { get; set; }

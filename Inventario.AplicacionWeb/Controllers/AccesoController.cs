@@ -40,6 +40,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     new Claim(ClaimTypes.Name, usuarioEncontrado.Usuario),
                     new Claim(ClaimTypes.NameIdentifier, usuarioEncontrado.IdUsuario.ToString()),
+                    new Claim("IdDepartamento", usuarioEncontrado.Area.ToString()),
                     new Claim(ClaimTypes.Role, usuarioEncontrado.IdRol.ToString())
                 };
 

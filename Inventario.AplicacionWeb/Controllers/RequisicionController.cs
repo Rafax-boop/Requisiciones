@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
+using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
@@ -12,17 +14,27 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IRequisicionesService _requisicionService;
         private readonly IMapper _mapper;
         private readonly IArticulosService _articulosService;
+        private readonly IUsuarioService _usuarioService;
 
-        public RequisicionController(IRequisicionesService requisicionesService, IMapper mapper, IArticulosService articulosService)
+        public RequisicionController(IRequisicionesService requisicionesService, IMapper mapper, IArticulosService articulosService, IUsuarioService usuarioService)
         {
             _requisicionService = requisicionesService;
             _mapper = mapper;
             _articulosService = articulosService;
+            _usuarioService = usuarioService;
         }
 
-        public IActionResult FormularioRequisiciones()
+        public async Task<IActionResult> FormularioRequisiciones()
         {
-            return View();
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var dto = await _usuarioService.ObtenerDatosDepartamento(idUsuario);
+
+            var vm = _mapper.Map<VMRequiForm>(dto);
+
+            vm.FechaEmision = DateTime.Now;
+
+            return View(vm);
         }
 
         public async Task<IActionResult> TablaRequisiciones()
@@ -41,9 +53,10 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> CrearRequisicion(VMRequiForm modelo)
         {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
 
-            bool exito = await _requisicionService.CrearRequisicion(dto);
+            bool exito = await _requisicionService.CrearRequisicion(dto, idUsuario);
 
             if (exito)
             {

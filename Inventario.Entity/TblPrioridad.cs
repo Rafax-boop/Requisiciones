@@ -12,6 +12,4 @@ public partial class TblPrioridad
     public short? DiasAtencion { get; set; }
 
     public bool? Activo { get; set; }
-
-    public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 }

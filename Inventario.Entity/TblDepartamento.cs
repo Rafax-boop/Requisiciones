@@ -24,4 +24,6 @@ public partial class TblDepartamento
     public bool? Activo { get; set; }
 
     public string? CveRf { get; set; }
+
+    public virtual ICollection<TblUsuario> TblUsuarios { get; set; } = new List<TblUsuario>();
 }

@@ -11,21 +11,21 @@ namespace Inventario.BLL.Implementacion
 {
     public class ArticulosService : IArticulosService
     {
-        private readonly IGenericRepository<TblArticulo1> _repositoryArticulo;
+        private readonly IGenericRepository<TblArticulo> _repositoryArticulo;
 
-        public ArticulosService(IGenericRepository<TblArticulo1> repositoryArticulo)
+        public ArticulosService(IGenericRepository<TblArticulo> repositoryArticulo)
         {
             _repositoryArticulo = repositoryArticulo;
         }
 
-        public async Task<TblArticulo1> ObtenerArticuloPorId(int idArticulo)
+        public async Task<TblArticulo> ObtenerArticuloPorId(int idArticulo)
         {
             return await _repositoryArticulo.Obtener(a => a.Id == idArticulo);
         }
 
-        public async Task<List<TblArticulo1>> BuscarArticulos(string termino)
+        public async Task<List<TblArticulo>> BuscarArticulos(string termino)
         {
-            IQueryable<TblArticulo1> query = await _repositoryArticulo.Consultar();
+            IQueryable<TblArticulo> query = await _repositoryArticulo.Consultar();
 
             if (!string.IsNullOrWhiteSpace(termino))
             {

@@ -7,8 +7,6 @@ public partial class TblRequisicion
 {
     public int IdRequisicion { get; set; }
 
-    public int? IdProvedor { get; set; }
-
     public string? NumRequisicion { get; set; }
 
     public DateTime? FechaEmision { get; set; }
@@ -17,7 +15,9 @@ public partial class TblRequisicion
 
     public string? NomResponsableDepartamento { get; set; }
 
-    public string? Domicilio { get; set; }
+    public string? NombreDirector { get; set; }
+
+    public string? Correo { get; set; }
 
     public string? Telefono { get; set; }
 
@@ -27,11 +27,7 @@ public partial class TblRequisicion
 
     public string? Justificacion { get; set; }
 
-    public int? IdPeriodo { get; set; }
-
     public bool? CuentaProgramaPresupuestario { get; set; }
-
-    public int? IdPrioridad { get; set; }
 
     public int? IdUsuario { get; set; }
 
@@ -43,11 +39,9 @@ public partial class TblRequisicion
 
     public virtual TblEstatus? IdEstatusNavigation { get; set; }
 
-    public virtual TblPerido? IdPeriodoNavigation { get; set; }
-
-    public virtual TblPrioridad? IdPrioridadNavigation { get; set; }
-
     public virtual TblUsuario? IdUsuarioNavigation { get; set; }
+
+    public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();
 
     public virtual ICollection<TblRequisicionDetalle> TblRequisicionDetalles { get; set; } = new List<TblRequisicionDetalle>();
 }

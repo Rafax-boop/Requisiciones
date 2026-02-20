@@ -1,4 +1,5 @@
-﻿using Inventario.BLL.Interfaces;
+﻿using Inventario.BLL.DTO;
+using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
 using System;
@@ -11,18 +12,20 @@ namespace Inventario.BLL.Implementacion
 {
     public class UsuarioService : IUsuarioService
     {
-        private readonly IGenericRepository<TblUsuario> _repositorio;
+        private readonly IGenericRepository<TblUsuario> _repositorioUsuarios;
+        private readonly IGenericRepository<TblDepartamento> _repositorioDepartamentos;
 
-        public UsuarioService(IGenericRepository<TblUsuario> repositorio)
+        public UsuarioService(IGenericRepository<TblUsuario> repositorio, IGenericRepository<TblDepartamento> repositorioDepartamentos)
         {
-            _repositorio = repositorio;
+            _repositorioUsuarios = repositorio;
+            _repositorioDepartamentos = repositorioDepartamentos;
         }
 
         public async Task<TblUsuario> Crear(TblUsuario entidad)
         {
             try
             {
-                TblUsuario usuarioCreado = await _repositorio.Crear(entidad);
+                TblUsuario usuarioCreado = await _repositorioUsuarios.Crear(entidad);
 
                 if (usuarioCreado == null || usuarioCreado.IdUsuario == 0)
                 {
@@ -41,19 +44,18 @@ namespace Inventario.BLL.Implementacion
         {
             try
             {
-                IQueryable<TblUsuario> queryUsuario = await _repositorio.Consultar(u => u.IdUsuario == entidad.IdUsuario);
+                IQueryable<TblUsuario> queryUsuario = await _repositorioUsuarios.Consultar(u => u.IdUsuario == entidad.IdUsuario);
 
                 TblUsuario usuarioEditar = queryUsuario.First();
                 usuarioEditar.Usuario = entidad.Usuario;
                 usuarioEditar.Pasword = entidad.Pasword;
-                usuarioEditar.NombreEnlace = entidad.NombreEnlace;
-                usuarioEditar.CargoEnlace = entidad.CargoEnlace;
-                usuarioEditar.Correoenlace = entidad.Correoenlace;
+                usuarioEditar.Telefono = entidad.Telefono;
+                usuarioEditar.Correo = entidad.Correo;
                 usuarioEditar.Area = entidad.Area;
                 usuarioEditar.IdRol = entidad.IdRol;
                 usuarioEditar.Activo = entidad.Activo;
 
-                bool respuesta = await _repositorio.Editar(usuarioEditar);
+                bool respuesta = await _repositorioUsuarios.Editar(usuarioEditar);
 
                 if (!respuesta)
                 {
@@ -71,9 +73,9 @@ namespace Inventario.BLL.Implementacion
         {
             try
             {
-                TblUsuario usuario = await _repositorio.Obtener(u => u.IdUsuario == idUsuario);
+                TblUsuario usuario = await _repositorioUsuarios.Obtener(u => u.IdUsuario == idUsuario);
 
-                bool eliminado = await _repositorio.Eliminar(usuario);
+                bool eliminado = await _repositorioUsuarios.Eliminar(usuario);
                 return true;
             }
             catch
@@ -84,13 +86,31 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<TblUsuario>> Lista()
         {
-            IQueryable<TblUsuario> query = await _repositorio.Consultar();
+            IQueryable<TblUsuario> query = await _repositorioUsuarios.Consultar();
             return query.ToList();
+        }
+
+        public async Task<FormularioRequisicionDTO> ObtenerDatosDepartamento(int? idUsuario)
+        {
+            var usuario = await _repositorioUsuarios.Obtener(u => u.IdUsuario == idUsuario);
+
+            var departamento = await _repositorioDepartamentos
+                .Obtener(d => d.IdDepartamento == usuario.Area);
+
+            return new FormularioRequisicionDTO
+            {
+                IdDepartamento = departamento.IdDepartamento,
+                Departamento = departamento.NombreDepartamento,
+                Correo = usuario.Correo,
+                Telefono = usuario.Telefono,
+                NomResponsableDepartamento = departamento.NombreJefe,
+                NomDirector = departamento.NombreDirector
+            };
         }
 
         public async Task<TblUsuario> ObtenerPorCredenciales(string usuario, string contrasena)
         {
-            TblUsuario usuarioEncontrado = await _repositorio.Obtener(u => u.Usuario == usuario && u.Pasword == contrasena);
+            TblUsuario usuarioEncontrado = await _repositorioUsuarios.Obtener(u => u.Usuario == usuario && u.Pasword == contrasena);
 
             return usuarioEncontrado;
         }

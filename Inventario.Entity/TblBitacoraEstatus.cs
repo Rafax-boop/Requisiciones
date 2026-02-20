@@ -11,9 +11,11 @@ public partial class TblBitacoraEstatus
 
     public DateTime? FechaEstatus { get; set; }
 
-    public int? IdProgramaAnual { get; set; }
+    public int? IdRequisicion { get; set; }
 
     public string? Observacion { get; set; }
 
     public int? IdUsuario { get; set; }
+
+    public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
 }

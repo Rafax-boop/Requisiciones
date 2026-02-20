@@ -11,17 +11,17 @@ public partial class TblUsuario
 
     public string? Pasword { get; set; }
 
-    public string? NombreEnlace { get; set; }
+    public string? Telefono { get; set; }
 
-    public string? CargoEnlace { get; set; }
+    public string? Correo { get; set; }
 
-    public string? Correoenlace { get; set; }
-
-    public string? Area { get; set; }
+    public int? Area { get; set; }
 
     public int? IdRol { get; set; }
 
     public bool? Activo { get; set; }
+
+    public virtual TblDepartamento? AreaNavigation { get; set; }
 
     public virtual TblRol? IdRolNavigation { get; set; }
 

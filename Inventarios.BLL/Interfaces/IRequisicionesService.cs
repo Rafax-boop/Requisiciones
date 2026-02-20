@@ -10,7 +10,7 @@ namespace Inventario.BLL.Interfaces
 {
     public interface IRequisicionesService
     {
-        Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo);
+        Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario);
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones();
         Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro);
     }

@@ -9,7 +9,7 @@ namespace Inventario.BLL.Interfaces
 {
     public interface IArticulosService
     {
-        Task<TblArticulo1> ObtenerArticuloPorId(int idArticulo);
-        Task<List<TblArticulo1>> BuscarArticulos(string termino);
+        Task<TblArticulo> ObtenerArticuloPorId(int idArticulo);
+        Task<List<TblArticulo>> BuscarArticulos(string termino);
     }
 }
