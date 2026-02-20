@@ -1,4 +1,4 @@
-﻿@using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.AplicacionWeb.Models.ViewModels
 @model List<VMRequisicionMaestra>
 @{
     ViewData["Title"] = "TablaRequisiciones";
@@ -75,6 +75,9 @@
                                 <button class="btn-accion btn-editar" title="Editar">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
+                                <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -105,6 +108,7 @@
                             <th>Cantidad</th>
                             <th>Unidad Medida</th>
                             <th>Descripción</th>
+                            <th>Descripción Detallada</th>
                         </tr>
                     </thead>
                     <tbody id="tablaDetalle">
@@ -114,6 +118,17 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
 </div>
 
 @section Scripts {
@@ -151,6 +166,42 @@
         });
 
         const obtenerDetallesUrl = '@Url.Action("ObtenerDetalles", "Requisicion")';
+        const verPdfUrl = '@Url.Action("VerParaPdf", "Requisicion")';
+
+        function verPdf(id) {
+            window.open(verPdfUrl + '/' + id, '_blank');
+        }
+
+        let _descPanelModalTrigger = null;
+
+        function verDescDetalleModal(el) {
+            const panel = document.getElementById('desc-panel-modal');
+            const textarea = document.getElementById('desc-textarea-modal');
+
+            textarea.value = el.dataset.full || '(Sin descripción detallada)';
+
+            const rect = el.getBoundingClientRect();
+            panel.style.top = (rect.bottom + 4) + 'px';
+            panel.style.left = rect.left + 'px';
+            panel.style.minWidth = Math.max(rect.width, 320) + 'px';
+            panel.style.display = 'block';
+
+            _descPanelModalTrigger = el;
+            textarea.focus();
+        }
+
+        function cerrarDescPanelModal() {
+            document.getElementById('desc-panel-modal').style.display = 'none';
+            _descPanelModalTrigger = null;
+        }
+
+        $(document).on('mousedown', function (e) {
+            if (!_descPanelModalTrigger) return;
+            const panel = document.getElementById('desc-panel-modal');
+            if (!_descPanelModalTrigger.contains(e.target) && !panel.contains(e.target)) {
+                cerrarDescPanelModal();
+            }
+        });
 
         function verDetalle(idMaestro) {
             $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
@@ -162,6 +213,13 @@
                     contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
                 } else {
                     articulos.forEach(item => {
+                        const textoCompleto = item.descripcionDetallada || '';
+                        const textoCorto = textoCompleto.length > 28
+                            ? textoCompleto.substring(0, 28) + '…'
+                            : (textoCompleto || 'Sin descripción...');
+                        const tieneTexto = textoCompleto ? 'tiene-texto' : '';
+                        const fullEscapado = textoCompleto.replace(/"/g, '&quot;');
+
                         contenido += `
                             <tr>
                                 <td>${item.numPartida}</td>
@@ -169,6 +227,12 @@
                                 <td>${item.cantidad}</td>
                                 <td>${item.unidadMedida}</td>
                                 <td>${item.descripcion}</td>
+                                <td>
+                                    <div class="desc-preview-modal" data-full="${fullEscapado}" onclick="verDescDetalleModal(this)">
+                                        <span class="desc-texto-preview ${tieneTexto}">${textoCorto}</span>
+                                        <i class="fa-solid fa-eye desc-icon"></i>
+                                    </div>
+                                </td>
                             </tr>`;
                     });
                 }

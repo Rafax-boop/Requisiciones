@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,12 +16,14 @@ namespace Inventario.BLL.Implementacion
         private readonly IRequisicionRepository _repositoryRequisicion;
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
+        private readonly IGenericRepository<TblDepartamento> _repositoryDepartamento;
 
         public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
             _repositoryBitacora = repositoryBitacora;
+            _repositoryDepartamento = repositoryDepartamento;
         }
 
         public async Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
@@ -108,13 +110,56 @@ namespace Inventario.BLL.Implementacion
                     IdArticulo = r.IdArticulo,
                     Cantidad = r.Cantidad,
                     UnidadMedida = r.UnidadMedida,
-                    Descripcion = r.Descripcion
+                    Descripcion = r.Descripcion,
+                    DescripcionDetallada = r.DescripcionDetallada
                 })
                 .ToListAsync();
 
             return new DetallesRequiDTO
             {
                 Articulos = lista
+            };
+        }
+
+        public async Task<RequisicionCompletaDTO?> ObtenerRequisicionCompletaPorId(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return null;
+
+            string? nombreDepartamento = null;
+            if (requisicion.IdDepartamento.HasValue)
+            {
+                var departamento = await _repositoryDepartamento.Obtener(d => d.IdDepartamento == requisicion.IdDepartamento.Value);
+                nombreDepartamento = departamento?.NombreDepartamento;
+            }
+
+            var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
+            var articulos = await queryDetalles
+                .Select(r => new DetalleArticuloDTO
+                {
+                    NumPartida = r.NumPartida,
+                    IdArticulo = r.IdArticulo,
+                    Cantidad = r.Cantidad,
+                    UnidadMedida = r.UnidadMedida,
+                    Descripcion = r.Descripcion,
+                    DescripcionDetallada = r.DescripcionDetallada
+                })
+                .ToListAsync();
+
+            return new RequisicionCompletaDTO
+            {
+                NumRequisicion = requisicion.NumRequisicion,
+                FechaEmision = requisicion.FechaEmision,
+                IdDepartamento = requisicion.IdDepartamento,
+                Departamento = nombreDepartamento ?? requisicion.IdDepartamento?.ToString(),
+                NomResponsableDepartamento = requisicion.NomResponsableDepartamento,
+                Correo = requisicion.Correo,
+                Telefono = requisicion.Telefono,
+                LugarEntrega = requisicion.LugarEntrega,
+                UsoEspecifico = requisicion.UsoEspecifico,
+                Justificacion = requisicion.Justificacion,
+                CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
+                Articulos = articulos
             };
         }
     }

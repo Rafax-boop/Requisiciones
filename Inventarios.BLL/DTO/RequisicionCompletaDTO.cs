@@ -1,0 +1,21 @@
+using System;
+using System.Collections.Generic;
+
+namespace Inventario.BLL.DTO
+{
+    public class RequisicionCompletaDTO
+    {
+        public string? NumRequisicion { get; set; }
+        public DateTime? FechaEmision { get; set; }
+        public int? IdDepartamento { get; set; }
+        public string? Departamento { get; set; }
+        public string? NomResponsableDepartamento { get; set; }
+        public string? Correo { get; set; }
+        public string? Telefono { get; set; }
+        public string? LugarEntrega { get; set; }
+        public string? UsoEspecifico { get; set; }
+        public string? Justificacion { get; set; }
+        public bool? CuentaProgramaPresupuestario { get; set; }
+        public List<DetalleArticuloDTO> Articulos { get; set; } = new();
+    }
+}

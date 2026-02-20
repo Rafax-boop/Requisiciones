@@ -1,4 +1,4 @@
-﻿/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
    📋 TABLA REQUISICIONES
 ══════════════════════════════════════════════ */
 
@@ -350,5 +350,11 @@
     border-color: #bfdbfe;
     color: #2563eb;
     background: #eff6ff;
+}
+
+.btn-pdf:hover {
+    border-color: #fca5a5;
+    color: #dc2626;
+    background: #fef2f2;
 }
 

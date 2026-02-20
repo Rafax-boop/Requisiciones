@@ -49,6 +49,7 @@ public partial class DbSigereContext : DbContext
 
     }
 
+    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TblArticulo>(entity =>

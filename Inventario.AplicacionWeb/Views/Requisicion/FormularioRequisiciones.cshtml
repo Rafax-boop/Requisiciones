@@ -1,15 +1,15 @@
-﻿@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
 @{
     ViewData["Title"] = "Crear Requisición";
 }
 
-<div class="mt-3 container" style="width:1000px;">
+<div class="mt-3 container" style="width:1300px;">
     <form asp-action="CrearRequisicion" method="post">
         <div class="info-requisicion">
             <div class="fantasma">
-                <div class="d-inline-block">
-                    <label asp-for="FechaEmision" class="m-0 info-body"></label>
-                    <input asp-for="FechaEmision" type="date" class="form-control" />
+                <div class="filtro-grupo">
+                    <label asp-for="FechaEmision" class="m-0 info-body"> Fecha de emisión:</label>
+                    <input asp-for="FechaEmision" type="text" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly />
                 </div>
             </div>
             <div class="container-info">
@@ -18,7 +18,7 @@
             <div class="requisicion-info">
                 <div class="requisicion">
                     <p class="info-body">Requisición:</p>
-                    <label class="info-body">-----------------</label>
+                    <label class="info-body"></label>
                 </div>
             </div>
         </div>
@@ -95,16 +95,32 @@
                     <label>¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
                     <div class="formulario-opciones-presupuesto">
                         <label class="opcion">
-                            <input asp-for="CuentaProgramaPresupuestario"
-                                   type="radio"
-                                   value="true" />
+                            <input asp-for="CuentaProgramaPresupuestario" type="radio" value="true" />
+                            <div class="bullet">
+                                <div class="line zero"></div>
+                                <div class="line one"></div>
+                                <div class="line two"></div>
+                                <div class="line three"></div>
+                                <div class="line four"></div>
+                                <div class="line five"></div>
+                                <div class="line six"></div>
+                                <div class="line seven"></div>
+                            </div>
                             <span>Sí</span>
                         </label>
 
                         <label class="opcion">
-                            <input asp-for="CuentaProgramaPresupuestario"
-                                   type="radio"
-                                   value="false" />
+                            <input asp-for="CuentaProgramaPresupuestario" type="radio" value="false" />
+                            <div class="bullet">
+                                <div class="line zero"></div>
+                                <div class="line one"></div>
+                                <div class="line two"></div>
+                                <div class="line three"></div>
+                                <div class="line four"></div>
+                                <div class="line five"></div>
+                                <div class="line six"></div>
+                                <div class="line seven"></div>
+                            </div>
                             <span>No</span>
                         </label>
                     </div>
@@ -148,6 +164,13 @@
     </form>
 </div>
 
+<!-- Panel global de descripción detallada — fuera de la tabla para evitar clipping -->
+<div id="desc-panel-global" style="display:none;">
+    <textarea id="desc-textarea-global"
+              class="desc-textarea"
+              placeholder="Escribe la descripción detallada aquí..."></textarea>
+</div>
+
 @section Scripts {
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -155,6 +178,15 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
 
     <script>
+        flatpickr('#fechaEmisionPicker', {
+            locale: 'es',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd / M / Y',
+            allowInput: false,
+            disableMobile: true
+        });
+
         let contadorArticulos = 0;
 
         $(document).ready(function () {
@@ -174,7 +206,7 @@
                         <select name="Articulos[${index}].IdArticulo"
                                 class="form-select select-articulo"
                                 data-index="${index}"
-                                style="width: 100%;"
+                                style="width: 240px;"
                                 required>
                         </select>
                         <input type="hidden" name="Articulos[${index}].Descripcion" class="descripcion-hidden-${index}" />
@@ -191,11 +223,16 @@
                                value="1"
                                required />
                     </td>
-                    <td>
-                        <input type="text"
-                               name="Articulos[${index}].DescripcionDetallada"
-                               class="form-control descripcion-input"
-                               required />
+                    <td class="descripcion-detallada-cell">
+                        <div class="desc-wrapper">
+                            <div class="desc-preview" onclick="expandirDesc(this)">
+                                <span class="desc-texto-preview">Sin descripción...</span>
+                                <i class="fa-solid fa-pen-to-square desc-icon"></i>
+                            </div>
+                            <input type="hidden"
+                                   name="Articulos[${index}].DescripcionDetallada"
+                                   class="desc-hidden" />
+                        </div>
                     </td>
                     <td class="text-center">
                         <button type="button"
@@ -268,6 +305,69 @@
         $('#tablaArticulos').on('input', '.cantidad-input', function () {
             const index = $(this).data('index');
             calcularSubtotal(index);
+        });
+
+        // ── Descripción Detallada Expansible ──
+        // El panel vive en el <body> (fuera de la tabla) para evitar clipping por overflow de la tabla.
+
+        let _descWrapperActivo = null;
+
+        function expandirDesc(previewEl) {
+            // Si ya hay otro abierto, colapsarlo primero
+            if (_descWrapperActivo && _descWrapperActivo !== previewEl.closest('.desc-wrapper')) {
+                colapsarDesc(_descWrapperActivo);
+            }
+
+            const wrapper = previewEl.closest('.desc-wrapper');
+            const hidden = wrapper.querySelector('.desc-hidden');
+            const panel = document.getElementById('desc-panel-global');
+            const textarea = document.getElementById('desc-textarea-global');
+
+            _descWrapperActivo = wrapper;
+            textarea.value = hidden.value;
+
+            // Posicionar el panel usando coordenadas fijas en viewport
+            const rect = previewEl.getBoundingClientRect();
+            panel.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+            panel.style.left = rect.left + 'px';
+            panel.style.minWidth = Math.max(rect.width, 320) + 'px';
+            panel.style.display = 'block';
+
+            previewEl.style.visibility = 'hidden';
+            textarea.focus();
+        }
+
+        function colapsarDesc(wrapper) {
+            if (!wrapper) return;
+            const preview = wrapper.querySelector('.desc-preview');
+            const hidden = wrapper.querySelector('.desc-hidden');
+            const span = wrapper.querySelector('.desc-texto-preview');
+            const panel = document.getElementById('desc-panel-global');
+            const textarea = document.getElementById('desc-textarea-global');
+
+            const valor = textarea.value.trim();
+            hidden.value = valor;
+
+            if (valor) {
+                span.textContent = valor.length > 40 ? valor.substring(0, 40) + '…' : valor;
+                span.classList.add('tiene-texto');
+            } else {
+                span.textContent = 'Sin descripción...';
+                span.classList.remove('tiene-texto');
+            }
+
+            panel.style.display = 'none';
+            preview.style.visibility = '';
+            _descWrapperActivo = null;
+        }
+
+        // Cerrar al hacer clic fuera
+        $(document).on('mousedown', function (e) {
+            if (!_descWrapperActivo) return;
+            const panel = document.getElementById('desc-panel-global');
+            if (!_descWrapperActivo.contains(e.target) && !panel.contains(e.target)) {
+                colapsarDesc(_descWrapperActivo);
+            }
         });
 
         // Validación del formulario

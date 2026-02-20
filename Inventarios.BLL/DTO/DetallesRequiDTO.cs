@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,5 +18,6 @@ namespace Inventario.BLL.DTO
         public decimal? Cantidad { get; set; }
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }
+        public string? DescripcionDetallada { get; set; }
     }
 }
