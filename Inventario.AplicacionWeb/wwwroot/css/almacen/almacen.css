@@ -1,0 +1,272 @@
+/* ══════════════════════════════════════════════
+   ALMACÉN — Estilos específicos de la vista
+   (Reutiliza tabla-requi-*, tabla-requisiciones, modal-premium, stat-card, etc.)
+══════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────
+   PESTAÑAS DE PÁGINA (Requisiciones | Inventario | Reportes)
+────────────────────────────────────────── */
+.almacen-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--slate-200);
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 10;
+}
+
+.almacen-tabs-btn {
+    padding: 12px 24px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all 0.25s var(--ease-premium);
+}
+
+.almacen-tabs-btn:hover {
+    color: var(--rosa-500);
+}
+
+.almacen-tabs-btn.activo {
+    border-bottom-color: var(--rosa-500);
+    color: var(--rosa-500);
+    background: var(--rosa-50);
+}
+
+/* ──────────────────────────────────────────
+   CONTENIDO POR PESTAÑA (mostrar/ocultar)
+────────────────────────────────────────── */
+.almacen-tab-panel {
+    display: none;
+}
+
+.almacen-tab-panel.activo {
+    display: block;
+}
+
+/* Stats en pestaña Requisiciones (reutiliza .stat-card de home; opcional ajuste de margen) */
+.almacen-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+/* ──────────────────────────────────────────
+   MODAL ALMACÉN — Tabs internos (Verificación | Detalles | Observaciones)
+────────────────────────────────────────── */
+.almacen-modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--slate-200);
+    background: var(--slate-50);
+    padding: 0 24px 0 0;
+}
+
+.almacen-modal-tabs-btn {
+    padding: 10px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-premium);
+}
+
+.almacen-modal-tabs-btn:hover {
+    color: var(--rosa-500);
+}
+
+.almacen-modal-tabs-btn.activo {
+    border-bottom-color: var(--rosa-500);
+    color: var(--rosa-500);
+}
+
+/* Pie del modal — botones Rechazar / Aprobar Parcial / Aprobar Completa */
+.almacen-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 32px;
+    border-top: 1px solid var(--rosa-100);
+    background: rgba(255, 245, 248, 0.4);
+}
+
+.almacen-modal-footer .btn-accion {
+    min-width: 100px;
+}
+
+/* Variantes de color para acciones (coherentes con variables del sitio) */
+.btn-accion.btn-almacen-rechazar:hover {
+    border-color: #fecaca;
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+.btn-accion.btn-almacen-parcial:hover {
+    border-color: #fde68a;
+    color: #d97706;
+    background: #fffbeb;
+}
+
+.btn-accion.btn-almacen-aprobar:hover {
+    border-color: #a7f3d0;
+    color: #059669;
+    background: #ecfdf5;
+}
+
+/* ──────────────────────────────────────────
+   BADGES DE SITUACIÓN (Inventario / Verificación)
+   Verde = OK, Naranja = Stock bajo, Rojo = Sin stock
+────────────────────────────────────────── */
+.almacen-estado-ok {
+    color: #059669;
+    font-weight: 600;
+}
+
+.almacen-estado-bajo {
+    color: #d97706;
+    font-weight: 600;
+}
+
+.almacen-estado-sin-stock {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Resumen cards dentro del modal (Verificación de inventario) */
+.almacen-resumen-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.almacen-resumen-card {
+    border: 1px solid var(--slate-200);
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    min-width: 100px;
+    background: var(--slate-50);
+}
+
+.almacen-resumen-card span {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.almacen-resumen-card strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--slate-800);
+}
+
+/* Campos en modal Detalles / Observaciones */
+.almacen-campo {
+    margin-bottom: 12px;
+}
+
+.almacen-campo label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.almacen-campo input,
+.almacen-campo textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--slate-800);
+    background: var(--slate-50);
+    box-sizing: border-box;
+}
+
+.almacen-campo input:focus,
+.almacen-campo textarea:focus {
+    outline: none;
+    border-color: var(--rosa-400);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(255, 64, 129, 0.08);
+}
+
+.almacen-grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .almacen-grid2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.almacen-alerta {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--slate-700);
+    margin-bottom: 12px;
+}
+
+/* Toasts (opcional, para futura funcionalidad) */
+#almacen-toasts {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.almacen-toast {
+    padding: 10px 18px;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    background: white;
+    font-family: var(--font-body);
+    font-size: 13px;
+    box-shadow: var(--shadow-lg);
+}
+
+.almacen-toast.success {
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+}
+
+.almacen-toast.error {
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.almacen-toast.warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+}

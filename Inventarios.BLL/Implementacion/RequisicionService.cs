@@ -92,7 +92,8 @@ namespace Inventario.BLL.Implementacion
                     FechaEmision = r.FechaEmision,
                     Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
                     Responsable = r.NomResponsableDepartamento,
-                    Estatus = r.IdEstatusNavigation.NombreEstatus
+                    Estatus = r.IdEstatusNavigation.NombreEstatus,
+                    CantidadPartidas = r.TblRequisicionDetalles.Count
                 })
                 .ToListAsync();
 

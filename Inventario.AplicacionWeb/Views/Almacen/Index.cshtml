@@ -1,0 +1,342 @@
+@using Inventario.AplicacionWeb.Models.ViewModels
+@model VMAlmacenIndex
+@{
+    ViewData["Title"] = "Almacen";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+}
+
+<div class="tabla-requi-page">
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="tabla-requi-titulo">Departamento de Almacén</h1>
+            <p class="tabla-requi-subtitulo">DIF Puebla · Sistema de Requisiciones</p>
+        </div>
+    </div>
+
+    <nav class="almacen-tabs">
+        <button type="button" class="almacen-tabs-btn activo" data-tab="requisiciones">Requisiciones Recibidas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="reportes">Reportes</button>
+    </nav>
+
+    <!-- Pestaña Requisiciones Recibidas -->
+    <div id="tab-requisiciones" class="almacen-tab-panel activo">
+        @{
+            var pendientes = Model.Requisiciones.Count(r => r.Estatus == "Pendiente");
+            var enProceso = Model.Requisiciones.Count(r => r.Estatus == "En Análisis" || r.Estatus == "Verificando Inventario");
+            var aprobadas = Model.Requisiciones.Count(r => r.Estatus == "Aprobada" || r.Estatus == "Aprobada Parcial");
+        }
+        <div class="almacen-stats">
+            <div class="stat-card"><div class="stat-numero">@pendientes</div><div class="stat-label">Pendientes</div></div>
+            <div class="stat-card"><div class="stat-numero">@enProceso</div><div class="stat-label">En Proceso</div></div>
+            <div class="stat-card"><div class="stat-numero">@aprobadas</div><div class="stat-label">Aprobadas</div></div>
+        </div>
+        <div class="container-formulario filtros-container">
+            <div class="filtro-grupo" style="flex: 2;">
+                <label>Buscar</label>
+                <input type="text" id="filtroBuscar" placeholder="Buscar por folio, departamento o responsable..." />
+            </div>
+            <div class="filtro-grupo">
+                <label>Estado</label>
+                <select id="filtroEstado">
+                    <option value="">Todos los estados</option>
+                    @foreach (var e in Model.Estatus)
+                    {
+                        <option value="@e">@e</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaRequisiciones">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha Emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var idx = 0; }
+                    @foreach (var r in Model.Requisiciones.OrderBy(x => x.FechaEmision))
+                    {
+                        idx++;
+                        <tr data-id="@r.IdRequi" data-folio="@r.NumRequi" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")">
+                            <td style="text-align:center">@idx</td>
+                            <td><span class="folio-badge">@r.NumRequi</span></td>
+                            <td>@r.FechaEmision?.ToString("dd/MM/yyyy")</td>
+                            <td>@r.Departamento</td>
+                            <td>@r.Responsable</td>
+                            <td style="text-align:center">@r.CantidadPartidas</td>
+                            <td>@r.Estatus</td>
+                            <td>
+                                <div class="acciones-grupo">
+                                    <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi" data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
+                                        <i class="fa-solid fa-magnifying-glass"></i> Analizar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Requisiciones.Any())
+                    {
+                        <tr class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña Inventario -->
+    <div id="tab-inventario" class="almacen-tab-panel">
+        <div class="container-formulario filtros-container">
+            <div class="filtro-grupo">
+                <label>Unidad de medida</label>
+                <select id="filtroUnidadMedida">
+                    <option value="">Todas las unidades</option>
+                    @foreach (var u in Model.UnidadesMedida)
+                    {
+                        <option value="@u">@u</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaInventario">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Unidad</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Situación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var i in Model.Inventario)
+                    {
+                        var claseSituacion = i.Situacion == "Sin stock" ? "almacen-estado-sin-stock" : i.Situacion == "Stock bajo" ? "almacen-estado-bajo" : "almacen-estado-ok";
+                        <tr data-unidad="@(i.UnidadMedida ?? "")">
+                            <td>@i.Descripcion</td>
+                            <td>@i.UnidadMedida</td>
+                            <td class="@claseSituacion"><strong>@i.Existencia</strong></td>
+                            <td>@i.Minimo</td>
+                            <td class="@claseSituacion">@i.Situacion</td>
+                        </tr>
+                    }
+                    @if (!Model.Inventario.Any())
+                    {
+                        <tr><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña Reportes -->
+    <div id="tab-reportes" class="almacen-tab-panel">
+        @{
+            var totalReq = Model.Requisiciones.Count;
+            var porEstado = Model.Requisiciones.GroupBy(r => r.Estatus ?? "").Where(g => !string.IsNullOrEmpty(g.Key)).ToList();
+        }
+        <h4 class="mb-3" style="font-family: var(--font-display); color: var(--slate-700);">Distribución por Estado</h4>
+        <div class="container-formulario tabla-container" style="max-width: 500px;">
+            <table class="tabla-requisiciones">
+                <thead>
+                    <tr><th>Estado</th><th>Cantidad</th><th>%</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var g in porEstado)
+                    {
+                        var pct = totalReq > 0 ? ((double)g.Count() / totalReq * 100).ToString("F0") : "0";
+                        <tr><td>@g.Key</td><td>@g.Count()</td><td>@pct%</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <h4 class="mb-3 mt-4" style="font-family: var(--font-display); color: var(--slate-700);">Resumen General</h4>
+        <div class="container-formulario tabla-container" style="max-width: 500px;">
+            <table class="tabla-requisiciones">
+                <tbody>
+                    <tr><td>Total requisiciones</td><td><strong>@totalReq</strong></td></tr>
+                    <tr><td>Items solicitados en total</td><td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td></tr>
+                    <tr><td>Materiales en catálogo</td><td><strong>@Model.Inventario.Count</strong></td></tr>
+                    <tr><td>Materiales sin stock</td><td><strong class="almacen-estado-sin-stock">@Model.Inventario.Count(i => i.Situacion == "Sin stock")</strong></td></tr>
+                    <tr><td>Materiales con stock bajo</td><td><strong class="almacen-estado-bajo">@Model.Inventario.Count(i => i.Situacion == "Stock bajo")</strong></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal análisis (Bootstrap + modal-premium) -->
+<div class="modal" id="modalAlmacen" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalAlmacenTitulo">—</h5>
+                    <p class="modal-subtitulo-premium" id="modalAlmacenSubtitulo">Estado: —</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="almacen-modal-tabs">
+                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de Inventario</button>
+                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
+                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
+            </div>
+            <div class="modal-body modal-body-premium" id="modalAlmacenBody">
+                <p class="text-muted">Cargando...</p>
+            </div>
+            <div class="almacen-modal-footer">
+                <button type="button" class="btn-accion" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn-accion btn-almacen-rechazar">Rechazar</button>
+                <button type="button" class="btn-accion btn-almacen-parcial">Aprobar Parcial</button>
+                <button type="button" class="btn-accion btn-almacen-aprobar">Aprobar Completa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const tabPanels = document.querySelectorAll('.almacen-tab-panel');
+            const tabBtns = document.querySelectorAll('.almacen-tabs-btn');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const tab = this.getAttribute('data-tab');
+                    tabBtns.forEach(b => b.classList.remove('activo'));
+                    tabPanels.forEach(p => {
+                        p.classList.remove('activo');
+                        if (p.id === 'tab-' + tab) p.classList.add('activo');
+                    });
+                    this.classList.add('activo');
+                });
+            });
+
+            // Filtro tabla requisiciones
+            const filtroBuscar = document.getElementById('filtroBuscar');
+            const filtroEstado = document.getElementById('filtroEstado');
+            const tbodyReq = document.querySelector('#tablaRequisiciones tbody');
+            if (filtroBuscar) {
+                filtroBuscar.addEventListener('input', filtrarTabla);
+            }
+            if (filtroEstado) {
+                filtroEstado.addEventListener('change', filtrarTabla);
+            }
+            function filtrarTabla() {
+                const texto = (filtroBuscar?.value || '').toLowerCase().trim();
+                const estado = (filtroEstado?.value || '').trim();
+                tbodyReq?.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const folio = (tr.getAttribute('data-folio') || '').toLowerCase();
+                    const depto = (tr.getAttribute('data-depto') || '').toLowerCase();
+                    const est = (tr.getAttribute('data-estatus') || '');
+                    const matchTexto = !texto || folio.includes(texto) || depto.includes(texto) || (tr.textContent || '').toLowerCase().includes(texto);
+                    const matchEstado = !estado || est === estado;
+                    tr.style.display = (matchTexto && matchEstado) ? '' : 'none';
+                });
+            }
+
+            // Filtro tabla inventario por unidad de medida
+            const filtroUnidadMedida = document.getElementById('filtroUnidadMedida');
+            const tbodyInv = document.querySelector('#tablaInventario tbody');
+            if (filtroUnidadMedida) {
+                filtroUnidadMedida.addEventListener('change', filtrarTablaInventario);
+            }
+            function filtrarTablaInventario() {
+                const unidad = (filtroUnidadMedida?.value || '').trim();
+                tbodyInv?.querySelectorAll('tr[data-unidad]').forEach(tr => {
+                    const unidadRow = (tr.getAttribute('data-unidad') || '').trim();
+                    const match = !unidad || unidadRow === unidad;
+                    tr.style.display = match ? '' : 'none';
+                });
+            }
+
+            // Modal: tabs internos
+            const modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
+            const modalBody = document.getElementById('modalAlmacenBody');
+            let reqCompleta = null;
+
+            modalTabsBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    if (!reqCompleta) return;
+                    modalTabsBtns.forEach(b => b.classList.remove('activo'));
+                    this.classList.add('activo');
+                    const i = parseInt(this.getAttribute('data-modal-tab'), 10);
+                    renderModalTab(i);
+                });
+            });
+
+            function renderModalTab(i) {
+                if (!reqCompleta || !modalBody) return;
+                if (i === 0) {
+                    const articulos = reqCompleta.articulos || [];
+                    let html = '<div class="almacen-resumen-cards"><div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div></div>';
+                    html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Descripción</th></tr></thead><tbody>';
+                    articulos.forEach(a => {
+                        html += '<tr><td>' + (a.descripcion || '') + '</td><td>' + (a.cantidad ?? '') + '</td><td>' + (a.unidadMedida || '') + '</td><td>' + (a.descripcionDetallada || '') + '</td></tr>';
+                    });
+                    html += '</tbody></table>';
+                    modalBody.innerHTML = html;
+                } else if (i === 1) {
+                    const r = reqCompleta;
+                    let html = '<div class="almacen-grid2"><div><h4 style="margin-top:0">Información del Solicitante</h4>';
+                    html += '<div class="almacen-campo"><label>Departamento</label><input type="text" disabled value="' + (r.departamento || '') + '" /></div>';
+                    html += '<div class="almacen-campo"><label>Responsable</label><input type="text" disabled value="' + (r.nomResponsableDepartamento || '') + '" /></div>';
+                    html += '<div class="almacen-campo"><label>Correo</label><input type="text" disabled value="' + (r.correo || '') + '" /></div>';
+                    html += '<div class="almacen-campo"><label>Teléfono</label><input type="text" disabled value="' + (r.telefono || '') + '" /></div>';
+                    html += '<div class="almacen-campo"><label>Lugar de entrega</label><input type="text" disabled value="' + (r.lugarEntrega || '') + '" /></div>';
+                    html += '</div><div><h4 style="margin-top:0">Justificación</h4>';
+                    html += '<div class="almacen-campo"><label>Uso Específico</label><textarea rows="3" disabled>' + (r.usoEspecifico || '') + '</textarea></div>';
+                    html += '<div class="almacen-campo"><label>Justificación</label><textarea rows="5" disabled>' + (r.justificacion || '') + '</textarea></div>';
+                    html += '</div></div>';
+                    modalBody.innerHTML = html;
+                } else {
+                    modalBody.innerHTML = '<div class="almacen-alerta">Las observaciones son obligatorias para rechazar una requisición.</div><div class="almacen-campo"><label>Observaciones del Almacén</label><textarea id="obs-textarea" rows="6" placeholder="Escribe observaciones..."></textarea></div>';
+                }
+            }
+
+            window.abrirModal = function (id, folio, departamento, estatus) {
+                document.getElementById('modalAlmacenTitulo').textContent = (folio || '') + ' — ' + (departamento || '');
+                document.getElementById('modalAlmacenSubtitulo').textContent = 'Estado: ' + (estatus || '');
+                modalBody.innerHTML = '<p class="text-muted">Cargando...</p>';
+                reqCompleta = null;
+                const modal = new bootstrap.Modal(document.getElementById('modalAlmacen'));
+                modal.show();
+
+                fetch('@Url.Action("ObtenerRequisicionCompleta", "Almacen")?id=' + id)
+                    .then(res => res.ok ? res.json() : Promise.reject())
+                    .then(data => {
+                        reqCompleta = data;
+                        document.querySelectorAll('.almacen-modal-tabs-btn').forEach(b => b.classList.remove('activo'));
+                        document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="0"]').classList.add('activo');
+                        renderModalTab(0);
+                    })
+                    .catch(() => {
+                        modalBody.innerHTML = '<p class="text-danger">No se pudo cargar la requisición.</p>';
+                    });
+            };
+
+            document.body.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-almacen-analizar]');
+                if (btn) {
+                    e.preventDefault();
+                    const id = parseInt(btn.getAttribute('data-id'), 10);
+                    abrirModal(id, btn.getAttribute('data-folio') || '', btn.getAttribute('data-depto') || '', btn.getAttribute('data-estatus') || '');
+                }
+            });
+        })();
+    </script>
+}

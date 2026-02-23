@@ -9,7 +9,7 @@
             <div class="fantasma">
                 <div class="filtro-grupo">
                     <label asp-for="FechaEmision" class="m-0 info-body"> Fecha de emisión:</label>
-                    <input asp-for="FechaEmision" type="date" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly value="@DateTime.Now"/>
+                    <input asp-for="FechaEmision" type="date" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly value="@DateTime.Now.ToString("yyyy-MM-dd")" />
                 </div>
             </div>
             <div class="container-info">
@@ -182,7 +182,8 @@
             locale: 'es',
             dateFormat: 'Y-m-d',
             altInput: true,
-            altFormat: 'd / M / Y',
+            altFormat: 'd / m / Y',
+            defaultDate: new Date(),
             allowInput: false,
             disableMobile: true
         });

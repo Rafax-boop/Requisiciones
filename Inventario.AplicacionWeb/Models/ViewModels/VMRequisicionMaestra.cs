@@ -1,4 +1,4 @@
-﻿namespace Inventario.AplicacionWeb.Models.ViewModels
+namespace Inventario.AplicacionWeb.Models.ViewModels
 {
     public class VMRequisicionMaestra
     {
@@ -8,5 +8,6 @@
         public string? Departamento { get; set; }
         public string? Responsable { get; set; }
         public string? Estatus { get; set; }
+        public int CantidadPartidas { get; set; }
     }
 }

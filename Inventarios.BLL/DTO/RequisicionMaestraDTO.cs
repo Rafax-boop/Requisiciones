@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,5 +14,9 @@ namespace Inventario.BLL.DTO
         public string? Departamento { get; set; }
         public string? Responsable { get; set; }
         public string? Estatus { get; set; }
+        /// <summary>
+        /// Número de partidas/artículos de la requisición (opcional, se llena en ListarRequisiciones).
+        /// </summary>
+        public int CantidadPartidas { get; set; }
     }
 }
