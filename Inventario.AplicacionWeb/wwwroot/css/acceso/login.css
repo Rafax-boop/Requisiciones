@@ -1,4 +1,4 @@
-﻿/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
    🔐 LOGIN 
 ══════════════════════════════════════════════ */
 
@@ -120,14 +120,6 @@
 
 /* ──────────────────────────────────────────
    4. INPUTS CON LABEL FLOTANTE + ÍCONO
-   
-   El label empieza dentro del input como
-   placeholder. Cuando el input tiene focus
-   o ya tiene texto (placeholder-shown trick),
-   el label sube arriba con animación.
-   
-   Es como una etiqueta que se levanta de
-   su silla cuando le hablas.
 ────────────────────────────────────────── */
 .login-campos {
     display: flex;
@@ -181,7 +173,6 @@
         box-shadow: 0 0 0 4px rgba(255, 64, 129, 0.08);
     }
 
-/* Label flotante */
 .login-input-label {
     position: absolute;
     left: 46px;
@@ -197,7 +188,6 @@
     padding: 0;
 }
 
-/* Cuando el input tiene focus o tiene texto */
 .login-input:focus ~ .login-input-label,
 .login-input:not(:placeholder-shown) ~ .login-input-label {
     top: 0;
@@ -209,7 +199,6 @@
     padding: 0 8px;
 }
 
-/* Ícono cambia de color con focus */
 .login-input:focus ~ .login-input-icono {
     color: var(--rosa-400);
 }
@@ -217,11 +206,6 @@
 
 /* ──────────────────────────────────────────
    5. BOTÓN DE INGRESO
-   
-   Igual que el boton-rosa global pero 
-   a ancho completo para el login.
-   El ícono de flecha se mueve a la derecha
-   al hacer hover — te invita a "entrar"
 ────────────────────────────────────────── */
 .login-btn {
     display: flex;
@@ -247,7 +231,6 @@
     animation: fadeUp 0.6s var(--ease-premium) 0.4s both;
 }
 
-    /* Shine effect */
     .login-btn::before {
         content: '';
         position: absolute;
@@ -268,7 +251,6 @@
             left: 100%;
         }
 
-    /* Flechita se mueve al hover */
     .login-btn i {
         transition: transform 0.3s var(--ease-premium);
     }

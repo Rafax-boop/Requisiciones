@@ -57,6 +57,124 @@
     flex-wrap: wrap;
 }
 
+/* Select2 en filtros Estado e Inventario (Unidad de medida) */
+.filtro-grupo .select2-container {
+    width: 100% !important;
+}
+
+/* Botón clear del filtro Unidad de medida: fuera a la derecha, icono FA X roja con sombra */
+.filtro-grupo-unidad .select2-container {
+    width: 100% !important;
+}
+
+.filtro-grupo-unidad .select2-selection--single {
+    position: relative !important;
+    padding-right: 16px !important;
+}
+
+.filtro-grupo-unidad .select2-selection__clear {
+    position: absolute !important;
+    right: -36px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    color: #dc2626 !important;
+    text-shadow: 0 0 8px rgba(220, 38, 38, 0.5), 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    cursor: pointer !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.filtro-grupo-unidad .select2-selection__clear:hover {
+    opacity: 0.9 !important;
+}
+
+.filtro-grupo-unidad .select2-selection__clear::after {
+    content: "\f00d" !important;
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-size: 16px !important;
+    color: #dc2626 !important;
+    text-shadow: 0 0 8px rgba(220, 38, 38, 0.5), 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Paginación tabla Inventario */
+.almacen-paginacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    margin-top: 0;
+    border-top: 1px solid var(--slate-100);
+    background: var(--slate-50);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+.almacen-paginacion-info {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-600);
+}
+
+.almacen-paginacion-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.almacen-paginacion-btn {
+    padding: 8px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    background: white;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-600);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-premium);
+}
+
+.almacen-paginacion-btn:hover:not(:disabled) {
+    border-color: var(--rosa-200);
+    color: var(--rosa-500);
+    background: var(--rosa-50);
+}
+
+.almacen-paginacion-btn.activo {
+    border-color: var(--rosa-400);
+    background: var(--rosa-50);
+    color: var(--rosa-500);
+}
+
+.almacen-paginacion-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.almacen-paginacion-nums {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.almacen-paginacion-ellipsis {
+    padding: 0 4px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--slate-400);
+    user-select: none;
+}
+
 /* ──────────────────────────────────────────
    MODAL ALMACÉN — Tabs internos (Verificación | Detalles | Observaciones)
 ────────────────────────────────────────── */

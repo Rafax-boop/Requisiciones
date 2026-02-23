@@ -1,4 +1,4 @@
-﻿/* ══════════════════════════════════════
+/* ══════════════════════════════════════
    CONTENIDO CENTRAL
 ══════════════════════════════════════ */
 .home-content {
@@ -184,7 +184,6 @@
 
 /* ══════════════════════════════════════
     STATS — Línea inferior decorativa
-    "tarjetas flotantes" con datos del sistema
 ══════════════════════════════════════ */
 .home-stats {
     display: flex;
@@ -232,9 +231,6 @@
     text-transform: uppercase;
 }
 
-/* ══════════════════════════════════════
-   ANIMACIÓN DE ENTRADA
-══════════════════════════════════════ */
 @keyframes fadeUp {
     from {
         opacity: 0;

@@ -120,7 +120,6 @@
     box-shadow 0.2s;
   user-select: none;
   text-overflow: ellipsis;
-  text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
 }

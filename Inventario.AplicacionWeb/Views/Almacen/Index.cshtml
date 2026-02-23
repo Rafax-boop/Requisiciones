@@ -6,6 +6,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page">
@@ -41,7 +42,7 @@
             </div>
             <div class="filtro-grupo">
                 <label>Estado</label>
-                <select id="filtroEstado">
+                <select id="filtroEstado" class="filtro-select-almacen">
                     <option value="">Todos los estados</option>
                     @foreach (var e in Model.Estatus)
                     {
@@ -80,7 +81,7 @@
                             <td>
                                 <div class="acciones-grupo">
                                     <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi" data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
-                                        <i class="fa-solid fa-magnifying-glass"></i> Analizar
+                                        <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </td>
@@ -98,9 +99,9 @@
     <!-- Pestaña Inventario -->
     <div id="tab-inventario" class="almacen-tab-panel">
         <div class="container-formulario filtros-container">
-            <div class="filtro-grupo">
+            <div class="filtro-grupo filtro-grupo-unidad">
                 <label>Unidad de medida</label>
-                <select id="filtroUnidadMedida">
+                <select id="filtroUnidadMedida" class="filtro-select-almacen">
                     <option value="">Todas las unidades</option>
                     @foreach (var u in Model.UnidadesMedida)
                     {
@@ -132,12 +133,10 @@
                             <td class="@claseSituacion">@i.Situacion</td>
                         </tr>
                     }
-                    @if (!Model.Inventario.Any())
-                    {
-                        <tr><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
-                    }
+                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display: none;"><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
                 </tbody>
             </table>
+            <div id="paginacionInventario" class="almacen-paginacion"></div>
         </div>
     </div>
 
@@ -209,6 +208,8 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script>
         (function () {
             const tabPanels = document.querySelectorAll('.almacen-tab-panel');
@@ -249,20 +250,92 @@
                 });
             }
 
-            // Filtro tabla inventario por unidad de medida
+            // Filtro tabla inventario por unidad de medida + paginación (15 por página)
             const filtroUnidadMedida = document.getElementById('filtroUnidadMedida');
             const tbodyInv = document.querySelector('#tablaInventario tbody');
-            if (filtroUnidadMedida) {
-                filtroUnidadMedida.addEventListener('change', filtrarTablaInventario);
+            const filaInventarioVacio = document.getElementById('filaInventarioVacio');
+            const paginacionInventario = document.getElementById('paginacionInventario');
+            const TAMANO_PAGINA_INVENTARIO = 15;
+            let paginaInventarioActual = 1;
+
+            function getFilasInventarioVisibles() {
+                var unidad = ($('#filtroUnidadMedida').val() || '').toString().trim();
+                const filas = tbodyInv ? [].slice.call(tbodyInv.querySelectorAll('tr[data-unidad]')) : [];
+                return unidad
+                    ? filas.filter(function (tr) { return (tr.getAttribute('data-unidad') || '').trim() === unidad; })
+                    : filas;
             }
+
+            function aplicarPaginacionInventario() {
+                const visibles = getFilasInventarioVisibles();
+                const total = visibles.length;
+                const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_INVENTARIO));
+                if (paginaInventarioActual > totalPaginas) paginaInventarioActual = totalPaginas;
+                const inicio = (paginaInventarioActual - 1) * TAMANO_PAGINA_INVENTARIO;
+                const fin = inicio + TAMANO_PAGINA_INVENTARIO;
+
+                if (tbodyInv) {
+                    tbodyInv.querySelectorAll('tr[data-unidad]').forEach(tr => { tr.style.display = 'none'; });
+                    visibles.forEach((tr, i) => {
+                        tr.style.display = (i >= inicio && i < fin) ? '' : 'none';
+                    });
+                }
+                if (filaInventarioVacio) {
+                    filaInventarioVacio.style.display = total === 0 ? '' : 'none';
+                }
+
+                if (paginacionInventario) {
+                    if (total === 0) {
+                        paginacionInventario.innerHTML = '';
+                        return;
+                    }
+                    var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' materiales';
+                    var html = '<div class="almacen-paginacion-info">' + info + '</div>';
+                    html += '<div class="almacen-paginacion-btns">';
+                    html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaInventarioActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
+                    html += ' <span class="almacen-paginacion-nums">';
+                    var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas;
+                    var actual = paginaInventarioActual;
+                    var set = {};
+                    for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
+                    if (actual > 0 && actual <= totalPag) {
+                        set[actual] = true;
+                        if (actual - 1 >= 1) set[actual - 1] = true;
+                        if (actual + 1 <= totalPag) set[actual + 1] = true;
+                    }
+                    for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
+                    var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+                    var prev = 0;
+                    for (var n = 0; n < nums.length; n++) {
+                        var p = nums[n];
+                        if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
+                        html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaInventarioActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
+                        prev = p;
+                    }
+                    html += '</span> ';
+                    html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaInventarioActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
+                    html += '</div>';
+                    paginacionInventario.innerHTML = html;
+
+                    paginacionInventario.querySelectorAll('.almacen-paginacion-btn').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            if (this.disabled) return;
+                            var pg = this.getAttribute('data-pagina');
+                            if (pg === 'prev') paginaInventarioActual = Math.max(1, paginaInventarioActual - 1);
+                            else if (pg === 'next') paginaInventarioActual = Math.min(totalPaginas, paginaInventarioActual + 1);
+                            else paginaInventarioActual = parseInt(pg, 10);
+                            aplicarPaginacionInventario();
+                        });
+                    });
+                }
+            }
+
             function filtrarTablaInventario() {
-                const unidad = (filtroUnidadMedida?.value || '').trim();
-                tbodyInv?.querySelectorAll('tr[data-unidad]').forEach(tr => {
-                    const unidadRow = (tr.getAttribute('data-unidad') || '').trim();
-                    const match = !unidad || unidadRow === unidad;
-                    tr.style.display = match ? '' : 'none';
-                });
+                paginaInventarioActual = 1;
+                aplicarPaginacionInventario();
             }
+
+            aplicarPaginacionInventario();
 
             // Modal: tabs internos
             const modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
@@ -336,6 +409,27 @@
                     const id = parseInt(btn.getAttribute('data-id'), 10);
                     abrirModal(id, btn.getAttribute('data-folio') || '', btn.getAttribute('data-depto') || '', btn.getAttribute('data-estatus') || '');
                 }
+            });
+
+            // Select2 para filtros Estado e Inventario (Unidad de medida)
+            $(function () {
+                $('#filtroEstado').select2({
+                    width: '100%',
+                    language: 'es',
+                    minimumResultsForSearch: Infinity,
+                    placeholder: 'Todos los estados'
+                });
+                $('#filtroUnidadMedida').select2({
+                    width: '100%',
+                    language: 'es',
+                    minimumResultsForSearch: Infinity,
+                    placeholder: 'Todas las unidades',
+                    allowClear: true
+                });
+                // Filtro inventario en tiempo real al cambiar unidad de medida (Select2 no dispara change nativo)
+                $('#filtroUnidadMedida').on('change select2:select', function () {
+                    filtrarTablaInventario();
+                });
             });
         })();
     </script>
