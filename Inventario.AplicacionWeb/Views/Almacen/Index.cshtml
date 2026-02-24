@@ -6,9 +6,10 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page">
+<div class="tabla-requi-page" data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="tabla-requi-titulo">Departamento de Almacén</h1>
@@ -41,7 +42,7 @@
             </div>
             <div class="filtro-grupo">
                 <label>Estado</label>
-                <select id="filtroEstado">
+                <select id="filtroEstado" class="filtro-select-almacen">
                     <option value="">Todos los estados</option>
                     @foreach (var e in Model.Estatus)
                     {
@@ -80,7 +81,7 @@
                             <td>
                                 <div class="acciones-grupo">
                                     <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi" data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
-                                        <i class="fa-solid fa-magnifying-glass"></i> Analizar
+                                        <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </td>
@@ -98,9 +99,9 @@
     <!-- Pestaña Inventario -->
     <div id="tab-inventario" class="almacen-tab-panel">
         <div class="container-formulario filtros-container">
-            <div class="filtro-grupo">
+            <div class="filtro-grupo filtro-grupo-unidad">
                 <label>Unidad de medida</label>
-                <select id="filtroUnidadMedida">
+                <select id="filtroUnidadMedida" class="filtro-select-almacen">
                     <option value="">Todas las unidades</option>
                     @foreach (var u in Model.UnidadesMedida)
                     {
@@ -132,12 +133,10 @@
                             <td class="@claseSituacion">@i.Situacion</td>
                         </tr>
                     }
-                    @if (!Model.Inventario.Any())
-                    {
-                        <tr><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
-                    }
+                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display: none;"><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
                 </tbody>
             </table>
+            <div id="paginacionInventario" class="almacen-paginacion"></div>
         </div>
     </div>
 
@@ -209,134 +208,7 @@
 </div>
 
 @section Scripts {
-    <script>
-        (function () {
-            const tabPanels = document.querySelectorAll('.almacen-tab-panel');
-            const tabBtns = document.querySelectorAll('.almacen-tabs-btn');
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const tab = this.getAttribute('data-tab');
-                    tabBtns.forEach(b => b.classList.remove('activo'));
-                    tabPanels.forEach(p => {
-                        p.classList.remove('activo');
-                        if (p.id === 'tab-' + tab) p.classList.add('activo');
-                    });
-                    this.classList.add('activo');
-                });
-            });
-
-            // Filtro tabla requisiciones
-            const filtroBuscar = document.getElementById('filtroBuscar');
-            const filtroEstado = document.getElementById('filtroEstado');
-            const tbodyReq = document.querySelector('#tablaRequisiciones tbody');
-            if (filtroBuscar) {
-                filtroBuscar.addEventListener('input', filtrarTabla);
-            }
-            if (filtroEstado) {
-                filtroEstado.addEventListener('change', filtrarTabla);
-            }
-            function filtrarTabla() {
-                const texto = (filtroBuscar?.value || '').toLowerCase().trim();
-                const estado = (filtroEstado?.value || '').trim();
-                tbodyReq?.querySelectorAll('tr[data-id]').forEach(tr => {
-                    const folio = (tr.getAttribute('data-folio') || '').toLowerCase();
-                    const depto = (tr.getAttribute('data-depto') || '').toLowerCase();
-                    const est = (tr.getAttribute('data-estatus') || '');
-                    const matchTexto = !texto || folio.includes(texto) || depto.includes(texto) || (tr.textContent || '').toLowerCase().includes(texto);
-                    const matchEstado = !estado || est === estado;
-                    tr.style.display = (matchTexto && matchEstado) ? '' : 'none';
-                });
-            }
-
-            // Filtro tabla inventario por unidad de medida
-            const filtroUnidadMedida = document.getElementById('filtroUnidadMedida');
-            const tbodyInv = document.querySelector('#tablaInventario tbody');
-            if (filtroUnidadMedida) {
-                filtroUnidadMedida.addEventListener('change', filtrarTablaInventario);
-            }
-            function filtrarTablaInventario() {
-                const unidad = (filtroUnidadMedida?.value || '').trim();
-                tbodyInv?.querySelectorAll('tr[data-unidad]').forEach(tr => {
-                    const unidadRow = (tr.getAttribute('data-unidad') || '').trim();
-                    const match = !unidad || unidadRow === unidad;
-                    tr.style.display = match ? '' : 'none';
-                });
-            }
-
-            // Modal: tabs internos
-            const modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
-            const modalBody = document.getElementById('modalAlmacenBody');
-            let reqCompleta = null;
-
-            modalTabsBtns.forEach(btn => {
-                btn.addEventListener('click', function () {
-                    if (!reqCompleta) return;
-                    modalTabsBtns.forEach(b => b.classList.remove('activo'));
-                    this.classList.add('activo');
-                    const i = parseInt(this.getAttribute('data-modal-tab'), 10);
-                    renderModalTab(i);
-                });
-            });
-
-            function renderModalTab(i) {
-                if (!reqCompleta || !modalBody) return;
-                if (i === 0) {
-                    const articulos = reqCompleta.articulos || [];
-                    let html = '<div class="almacen-resumen-cards"><div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div></div>';
-                    html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Descripción</th></tr></thead><tbody>';
-                    articulos.forEach(a => {
-                        html += '<tr><td>' + (a.descripcion || '') + '</td><td>' + (a.cantidad ?? '') + '</td><td>' + (a.unidadMedida || '') + '</td><td>' + (a.descripcionDetallada || '') + '</td></tr>';
-                    });
-                    html += '</tbody></table>';
-                    modalBody.innerHTML = html;
-                } else if (i === 1) {
-                    const r = reqCompleta;
-                    let html = '<div class="almacen-grid2"><div><h4 style="margin-top:0">Información del Solicitante</h4>';
-                    html += '<div class="almacen-campo"><label>Departamento</label><input type="text" disabled value="' + (r.departamento || '') + '" /></div>';
-                    html += '<div class="almacen-campo"><label>Responsable</label><input type="text" disabled value="' + (r.nomResponsableDepartamento || '') + '" /></div>';
-                    html += '<div class="almacen-campo"><label>Correo</label><input type="text" disabled value="' + (r.correo || '') + '" /></div>';
-                    html += '<div class="almacen-campo"><label>Teléfono</label><input type="text" disabled value="' + (r.telefono || '') + '" /></div>';
-                    html += '<div class="almacen-campo"><label>Lugar de entrega</label><input type="text" disabled value="' + (r.lugarEntrega || '') + '" /></div>';
-                    html += '</div><div><h4 style="margin-top:0">Justificación</h4>';
-                    html += '<div class="almacen-campo"><label>Uso Específico</label><textarea rows="3" disabled>' + (r.usoEspecifico || '') + '</textarea></div>';
-                    html += '<div class="almacen-campo"><label>Justificación</label><textarea rows="5" disabled>' + (r.justificacion || '') + '</textarea></div>';
-                    html += '</div></div>';
-                    modalBody.innerHTML = html;
-                } else {
-                    modalBody.innerHTML = '<div class="almacen-alerta">Las observaciones son obligatorias para rechazar una requisición.</div><div class="almacen-campo"><label>Observaciones del Almacén</label><textarea id="obs-textarea" rows="6" placeholder="Escribe observaciones..."></textarea></div>';
-                }
-            }
-
-            window.abrirModal = function (id, folio, departamento, estatus) {
-                document.getElementById('modalAlmacenTitulo').textContent = (folio || '') + ' — ' + (departamento || '');
-                document.getElementById('modalAlmacenSubtitulo').textContent = 'Estado: ' + (estatus || '');
-                modalBody.innerHTML = '<p class="text-muted">Cargando...</p>';
-                reqCompleta = null;
-                const modal = new bootstrap.Modal(document.getElementById('modalAlmacen'));
-                modal.show();
-
-                fetch('@Url.Action("ObtenerRequisicionCompleta", "Almacen")?id=' + id)
-                    .then(res => res.ok ? res.json() : Promise.reject())
-                    .then(data => {
-                        reqCompleta = data;
-                        document.querySelectorAll('.almacen-modal-tabs-btn').forEach(b => b.classList.remove('activo'));
-                        document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="0"]').classList.add('activo');
-                        renderModalTab(0);
-                    })
-                    .catch(() => {
-                        modalBody.innerHTML = '<p class="text-danger">No se pudo cargar la requisición.</p>';
-                    });
-            };
-
-            document.body.addEventListener('click', function (e) {
-                const btn = e.target.closest('[data-almacen-analizar]');
-                if (btn) {
-                    e.preventDefault();
-                    const id = parseInt(btn.getAttribute('data-id'), 10);
-                    abrirModal(id, btn.getAttribute('data-folio') || '', btn.getAttribute('data-depto') || '', btn.getAttribute('data-estatus') || '');
-                }
-            });
-        })();
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
 }
