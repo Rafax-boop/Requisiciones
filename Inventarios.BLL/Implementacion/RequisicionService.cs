@@ -30,7 +30,7 @@ namespace Inventario.BLL.Implementacion
         {
             var requisicion = new TblRequisicion
             {
-                FechaEmision = modelo.FechaEmision,
+                FechaEmision = DateOnly.FromDateTime(DateTime.Now),
                 IdDepartamento = modelo.IdDepartamento,
                 NomResponsableDepartamento = modelo.NomResponsableDepartamento,
                 NombreDirector = modelo.NomDirector,
@@ -80,9 +80,14 @@ namespace Inventario.BLL.Implementacion
             return true;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones()
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento)
         {
             var query = await _repositoryRequisicion.Consultar();
+
+            if (idDepartamento < 110)
+            {
+                query = await _repositoryRequisicion.Consultar(r => r.IdDepartamento == idDepartamento);
+            }
 
             var resultado = await query
                 .Select(r => new RequisicionMaestraDTO

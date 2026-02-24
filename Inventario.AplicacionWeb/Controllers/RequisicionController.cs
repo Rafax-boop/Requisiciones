@@ -39,7 +39,8 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public async Task<IActionResult> TablaRequisiciones()
         {
-            var listaDTO = await _requisicionService.ListarRequisiciones();
+            int idDepartamento = int.Parse(User.FindFirst("IdDepartamento")?.Value);
+            var listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
             var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
             return View(viewModel);
         }

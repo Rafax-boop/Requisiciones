@@ -8,8 +8,8 @@
         <div class="info-requisicion">
             <div class="fantasma">
                 <div class="filtro-grupo">
-                    <label asp-for="FechaEmision" class="m-0 info-body"> Fecha de emisión:</label>
-                    <input asp-for="FechaEmision" type="date" id="fechaEmisionPicker" placeholder="Seleccionar fecha" readonly value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <label class="m-0 info-body">Fecha de emisión:</label>
+                    <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
                 </div>
             </div>
             <div class="container-info">
@@ -52,7 +52,7 @@
             <div class="seccion-completa">
                 <div class="formulario-input">
                     <label>Lugar de entrega:</label>
-                    <input type="text" name="LugarEntrega" placeholder="Dirección o área de entrega" />
+                    <input type="text" name="LugarEntrega" placeholder="Dirección o área de entrega" readonly value="ALMACEN GENERAL"/>
                 </div>
                 <div class="formulario-input">
                     <label>Uso específico del material:</label>
@@ -64,30 +64,6 @@
                 </div>
             </div>
         </div>
-
-        @* <div class="container-formulario">
-            <div class="seccion-1">
-                <div class="formulario-input">
-                    <label>Periodo del uso del material:</label>
-                    <input type="text" placeholder="Ej: Enero - Diciembre" />
-                </div>
-            </div>
-            <div class="seccion-2">
-                <div class="formulario-input">
-                    <label>Anual / Mensual:</label>
-                    <div class="formulario-opciones">
-                        <label class="opcion">
-                            <input type="radio" value="anual" />
-                            <span>Anual</span>
-                        </label>
-                        <label class="opcion">
-                            <input type="radio" value="mensual" />
-                            <span>Mensual</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div> *@
 
         <div class="container-formulario">
             <div class="seccion-completa text-center">
@@ -178,15 +154,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
 
     <script>
-        flatpickr('#fechaEmisionPicker', {
-            locale: 'es',
-            dateFormat: 'Y-m-d',
-            altInput: true,
-            altFormat: 'd / m / Y',
-            defaultDate: new Date(),
-            allowInput: false,
-            disableMobile: true
-        });
 
         let contadorArticulos = 0;
 

@@ -22,9 +22,6 @@ namespace Inventario.DAL.Implementacion
 
         public async Task<TblRequisicion> CrearConFolio(TblRequisicion requisicion)
         {
-            // Abrimos transacción con nivel Serializable
-            // esto bloquea para que nadie más pueda leer el consecutivo
-            // hasta que esta transacción termine
             using var transaction = await _dbContext.Database
                 .BeginTransactionAsync(IsolationLevel.Serializable);
             try

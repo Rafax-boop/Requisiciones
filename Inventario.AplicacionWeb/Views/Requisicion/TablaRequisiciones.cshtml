@@ -64,9 +64,12 @@
                                 <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
-                                <button class="btn-accion btn-editar" title="Editar">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
+                                @if (item.Estatus == "REQUISICION MODIFICACIÓN")
+                                {
+                                    <button class="btn-accion btn-editar" title="Editar">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                }
                                 <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                     <i class="fa-solid fa-file-pdf"></i>
                                 </button>

@@ -29,7 +29,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var requisicionesDto = await _requisicionService.ListarRequisiciones();
+            var requisicionesDto = await _requisicionService.ListarRequisiciones(110);
             var requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisicionesDto);
 
             var queryInv = await _repoInventario.Consultar();
