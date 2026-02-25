@@ -3,11 +3,13 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
+    [Authorize(Roles = "2,3,4")]
     public class AlmacenController : Controller
     {
         private readonly IRequisicionesService _requisicionService;

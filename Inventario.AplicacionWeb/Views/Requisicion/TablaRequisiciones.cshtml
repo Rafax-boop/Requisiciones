@@ -10,9 +10,12 @@
             <h1 class="tabla-requi-titulo">Requisiciones</h1>
             <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones</p>
         </div>
-        <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
-            <i class="fa-solid fa-plus"></i> Nueva Requisición
-        </a>
+        @if (User.IsInRole("1"))
+        {
+            <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
+                <i class="fa-solid fa-plus"></i> Nueva Requisición
+            </a>
+        }
     </div>
 
     <div class="container-formulario filtros-container">
@@ -64,7 +67,7 @@
                                 <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
-                                @if (item.Estatus == "REQUISICION MODIFICACIÓN")
+                                @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                 {
                                     <button class="btn-accion btn-editar" title="Editar">
                                         <i class="fa-solid fa-pen"></i>
@@ -86,7 +89,7 @@
 <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
         <div class="modal-content modal-premium">
-            <div class="modal-header modal-header-premium">
+            <div class="modal-header modal-header-premium">         
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
                     <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
@@ -101,11 +104,12 @@
                         <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
                         <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
                     </a>
-                    @if (DateTime.Now.Day <= 5) {
-                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })" class="btn btn-secondary-nueva">
-                        <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
-                        <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del mes</small></span>
-                    </a>
+                    @if (DateTime.Now.Day <= 5 || int.TryParse(User.FindFirst("IdDepartamento")?.Value, out int idDep) && idDep == 29)
+                    {
+                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })" class="btn btn-secondary-nueva">
+                            <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
+                            <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del mes</small></span>
+                        </a>
                     }
                     <button type="button" class="btn btn-ghost-nueva" title="Próximamente">
                         <span class="btn-icon-nueva"><i class="fa-solid fa-wrench"></i></span>

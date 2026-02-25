@@ -3,12 +3,14 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
+    [Authorize]
     public class RequisicionController : Controller
     {
         private readonly IRequisicionesService _requisicionService;
@@ -51,6 +53,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
             var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
+            
             return View(viewModel);
         }
 
@@ -74,6 +77,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
                 NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                NomDirector = dto.NomDirector,
                 Correo = dto.Correo,
                 Telefono = dto.Telefono,
                 LugarEntrega = dto.LugarEntrega,

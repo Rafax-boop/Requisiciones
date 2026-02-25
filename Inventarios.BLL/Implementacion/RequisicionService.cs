@@ -159,6 +159,7 @@ namespace Inventario.BLL.Implementacion
                 IdDepartamento = requisicion.IdDepartamento,
                 Departamento = nombreDepartamento ?? requisicion.IdDepartamento?.ToString(),
                 NomResponsableDepartamento = requisicion.NomResponsableDepartamento,
+                NomDirector = requisicion.NombreDirector,
                 Correo = requisicion.Correo,
                 Telefono = requisicion.Telefono,
                 LugarEntrega = requisicion.LugarEntrega,
