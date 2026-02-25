@@ -32,18 +32,110 @@
     if (filtroEstado) {
         filtroEstado.addEventListener('change', filtrarTabla);
     }
-    function filtrarTabla() {
+    // Paginación tabla requisiciones (7 por página)
+    const filaRequisicionesVacia = tbodyReq ? tbodyReq.querySelector('.fila-vacia') : null;
+    const paginacionRequisiciones = document.getElementById('paginacionRequisiciones');
+    const TAMANO_PAGINA_REQUISICIONES = 7;
+    let paginaRequisicionActual = 1;
+
+    function getFilasRequisicionesVisibles() {
         const texto = (filtroBuscar?.value || '').toLowerCase().trim();
         const estado = (filtroEstado?.value || '').trim();
-        tbodyReq?.querySelectorAll('tr[data-id]').forEach(tr => {
+        const filas = tbodyReq ? [].slice.call(tbodyReq.querySelectorAll('tr[data-id]')) : [];
+
+        return filas.filter(function (tr) {
             const folio = (tr.getAttribute('data-folio') || '').toLowerCase();
             const depto = (tr.getAttribute('data-depto') || '').toLowerCase();
             const est = (tr.getAttribute('data-estatus') || '');
             const matchTexto = !texto || folio.includes(texto) || depto.includes(texto) || (tr.textContent || '').toLowerCase().includes(texto);
             const matchEstado = !estado || est === estado;
-            tr.style.display = (matchTexto && matchEstado) ? '' : 'none';
+            return matchTexto && matchEstado;
         });
     }
+
+    function aplicarPaginacionRequisiciones() {
+        const visibles = getFilasRequisicionesVisibles();
+        const total = visibles.length;
+        const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_REQUISICIONES));
+        if (paginaRequisicionActual > totalPaginas) paginaRequisicionActual = totalPaginas;
+        const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
+        const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
+
+        if (tbodyReq) {
+            tbodyReq.querySelectorAll('tr[data-id]').forEach(tr => { tr.style.display = 'none'; });
+            visibles.forEach((tr, i) => {
+                tr.style.display = (i >= inicio && i < fin) ? '' : 'none';
+            });
+        }
+
+        // Manejar el mensaje vacio si existiera, o añadir uno si no
+        let trVacio = tbodyReq ? tbodyReq.querySelector('.fila-vacia') : null;
+        if (total === 0) {
+            if (!trVacio && tbodyReq) {
+                trVacio = document.createElement('tr');
+                trVacio.className = 'fila-vacia';
+                trVacio.innerHTML = '<td colspan="8" class="text-center">No hay requisiciones</td>';
+                tbodyReq.appendChild(trVacio);
+            } else if (trVacio) {
+                trVacio.style.display = '';
+            }
+        } else if (trVacio) {
+            trVacio.style.display = 'none';
+        }
+
+        if (paginacionRequisiciones) {
+            if (total === 0) {
+                paginacionRequisiciones.innerHTML = '';
+                return;
+            }
+            var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' requisiciones';
+            var html = '<div class="almacen-paginacion-info">' + info + '</div>';
+            html += '<div class="almacen-paginacion-btns">';
+            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaRequisicionActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
+            html += ' <span class="almacen-paginacion-nums">';
+            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas;
+            var actual = paginaRequisicionActual;
+            var set = {};
+            for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
+            if (actual > 0 && actual <= totalPag) {
+                set[actual] = true;
+                if (actual - 1 >= 1) set[actual - 1] = true;
+                if (actual + 1 <= totalPag) set[actual + 1] = true;
+            }
+            for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
+            var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+            var prev = 0;
+            for (var n = 0; n < nums.length; n++) {
+                var p = nums[n];
+                if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
+                html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaRequisicionActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
+                prev = p;
+            }
+            html += '</span> ';
+            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaRequisicionActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
+            html += '</div>';
+            paginacionRequisiciones.innerHTML = html;
+
+            paginacionRequisiciones.querySelectorAll('.almacen-paginacion-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (this.disabled) return;
+                    var pg = this.getAttribute('data-pagina');
+                    if (pg === 'prev') paginaRequisicionActual = Math.max(1, paginaRequisicionActual - 1);
+                    else if (pg === 'next') paginaRequisicionActual = Math.min(totalPaginas, paginaRequisicionActual + 1);
+                    else paginaRequisicionActual = parseInt(pg, 10);
+                    aplicarPaginacionRequisiciones();
+                });
+            });
+        }
+    }
+
+    function filtrarTabla() {
+        paginaRequisicionActual = 1;
+        aplicarPaginacionRequisiciones();
+    }
+
+    // Inicializar paginación de requisiciones
+    aplicarPaginacionRequisiciones();
 
     // Filtro tabla inventario por unidad de medida + paginación (15 por página)
     const filtroUnidadMedida = document.getElementById('filtroUnidadMedida');

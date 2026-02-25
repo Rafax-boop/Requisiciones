@@ -31,9 +31,18 @@
             var aprobadas = Model.Requisiciones.Count(r => r.Estatus == "Aprobada" || r.Estatus == "Aprobada Parcial");
         }
         <div class="almacen-stats">
-            <div class="stat-card"><div class="stat-numero">@pendientes</div><div class="stat-label">Pendientes</div></div>
-            <div class="stat-card"><div class="stat-numero">@enProceso</div><div class="stat-label">En Proceso</div></div>
-            <div class="stat-card"><div class="stat-numero">@aprobadas</div><div class="stat-label">Aprobadas</div></div>
+            <div class="stat-card">
+                <div class="stat-numero">@pendientes</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-numero">@enProceso</div>
+                <div class="stat-label">En Proceso</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-numero">@aprobadas</div>
+                <div class="stat-label">Aprobadas</div>
+            </div>
         </div>
         <div class="container-formulario filtros-container">
             <div class="filtro-grupo" style="flex: 2;">
@@ -66,11 +75,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @{ var idx = 0; }
+                    @{
+                        var idx = 0;
+                    }
                     @foreach (var r in Model.Requisiciones.OrderBy(x => x.FechaEmision))
                     {
                         idx++;
-                        <tr data-id="@r.IdRequi" data-folio="@r.NumRequi" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")">
+                        <tr data-id="@r.IdRequi" data-folio="@r.NumRequi" data-depto="@(r.Departamento ?? "")"
+                            data-estatus="@(r.Estatus ?? "")">
                             <td style="text-align:center">@idx</td>
                             <td><span class="folio-badge">@r.NumRequi</span></td>
                             <td>@r.FechaEmision?.ToString("dd/MM/yyyy")</td>
@@ -80,7 +92,9 @@
                             <td>@r.Estatus</td>
                             <td>
                                 <div class="acciones-grupo">
-                                    <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi" data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")" data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
+                                    <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi"
+                                            data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")"
+                                            data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -89,10 +103,13 @@
                     }
                     @if (!Model.Requisiciones.Any())
                     {
-                        <tr class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones</td></tr>
+                        <tr class="fila-vacia">
+                            <td colspan="8" class="text-center">No hay requisiciones</td>
+                        </tr>
                     }
                 </tbody>
             </table>
+            <div id="paginacionRequisiciones" class="almacen-paginacion"></div>
         </div>
     </div>
 
@@ -133,7 +150,9 @@
                             <td class="@claseSituacion">@i.Situacion</td>
                         </tr>
                     }
-                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display: none;"><td colspan="5" class="text-center">No hay registros de inventario</td></tr>
+                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display: none;">
+                        <td colspan="5" class="text-center">No hay registros de inventario</td>
+                    </tr>
                 </tbody>
             </table>
             <div id="paginacionInventario" class="almacen-paginacion"></div>
@@ -144,19 +163,28 @@
     <div id="tab-reportes" class="almacen-tab-panel">
         @{
             var totalReq = Model.Requisiciones.Count;
-            var porEstado = Model.Requisiciones.GroupBy(r => r.Estatus ?? "").Where(g => !string.IsNullOrEmpty(g.Key)).ToList();
+            var porEstado = Model.Requisiciones.GroupBy(r => r.Estatus ?? "").Where(g =>
+        !string.IsNullOrEmpty(g.Key)).ToList();
         }
         <h4 class="mb-3" style="font-family: var(--font-display); color: var(--slate-700);">Distribución por Estado</h4>
         <div class="container-formulario tabla-container" style="max-width: 500px;">
             <table class="tabla-requisiciones">
                 <thead>
-                    <tr><th>Estado</th><th>Cantidad</th><th>%</th></tr>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Cantidad</th>
+                        <th>%</th>
+                    </tr>
                 </thead>
                 <tbody>
                     @foreach (var g in porEstado)
                     {
                         var pct = totalReq > 0 ? ((double)g.Count() / totalReq * 100).ToString("F0") : "0";
-                        <tr><td>@g.Key</td><td>@g.Count()</td><td>@pct%</td></tr>
+                        <tr>
+                            <td>@g.Key</td>
+                            <td>@g.Count()</td>
+                            <td>@pct%</td>
+                        </tr>
                     }
                 </tbody>
             </table>
@@ -165,11 +193,26 @@
         <div class="container-formulario tabla-container" style="max-width: 500px;">
             <table class="tabla-requisiciones">
                 <tbody>
-                    <tr><td>Total requisiciones</td><td><strong>@totalReq</strong></td></tr>
-                    <tr><td>Items solicitados en total</td><td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td></tr>
-                    <tr><td>Materiales en catálogo</td><td><strong>@Model.Inventario.Count</strong></td></tr>
-                    <tr><td>Materiales sin stock</td><td><strong class="almacen-estado-sin-stock">@Model.Inventario.Count(i => i.Situacion == "Sin stock")</strong></td></tr>
-                    <tr><td>Materiales con stock bajo</td><td><strong class="almacen-estado-bajo">@Model.Inventario.Count(i => i.Situacion == "Stock bajo")</strong></td></tr>
+                    <tr>
+                        <td>Total requisiciones</td>
+                        <td><strong>@totalReq</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Items solicitados en total</td>
+                        <td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Materiales en catálogo</td>
+                        <td><strong>@Model.Inventario.Count</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Materiales sin stock</td>
+                        <td><strong class="almacen-estado-sin-stock">@Model.Inventario.Count(i => i.Situacion == "Sin stock")</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Materiales con stock bajo</td>
+                        <td><strong class="almacen-estado-bajo">@Model.Inventario.Count(i => i.Situacion == "Stock bajo")</strong></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -190,25 +233,26 @@
                 </button>
             </div>
             <div class="almacen-modal-tabs">
-                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de Inventario</button>
-                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
-                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
-            </div>
-            <div class="modal-body modal-body-premium" id="modalAlmacenBody">
-                <p class="text-muted">Cargando...</p>
-            </div>
-            <div class="almacen-modal-footer">
-                <button type="button" class="btn-accion" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn-accion btn-almacen-rechazar">Rechazar</button>
-                <button type="button" class="btn-accion btn-almacen-parcial">Aprobar Parcial</button>
-                <button type="button" class="btn-accion btn-almacen-aprobar">Aprobar Completa</button>
+                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de
+                    Inventario</button>
+                    <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
+                    <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
+                </div>
+                <div class="modal-body modal-body-premium" id="modalAlmacenBody">
+                    <p class="text-muted">Cargando...</p>
+                </div>
+                <div class="almacen-modal-footer">
+                    <button type="button" class="btn-accion" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn-accion btn-almacen-rechazar">Rechazar</button>
+                    <button type="button" class="btn-accion btn-almacen-parcial">Aprobar Parcial</button>
+                    <button type="button" class="btn-accion btn-almacen-aprobar">Aprobar Completa</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
-    <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
-}
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+        <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
+    }

@@ -4,7 +4,12 @@
     ViewData["Title"] = "TablaRequisiciones";
 }
 
-<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")" data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")">
+@section Styles {
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+}
+
+<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="tabla-requi-titulo">Requisiciones</h1>
@@ -26,15 +31,14 @@
         <div class="filtro-grupo">
             <label>Fecha</label>
             <div style="display:flex; align-items:center; gap:6px;">
-                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly
-                       style="width:100%;" />
+                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly style="width:100%;" />
                 <button type="button" id="btnLimpiarFecha" onclick="limpiarFecha()"
                         style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
                         title="Limpiar fecha">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-        </div>        
+        </div>
         <div class="filtro-grupo">
             <label>Departamento</label>
             <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
@@ -69,9 +73,10 @@
                                 </button>
                                 @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                 {
-                                    <button class="btn-accion btn-editar" title="Editar">
+                                    <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
+                                           class="btn-accion btn-editar" title="Editar">
                                         <i class="fa-solid fa-pen"></i>
-                                    </button>
+                                    </a>
                                 }
                                 <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                     <i class="fa-solid fa-file-pdf"></i>
@@ -82,11 +87,13 @@
                 }
             </tbody>
         </table>
+        <div id="paginacionRequisiciones" class="almacen-paginacion"></div>
     </div>
 </div>
 
 <!-- Modal tipo de requisición (mismo estilo que Artículos de la Requisición) -->
-<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel" aria-hidden="true">
+<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
+     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">         
@@ -121,50 +128,50 @@
     </div>
 </div>
 
-<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
-            <div class="modal-header modal-header-premium">
-                <div>
-                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
-                    <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
+        <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content modal-premium">
+                    <div class="modal-header modal-header-premium">
+                        <div>
+                            <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                            <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
+                        </div>
+                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body modal-body-premium">
+                        <table class="tabla-requisiciones" id="tablaModalDetalle">
+                            <thead>
+                                <tr>
+                                    <th>Nº Partida</th>
+                                    <th>ID Artículo</th>
+                                    <th>Cantidad</th>
+                                    <th>Unidad Medida</th>
+                                    <th>Descripción</th>
+                                    <th>Descripción Detallada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaDetalle">
+                                <!-- Se carga dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+            </div>
+        </div>
+
+        <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
+        <div id="desc-panel-modal" style="display:none;">
+            <div class="desc-panel-modal-header">
+                <span class="desc-panel-modal-titulo">Descripción detallada</span>
+                <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <div class="modal-body modal-body-premium">
-                <table class="tabla-requisiciones" id="tablaModalDetalle">
-                    <thead>
-                        <tr>
-                            <th>Nº Partida</th>
-                            <th>ID Artículo</th>
-                            <th>Cantidad</th>
-                            <th>Unidad Medida</th>
-                            <th>Descripción</th>
-                            <th>Descripción Detallada</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaDetalle">
-                        <!-- Se carga dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
+            <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
         </div>
-    </div>
-</div>
 
-<!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
-<div id="desc-panel-modal" style="display:none;">
-    <div class="desc-panel-modal-header">
-        <span class="desc-panel-modal-titulo">Descripción detallada</span>
-        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
-</div>
-
-@section Scripts {
-    <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
-}
+        @section Scripts {
+            <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
+        }

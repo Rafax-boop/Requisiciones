@@ -1,8 +1,3 @@
-/**
- * Formulario de Requisiciones - Flatpickr, Select2, tabla de artículos, descripción detallada, validación
- * Requiere: jQuery, flatpickr, Select2, SweetAlert2 (según vista/layout).
- * URLs desde data-url-buscar-articulos y data-url-obtener-info-articulo en un contenedor de la página.
- */
 (function () {
     var container = document.querySelector('[data-url-buscar-articulos]');
     var urlBuscarArticulos = container ? container.getAttribute('data-url-buscar-articulos') : '';
@@ -21,8 +16,50 @@
     var contadorArticulos = 0;
 
     $(document).ready(function () {
-        agregarArticulo();
+        if (window.articulosIniciales && window.articulosIniciales.length > 0) {
+            window.articulosIniciales.forEach(function (art) {
+                cargarArticuloExistente(art);
+            });
+        } else {
+            agregarArticulo();
+        }
     });
+
+    function cargarArticuloExistente(art) {
+        var index = contadorArticulos++;
+
+        var fila = [
+            '<tr data-index="', index, '">',
+            '<td class="id-' + index + '">' + (art.idArticulo || '-') + '</td>',
+            '<td class="cog-' + index + '">' + (art.cog || '-') + '</td>',
+            '<td class="clave-' + index + '">-</td>',
+            '<td>',
+            '<select name="Articulos[' + index + '].IdArticulo" class="form-select select-articulo" data-index="' + index + '" style="width: 240px;" required></select>',
+            '<input type="hidden" name="Articulos[' + index + '].Descripcion" class="descripcion-hidden-' + index + '" value="' + (art.descripcion || '') + '" />',
+            '<input type="hidden" name="Articulos[' + index + '].Cog" class="cog-hidden-' + index + '" value="' + (art.cog || '') + '" />',
+            '<input type="hidden" name="Articulos[' + index + '].ClaveMaterial" class="clave-hidden-' + index + '" />',
+            '<input type="hidden" name="Articulos[' + index + '].UnidadMedida" class="unidad-hidden-' + index + '" value="' + (art.unidadMedida || '') + '" />',
+            '</td>',
+            '<td class="unidad-' + index + '">' + (art.unidadMedida || '-') + '</td>',
+            '<td><input type="number" name="Articulos[' + index + '].Cantidad" class="form-control cantidad-input" min="1" value="' + (art.cantidad || 1) + '" required /></td>',
+            '<td class="descripcion-detallada-cell"><div class="desc-wrapper">',
+            '<div class="desc-preview" onclick="expandirDesc(this)"><span class="desc-texto-preview' + (art.descripcionDetallada ? ' tiene-texto' : '') + '">' + (art.descripcionDetallada ? (art.descripcionDetallada.length > 40 ? art.descripcionDetallada.substring(0, 40) + '…' : art.descripcionDetallada) : 'Sin descripción...') + '</span><i class="fa-solid fa-pen-to-square desc-icon"></i></div>',
+            '<input type="hidden" name="Articulos[' + index + '].DescripcionDetallada" class="desc-hidden" value="' + (art.descripcionDetallada || '') + '" />',
+            '</div></td>',
+            '<td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarArticulo(this)"><i class="fa-solid fa-circle-minus"></i></button></td>',
+            '</tr>'
+        ].join('');
+
+        $('#tablaArticulos tbody').append(fila);
+
+        var $select = $('.select-articulo[data-index="' + index + '"]');
+        inicializarSelect2($select);
+
+        if (art.idArticulo && art.descripcion) {
+            var option = new Option(art.descripcion, art.idArticulo, true, true);
+            $select.append(option).trigger('change');
+        }
+    }
 
     window.agregarArticulo = function () {
         var index = contadorArticulos++;
@@ -195,6 +232,30 @@
                 });
             }
             return;
+        }
+
+        e.preventDefault();
+        var form = e.target;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Seguro que quieres guardar?',
+                text: "Se guardarán los datos de la requisición.",
+                icon: 'question',
+                iconColor: 'var(--rosa-400)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--rosa-400)',
+                cancelButtonColor: 'var(--slate-500)',
+                confirmButtonText: 'Sí, guardar',
+                cancelButtonText: 'No, cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var loader = document.getElementById('page-loader');
+                    if (loader) loader.classList.remove('oculto');
+                    form.submit();
+                }
+            });
+        } else {
+            form.submit();
         }
     });
 })();
