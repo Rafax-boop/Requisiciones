@@ -37,13 +37,27 @@
         filtrarTabla();
     };
 
+    const TAMANO_PAGINA_REQUISICIONES = 7;
+    let paginaRequisicionActual = 1;
+    let paginacionRequisicionesContainer = null;
+
     function filtrarTabla() {
+        paginaRequisicionActual = 1;
+        aplicarPaginacionRequisiciones();
+    }
+
+    function aplicarPaginacionRequisiciones() {
+        if (!paginacionRequisicionesContainer) {
+            paginacionRequisicionesContainer = document.getElementById('paginacionRequisiciones');
+        }
+
         var textoNumReq = (document.getElementById('filtroNumReq') && document.getElementById('filtroNumReq').value || '').toLowerCase().trim();
         var textoDepto = (document.getElementById('filtroDepartamento') && document.getElementById('filtroDepartamento').value || '').toLowerCase().trim();
 
-        var filas = document.querySelectorAll('.tabla-requisiciones:not(#tablaModalDetalle) tbody tr');
+        var todasLasFilas = document.querySelectorAll('.tabla-requisiciones:not(#tablaModalDetalle) tbody tr');
+        var filasVisibles = [];
 
-        filas.forEach(function (fila) {
+        todasLasFilas.forEach(function (fila) {
             if (fila.classList.contains('fila-vacia')) return;
             var celdas = fila.querySelectorAll('td');
             if (!celdas.length) return;
@@ -56,21 +70,89 @@
             var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
             var pasaDepto = !textoDepto || depto.indexOf(textoDepto) !== -1;
 
-            fila.style.display = (pasaNumReq && pasaFecha && pasaDepto) ? '' : 'none';
+            if (pasaNumReq && pasaFecha && pasaDepto) {
+                filasVisibles.push(fila);
+            } else {
+                fila.style.display = 'none';
+            }
         });
 
-        mostrarMensajeVacio();
+        const total = filasVisibles.length;
+        const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_REQUISICIONES));
+        if (paginaRequisicionActual > totalPaginas) paginaRequisicionActual = totalPaginas;
+        const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
+        const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
+
+        filasVisibles.forEach(function (fila, i) {
+            fila.style.display = (i >= inicio && i < fin) ? '' : 'none';
+        });
+
+        mostrarMensajeVacio(total);
+        renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
     }
 
-    function mostrarMensajeVacio() {
+    function renderizarControlesPaginacion(total, inicio, fin, totalPaginas) {
+        if (!paginacionRequisicionesContainer) return;
+
+        if (total === 0) {
+            paginacionRequisicionesContainer.innerHTML = '';
+            return;
+        }
+
+        var resFinal = Math.min(fin, total);
+        var info = 'Mostrando ' + (inicio + 1) + '-' + resFinal + ' de ' + total + ' requisiciones';
+        var html = '<div class="almacen-paginacion-info">' + info + '</div>';
+        html += '<div class="almacen-paginacion-btns">';
+        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaRequisicionActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
+        html += ' <span class="almacen-paginacion-nums">';
+
+        var PRIMEROS = 3, ULTIMOS = 3;
+        var actual = paginaRequisicionActual;
+        var set = {};
+        for (var i = 1; i <= Math.min(PRIMEROS, totalPaginas); i++) set[i] = true;
+        if (actual > 0 && actual <= totalPaginas) {
+            set[actual] = true;
+            if (actual - 1 >= 1) set[actual - 1] = true;
+            if (actual + 1 <= totalPaginas) set[actual + 1] = true;
+        }
+        for (var j = Math.max(1, totalPaginas - ULTIMOS + 1); j <= totalPaginas; j++) set[j] = true;
+        var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+        var prev = 0;
+        for (var n = 0; n < nums.length; n++) {
+            var p = nums[n];
+            if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
+            html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaRequisicionActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
+            prev = p;
+        }
+        html += '</span> ';
+        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaRequisicionActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
+        html += '</div>';
+
+        paginacionRequisicionesContainer.innerHTML = html;
+
+        var botones = paginacionRequisicionesContainer.querySelectorAll('.almacen-paginacion-btn');
+        for (var k = 0; k < botones.length; k++) {
+            botones[k].addEventListener('click', function () {
+                if (this.disabled) return;
+                var pg = this.getAttribute('data-pagina');
+                if (pg === 'prev') {
+                    paginaRequisicionActual = Math.max(1, paginaRequisicionActual - 1);
+                } else if (pg === 'next') {
+                    paginaRequisicionActual = Math.min(totalPaginas, paginaRequisicionActual + 1);
+                } else {
+                    paginaRequisicionActual = parseInt(pg, 10);
+                }
+                aplicarPaginacionRequisiciones();
+            });
+        }
+    }
+
+    function mostrarMensajeVacio(totalVisibles) {
         var tbody = document.querySelector('.tabla-requisiciones:not(#tablaModalDetalle) tbody');
         if (!tbody) return;
-        var filasVisibles = [].slice.call(tbody.querySelectorAll('tr')).filter(function (f) {
-            return f.style.display !== 'none' && !f.classList.contains('fila-vacia');
-        });
 
         var filaVacia = tbody.querySelector('.fila-vacia');
-        if (filasVisibles.length === 0) {
+        if (totalVisibles === 0) {
             if (!filaVacia) {
                 filaVacia = document.createElement('tr');
                 filaVacia.className = 'fila-vacia';
@@ -81,6 +163,9 @@
             if (filaVacia) filaVacia.remove();
         }
     }
+
+    // Inicializar paginación al cargar el script
+    aplicarPaginacionRequisiciones();
 
     var filtroNumReq = document.getElementById('filtroNumReq');
     var filtroDepto = document.getElementById('filtroDepartamento');

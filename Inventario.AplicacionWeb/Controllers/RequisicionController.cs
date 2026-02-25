@@ -94,6 +94,60 @@ namespace Inventario.AplicacionWeb.Controllers
             return View("RequisicionParaPdf", vm);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditarRequisicion(int id)
+        {
+            var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var vm = new VMRequiForm
+            {
+                IdRequiMaestra = id,
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                LugarEntrega = dto.LugarEntrega,
+                UsoEspecifico = dto.UsoEspecifico,
+                Justificacion = dto.Justificacion,
+                CuentaProgramaPresupuestario = dto.CuentaProgramaPresupuestario,
+                Articulos = dto.Articulos.Select(a => new ItemRequiVM
+                {
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    Cantidad = a.Cantidad,
+                    UnidadMedida = a.UnidadMedida,
+                    Descripcion = a.Descripcion,
+                    DescripcionDetallada = a.DescripcionDetallada
+                }).ToList()
+            };
+
+            ViewBag.ModoEdicion = true;
+            return View("FormularioRequisiciones", vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActualizarRequisicion(VMRequiForm modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
+
+            bool exito = await _requisicionService.ActualizarRequisicion(modelo.IdRequiMaestra!.Value, dto, idUsuario);
+
+            if (exito)
+            {
+                TempData["MensajeExito"] = "Requisición editada correctamente.";
+                return RedirectToAction("TablaRequisiciones", "Requisicion");
+            }
+
+            ViewBag.ModoEdicion = true;
+            return View("FormularioRequisiciones", modelo);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CrearRequisicion(VMRequiForm modelo)
         {
@@ -104,6 +158,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (exito)
             {
+                TempData["MensajeExito"] = "Requisición guardada correctamente.";
                 return RedirectToAction("TablaRequisiciones", "Requisicion");
             }
             else

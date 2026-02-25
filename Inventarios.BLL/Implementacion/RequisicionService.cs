@@ -168,5 +168,42 @@ namespace Inventario.BLL.Implementacion
                 Articulos = articulos
             };
         }
+
+        public async Task<bool> ActualizarRequisicion(int idRequisicion, FormularioRequisicionDTO modelo, int idUsuario)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.Correo = modelo.Correo;
+            requisicion.Telefono = modelo.Telefono;
+            requisicion.UsoEspecifico = modelo.UsoEspecifico;
+            requisicion.Justificacion = modelo.Justificacion;
+            requisicion.CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario;
+
+            await _repositoryRequisicion.Editar(requisicion);
+
+            // Eliminar artículos anteriores
+            var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
+            var detallesActuales = await queryDetalles.ToListAsync();
+            foreach (var detalle in detallesActuales)
+                await _repositoryRequisicionDetalle.Eliminar(detalle);
+
+            // Insertar los nuevos artículos 
+            var nuevosDetalles = modelo.Articulos.Select(item => new TblRequisicionDetalle
+            {
+                IdRequisicion = idRequisicion,
+                NumPartida = item.Cog,
+                IdArticulo = item.IdArticulo,
+                Cantidad = item.Cantidad,
+                UnidadMedida = item.UnidadMedida,
+                Descripcion = item.Descripcion,
+                DescripcionDetallada = item.DescripcionDetallada,
+                FechaRegistro = DateTime.Now.Date
+            }).ToList();
+
+            await _repositoryRequisicionDetalle.CrearRango(nuevosDetalles);
+
+            return true;
+        }
     }
 }

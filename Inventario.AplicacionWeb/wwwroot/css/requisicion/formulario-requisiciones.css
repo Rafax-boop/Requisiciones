@@ -249,6 +249,24 @@
   justify-content: center;
 }
 
+/* Artículos solicitados: label y opciones en una sola línea horizontal */
+.formulario-uso-material-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.formulario-uso-material-inline > label {
+  margin-bottom: 0;
+  margin-right: 4px;
+}
+
+.formulario-uso-material-inline .formulario-opciones-presupuesto {
+  margin-top: 0;
+  justify-content: flex-start;
+}
+
 .opcion {
   display: flex;
   align-items: center;
