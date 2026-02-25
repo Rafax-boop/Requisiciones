@@ -24,11 +24,17 @@ namespace Inventario.AplicacionWeb.Controllers
             _usuarioService = usuarioService;
         }
 
-        public async Task<IActionResult> FormularioRequisiciones()
+        [HttpGet]
+        public async Task<IActionResult> FormularioRequisiciones([FromQuery] string? tipo = "general")
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
                 return RedirectToAction("Login", "Acceso");
+
+            if (tipo != "mensual")
+                tipo = "general";
+
+            ViewBag.TipoRequisicion = tipo;
 
             var dto = await _usuarioService.ObtenerDatosDepartamento(idUsuario);
 
@@ -39,7 +45,10 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public async Task<IActionResult> TablaRequisiciones()
         {
-            int idDepartamento = int.Parse(User.FindFirst("IdDepartamento")?.Value);
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
+                return RedirectToAction("Login", "Acceso");
+
             var listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
             var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
             return View(viewModel);

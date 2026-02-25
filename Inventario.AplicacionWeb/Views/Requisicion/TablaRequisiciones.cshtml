@@ -10,7 +10,7 @@
             <h1 class="tabla-requi-titulo">Requisiciones</h1>
             <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones</p>
         </div>
-        <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="boton-rosa">
+        <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
             <i class="fa-solid fa-plus"></i> Nueva Requisición
         </a>
     </div>
@@ -79,6 +79,41 @@
                 }
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Modal tipo de requisición (mismo estilo que Artículos de la Requisición) -->
+<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
+                <div class="btn-stack">
+                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
+                    </a>
+                    @if (DateTime.Now.Day <= 5) {
+                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })" class="btn btn-secondary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
+                        <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del mes</small></span>
+                    </a>
+                    }
+                    <button type="button" class="btn btn-ghost-nueva" title="Próximamente">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-wrench"></i></span>
+                        <span class="btn-text">Requisición de Servicios<small>Mantenimiento, consultoría o soporte</small></span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
