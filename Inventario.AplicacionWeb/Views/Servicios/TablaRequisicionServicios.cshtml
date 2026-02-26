@@ -1,24 +1,73 @@
 @{
-    ViewData["Title"] = "TablaRequisicionServicios";
+    ViewData["Title"] = "Requisiciones de Servicios";
 }
 
-<div class="nav-sim"></div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+}
 
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h2 class="mb-1">Requisiciones de Servicios</h2>
-                <p class="text-muted mb-0">Gestión de requisiciones de servicios.</p>
+<div class="tabla-requi-page">
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="info-titulo">Requisiciones de Servicios</h1>
+            <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones de servicios</p>
+        </div>
+        <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
+            <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
+        </a>
+    </div>
+
+    <div class="container-formulario filtros-container">
+        <div class="filtro-grupo">
+            <label>Nº Requisición</label>
+            <input type="text" id="filtroNumReq" placeholder="REC-000000" />
+        </div>
+        <div class="filtro-grupo">
+            <label>Fecha</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly style="width:100%;" />
+                <button type="button" id="btnLimpiarFecha"
+                    style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
+                    title="Limpiar fecha">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
-                <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
-            </a>
+        </div>
+        <div class="filtro-grupo">
+            <label>Departamento</label>
+            <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
         </div>
     </div>
-    <div class="row">
-        <div class="col-12">
-            <p class="text-muted">Contenido de la vista de requisiciones de servicios.</p>
+
+    <div class="container-formulario tabla-container">
+        <table class="tabla-requisiciones">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Fecha de emisión</th>
+                    <th>Departamento</th>
+                    <th>Responsable</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @* Maquetado sin datos de DB — filas de ejemplo o vacío *@
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="paginacionRequisicionServicios" class="almacen-paginacion">
+            <div class="almacen-paginacion-info">Mostrando 0 de 0 registros</div>
+            <div class="almacen-paginacion-btns">
+                <button type="button" class="almacen-paginacion-btn" disabled>Anterior</button>
+                <span class="almacen-paginacion-nums">
+                    <button type="button" class="almacen-paginacion-btn almacen-paginacion-num activo">1</button>
+                </span>
+                <button type="button" class="almacen-paginacion-btn" disabled>Siguiente</button>
+            </div>
         </div>
     </div>
 </div>

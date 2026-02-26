@@ -1,14 +1,114 @@
+@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
 @{
-    ViewData["Title"] = "FormularioRequisicionServicios";
+    ViewData["Title"] = "Formulario Requisición de Servicios";
 }
 
-<div class="nav-sim"></div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/componentes/calendario.css" asp-append-version="true" />
+}
 
-<div class="container py-4">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4">Nueva Requisición de Servicios</h2>
-            <p class="text-muted">Formulario de requisición de servicios (mantenimiento, consultoría o soporte).</p>
+<div class="mt-3 container" style="width:1300px;">
+    <div class="info-requisicion">
+        <div class="fantasma">
+            <div class="filtro-grupo">
+                <label class="m-0 info-body">Fecha de emisión:</label>
+                <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
+            </div>
+        </div>
+        <div class="container-info">
+            <p class="info-titulo mt-3">Requisición de servicios</p>
+        </div>
+        <div class="requisicion-info">
+            <div class="requisicion">
+                <p class="info-body">Requisición:</p>
+                <label class="info-body"></label>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-formulario">
+        <div class="seccion-1">
+            <div class="formulario-input">
+                <label>Departamento solicitante:</label>
+                <input asp-for="IdDepartamento" type="hidden" />
+                <input type="text" placeholder="Ej: Recursos Humanos" value="@Model.Departamento" readonly />
+            </div>
+            <div class="formulario-input">
+                <label>Responsable:</label>
+                <input asp-for="NomDirector" type="hidden" />
+                <input type="text" name="NomResponsableDepartamento" placeholder="Nombre completo"
+                    value="@Model.NomResponsableDepartamento" readonly />
+            </div>
+        </div>
+        <div class="seccion-2">
+            <div class="formulario-input">
+                <label>Correo:</label>
+                <input type="email" name="Correo" placeholder="correo@ejemplo.com" value="@Model.Correo" required />
+            </div>
+            <div class="formulario-input">
+                <label>Teléfono:</label>
+                <input type="tel" name="Telefono" placeholder="(222) 000-0000" value="@Model.Telefono" required />
+            </div>
+        </div>
+    </div>
+
+    <div class="container-formulario">
+        <div class="seccion-completa">
+            <label class="info-titulo text-center">Datos del servicio</label>
+            <div class="formulario-input">
+                <label>Especificar tipo de servicio solicitado:</label>
+                <input type="text" name="TipoServicio" placeholder="Mantenimiento, consultoría o soporte" readonly
+                    value="" required />
+            </div>
+            <div class="formulario-input">
+                <label>Justificación del servicio solicitado:</label>
+                <textarea type="text" name="UsoEspecifico" placeholder="Justifique el servicio solicitado" value=""
+                    required></textarea>
+            </div>
+            <div class="formulario-input">
+                <label>Fecha de prestación del servicio:</label>
+                <input type="text" id="fechaPrestacionServicio" name="FechaPrestacion" placeholder="Seleccionar fecha" readonly required />
+            </div>
+            <div class="formulario-input">
+                <label>Lugar de prestación del servicio:</label>
+                <input type="text" name="LugarPrestacion" placeholder="Lugar de prestación del servicio" value=""
+                    required />
+            </div>
+            <div class="formulario-input">
+                <label>Nombre y puesto del enlace adaministrativo del area solicitante:</label>
+                <textarea type="text" name="NombrePuesto" placeholder="Nombre y puesto" value="" required></textarea>
+            </div>
+            <div class="formulario-input">
+                <label>Número celular del enlace adaministrativo del area solicitante:</label>
+                <input type="tel" min="7" max="12" name="NumeroCelular" placeholder="(222) 000-0000" value=""
+                    required />
+            </div>
+        </div>
+    </div>
+
+    <div class="container-formulario mt-4">
+        <div class="seccion-completa text-center">
+            <button type="button" class="btn boton-rosa btn-lg">
+                Crear Requisición
+            </button>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof flatpickr !== 'undefined') {
+                flatpickr('#fechaPrestacionServicio', {
+                    locale: 'es',
+                    dateFormat: 'Y-m-d',
+                    altInput: true,
+                    altFormat: 'd / m / Y',
+                    defaultDate: new Date(),
+                    allowInput: false,
+                    disableMobile: true
+                });
+            }
+        });
+    </script>
+}
