@@ -29,30 +29,59 @@
         </div>
 
         <div class="home-acciones">
-            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="home-btn-primary">
-                Nueva Requisición →
-            </a>
+            @if (DateTime.Now.Day <= 5)
+            {
+                <a href="#" class="home-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
+                    Nueva Requisición →
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="home-btn-primary">
+                    Nueva Requisición →
+                </a>
+            }
             <a href="@Url.Action("TablaRequisiciones", "Requisicion")" class="home-btn-secondary">
                 Ver Requisiciones
             </a>
         </div>
+    </div>
+</div>
 
-        <div class="home-stats">
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Requisiciones</div>
+@* Modal solo cuando hay 2 opciones (días 1-5); día 6+ va directo al formulario desde el botón *@
+@if (DateTime.Now.Day <= 5)
+{
+<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Pendientes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Realizadas</div>
+            <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
+                <div class="btn-stack">
+                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
+                    </a>
+                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })"
+                       class="btn btn-secondary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
+                        <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del
+                            mes</small></span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
     <script src="~/js/home/home.js" asp-append-version="true"></script>
