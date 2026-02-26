@@ -7,6 +7,7 @@
     var container = document.querySelector('.tabla-requi-page');
     var obtenerDetallesUrl = container ? container.getAttribute('data-url-obtener-detalles') : '';
     var verPdfUrl = container ? container.getAttribute('data-url-ver-pdf') : '';
+    var urlUsuariosMateriales = container ? container.getAttribute('data-url-usuarios-materiales') : '';
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.filtro-dropdown')) {
@@ -146,6 +147,22 @@
             });
         }
     }
+
+    window.abrirModalAsignar = function (idRequi) {
+        _idRequiAsignar = idRequi;
+        var select = document.getElementById('selectUsuarioAsignar');
+        select.innerHTML = '<option value="">Cargando...</option>';
+
+        $.get(urlUsuariosMateriales, function (data) {
+            select.innerHTML = '<option value="">-- Seleccionar responsable --</option>';
+            data.forEach(function (u) {
+                select.innerHTML += '<option value="' + u.id + '">' + u.nombre + '</option>';
+            });
+        });
+
+        var modal = new bootstrap.Modal(document.getElementById('modalAsignar'));
+        modal.show();
+    };
 
     function mostrarMensajeVacio(totalVisibles) {
         var tbody = document.querySelector('.tabla-requisiciones:not(#tablaModalDetalle) tbody');

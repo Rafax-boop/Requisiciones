@@ -40,6 +40,7 @@ namespace Inventario.BLL.Implementacion
                 UsoEspecifico = modelo.UsoEspecifico,
                 Justificacion = modelo.Justificacion,
                 CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
+                Donativo = modelo.UsoMaterial,
                 IdUsuario = idUsuario,
                 IdEstatus = 1,
                 Activo = true,
@@ -82,25 +83,29 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento)
         {
-            var query = await _repositoryRequisicion.Consultar();
+            IQueryable<TblRequisicion> query;
 
             if (idDepartamento < 110)
             {
                 query = await _repositoryRequisicion.Consultar(r => r.IdDepartamento == idDepartamento);
             }
+            else
+            {
+                query = await _repositoryRequisicion.Consultar();
+            }
 
-            var resultado = await query
-                .Select(r => new RequisicionMaestraDTO
-                {
-                    IdRequi = r.IdRequisicion,
-                    NumRequi = r.NumRequisicion,
-                    FechaEmision = r.FechaEmision,
-                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
-                    Responsable = r.NomResponsableDepartamento,
-                    Estatus = r.IdEstatusNavigation.NombreEstatus,
-                    CantidadPartidas = r.TblRequisicionDetalles.Count
-                })
-                .ToListAsync();
+                var resultado = await query
+                    .Select(r => new RequisicionMaestraDTO
+                    {
+                        IdRequi = r.IdRequisicion,
+                        NumRequi = r.NumRequisicion,
+                        FechaEmision = r.FechaEmision,
+                        Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                        Responsable = r.NomResponsableDepartamento,
+                        Estatus = r.IdEstatusNavigation.NombreEstatus,
+                        CantidadPartidas = r.TblRequisicionDetalles.Count
+                    })
+                    .ToListAsync();
 
             return resultado;
         }
@@ -166,6 +171,7 @@ namespace Inventario.BLL.Implementacion
                 UsoEspecifico = requisicion.UsoEspecifico,
                 Justificacion = requisicion.Justificacion,
                 CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
+                UsoMaterial  =  requisicion.Donativo,
                 Articulos = articulos
             };
         }
@@ -179,7 +185,9 @@ namespace Inventario.BLL.Implementacion
             requisicion.Telefono = modelo.Telefono;
             requisicion.UsoEspecifico = modelo.UsoEspecifico;
             requisicion.Justificacion = modelo.Justificacion;
+            requisicion.IdEstatus = 1;
             requisicion.CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario;
+            requisicion.Donativo = modelo.UsoMaterial;
 
             await _repositoryRequisicion.Editar(requisicion);
 
@@ -203,6 +211,16 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
 
             await _repositoryRequisicionDetalle.CrearRango(nuevosDetalles);
+
+            var bitacora = new TblBitacoraEstatus
+            {
+                IdRequisicion = requisicion.IdRequisicion,
+                IdEstatus = requisicion.IdEstatus,
+                FechaEstatus = requisicion.FechaSistema,
+                Observacion = "ModificaciónRequisiciones",
+                IdUsuario = idUsuario
+            };
+            var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
 
             return true;
         }

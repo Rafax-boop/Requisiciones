@@ -18,6 +18,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? UsoEspecifico { get; set; }
         public string? Justificacion { get; set; }
         public bool? CuentaProgramaPresupuestario { get; set; }
+        public bool? UsoMaterial { get; set; }
         public int? IdUsuario { get; set; }
         public bool? Activo { get; set; }
         public DateTime? FechaSistema { get; set; }

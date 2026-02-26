@@ -9,7 +9,7 @@
 }
 
 <div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
-     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")">
+     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")" data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="tabla-requi-titulo">Requisiciones</h1>
@@ -81,6 +81,14 @@
                                 <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                     <i class="fa-solid fa-file-pdf"></i>
                                 </button>
+                                @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
+                                {
+                                    <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">Asignar</button>
+                                }
+                                @* @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
+                                {
+                                    <button class="btn-accion ">Atender</button>
+                                } *@
                             </div>
                         </td>
                     </tr>
@@ -156,6 +164,34 @@
                                 <!-- Se carga dinámicamente -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-premium">
+                    <div class="modal-header modal-header-premium">
+                        <div>
+                            <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
+                            <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
+                        </div>
+                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body modal-body-premium">
+                        <div class="formulario-input">
+                            <label>Responsable:</label>
+                            <select id="selectUsuarioAsignar" class="form-select">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
                     </div>
                 </div>
             </div>

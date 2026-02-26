@@ -57,6 +57,18 @@ namespace Inventario.AplicacionWeb.Controllers
             return View(viewModel);
         }
 
+        [HttpGet]
+        public async Task<JsonResult> ObtenerUsuariosMateriales()
+        {
+            var usuarios = await _usuarioService.ListaUsuariosMateriales();
+            var resultado = usuarios.Select(u => new
+            {
+                id = u.IdUsuario,
+                nombre = u.Usuario
+            }).ToList();
+            return Json(resultado);
+        }
+
         public async Task<JsonResult> ObtenerDetalles(int idMaestro)
         {
             var detalles = await _requisicionService.ObtenerDetallePorIdMaestro(idMaestro);
@@ -185,9 +197,9 @@ namespace Inventario.AplicacionWeb.Controllers
             });
         }
 
-        public async Task<JsonResult> BuscarArticulos(string term)
+        public async Task<JsonResult> BuscarArticulos(string term, bool mensual = false)
         {
-            var articulos = await _articulosService.BuscarArticulos(term);
+            var articulos = await _articulosService.BuscarArticulos(term, mensual);
 
             var resultado = articulos.Select(a => new
             {

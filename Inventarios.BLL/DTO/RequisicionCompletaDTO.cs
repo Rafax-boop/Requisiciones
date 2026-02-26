@@ -17,6 +17,7 @@ namespace Inventario.BLL.DTO
         public string? UsoEspecifico { get; set; }
         public string? Justificacion { get; set; }
         public bool? CuentaProgramaPresupuestario { get; set; }
+        public bool? UsoMaterial { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; } = new();
     }
 }

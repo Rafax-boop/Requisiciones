@@ -4,7 +4,7 @@
     bool modoEdicion = ViewBag.ModoEdicion == true;
 }
 
-<div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")">
+<div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")" data-tipo-requisicion="@ViewBag.TipoRequisicion">
     <form asp-action="@(modoEdicion ? "ActualizarRequisicion" : "CrearRequisicion")" method="post" class="no-loader">
         <input type="hidden" asp-for="IdRequiMaestra" />
         <div class="info-requisicion">
@@ -112,7 +112,7 @@
                 <div class="formulario-input formulario-uso-material-inline">
                     <div class="formulario-opciones-presupuesto">
                         <label class="opcion">
-                            <input name="UsoMaterial" type="radio" value="true" required />
+                            <input asp-for="UsoMaterial" type="radio" value="false" required />
                             <div class="bullet">
                                 <div class="line zero"></div>
                                 <div class="line one"></div>
@@ -126,7 +126,7 @@
                             <span>Administrativo</span>
                         </label>
                         <label class="opcion">
-                            <input name="UsoMaterial" type="radio" value="false" required />
+                            <input asp-for="UsoMaterial" type="radio" value="true" required />
                             <div class="bullet">
                                 <div class="line zero"></div>
                                 <div class="line one"></div>
@@ -196,7 +196,7 @@
                 unidadMedida = a.UnidadMedida,
                 descripcion  = a.Descripcion,
                 descripcionDetallada = a.DescripcionDetallada
-            })));
+            })))
         </script>
     }
 }
