@@ -55,22 +55,30 @@
         <table class="tabla-requisiciones">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Folio</th>
                     <th>Fecha de emisión</th>
                     <th>Departamento</th>
                     <th>Responsable</th>
+                    <th>Items</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
+                @{
+                    var idxReq = 0;
+                }
                 @foreach (var item in Model)
                 {
+                    idxReq++;
                     <tr>
+                        <td style="text-align:center">@idxReq</td>
                         <td>@item.NumRequi</td>
                         <td>@item.FechaEmision</td>
                         <td>@item.Departamento</td>
                         <td>@item.Responsable</td>
+                        <td style="text-align:center">@item.CantidadPartidas</td>
                         <td>@item.Estatus</td>
                         <td>
                             <div class="acciones-grupo">

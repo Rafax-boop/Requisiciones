@@ -229,6 +229,34 @@
     const modalBody = document.getElementById('modalAlmacenBody');
     let reqCompleta = null;
 
+    window.verDescDetalleModal = function (el) {
+        var panel = document.getElementById('desc-panel-modal');
+        var textarea = document.getElementById('desc-textarea-modal');
+        if (!panel || !textarea) return;
+        textarea.value = el.dataset.full || '(Sin descripción detallada)';
+        var rect = el.getBoundingClientRect();
+        panel.style.top = (rect.bottom + 4) + 'px';
+        panel.style.left = rect.left + 'px';
+        panel.style.minWidth = Math.max(rect.width, 320) + 'px';
+        panel.style.display = 'block';
+        window._descPanelModalTrigger = el;
+        textarea.focus();
+    };
+
+    window.cerrarDescPanelModal = function () {
+        var panel = document.getElementById('desc-panel-modal');
+        if (panel) panel.style.display = 'none';
+        window._descPanelModalTrigger = null;
+    };
+
+    document.addEventListener('mousedown', function (e) {
+        if (!window._descPanelModalTrigger) return;
+        var panel = document.getElementById('desc-panel-modal');
+        if (!window._descPanelModalTrigger.contains(e.target) && panel && !panel.contains(e.target)) {
+            cerrarDescPanelModal();
+        }
+    });
+
     modalTabsBtns.forEach(btn => {
         btn.addEventListener('click', function () {
             if (!reqCompleta) return;
@@ -244,9 +272,14 @@
         if (i === 0) {
             const articulos = reqCompleta.articulos || [];
             let html = '<div class="almacen-resumen-cards"><div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div></div>';
-            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Descripción</th></tr></thead><tbody>';
+            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Descripción</th><th>Descripción Detallada</th></tr></thead><tbody>';
             articulos.forEach(a => {
-                html += '<tr><td>' + (a.descripcion || '') + '</td><td>' + (a.cantidad ?? '') + '</td><td>' + (a.unidadMedida || '') + '</td><td>' + (a.descripcionDetallada || '') + '</td></tr>';
+                var textoCompleto = a.descripcionDetallada || '';
+                var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + '…' : (textoCompleto || 'Sin descripción...');
+                var tieneTexto = textoCompleto ? 'tiene-texto' : '';
+                var fullEscapado = (textoCompleto || '').replace(/"/g, '&quot;');
+                html += '<tr><td>' + (a.descripcion || '') + '</td><td>' + (a.cantidad ?? '') + '</td><td>' + (a.unidadMedida || '') + '</td><td>' + (a.descripcion || '') + '</td>';
+                html += '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)"><span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + '</span><i class="fa-solid fa-eye desc-icon"></i></div></td></tr>';
             });
             html += '</tbody></table>';
             modalBody.innerHTML = html;

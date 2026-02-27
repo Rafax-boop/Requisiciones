@@ -43,10 +43,12 @@
         <table class="tabla-requisiciones">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Folio</th>
                     <th>Fecha de emisión</th>
                     <th>Departamento</th>
                     <th>Responsable</th>
+                    <th>Items</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -54,7 +56,7 @@
             <tbody>
                 @* Maquetado sin datos de DB — filas de ejemplo o vacío *@
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.
+                    <td colspan="8" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.
                     </td>
                 </tr>
             </tbody>
@@ -70,4 +72,49 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal ver requisición (misma estructura que Requisición y Almacén) -->
+<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <p class="modal-subtitulo-premium" id="modalDetalleSubtitulo">Detalle de partidas solicitadas</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <table class="tabla-requisiciones" id="tablaModalDetalle">
+                    <thead>
+                        <tr>
+                            <th>Nº Partida</th>
+                            <th>ID Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Unidad Medida</th>
+                            <th>Descripción</th>
+                            <th>Descripción Detallada</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDetalle">
+                        <!-- Se carga dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel descripción detallada (ver completa) -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
 </div>
