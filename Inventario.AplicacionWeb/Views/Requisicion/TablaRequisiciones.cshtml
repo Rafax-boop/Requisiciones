@@ -9,7 +9,7 @@
 }
 
 <div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
-     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")" data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")">
+     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")" data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")" data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")" data-url-atender="@Url.Action("Atender", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="tabla-requi-titulo">Requisiciones</h1>
@@ -68,9 +68,10 @@
                         <td>@item.Estatus</td>
                         <td>
                             <div class="acciones-grupo">
-                                <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>
+                                @if (!User.IsInRole("3"))
+                                {
+                                    <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)"> <i class="fa-solid fa-eye"></i> </button>
+                                }
                                 @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                 {
                                     <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
@@ -83,12 +84,16 @@
                                 </button>
                                 @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
                                 {
-                                    <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">Asignar</button>
+                                    <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
+                                        Asignar
+                                    </button>
                                 }
-                                @* @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
+                                @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
                                 {
-                                    <button class="btn-accion ">Atender</button>
-                                } *@
+                                    <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
+                                        Atender
+                                    </button>
+                                }
                             </div>
                         </td>
                     </tr>
@@ -164,6 +169,32 @@
                                 <!-- Se carga dinámicamente -->
                             </tbody>
                         </table>
+                        <div id="seccionAtender" style="display:none; margin-top:20px;">
+
+                            <div class="formulario-input">
+                                <label>Observaciones</label>
+                                <textarea id="txtObservaciones"
+                                          class="form-control"
+                                          rows="4"
+                                          placeholder="Escriba las observaciones aquí..."></textarea>
+                            </div>
+
+                            <div style="margin-top:15px;">
+                                <label style="display:flex; align-items:center; gap:8px;">
+                                    <input type="checkbox" id="chkRequiereModificacion" />
+                                    Requiere modificación
+                                </label>
+                            </div>
+
+                            <div style="margin-top:20px; text-align:right;">
+                                <button type="button"
+                                        class="btn boton-rosa"
+                                        onclick="enviarAtencion()">
+                                    Enviar
+                                </button>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>

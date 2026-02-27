@@ -51,9 +51,22 @@ namespace Inventario.AplicacionWeb.Controllers
             if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
                 return RedirectToAction("Login", "Acceso");
 
-            var listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("3"))
+            {
+                var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
+                    return RedirectToAction("Login", "Acceso");
+
+                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento, idUsuario);
+            }
+            else
+            {
+                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
+            }
+
             var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
-            
             return View(viewModel);
         }
 
@@ -208,6 +221,39 @@ namespace Inventario.AplicacionWeb.Controllers
             }).ToList();
 
             return Json(resultado);
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> AsignarRequisicion(int idRequi, int idUsuario)
+        {
+            int idUsuarioLog = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            try
+            {
+                var resultado = await _requisicionService.AsignarRequisicion(idRequi, idUsuarioLog,idUsuario);
+                return Json(new { success = resultado });
+            }
+            catch
+            {
+                return Json(new { success = false, mensaje = "Error al asignar la requisición" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Atender([FromBody] VMAtenderRequisicion modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var resultado = await _requisicionService.AtenderRequisicion(
+                modelo.IdRequisicion,
+                modelo.Observaciones,
+                modelo.RequiereModificacion,
+                idUsuario
+            );
+
+            if (!resultado)
+                return BadRequest();
+
+            return Ok();
         }
     }
 }

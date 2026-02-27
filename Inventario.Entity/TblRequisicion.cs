@@ -41,6 +41,8 @@ public partial class TblRequisicion
 
     public int Consecutivo { get; set; }
 
+    public int? IdUsuarioMat { get; set; }
+
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 
     public virtual TblEstatus? IdEstatusNavigation { get; set; }

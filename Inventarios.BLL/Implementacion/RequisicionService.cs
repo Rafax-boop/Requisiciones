@@ -81,11 +81,16 @@ namespace Inventario.BLL.Implementacion
             return true;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento)
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento, int? idUsuarioMat = null)
         {
             IQueryable<TblRequisicion> query;
 
-            if (idDepartamento < 110)
+            if (idUsuarioMat.HasValue)
+            {
+                // Rol 3: solo ve las que tiene asignadas
+                query = await _repositoryRequisicion.Consultar(r => r.IdUsuarioMat == idUsuarioMat.Value);
+            }
+            else if (idDepartamento < 110)
             {
                 query = await _repositoryRequisicion.Consultar(r => r.IdDepartamento == idDepartamento);
             }
@@ -94,18 +99,18 @@ namespace Inventario.BLL.Implementacion
                 query = await _repositoryRequisicion.Consultar();
             }
 
-                var resultado = await query
-                    .Select(r => new RequisicionMaestraDTO
-                    {
-                        IdRequi = r.IdRequisicion,
-                        NumRequi = r.NumRequisicion,
-                        FechaEmision = r.FechaEmision,
-                        Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
-                        Responsable = r.NomResponsableDepartamento,
-                        Estatus = r.IdEstatusNavigation.NombreEstatus,
-                        CantidadPartidas = r.TblRequisicionDetalles.Count
-                    })
-                    .ToListAsync();
+            var resultado = await query
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus,
+                    CantidadPartidas = r.TblRequisicionDetalles.Count
+                })
+                .ToListAsync();
 
             return resultado;
         }
@@ -171,7 +176,7 @@ namespace Inventario.BLL.Implementacion
                 UsoEspecifico = requisicion.UsoEspecifico,
                 Justificacion = requisicion.Justificacion,
                 CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
-                UsoMaterial  =  requisicion.Donativo,
+                UsoMaterial = requisicion.Donativo,
                 Articulos = articulos
             };
         }
@@ -223,6 +228,79 @@ namespace Inventario.BLL.Implementacion
             var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
 
             return true;
+        }
+
+        public async Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioMat)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequi);
+
+                if (requisicion == null)
+                    return false;
+
+
+                requisicion.IdUsuarioMat = idUsuarioMat;
+                requisicion.IdEstatus = 2;
+
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = requisicion.IdRequisicion,
+                    IdEstatus = requisicion.IdEstatus,
+                    FechaEstatus = requisicion.FechaSistema,
+                    Observacion = "AsignarRequisiciones",
+                    IdUsuario = idUsuario
+                };
+                var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> AtenderRequisicion(int idRequisicion, string observaciones, bool requiereModificacion, int idUsuario)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == idRequisicion);
+
+                if (requisicion == null)
+                    return false;
+
+
+                int nuevoEstatus = requiereModificacion
+                    ? 3
+                    : 4;
+
+                requisicion.IdEstatus = nuevoEstatus;
+                requisicion.FechaSistema = DateTime.Now;
+
+                await _repositoryRequisicion.Editar(requisicion);
+
+                // 🔹 Crear bitácora
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = requisicion.IdRequisicion,
+                    IdEstatus = nuevoEstatus,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = observaciones,
+                    IdUsuario = idUsuario
+                };
+
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }
