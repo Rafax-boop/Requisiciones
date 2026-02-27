@@ -3,12 +3,14 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
+    [Authorize]
     public class RequisicionController : Controller
     {
         private readonly IRequisicionesService _requisicionService;
@@ -49,9 +51,35 @@ namespace Inventario.AplicacionWeb.Controllers
             if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
                 return RedirectToAction("Login", "Acceso");
 
-            var listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("3"))
+            {
+                var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
+                    return RedirectToAction("Login", "Acceso");
+
+                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento, idUsuario);
+            }
+            else
+            {
+                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
+            }
+
             var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
             return View(viewModel);
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerUsuariosMateriales()
+        {
+            var usuarios = await _usuarioService.ListaUsuariosMateriales();
+            var resultado = usuarios.Select(u => new
+            {
+                id = u.IdUsuario,
+                nombre = u.Usuario
+            }).ToList();
+            return Json(resultado);
         }
 
         public async Task<JsonResult> ObtenerDetalles(int idMaestro)
@@ -74,6 +102,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
                 NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                NomDirector = dto.NomDirector,
                 Correo = dto.Correo,
                 Telefono = dto.Telefono,
                 LugarEntrega = dto.LugarEntrega,
@@ -181,9 +210,9 @@ namespace Inventario.AplicacionWeb.Controllers
             });
         }
 
-        public async Task<JsonResult> BuscarArticulos(string term)
+        public async Task<JsonResult> BuscarArticulos(string term, bool mensual = false)
         {
-            var articulos = await _articulosService.BuscarArticulos(term);
+            var articulos = await _articulosService.BuscarArticulos(term, mensual);
 
             var resultado = articulos.Select(a => new
             {
@@ -192,6 +221,39 @@ namespace Inventario.AplicacionWeb.Controllers
             }).ToList();
 
             return Json(resultado);
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> AsignarRequisicion(int idRequi, int idUsuario)
+        {
+            int idUsuarioLog = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            try
+            {
+                var resultado = await _requisicionService.AsignarRequisicion(idRequi, idUsuarioLog,idUsuario);
+                return Json(new { success = resultado });
+            }
+            catch
+            {
+                return Json(new { success = false, mensaje = "Error al asignar la requisición" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Atender([FromBody] VMAtenderRequisicion modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var resultado = await _requisicionService.AtenderRequisicion(
+                modelo.IdRequisicion,
+                modelo.Observaciones,
+                modelo.RequiereModificacion,
+                idUsuario
+            );
+
+            if (!resultado)
+                return BadRequest();
+
+            return Ok();
         }
     }
 }

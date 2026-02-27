@@ -2,6 +2,7 @@
     var container = document.querySelector('[data-url-buscar-articulos]');
     var urlBuscarArticulos = container ? container.getAttribute('data-url-buscar-articulos') : '';
     var urlObtenerInfoArticulo = container ? container.getAttribute('data-url-obtener-info-articulo') : '';
+    var esMensual = container ? container.getAttribute('data-tipo-requisicion') === 'mensual' : false;
 
     flatpickr('#fechaEmisionPicker', {
         locale: 'es',
@@ -105,7 +106,7 @@
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
-                    return { term: params.term };
+                    return { term: params.term, mensual: esMensual };
                 },
                 processResults: function (data) {
                     return { results: data };

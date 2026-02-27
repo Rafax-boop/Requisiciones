@@ -7,6 +7,11 @@
     var container = document.querySelector('.tabla-requi-page');
     var obtenerDetallesUrl = container ? container.getAttribute('data-url-obtener-detalles') : '';
     var verPdfUrl = container ? container.getAttribute('data-url-ver-pdf') : '';
+    var urlUsuariosMateriales = container ? container.getAttribute('data-url-usuarios-materiales') : '';
+    var urlAsignar = container ? container.getAttribute('data-url-asignar') : '';
+    const contenedor = document.querySelector('.tabla-requi-page');
+    const atenderUrl = contenedor.dataset.urlAtender;
+    var _idRequiAsignar = null;
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.filtro-dropdown')) {
@@ -147,6 +152,73 @@
         }
     }
 
+    window.abrirModalAsignar = function (idRequi) {
+        _idRequiAsignar = idRequi;
+        var select = document.getElementById('selectUsuarioAsignar');
+        select.innerHTML = '<option value="">Cargando...</option>';
+
+        $.get(urlUsuariosMateriales, function (data) {
+            select.innerHTML = '<option value="">-- Seleccionar responsable --</option>';
+            data.forEach(function (u) {
+                select.innerHTML += '<option value="' + u.id + '">' + u.nombre + '</option>';
+            });
+        });
+
+        var modal = new bootstrap.Modal(document.getElementById('modalAsignar'));
+        modal.show();
+    };
+
+    window.confirmarAsignacion = function () {
+        var idUsuario = document.getElementById('selectUsuarioAsignar').value;
+        if (!idUsuario) {
+            Swal.fire({ icon: 'warning', title: 'Selecciona un responsable', confirmButtonText: 'Ok' });
+            return;
+        }
+
+        $.post(urlAsignar, { idRequi: _idRequiAsignar, idUsuario: idUsuario }, function (res) {
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
+                Swal.fire({ icon: 'success', title: 'Asignado correctamente', timer: 1500, showConfirmButton: false })
+                    .then(() => location.reload());
+            }
+        });
+    };
+
+    window.enviarAtencion = function () {
+
+        const observaciones = document.getElementById("txtObservaciones").value.trim();
+        const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
+
+        if (!observaciones) {
+            alert("Debe escribir una observación.");
+            return;
+        }
+
+        $.ajax({
+            url: atenderUrl,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                IdRequisicion: requisicionActual,
+                Observaciones: observaciones,
+                RequiereModificacion: requiereModificacion
+            }),
+            success: function () {
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalle'));
+                modal.hide();
+
+                document.getElementById("txtObservaciones").value = "";
+                document.getElementById("chkRequiereModificacion").checked = false;
+
+                location.reload();
+            },
+            error: function () {
+                alert("Error al atender la requisición.");
+            }
+        });
+    };
+
     function mostrarMensajeVacio(totalVisibles) {
         var tbody = document.querySelector('.tabla-requisiciones:not(#tablaModalDetalle) tbody');
         if (!tbody) return;
@@ -163,6 +235,13 @@
             if (filaVacia) filaVacia.remove();
         }
     }
+
+    let requisicionActual = null;
+
+    window.atenderRequisicion = function (idMaestro) {
+        requisicionActual = idMaestro;
+        verDetalle(idMaestro, "atender");
+    };
 
     // Inicializar paginación al cargar el script
     aplicarPaginacionRequisiciones();
@@ -207,9 +286,18 @@
         }
     });
 
-    window.verDetalle = function (idMaestro) {
+    window.verDetalle = function (idMaestro, modo = "ver") {
+
+        const seccionAtender = document.getElementById("seccionAtender");
+
+        if (seccionAtender) {
+            seccionAtender.style.display = (modo === "atender") ? "block" : "none";
+        }
+
         if (!obtenerDetallesUrl) return;
+
         $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+
             var contenido = '';
             var articulos = data.articulos || [];
 
@@ -217,6 +305,7 @@
                 contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
             } else {
                 articulos.forEach(function (item) {
+
                     var textoCompleto = item.descripcionDetallada || '';
                     var textoCorto = textoCompleto.length > 28
                         ? textoCompleto.substring(0, 28) + '…'
@@ -241,12 +330,8 @@
             var subtitulo = document.querySelector('#modalDetalle .modal-subtitulo-premium');
             if (subtitulo) subtitulo.textContent = 'Detalle de partidas solicitadas · Total: ' + articulos.length + ' partidas';
             var modalEl = document.getElementById('modalDetalle');
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                var modal = new bootstrap.Modal(modalEl);
-                modal.show();
-            } else if ($.fn.modal) {
-                $('#modalDetalle').modal('show');
-            }
+            var modal = new bootstrap.Modal(modalEl);
+            modal.show();
         });
     };
 })();

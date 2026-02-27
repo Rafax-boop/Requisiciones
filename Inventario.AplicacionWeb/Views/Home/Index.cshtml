@@ -29,9 +29,12 @@
         </div>
 
         <div class="home-acciones">
-            <a href="#" class="home-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
-                Nueva Requisición →
-            </a>
+            @if (User.IsInRole("1"))
+            {
+                <a href="#" class="home-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
+                    Nueva Requisición →
+                </a>
+            }
             <a href="@Url.Action("TablaRequisiciones", "Requisicion")" class="home-btn-secondary">
                 Ver Requisiciones
             </a>

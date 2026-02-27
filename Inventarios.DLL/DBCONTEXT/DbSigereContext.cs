@@ -44,7 +44,7 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblUsuario> TblUsuarios { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder){ }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +53,8 @@ public partial class DbSigereContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__tblArtic__3214EC07CBCDD3F4");
 
             entity.ToTable("tblArticulos");
+
+            entity.HasIndex(e => e.Descripcion, "IX_TblArticulo_Descripcion");
 
             entity.Property(e => e.Cog).HasColumnName("COG");
             entity.Property(e => e.Descripcion).HasMaxLength(500);

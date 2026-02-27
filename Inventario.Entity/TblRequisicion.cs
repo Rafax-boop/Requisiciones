@@ -29,6 +29,8 @@ public partial class TblRequisicion
 
     public bool? CuentaProgramaPresupuestario { get; set; }
 
+    public bool? Donativo { get; set; }
+
     public int? IdUsuario { get; set; }
 
     public int? IdEstatus { get; set; }
@@ -38,6 +40,8 @@ public partial class TblRequisicion
     public DateTime? FechaSistema { get; set; }
 
     public int Consecutivo { get; set; }
+
+    public int? IdUsuarioMat { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 

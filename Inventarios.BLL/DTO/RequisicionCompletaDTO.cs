@@ -10,12 +10,14 @@ namespace Inventario.BLL.DTO
         public int? IdDepartamento { get; set; }
         public string? Departamento { get; set; }
         public string? NomResponsableDepartamento { get; set; }
+        public string? NomDirector { get; set; }
         public string? Correo { get; set; }
         public string? Telefono { get; set; }
         public string? LugarEntrega { get; set; }
         public string? UsoEspecifico { get; set; }
         public string? Justificacion { get; set; }
         public bool? CuentaProgramaPresupuestario { get; set; }
+        public bool? UsoMaterial { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; } = new();
     }
 }

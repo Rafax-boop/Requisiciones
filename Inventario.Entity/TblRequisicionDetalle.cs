@@ -23,6 +23,8 @@ public partial class TblRequisicionDetalle
 
     public DateTime? FechaRegistro { get; set; }
 
+    public int? CogEditable { get; set; }
+
     public bool? Activo { get; set; }
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
