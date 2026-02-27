@@ -56,8 +56,10 @@
 
 /* ──────────────────────────────────────────
    DROPDOWN — La lista que se despliega
+   z-index alto para que quede encima de modales (Bootstrap ~1055)
 ────────────────────────────────────────── */
 .select2-dropdown {
+    z-index: 1060 !important;
     border: 1.5px solid var(--slate-200) !important;
     border-radius: var(--radius-sm) !important;
     box-shadow: var(--shadow-lg) !important;

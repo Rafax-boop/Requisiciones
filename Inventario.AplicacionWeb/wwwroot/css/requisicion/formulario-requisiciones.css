@@ -835,6 +835,9 @@
 
 /* Contenedor raíz */
 .pdf-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   max-width: 860px;
   margin: 0 auto;
   padding: 24px 20px 32px;
@@ -1076,6 +1079,44 @@
   white-space: normal;
 }
 
+/* ── Firmas (abajo del documento) ── */
+.pdf-firmas {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  align-items: flex-end;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.pdf-firma-item {
+  flex: 0 1 220px;
+  min-width: 0;
+  text-align: center;
+}
+
+.pdf-firma-linea {
+  height: 36px;
+  border-bottom: 2.5px solid #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.pdf-firma-nombre {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.pdf-firma-rol {
+  display: block;
+  font-size: 10px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
 /* ── Botón imprimir ── */
 .pdf-imprimir {
   text-align: center;
@@ -1114,6 +1155,9 @@
   }
 
   .pdf-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
     background: white;
     padding: 10mm 12mm;
     max-width: 100%;
@@ -1131,6 +1175,16 @@
     padding: 10px 14px;
     box-shadow: none;
     break-inside: avoid;
+  }
+
+  .pdf-firmas {
+    break-inside: avoid;
+    margin-top: auto;
+    padding-top: 20px;
+  }
+
+  .pdf-firma-linea {
+    border-bottom-width: 3px;
   }
 
   .pdf-tabla th,

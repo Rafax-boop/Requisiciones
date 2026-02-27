@@ -4,334 +4,458 @@
  * URLs desde data-url-obtener-detalles y data-url-ver-pdf en .tabla-requi-page
  */
 (function () {
-    var container = document.querySelector('.tabla-requi-page');
-    var obtenerDetallesUrl = container ? container.getAttribute('data-url-obtener-detalles') : '';
-    var verPdfUrl = container ? container.getAttribute('data-url-ver-pdf') : '';
-    var urlUsuariosMateriales = container ? container.getAttribute('data-url-usuarios-materiales') : '';
-    var urlAsignar = container ? container.getAttribute('data-url-asignar') : '';
-    const contenedor = document.querySelector('.tabla-requi-page');
-    const atenderUrl = contenedor.dataset.urlAtender;
-    var _idRequiAsignar = null;
+  var container = document.querySelector(".tabla-requi-page");
+  var obtenerDetallesUrl = container
+    ? container.getAttribute("data-url-obtener-detalles")
+    : "";
+  var verPdfUrl = container ? container.getAttribute("data-url-ver-pdf") : "";
+  var urlUsuariosMateriales = container
+    ? container.getAttribute("data-url-usuarios-materiales")
+    : "";
+  var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
+  const contenedor = document.querySelector(".tabla-requi-page");
+  const atenderUrl = contenedor.dataset.urlAtender;
+  var _idRequiAsignar = null;
 
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.filtro-dropdown')) {
-            document.querySelectorAll('.filtro-dropdown').forEach(d => d.classList.remove('open'));
-        }
-    });
-
-    var fechaSeleccionada = '';
-
-    var fpInstance = flatpickr('#filtroFecha', {
-        locale: 'es',
-        dateFormat: 'd/m/Y',
-        allowInput: false,
-        disableMobile: true,
-        onChange: function (selectedDates, dateStr) {
-            fechaSeleccionada = dateStr;
-            var btnLimpiar = document.getElementById('btnLimpiarFecha');
-            if (btnLimpiar) btnLimpiar.style.display = dateStr ? 'inline' : 'none';
-            filtrarTabla();
-        }
-    });
-
-    window.limpiarFecha = function () {
-        fpInstance.clear();
-        fechaSeleccionada = '';
-        var btnLimpiar = document.getElementById('btnLimpiarFecha');
-        if (btnLimpiar) btnLimpiar.style.display = 'none';
-        filtrarTabla();
-    };
-
-    const TAMANO_PAGINA_REQUISICIONES = 7;
-    let paginaRequisicionActual = 1;
-    let paginacionRequisicionesContainer = null;
-
-    function filtrarTabla() {
-        paginaRequisicionActual = 1;
-        aplicarPaginacionRequisiciones();
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".filtro-dropdown")) {
+      document
+        .querySelectorAll(".filtro-dropdown")
+        .forEach((d) => d.classList.remove("open"));
     }
+  });
 
-    function aplicarPaginacionRequisiciones() {
-        if (!paginacionRequisicionesContainer) {
-            paginacionRequisicionesContainer = document.getElementById('paginacionRequisiciones');
-        }
+  var fechaSeleccionada = "";
 
-        var textoNumReq = (document.getElementById('filtroNumReq') && document.getElementById('filtroNumReq').value || '').toLowerCase().trim();
-        var textoDepto = (document.getElementById('filtroDepartamento') && document.getElementById('filtroDepartamento').value || '').toLowerCase().trim();
+  var fpInstance = flatpickr("#filtroFecha", {
+    locale: "es",
+    dateFormat: "d/m/Y",
+    allowInput: false,
+    disableMobile: true,
+    onChange: function (selectedDates, dateStr) {
+      fechaSeleccionada = dateStr;
+      var btnLimpiar = document.getElementById("btnLimpiarFecha");
+      if (btnLimpiar) btnLimpiar.style.display = dateStr ? "inline" : "none";
+      filtrarTabla();
+    },
+  });
 
-        var todasLasFilas = document.querySelectorAll('.tabla-requisiciones:not(#tablaModalDetalle) tbody tr');
-        var filasVisibles = [];
+  window.limpiarFecha = function () {
+    fpInstance.clear();
+    fechaSeleccionada = "";
+    var btnLimpiar = document.getElementById("btnLimpiarFecha");
+    if (btnLimpiar) btnLimpiar.style.display = "none";
+    filtrarTabla();
+  };
 
-        todasLasFilas.forEach(function (fila) {
-            if (fila.classList.contains('fila-vacia')) return;
-            var celdas = fila.querySelectorAll('td');
-            if (!celdas.length) return;
+  const TAMANO_PAGINA_REQUISICIONES = 7;
+  let paginaRequisicionActual = 1;
+  let paginacionRequisicionesContainer = null;
 
-            var folio = (celdas[1] && celdas[1].textContent.toLowerCase()) || '';
-            var fecha = (celdas[2] && celdas[2].textContent.trim()) || '';
-            var depto = (celdas[3] && celdas[3].textContent.toLowerCase()) || '';
-
-            var pasaNumReq = !textoNumReq || folio.indexOf(textoNumReq) !== -1;
-            var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
-            var pasaDepto = !textoDepto || depto.indexOf(textoDepto) !== -1;
-
-            if (pasaNumReq && pasaFecha && pasaDepto) {
-                filasVisibles.push(fila);
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-
-        const total = filasVisibles.length;
-        const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_REQUISICIONES));
-        if (paginaRequisicionActual > totalPaginas) paginaRequisicionActual = totalPaginas;
-        const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
-        const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
-
-        filasVisibles.forEach(function (fila, i) {
-            fila.style.display = (i >= inicio && i < fin) ? '' : 'none';
-        });
-
-        mostrarMensajeVacio(total);
-        renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
-    }
-
-    function renderizarControlesPaginacion(total, inicio, fin, totalPaginas) {
-        if (!paginacionRequisicionesContainer) return;
-
-        if (total === 0) {
-            paginacionRequisicionesContainer.innerHTML = '';
-            return;
-        }
-
-        var resFinal = Math.min(fin, total);
-        var info = 'Mostrando ' + (inicio + 1) + '-' + resFinal + ' de ' + total + ' requisiciones';
-        var html = '<div class="almacen-paginacion-info">' + info + '</div>';
-        html += '<div class="almacen-paginacion-btns">';
-        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaRequisicionActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
-        html += ' <span class="almacen-paginacion-nums">';
-
-        var PRIMEROS = 3, ULTIMOS = 3;
-        var actual = paginaRequisicionActual;
-        var set = {};
-        for (var i = 1; i <= Math.min(PRIMEROS, totalPaginas); i++) set[i] = true;
-        if (actual > 0 && actual <= totalPaginas) {
-            set[actual] = true;
-            if (actual - 1 >= 1) set[actual - 1] = true;
-            if (actual + 1 <= totalPaginas) set[actual + 1] = true;
-        }
-        for (var j = Math.max(1, totalPaginas - ULTIMOS + 1); j <= totalPaginas; j++) set[j] = true;
-        var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
-        var prev = 0;
-        for (var n = 0; n < nums.length; n++) {
-            var p = nums[n];
-            if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
-            html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaRequisicionActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
-            prev = p;
-        }
-        html += '</span> ';
-        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaRequisicionActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
-        html += '</div>';
-
-        paginacionRequisicionesContainer.innerHTML = html;
-
-        var botones = paginacionRequisicionesContainer.querySelectorAll('.almacen-paginacion-btn');
-        for (var k = 0; k < botones.length; k++) {
-            botones[k].addEventListener('click', function () {
-                if (this.disabled) return;
-                var pg = this.getAttribute('data-pagina');
-                if (pg === 'prev') {
-                    paginaRequisicionActual = Math.max(1, paginaRequisicionActual - 1);
-                } else if (pg === 'next') {
-                    paginaRequisicionActual = Math.min(totalPaginas, paginaRequisicionActual + 1);
-                } else {
-                    paginaRequisicionActual = parseInt(pg, 10);
-                }
-                aplicarPaginacionRequisiciones();
-            });
-        }
-    }
-
-    window.abrirModalAsignar = function (idRequi) {
-        _idRequiAsignar = idRequi;
-        var select = document.getElementById('selectUsuarioAsignar');
-        select.innerHTML = '<option value="">Cargando...</option>';
-
-        $.get(urlUsuariosMateriales, function (data) {
-            select.innerHTML = '<option value="">-- Seleccionar responsable --</option>';
-            data.forEach(function (u) {
-                select.innerHTML += '<option value="' + u.id + '">' + u.nombre + '</option>';
-            });
-        });
-
-        var modal = new bootstrap.Modal(document.getElementById('modalAsignar'));
-        modal.show();
-    };
-
-    window.confirmarAsignacion = function () {
-        var idUsuario = document.getElementById('selectUsuarioAsignar').value;
-        if (!idUsuario) {
-            Swal.fire({ icon: 'warning', title: 'Selecciona un responsable', confirmButtonText: 'Ok' });
-            return;
-        }
-
-        $.post(urlAsignar, { idRequi: _idRequiAsignar, idUsuario: idUsuario }, function (res) {
-            if (res.success) {
-                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
-                Swal.fire({ icon: 'success', title: 'Asignado correctamente', timer: 1500, showConfirmButton: false })
-                    .then(() => location.reload());
-            }
-        });
-    };
-
-    window.enviarAtencion = function () {
-
-        const observaciones = document.getElementById("txtObservaciones").value.trim();
-        const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
-
-        if (!observaciones) {
-            alert("Debe escribir una observación.");
-            return;
-        }
-
-        $.ajax({
-            url: atenderUrl,
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                IdRequisicion: requisicionActual,
-                Observaciones: observaciones,
-                RequiereModificacion: requiereModificacion
-            }),
-            success: function () {
-
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalle'));
-                modal.hide();
-
-                document.getElementById("txtObservaciones").value = "";
-                document.getElementById("chkRequiereModificacion").checked = false;
-
-                location.reload();
-            },
-            error: function () {
-                alert("Error al atender la requisición.");
-            }
-        });
-    };
-
-    function mostrarMensajeVacio(totalVisibles) {
-        var tbody = document.querySelector('.tabla-requisiciones:not(#tablaModalDetalle) tbody');
-        if (!tbody) return;
-
-        var filaVacia = tbody.querySelector('.fila-vacia');
-        if (totalVisibles === 0) {
-            if (!filaVacia) {
-                filaVacia = document.createElement('tr');
-                filaVacia.className = 'fila-vacia';
-                filaVacia.innerHTML = '<td colspan="8" class="text-center">Sin resultados para los filtros aplicados</td>';
-                tbody.appendChild(filaVacia);
-            }
-        } else {
-            if (filaVacia) filaVacia.remove();
-        }
-    }
-
-    let requisicionActual = null;
-
-    window.atenderRequisicion = function (idMaestro) {
-        requisicionActual = idMaestro;
-        verDetalle(idMaestro, "atender");
-    };
-
-    // Inicializar paginación al cargar el script
+  function filtrarTabla() {
+    paginaRequisicionActual = 1;
     aplicarPaginacionRequisiciones();
+  }
 
-    var filtroNumReq = document.getElementById('filtroNumReq');
-    var filtroDepto = document.getElementById('filtroDepartamento');
-    if (filtroNumReq) filtroNumReq.addEventListener('input', filtrarTabla);
-    if (filtroDepto) filtroDepto.addEventListener('input', filtrarTabla);
+  function aplicarPaginacionRequisiciones() {
+    if (!paginacionRequisicionesContainer) {
+      paginacionRequisicionesContainer = document.getElementById(
+        "paginacionRequisiciones",
+      );
+    }
 
-    window.verPdf = function (id) {
-        var url = (verPdfUrl || '').replace(/\/$/, '') + '/' + id;
-        window.open(url, '_blank');
-    };
+    var textoNumReq = (
+      (document.getElementById("filtroNumReq") &&
+        document.getElementById("filtroNumReq").value) ||
+      ""
+    )
+      .toLowerCase()
+      .trim();
+    var textoDepto = (
+      (document.getElementById("filtroDepartamento") &&
+        document.getElementById("filtroDepartamento").value) ||
+      ""
+    )
+      .toLowerCase()
+      .trim();
 
-    var _descPanelModalTrigger = null;
+    var todasLasFilas = document.querySelectorAll(
+      ".tabla-requisiciones:not(#tablaModalDetalle) tbody tr",
+    );
+    var filasVisibles = [];
 
-    window.verDescDetalleModal = function (el) {
-        var panel = document.getElementById('desc-panel-modal');
-        var textarea = document.getElementById('desc-textarea-modal');
-        if (!panel || !textarea) return;
-        textarea.value = el.dataset.full || '(Sin descripción detallada)';
-        var rect = el.getBoundingClientRect();
-        panel.style.top = (rect.bottom + 4) + 'px';
-        panel.style.left = rect.left + 'px';
-        panel.style.minWidth = Math.max(rect.width, 320) + 'px';
-        panel.style.display = 'block';
-        _descPanelModalTrigger = el;
-        textarea.focus();
-    };
+    todasLasFilas.forEach(function (fila) {
+      if (fila.classList.contains("fila-vacia")) return;
+      var celdas = fila.querySelectorAll("td");
+      if (!celdas.length) return;
 
-    window.cerrarDescPanelModal = function () {
-        var panel = document.getElementById('desc-panel-modal');
-        if (panel) panel.style.display = 'none';
-        _descPanelModalTrigger = null;
-    };
+      var folio = (celdas[1] && celdas[1].textContent.toLowerCase()) || "";
+      var fecha = (celdas[2] && celdas[2].textContent.trim()) || "";
+      var depto = (celdas[3] && celdas[3].textContent.toLowerCase()) || "";
 
-    $(document).on('mousedown', function (e) {
-        if (!_descPanelModalTrigger) return;
-        var panel = document.getElementById('desc-panel-modal');
-        if (!_descPanelModalTrigger.contains(e.target) && panel && !panel.contains(e.target)) {
-            cerrarDescPanelModal();
-        }
+      var pasaNumReq = !textoNumReq || folio.indexOf(textoNumReq) !== -1;
+      var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
+      var pasaDepto = !textoDepto || depto.indexOf(textoDepto) !== -1;
+
+      if (pasaNumReq && pasaFecha && pasaDepto) {
+        filasVisibles.push(fila);
+      } else {
+        fila.style.display = "none";
+      }
     });
 
-    window.verDetalle = function (idMaestro, modo = "ver") {
+    const total = filasVisibles.length;
+    const totalPaginas = Math.max(
+      1,
+      Math.ceil(total / TAMANO_PAGINA_REQUISICIONES),
+    );
+    if (paginaRequisicionActual > totalPaginas)
+      paginaRequisicionActual = totalPaginas;
+    const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
+    const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
 
-        const seccionAtender = document.getElementById("seccionAtender");
+    filasVisibles.forEach(function (fila, i) {
+      fila.style.display = i >= inicio && i < fin ? "" : "none";
+    });
 
-        if (seccionAtender) {
-            seccionAtender.style.display = (modo === "atender") ? "block" : "none";
+    mostrarMensajeVacio(total);
+    renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
+  }
+
+  function renderizarControlesPaginacion(total, inicio, fin, totalPaginas) {
+    if (!paginacionRequisicionesContainer) return;
+
+    if (total === 0) {
+      paginacionRequisicionesContainer.innerHTML = "";
+      return;
+    }
+
+    var resFinal = Math.min(fin, total);
+    var info =
+      "Mostrando " +
+      (inicio + 1) +
+      "-" +
+      resFinal +
+      " de " +
+      total +
+      " requisiciones";
+    var html = '<div class="almacen-paginacion-info">' + info + "</div>";
+    html += '<div class="almacen-paginacion-btns">';
+    html +=
+      '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' +
+      (paginaRequisicionActual <= 1 ? "disabled" : "") +
+      ">Anterior</button>";
+    html += ' <span class="almacen-paginacion-nums">';
+
+    var PRIMEROS = 3,
+      ULTIMOS = 3;
+    var actual = paginaRequisicionActual;
+    var set = {};
+    for (var i = 1; i <= Math.min(PRIMEROS, totalPaginas); i++) set[i] = true;
+    if (actual > 0 && actual <= totalPaginas) {
+      set[actual] = true;
+      if (actual - 1 >= 1) set[actual - 1] = true;
+      if (actual + 1 <= totalPaginas) set[actual + 1] = true;
+    }
+    for (
+      var j = Math.max(1, totalPaginas - ULTIMOS + 1);
+      j <= totalPaginas;
+      j++
+    )
+      set[j] = true;
+    var nums = Object.keys(set)
+      .map(Number)
+      .sort(function (a, b) {
+        return a - b;
+      });
+    var prev = 0;
+    for (var n = 0; n < nums.length; n++) {
+      var p = nums[n];
+      if (prev !== 0 && p > prev + 1)
+        html += '<span class="almacen-paginacion-ellipsis">…</span>';
+      html +=
+        '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' +
+        (p === paginaRequisicionActual ? "activo" : "") +
+        '" data-pagina="' +
+        p +
+        '">' +
+        p +
+        "</button>";
+      prev = p;
+    }
+    html += "</span> ";
+    html +=
+      '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' +
+      (paginaRequisicionActual >= totalPaginas ? "disabled" : "") +
+      ">Siguiente</button>";
+    html += "</div>";
+
+    paginacionRequisicionesContainer.innerHTML = html;
+
+    var botones = paginacionRequisicionesContainer.querySelectorAll(
+      ".almacen-paginacion-btn",
+    );
+    for (var k = 0; k < botones.length; k++) {
+      botones[k].addEventListener("click", function () {
+        if (this.disabled) return;
+        var pg = this.getAttribute("data-pagina");
+        if (pg === "prev") {
+          paginaRequisicionActual = Math.max(1, paginaRequisicionActual - 1);
+        } else if (pg === "next") {
+          paginaRequisicionActual = Math.min(
+            totalPaginas,
+            paginaRequisicionActual + 1,
+          );
+        } else {
+          paginaRequisicionActual = parseInt(pg, 10);
         }
+        aplicarPaginacionRequisiciones();
+      });
+    }
+  }
 
-        if (!obtenerDetallesUrl) return;
+  window.abrirModalAsignar = function (idRequi) {
+    _idRequiAsignar = idRequi;
+    var select = document.getElementById("selectUsuarioAsignar");
+    var $select = $("#selectUsuarioAsignar");
+    if ($select.data("select2")) $select.select2("destroy");
+    select.innerHTML = '<option value="">Cargando...</option>';
 
-        $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+    $.get(urlUsuariosMateriales, function (data) {
+      select.innerHTML =
+        '<option value="">-- Seleccionar responsable --</option>';
+      data.forEach(function (u) {
+        select.innerHTML +=
+          '<option value="' + u.id + '">' + u.nombre + "</option>";
+      });
+      $select.select2({
+        language: "es",
+        placeholder: "-- Seleccionar responsable --",
+        allowClear: false,
+        minimumResultsForSearch: Infinity,
+        width: "100%",
+      });
+    });
 
-            var contenido = '';
-            var articulos = data.articulos || [];
+    var modal = new bootstrap.Modal(document.getElementById("modalAsignar"));
+    modal.show();
+  };
 
-            if (articulos.length === 0) {
-                contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
-            } else {
-                articulos.forEach(function (item) {
+  window.confirmarAsignacion = function () {
+    var idUsuario = $("#selectUsuarioAsignar").val();
+    if (!idUsuario) {
+      Swal.fire({
+        icon: "warning",
+        title: "Selecciona un responsable",
+        confirmButtonText: "Ok",
+      });
+      return;
+    }
 
-                    var textoCompleto = item.descripcionDetallada || '';
-                    var textoCorto = textoCompleto.length > 28
-                        ? textoCompleto.substring(0, 28) + '…'
-                        : (textoCompleto || 'Sin descripción...');
-                    var tieneTexto = textoCompleto ? 'tiene-texto' : '';
-                    var fullEscapado = (textoCompleto || '').replace(/"/g, '&quot;');
+    $.post(
+      urlAsignar,
+      { idRequi: _idRequiAsignar, idUsuario: idUsuario },
+      function (res) {
+        if (res.success) {
+          bootstrap.Modal.getInstance(
+            document.getElementById("modalAsignar"),
+          ).hide();
+          Swal.fire({
+            icon: "success",
+            title: "Asignado correctamente",
+            confirmButtonColor: "#fe6291",
+            confirmButtonText: "Aceptar",
+            fontfamily: "Plus Jakarta Sans",
+            timer: 3500,
+            timerProgressBar: true,
+          }).then(() => location.reload());
+        }
+      },
+    );
+  };
 
-                    contenido += '<tr>' +
-                        '<td>' + (item.numPartida || '') + '</td>' +
-                        '<td>' + (item.idArticulo || '') + '</td>' +
-                        '<td>' + (item.cantidad || '') + '</td>' +
-                        '<td>' + (item.unidadMedida || '') + '</td>' +
-                        '<td>' + (item.descripcion || '') + '</td>' +
-                        '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
-                        '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + '</span>' +
-                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
-                        '</tr>';
-                });
-            }
+  window.enviarAtencion = function () {
+    const observaciones = document
+      .getElementById("txtObservaciones")
+      .value.trim();
+    const requiereModificacion = document.getElementById(
+      "chkRequiereModificacion",
+    ).checked;
 
-            $('#tablaDetalle').html(contenido);
-            var subtitulo = document.querySelector('#modalDetalle .modal-subtitulo-premium');
-            if (subtitulo) subtitulo.textContent = 'Detalle de partidas solicitadas · Total: ' + articulos.length + ' partidas';
-            var modalEl = document.getElementById('modalDetalle');
-            var modal = new bootstrap.Modal(modalEl);
-            modal.show();
+    if (!observaciones) {
+      alert("Debe escribir una observación.");
+      return;
+    }
+
+    $.ajax({
+      url: atenderUrl,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({
+        IdRequisicion: requisicionActual,
+        Observaciones: observaciones,
+        RequiereModificacion: requiereModificacion,
+      }),
+      success: function () {
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("modalDetalle"),
+        );
+        modal.hide();
+
+        document.getElementById("txtObservaciones").value = "";
+        document.getElementById("chkRequiereModificacion").checked = false;
+
+        location.reload();
+      },
+      error: function () {
+        alert("Error al atender la requisición.");
+      },
+    });
+  };
+
+  function mostrarMensajeVacio(totalVisibles) {
+    var tbody = document.querySelector(
+      ".tabla-requisiciones:not(#tablaModalDetalle) tbody",
+    );
+    if (!tbody) return;
+
+    var filaVacia = tbody.querySelector(".fila-vacia");
+    if (totalVisibles === 0) {
+      if (!filaVacia) {
+        filaVacia = document.createElement("tr");
+        filaVacia.className = "fila-vacia";
+        filaVacia.innerHTML =
+          '<td colspan="8" class="text-center">Sin resultados para los filtros aplicados</td>';
+        tbody.appendChild(filaVacia);
+      }
+    } else {
+      if (filaVacia) filaVacia.remove();
+    }
+  }
+
+  let requisicionActual = null;
+
+  window.atenderRequisicion = function (idMaestro) {
+    requisicionActual = idMaestro;
+    verDetalle(idMaestro, "atender");
+  };
+
+  // Inicializar paginación al cargar el script
+  aplicarPaginacionRequisiciones();
+
+  var filtroNumReq = document.getElementById("filtroNumReq");
+  var filtroDepto = document.getElementById("filtroDepartamento");
+  if (filtroNumReq) filtroNumReq.addEventListener("input", filtrarTabla);
+  if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
+
+  window.verPdf = function (id) {
+    var url = (verPdfUrl || "").replace(/\/$/, "") + "/" + id;
+    window.open(url, "_blank");
+  };
+
+  var _descPanelModalTrigger = null;
+
+  window.verDescDetalleModal = function (el) {
+    var panel = document.getElementById("desc-panel-modal");
+    var textarea = document.getElementById("desc-textarea-modal");
+    if (!panel || !textarea) return;
+    textarea.value = el.dataset.full || "(Sin descripción detallada)";
+    var rect = el.getBoundingClientRect();
+    panel.style.top = rect.bottom + 4 + "px";
+    panel.style.left = rect.left + "px";
+    panel.style.minWidth = Math.max(rect.width, 320) + "px";
+    panel.style.display = "block";
+    _descPanelModalTrigger = el;
+    textarea.focus();
+  };
+
+  window.cerrarDescPanelModal = function () {
+    var panel = document.getElementById("desc-panel-modal");
+    if (panel) panel.style.display = "none";
+    _descPanelModalTrigger = null;
+  };
+
+  $(document).on("mousedown", function (e) {
+    if (!_descPanelModalTrigger) return;
+    var panel = document.getElementById("desc-panel-modal");
+    if (
+      !_descPanelModalTrigger.contains(e.target) &&
+      panel &&
+      !panel.contains(e.target)
+    ) {
+      cerrarDescPanelModal();
+    }
+  });
+
+  window.verDetalle = function (idMaestro, modo = "ver") {
+    const seccionAtender = document.getElementById("seccionAtender");
+
+    if (seccionAtender) {
+      seccionAtender.style.display = modo === "atender" ? "block" : "none";
+    }
+
+    if (!obtenerDetallesUrl) return;
+
+    $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+      var contenido = "";
+      var articulos = data.articulos || [];
+
+      if (articulos.length === 0) {
+        contenido =
+          '<tr><td colspan="7" class="text-center">Sin artículos</td></tr>';
+      } else {
+        articulos.forEach(function (item) {
+          var textoCompleto = item.descripcionDetallada || "";
+          var textoCorto =
+            textoCompleto.length > 28
+              ? textoCompleto.substring(0, 28) + "…"
+              : textoCompleto || "Sin descripción...";
+          var tieneTexto = textoCompleto ? "tiene-texto" : "";
+          var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+
+          contenido +=
+            "<tr>" +
+            "<td>" +
+            (item.numPartida || "") +
+            "</td>" +
+            "<td>" +
+            (item.idArticulo || "") +
+            "</td>" +
+            "<td>" +
+            (item.cantidad || "") +
+            "</td>" +
+            "<td>" +
+            (item.unidadMedida || "") +
+            "</td>" +
+            "<td>" +
+            (item.descripcion || "") +
+            "</td>" +
+            '<td><div class="desc-preview-modal" data-full="' +
+            fullEscapado +
+            '" onclick="verDescDetalleModal(this)">' +
+            '<span class="desc-texto-preview ' +
+            tieneTexto +
+            '">' +
+            textoCorto +
+            "</span>" +
+            '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+            '<td><input type="text" class="input-app input-cog-editable" placeholder="COG" /></td>' +
+            "</tr>";
         });
-    };
+      }
+
+      $("#tablaDetalle").html(contenido);
+      var subtitulo = document.querySelector(
+        "#modalDetalle .modal-subtitulo-premium",
+      );
+      if (subtitulo)
+        subtitulo.textContent =
+          "Detalle de partidas solicitadas · Total: " +
+          articulos.length +
+          " partidas";
+      var modalEl = document.getElementById("modalDetalle");
+      var modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    });
+  };
 })();

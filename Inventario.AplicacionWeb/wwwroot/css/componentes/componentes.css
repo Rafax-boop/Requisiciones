@@ -111,6 +111,38 @@
     }
 
 /* ══════════════════════════════════════
+   📝 INPUT ESTILO APP (reutilizable)
+══════════════════════════════════════ */
+.input-app {
+    padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-700);
+    background: var(--slate-50);
+    outline: none;
+    transition: all 0.3s var(--ease-premium);
+}
+
+.input-app::placeholder {
+    color: var(--slate-300);
+    font-weight: 400;
+}
+
+.input-app:hover {
+    border-color: var(--rosa-200);
+    background: white;
+}
+
+.input-app:focus {
+    border-color: var(--rosa-400);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+}
+
+/* ══════════════════════════════════════
    📝 UTILIDAD DE TEXTO
 ══════════════════════════════════════ */
 .texto-rosa {
