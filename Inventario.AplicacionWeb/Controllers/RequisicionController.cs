@@ -223,6 +223,13 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(resultado);
         }
 
+        [HttpGet]
+        public async Task<JsonResult> BuscarCogs(string term)
+        {
+            var cogs = await _articulosService.BuscarCogs(term);
+            return Json(cogs.Select(c => new { id = c, text = c.ToString() }));
+        }
+
         [HttpPost]
         public async Task<JsonResult> AsignarRequisicion(int idRequi, int idUsuario)
         {
@@ -247,12 +254,11 @@ namespace Inventario.AplicacionWeb.Controllers
                 modelo.IdRequisicion,
                 modelo.Observaciones,
                 modelo.RequiereModificacion,
-                idUsuario
+                idUsuario,
+                modelo.CogsEditados.Select(c => (c.IdArticulo, c.Cog)).ToList()
             );
 
-            if (!resultado)
-                return BadRequest();
-
+            if (!resultado) return BadRequest();
             return Ok();
         }
     }

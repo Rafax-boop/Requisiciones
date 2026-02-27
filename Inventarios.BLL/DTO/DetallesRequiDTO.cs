@@ -8,6 +8,7 @@ namespace Inventario.BLL.DTO
 {
     public class DetallesRequiDTO
     {
+        public bool Donativo { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; }
     }
 

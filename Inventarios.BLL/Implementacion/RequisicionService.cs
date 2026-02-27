@@ -117,8 +117,10 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro)
         {
-            var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
+            var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idMaestro);
+            var maestra = await queryMaestra.FirstOrDefaultAsync();
 
+            var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
             var lista = await query
                 .Select(r => new DetalleArticuloDTO
                 {
@@ -133,6 +135,7 @@ namespace Inventario.BLL.Implementacion
 
             return new DetallesRequiDTO
             {
+                Donativo = maestra?.Donativo ?? false,
                 Articulos = lista
             };
         }
@@ -263,27 +266,42 @@ namespace Inventario.BLL.Implementacion
             }
         }
 
-        public async Task<bool> AtenderRequisicion(int idRequisicion, string observaciones, bool requiereModificacion, int idUsuario)
+        public async Task<bool> AtenderRequisicion(
+            int idRequisicion, string observaciones,
+            bool requiereModificacion, int idUsuario,
+            List<(int IdArticulo, int Cog)> cogsEditados = null
+        )
         {
             try
             {
                 var requisicion = await _repositoryRequisicion
                     .Obtener(r => r.IdRequisicion == idRequisicion);
+                if (requisicion == null) return false;
 
-                if (requisicion == null)
-                    return false;
+                // Actualizar COGs si vienen
+                if (cogsEditados != null && cogsEditados.Any())
+                {
+                    var queryDetalles = await _repositoryRequisicionDetalle
+                        .Consultar(d => d.IdRequisicion == idRequisicion);
+                    var detalles = await queryDetalles.ToListAsync();
 
+                    foreach (var detalle in detalles)
+                    {
+                        var cogEditado = cogsEditados
+                            .FirstOrDefault(c => c.IdArticulo == detalle.IdArticulo);
+                        if (cogEditado != default && cogEditado.Cog != 0)
+                            detalle.CogEditable = cogEditado.Cog;
+                    }
 
-                int nuevoEstatus = requiereModificacion
-                    ? 3
-                    : 4;
+                    foreach (var detalle in detalles)
+                        await _repositoryRequisicionDetalle.Editar(detalle);
+                }
 
+                int nuevoEstatus = requiereModificacion ? 3 : 4;
                 requisicion.IdEstatus = nuevoEstatus;
                 requisicion.FechaSistema = DateTime.Now;
-
                 await _repositoryRequisicion.Editar(requisicion);
 
-                // 🔹 Crear bitácora
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = requisicion.IdRequisicion,
@@ -292,15 +310,11 @@ namespace Inventario.BLL.Implementacion
                     Observacion = observaciones,
                     IdUsuario = idUsuario
                 };
-
                 await _repositoryBitacora.Crear(bitacora);
 
                 return true;
             }
-            catch
-            {
-                throw;
-            }
+            catch { throw; }
         }
     }
 }

@@ -38,5 +38,22 @@ namespace Inventario.BLL.Implementacion
 
             return await query.Take(10).ToListAsync();
         }
+
+        public async Task<List<int>> BuscarCogs(string termino)
+        {
+            var query = await _repositoryArticulo.Consultar();
+
+            if (!string.IsNullOrWhiteSpace(termino) && int.TryParse(termino, out int cogNum))
+                query = query.Where(a => a.Cog.ToString().Contains(termino));
+            else if (!string.IsNullOrWhiteSpace(termino))
+                query = query.Where(a => a.Cog.ToString().Contains(termino));
+
+            return await query
+                .Select(a => a.Cog)
+                .Distinct()
+                .OrderBy(c => c)
+                .Take(10)
+                .ToListAsync();
+        }
     }
 }
