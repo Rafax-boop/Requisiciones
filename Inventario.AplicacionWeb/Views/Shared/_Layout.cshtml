@@ -98,7 +98,7 @@
                     @if (User.IsInRole("2") || User.IsInRole("5") || User.IsInRole("4"))
                     {
                         <a href="@Url.Action("Index", "Almacen")"
-                        class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
+                            class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
                             Almacén
                         </a>
                     }
@@ -203,7 +203,7 @@
                             timer: 3500,
                             timerProgressBar: true
                         });
-                    });
+                        });
                 </text>
         }
             @if (TempData["MensajeError"] != null)
@@ -217,7 +217,7 @@
                             confirmButtonColor: '#d63384',
                             confirmButtonText: 'Aceptar'
                         });
-                    });
+                        });
                 </text>
         }
     </script>
