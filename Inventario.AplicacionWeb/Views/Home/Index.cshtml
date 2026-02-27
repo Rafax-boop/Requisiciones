@@ -29,26 +29,41 @@
         </div>
 
         <div class="home-acciones">
-            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="home-btn-primary">
+            <a href="#" class="home-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
                 Nueva Requisición →
             </a>
             <a href="@Url.Action("TablaRequisiciones", "Requisicion")" class="home-btn-secondary">
                 Ver Requisiciones
             </a>
         </div>
+    </div>
+</div>
 
-        <div class="home-stats">
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Requisiciones</div>
+<!-- Modal Home: elegir ir a Requisiciones o a Servicios -->
+<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione a dónde desea ir</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Pendientes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-numero">-</div>
-                <div class="stat-label">Realizadas</div>
+            <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
+                <div class="btn-stack">
+                    <a href="@Url.Action("TablaRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <span class="btn-text">Requisiciones<small>Materiales y bienes</small></span>
+                    </a>
+                    <a href="@Url.Action("TablaRequisicionServicios", "Servicios")" class="btn btn-secondary-nueva">
+                        <span class="btn-icon-nueva"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+                        <span class="btn-text">Requisiciones de Servicios<small>Servicios generales</small></span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

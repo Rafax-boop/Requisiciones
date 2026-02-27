@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Requisiciones de Servicios";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+}
+
+<div class="tabla-requi-page">
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="info-titulo">Requisiciones de Servicios</h1>
+            <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones de servicios</p>
+        </div>
+        <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
+            <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
+        </a>
+    </div>
+
+    <div class="container-formulario filtros-container">
+        <div class="filtro-grupo">
+            <label>Nº Requisición</label>
+            <input type="text" id="filtroNumReq" placeholder="REC-000000" />
+        </div>
+        <div class="filtro-grupo">
+            <label>Fecha</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly style="width:100%;" />
+                <button type="button" id="btnLimpiarFecha"
+                    style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
+                    title="Limpiar fecha">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="filtro-grupo">
+            <label>Departamento</label>
+            <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
+        </div>
+    </div>
+
+    <div class="container-formulario tabla-container">
+        <table class="tabla-requisiciones">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Folio</th>
+                    <th>Fecha de emisión</th>
+                    <th>Departamento</th>
+                    <th>Responsable</th>
+                    <th>Items</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @* Maquetado sin datos de DB — filas de ejemplo o vacío *@
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="paginacionRequisicionServicios" class="almacen-paginacion">
+            <div class="almacen-paginacion-info">Mostrando 0 de 0 registros</div>
+            <div class="almacen-paginacion-btns">
+                <button type="button" class="almacen-paginacion-btn" disabled>Anterior</button>
+                <span class="almacen-paginacion-nums">
+                    <button type="button" class="almacen-paginacion-btn almacen-paginacion-num activo">1</button>
+                </span>
+                <button type="button" class="almacen-paginacion-btn" disabled>Siguiente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ver requisición (misma estructura que Requisición y Almacén) -->
+<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <p class="modal-subtitulo-premium" id="modalDetalleSubtitulo">Detalle de partidas solicitadas</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <table class="tabla-requisiciones" id="tablaModalDetalle">
+                    <thead>
+                        <tr>
+                            <th>Nº Partida</th>
+                            <th>ID Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Unidad Medida</th>
+                            <th>Descripción</th>
+                            <th>Descripción Detallada</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDetalle">
+                        <!-- Se carga dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel descripción detallada (ver completa) -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
+</div>

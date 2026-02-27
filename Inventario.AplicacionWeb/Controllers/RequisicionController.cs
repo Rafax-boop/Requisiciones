@@ -33,7 +33,7 @@ namespace Inventario.AplicacionWeb.Controllers
             if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
                 return RedirectToAction("Login", "Acceso");
 
-            if (tipo != "mensual")
+            if (tipo != "mensual" && tipo != "servicios")
                 tipo = "general";
 
             ViewBag.TipoRequisicion = tipo;

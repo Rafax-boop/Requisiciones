@@ -67,9 +67,9 @@
             var celdas = fila.querySelectorAll('td');
             if (!celdas.length) return;
 
-            var folio = (celdas[0] && celdas[0].textContent.toLowerCase()) || '';
-            var fecha = (celdas[1] && celdas[1].textContent.trim()) || '';
-            var depto = (celdas[2] && celdas[2].textContent.toLowerCase()) || '';
+            var folio = (celdas[1] && celdas[1].textContent.toLowerCase()) || '';
+            var fecha = (celdas[2] && celdas[2].textContent.trim()) || '';
+            var depto = (celdas[3] && celdas[3].textContent.toLowerCase()) || '';
 
             var pasaNumReq = !textoNumReq || folio.indexOf(textoNumReq) !== -1;
             var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
@@ -228,7 +228,7 @@
             if (!filaVacia) {
                 filaVacia = document.createElement('tr');
                 filaVacia.className = 'fila-vacia';
-                filaVacia.innerHTML = '<td colspan="6" class="text-center">Sin resultados para los filtros aplicados</td>';
+                filaVacia.innerHTML = '<td colspan="8" class="text-center">Sin resultados para los filtros aplicados</td>';
                 tbody.appendChild(filaVacia);
             }
         } else {
@@ -327,7 +327,8 @@
             }
 
             $('#tablaDetalle').html(contenido);
-
+            var subtitulo = document.querySelector('#modalDetalle .modal-subtitulo-premium');
+            if (subtitulo) subtitulo.textContent = 'Detalle de partidas solicitadas · Total: ' + articulos.length + ' partidas';
             var modalEl = document.getElementById('modalDetalle');
             var modal = new bootstrap.Modal(modalEl);
             modal.show();

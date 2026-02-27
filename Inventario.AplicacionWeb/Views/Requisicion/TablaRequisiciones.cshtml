@@ -12,12 +12,18 @@
      data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")" data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")" data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")" data-url-atender="@Url.Action("Atender", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
-            <h1 class="tabla-requi-titulo">Requisiciones</h1>
+            <h1 class="info-titulo">Requisiciones</h1>
             <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones</p>
         </div>
-        @if (User.IsInRole("1"))
+        @if (DateTime.Now.Day <= 5)
         {
             <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
+                <i class="fa-solid fa-plus"></i> Nueva Requisición
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="boton-rosa">
                 <i class="fa-solid fa-plus"></i> Nueva Requisición
             </a>
         }
@@ -33,8 +39,8 @@
             <div style="display:flex; align-items:center; gap:6px;">
                 <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly style="width:100%;" />
                 <button type="button" id="btnLimpiarFecha" onclick="limpiarFecha()"
-                        style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
-                        title="Limpiar fecha">
+                    style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
+                    title="Limpiar fecha">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -49,22 +55,30 @@
         <table class="tabla-requisiciones">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Folio</th>
                     <th>Fecha de emisión</th>
                     <th>Departamento</th>
                     <th>Responsable</th>
+                    <th>Items</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
+                @{
+                    var idxReq = 0;
+                }
                 @foreach (var item in Model)
                 {
+                    idxReq++;
                     <tr>
+                        <td style="text-align:center">@idxReq</td>
                         <td>@item.NumRequi</td>
                         <td>@item.FechaEmision</td>
                         <td>@item.Departamento</td>
                         <td>@item.Responsable</td>
+                        <td style="text-align:center">@item.CantidadPartidas</td>
                         <td>@item.Estatus</td>
                         <td>
                             <div class="acciones-grupo">
@@ -75,7 +89,7 @@
                                 @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                 {
                                     <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
-                                           class="btn-accion btn-editar" title="Editar">
+                                        class="btn-accion btn-editar" title="Editar">
                                         <i class="fa-solid fa-pen"></i>
                                     </a>
                                 }
@@ -104,42 +118,40 @@
     </div>
 </div>
 
-<!-- Modal tipo de requisición (mismo estilo que Artículos de la Requisición) -->
-<div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
-     aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
-        <div class="modal-content modal-premium">
-            <div class="modal-header modal-header-premium">         
-                <div>
-                    <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
-                    <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
-                </div>
-                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
-                <div class="btn-stack">
-                    <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
-                        <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
-                        <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
-                    </a>
-                    @if (DateTime.Now.Day <= 5 || int.TryParse(User.FindFirst("IdDepartamento")?.Value, out int idDep) && idDep == 29)
-                    {
-                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })" class="btn btn-secondary-nueva">
-                            <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
-                            <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del mes</small></span>
-                        </a>
-                    }
-                    <button type="button" class="btn btn-ghost-nueva" title="Próximamente">
-                        <span class="btn-icon-nueva"><i class="fa-solid fa-wrench"></i></span>
-                        <span class="btn-text">Requisición de Servicios<small>Mantenimiento, consultoría o soporte</small></span>
+@* Modal solo cuando hay 2 opciones (días 1-5); día 6+ el botón va directo al formulario *@
+@if (DateTime.Now.Day <= 5)
+{
+    <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
+                        <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
+                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
+                </div>
+                <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
+                    <div class="btn-stack">
+                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
+                            <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
+                            <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
+                        </a>
+                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })"
+                            class="btn btn-secondary-nueva">
+                            <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
+                            <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del
+                                    mes</small></span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
         <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -228,17 +240,17 @@
             </div>
         </div>
 
-        <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
-        <div id="desc-panel-modal" style="display:none;">
-            <div class="desc-panel-modal-header">
-                <span class="desc-panel-modal-titulo">Descripción detallada</span>
-                <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
-        </div>
+<!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
+</div>
 
-        @section Scripts {
-            <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
-        }
+@section Scripts {
+    <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
+}
