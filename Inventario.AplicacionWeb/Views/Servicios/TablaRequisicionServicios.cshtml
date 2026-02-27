@@ -12,9 +12,12 @@
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
             <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones de servicios</p>
         </div>
-        <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
-            <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
-        </a>
+        @if (User.IsInRole("1"))
+        {
+            <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
+                <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
+            </a>
+        }
     </div>
 
     <div class="container-formulario filtros-container">

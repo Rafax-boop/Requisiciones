@@ -9,23 +9,29 @@
 }
 
 <div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
-     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")" data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")" data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")" data-url-atender="@Url.Action("Atender", "Requisicion")">
+     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")"
+     data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
+     data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
+     data-url-atender="@Url.Action("Atender", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
             <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones</p>
         </div>
-        @if (DateTime.Now.Day <= 5)
+        @if (User.IsInRole("1"))
         {
-            <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
-                <i class="fa-solid fa-plus"></i> Nueva Requisición
-            </a>
-        }
-        else
-        {
-            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="boton-rosa">
-                <i class="fa-solid fa-plus"></i> Nueva Requisición
-            </a>
+            @if (DateTime.Now.Day <= 5 || int.Parse(User.FindFirst("IdDepartamento")?.Value ?? "0") == 29)
+            {
+                <a href="#" class="boton-rosa" data-bs-toggle="modal" data-bs-target="#modalNuevaRequisicion">
+                    <i class="fa-solid fa-plus"></i> Nueva Requisición
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="boton-rosa">
+                    <i class="fa-solid fa-plus"></i> Nueva Requisición
+                </a>
+            }
         }
     </div>
 
@@ -82,7 +88,7 @@
                         <td>@item.Estatus</td>
                         <td>
                             <div class="acciones-grupo">
-                                @if (!User.IsInRole("3"))
+                                @if (item.Estatus == "REQUISICION AUTORIZADA" || !User.IsInRole("3"))
                                 {
                                     <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)"> <i class="fa-solid fa-eye"></i> </button>
                                 }
@@ -119,7 +125,7 @@
 </div>
 
 @* Modal solo cuando hay 2 opciones (días 1-5); día 6+ el botón va directo al formulario *@
-@if (DateTime.Now.Day <= 5)
+@if (DateTime.Now.Day <= 5 || int.Parse(User.FindFirst("IdDepartamento")?.Value ?? "0") == 29)
 {
     <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
         aria-hidden="true">

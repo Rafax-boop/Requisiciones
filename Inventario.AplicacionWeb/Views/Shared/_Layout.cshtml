@@ -79,10 +79,13 @@
                        class="@(ViewData["Title"]?.ToString() == "TablaRequisicionServicios" || ViewData["Title"]?.ToString() == "FormularioRequisicionServicios" ? "active" : "")">
                         Servicios
                     </a>
-                    <a href="@Url.Action("Index", "Almacen")"
-                       class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
-                        Almacén
-                    </a>
+                    @if (User.IsInRole("2") || User.IsInRole("5") || User.IsInRole("4"))
+                    {
+                        <a href="@Url.Action("Index", "Almacen")"
+                        class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
+                            Almacén
+                        </a>
+                    }
                 </li>
 
                 <div class="nav-bar-user">
