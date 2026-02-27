@@ -9,42 +9,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
-    [Authorize(Roles = "2,3,4")]
+    [Authorize(Roles = "2,4,5")]
     public class AlmacenController : Controller
     {
         private readonly IRequisicionesService _requisicionService;
-        private readonly IGenericRepository<TblInventario> _repoInventario;
-        private readonly IGenericRepository<TblEstatus> _repoEstatus;
+        private readonly IAlmacenService _almacenService;
         private readonly IMapper _mapper;
 
         public AlmacenController(
             IRequisicionesService requisicionService,
-            IGenericRepository<TblInventario> repoInventario,
-            IGenericRepository<TblEstatus> repoEstatus,
+            IAlmacenService almacenService,
             IMapper mapper)
         {
             _requisicionService = requisicionService;
-            _repoInventario = repoInventario;
-            _repoEstatus = repoEstatus;
+            _almacenService = almacenService;
             _mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
-            var requisicionesDto = await _requisicionService.ListarRequisiciones(110);
+            var requisicionesDto = await _almacenService.ListarRequisicionesAutorizadas();
             var requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisicionesDto);
 
-            var queryInv = await _repoInventario.Consultar();
-            var inventarioEntities = await queryInv.ToListAsync();
+            var inventarioDto = await _almacenService.ObtenerInventario();
+            var inventario = _mapper.Map<List<VMInventarioItem>>(inventarioDto);
 
-            var inventario = inventarioEntities.Select(i => new VMInventarioItem
-            {
-                Descripcion = i.Descripcion ?? "",
-                UnidadMedida = i.UnidadMedida ?? "",
-                Existencia = i.Existencia,
-                Minimo = 0,
-                Situacion = i.Existencia == 0 ? "Sin stock" : "OK"
-            }).ToList();
+            var estatus = await _almacenService.ObtenerEstatus();
 
             var unidadesMedida = inventario
                 .Select(x => x.UnidadMedida)
@@ -52,10 +42,6 @@ namespace Inventario.AplicacionWeb.Controllers
                 .Distinct()
                 .OrderBy(u => u)
                 .ToList();
-
-            var queryEst = await _repoEstatus.Consultar();
-            var estatusEntities = await queryEst.ToListAsync();
-            var estatus = estatusEntities.Select(e => e.NombreEstatus).ToList();
 
             var vm = new VMAlmacenIndex
             {
@@ -68,9 +54,6 @@ namespace Inventario.AplicacionWeb.Controllers
             return View(vm);
         }
 
-        /// <summary>
-        /// Devuelve la requisición completa en JSON para el modal de análisis (maqueta).
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ObtenerRequisicionCompleta(int id)
         {

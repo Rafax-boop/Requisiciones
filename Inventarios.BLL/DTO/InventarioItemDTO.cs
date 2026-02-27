@@ -1,6 +1,12 @@
-namespace Inventario.AplicacionWeb.Models.ViewModels
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Inventario.BLL.DTO
 {
-    public class VMInventarioItem
+    public class InventarioItemDTO
     {
         public string Descripcion { get; set; } = "";
         public string UnidadMedida { get; set; } = "";
