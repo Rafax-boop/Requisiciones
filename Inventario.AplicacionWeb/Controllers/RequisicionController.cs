@@ -109,6 +109,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 UsoEspecifico = dto.UsoEspecifico,
                 Justificacion = dto.Justificacion,
                 CuentaProgramaPresupuestario = dto.CuentaProgramaPresupuestario,
+                UsoMaterial = dto.UsoMaterial,
+                Hash = dto.Hash,
                 Articulos = dto.Articulos.Select(a => new ItemRequiVM
                 {
                     IdArticulo = a.IdArticulo,

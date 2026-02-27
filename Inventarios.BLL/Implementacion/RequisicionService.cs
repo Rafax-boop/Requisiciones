@@ -44,7 +44,8 @@ namespace Inventario.BLL.Implementacion
                 IdUsuario = idUsuario,
                 IdEstatus = 1,
                 Activo = true,
-                FechaSistema = DateTime.Now
+                FechaSistema = DateTime.Now,
+                Hash = GenerarSelloDigital()
             };
             var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
 
@@ -180,6 +181,7 @@ namespace Inventario.BLL.Implementacion
                 Justificacion = requisicion.Justificacion,
                 CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
                 UsoMaterial = requisicion.Donativo,
+                Hash = requisicion.Hash,
                 Articulos = articulos
             };
         }
@@ -315,6 +317,12 @@ namespace Inventario.BLL.Implementacion
                 return true;
             }
             catch { throw; }
+        }
+
+        private string GenerarSelloDigital()
+        {
+            var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
+            return BitConverter.ToString(bytes).Replace("-", "");
         }
     }
 }
