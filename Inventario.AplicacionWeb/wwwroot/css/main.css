@@ -8,7 +8,7 @@
 @import url("home/home.css");
 @import url("requisicion/formulario-requisiciones.css");
 @import url("requisicion/tabla-requisiciones.css");
-@import url("requisicion/calendario.css");
+@import url("componentes/calendario.css");
 @import url("vendor/select2.css");
 @import url("componentes/modal.css");
 

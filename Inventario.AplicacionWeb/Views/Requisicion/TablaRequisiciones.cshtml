@@ -6,13 +6,14 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
-     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")"
-     data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
-     data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
-     data-url-atender="@Url.Action("Atender", "Requisicion")">
+    data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")"
+    data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
+    data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
+    data-url-atender="@Url.Action("Atender", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -90,7 +91,8 @@
                             <div class="acciones-grupo">
                                 @if (item.Estatus == "REQUISICION AUTORIZADA" || !User.IsInRole("3"))
                                 {
-                                    <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)"> <i class="fa-solid fa-eye"></i> </button>
+                                    <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
+                                        <i class="fa-solid fa-eye"></i> </button>
                                 }
                                 @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                 {
@@ -104,14 +106,15 @@
                                 </button>
                                 @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
                                 {
-                                    <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
-                                        Asignar
+                                    <button class="btn-accion" title="Asignar Requisición"
+                                        onclick="abrirModalAsignar(@item.IdRequi)">
+                                        <i class="fa-solid fa-clipboard-user"></i>
                                     </button>
                                 }
                                 @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
                                 {
                                     <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
-                                        Atender
+                                        <i class="fa-solid fa-hand-holding"></i>
                                     </button>
                                 }
                             </div>
@@ -124,7 +127,6 @@
     </div>
 </div>
 
-@* Modal solo cuando hay 2 opciones (días 1-5); día 6+ el botón va directo al formulario *@
 @if (DateTime.Now.Day <= 5 || int.Parse(User.FindFirst("IdDepartamento")?.Value ?? "0") == 29)
 {
     <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
@@ -159,92 +161,99 @@
     </div>
 }
 
-        <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content modal-premium">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
-                            <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
-                        </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
-                            <i class="fa-solid fa-xmark"></i>
+<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <table class="tabla-requisiciones" id="tablaModalDetalle">
+                    <thead>
+                        <tr>
+                            <th>Nº Partida</th>
+                            <th>ID Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Unidad Medida</th>
+                            <th>Descripción</th>
+                            <th>Descripción Detallada</th>
+                            <th>COG Editable</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDetalle">
+                        <!-- Se carga dinámicamente -->
+                    </tbody>
+                </table>
+                <div id="seccionAtender" style="display:none; margin-top:20px;">
+
+                    <div class="formulario-input">
+                        <label>Observaciones</label>
+                        <textarea id="txtObservaciones" class="form-control" rows="4"
+                            placeholder="Escriba las observaciones aquí..."></textarea>
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        <label class="atender-opcion">
+                            <input type="checkbox" id="chkRequiereModificacion" />
+                            <div class="bullet">
+                                <div class="line zero"></div>
+                                <div class="line one"></div>
+                                <div class="line two"></div>
+                                <div class="line three"></div>
+                                <div class="line four"></div>
+                                <div class="line five"></div>
+                                <div class="line six"></div>
+                                <div class="line seven"></div>
+                            </div>
+                            <span>Requiere modificación</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:20px; text-align:right;">
+                        <button type="button" class="btn boton-rosa" onclick="enviarAtencion()">
+                            Enviar
                         </button>
                     </div>
-                    <div class="modal-body modal-body-premium">
-                        <table class="tabla-requisiciones" id="tablaModalDetalle">
-                            <thead>
-                                <tr>
-                                    <th>Nº Partida</th>
-                                    <th>ID Artículo</th>
-                                    <th>Cantidad</th>
-                                    <th>Unidad Medida</th>
-                                    <th>Descripción</th>
-                                    <th>Descripción Detallada</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaDetalle">
-                                <!-- Se carga dinámicamente -->
-                            </tbody>
-                        </table>
-                        <div id="seccionAtender" style="display:none; margin-top:20px;">
 
-                            <div class="formulario-input">
-                                <label>Observaciones</label>
-                                <textarea id="txtObservaciones"
-                                          class="form-control"
-                                          rows="4"
-                                          placeholder="Escriba las observaciones aquí..."></textarea>
-                            </div>
-
-                            <div style="margin-top:15px;">
-                                <label style="display:flex; align-items:center; gap:8px;">
-                                    <input type="checkbox" id="chkRequiereModificacion" />
-                                    Requiere modificación
-                                </label>
-                            </div>
-
-                            <div style="margin-top:20px; text-align:right;">
-                                <button type="button"
-                                        class="btn boton-rosa"
-                                        onclick="enviarAtencion()">
-                                    Enviar
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content modal-premium">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
-                            <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
-                        </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body modal-body-premium">
-                        <div class="formulario-input">
-                            <label>Responsable:</label>
-                            <select id="selectUsuarioAsignar" class="form-select">
-                                <option value="">Cargando...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
-                    </div>
+<div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="formulario-input">
+                    <label>Responsable:</label>
+                    <select id="selectUsuarioAsignar" class="form-select select2">
+                        <option value="">-- Seleccionar responsable --</option>
+                    </select>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
+            </div>
         </div>
+    </div>
+</div>
 
 <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
 <div id="desc-panel-modal" style="display:none;">
@@ -258,5 +267,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
 }

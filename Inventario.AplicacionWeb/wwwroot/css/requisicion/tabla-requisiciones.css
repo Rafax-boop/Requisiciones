@@ -237,6 +237,12 @@
   border-bottom: none;
 }
 
+/* Input COG Editable: recicla .input-app, solo ancho */
+#tablaModalDetalle .input-cog-editable {
+  width: 100%;
+  max-width: 90px;
+}
+
 /* ──────────────────────────────────────────
    BADGES 
 ────────────────────────────────────────── */
@@ -489,4 +495,214 @@
   opacity: 0.7;
   margin-top: 2px;
   letter-spacing: 0;
+}
+
+/* ──────────────────────────────────────────
+   CHECKBOX ESTILO BULLET (modal Atender)
+   Solo estilo, misma lógica (id chkRequiereModificacion)
+────────────────────────────────────────── */
+.atender-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 24px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  transition: all 0.3s var(--ease-premium);
+  font-family: var(--font-display) !important;
+  font-size: 13px !important;
+  font-weight: 600;
+  color: var(--slate-500);
+  letter-spacing: 0.5px;
+  background: var(--slate-50);
+  position: relative;
+}
+
+.atender-opcion:hover {
+  border-color: var(--rosa-200);
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.atender-opcion:has(input:checked) {
+  border-color: var(--rosa-400);
+  background: var(--rosa-50);
+  color: var(--rosa-500);
+  box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+}
+
+.atender-opcion input[type="checkbox"] {
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  left: 0;
+  top: calc(50% - 15px);
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.atender-opcion .bullet {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 3px solid var(--slate-300);
+  border-radius: 50%;
+  transition: border-color 0.3s var(--ease-premium);
+}
+
+.atender-opcion .bullet::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--slate-300);
+  transition: background 0.3s var(--ease-premium);
+}
+
+.atender-opcion input[type="checkbox"]:checked ~ .bullet {
+  border-color: var(--rosa-400);
+  animation: atender-explode 0.35s;
+}
+
+.atender-opcion input[type="checkbox"]:checked ~ .bullet::after {
+  background: var(--rosa-400);
+}
+
+.atender-opcion .line {
+  position: absolute;
+  width: 8px;
+  height: 2px;
+  background-color: var(--rosa-400);
+  opacity: 0;
+}
+
+.atender-opcion .line.zero {
+  left: 7px;
+  top: -18px;
+  transform: translateY(17px);
+  width: 2px;
+  height: 8px;
+}
+.atender-opcion .line.one {
+  right: -6px;
+  top: -9px;
+  transform: rotate(-55deg) translate(-9px);
+}
+.atender-opcion .line.two {
+  right: -17px;
+  top: 8px;
+  transform: translate(-9px);
+}
+.atender-opcion .line.three {
+  right: -6px;
+  top: 28px;
+  transform: rotate(55deg) translate(-9px);
+}
+.atender-opcion .line.four {
+  left: -6px;
+  top: -9px;
+  transform: rotate(55deg) translate(9px);
+}
+.atender-opcion .line.five {
+  left: -17px;
+  top: 8px;
+  transform: translate(9px);
+}
+.atender-opcion .line.six {
+  left: -6px;
+  top: 28px;
+  transform: rotate(-55deg) translate(9px);
+}
+.atender-opcion .line.seven {
+  left: 7px;
+  bottom: -18px;
+  transform: translateY(-17px);
+  width: 2px;
+  height: 8px;
+}
+
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.zero {
+  animation: atender-drop-zero 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.one {
+  animation: atender-drop-one 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.two {
+  animation: atender-drop-two 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.three {
+  animation: atender-drop-three 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.four {
+  animation: atender-drop-four 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.five {
+  animation: atender-drop-five 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.six {
+  animation: atender-drop-six 0.9s 0.1s forwards;
+}
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.seven {
+  animation: atender-drop-seven 0.9s 0.1s forwards;
+}
+
+.atender-opcion input[type="checkbox"]:checked ~ .bullet + span {
+  color: var(--rosa-500);
+}
+
+@keyframes atender-explode {
+  0% { opacity: 0; transform: scale(10); }
+  60% { opacity: 1; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes atender-drop-zero {
+  0% { opacity: 0; transform: translateY(20px); height: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-2px); height: 0; }
+}
+@keyframes atender-drop-one {
+  0% { opacity: 0; transform: rotate(-55deg) translate(-20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(-55deg) translate(9px); width: 0; }
+}
+@keyframes atender-drop-two {
+  0% { opacity: 0; transform: translate(-20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(9px); width: 0; }
+}
+@keyframes atender-drop-three {
+  0% { opacity: 0; transform: rotate(55deg) translate(-20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(55deg) translate(9px); width: 0; }
+}
+@keyframes atender-drop-four {
+  0% { opacity: 0; transform: rotate(55deg) translate(20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(55deg) translate(-9px); width: 0; }
+}
+@keyframes atender-drop-five {
+  0% { opacity: 0; transform: translate(20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-9px); width: 0; }
+}
+@keyframes atender-drop-six {
+  0% { opacity: 0; transform: rotate(-55deg) translate(20px); width: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(-55deg) translate(-9px); width: 0; }
+}
+@keyframes atender-drop-seven {
+  0% { opacity: 0; transform: translateY(-20px); height: 10px; }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(2px); height: 0; }
 }

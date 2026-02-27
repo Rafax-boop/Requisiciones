@@ -138,6 +138,20 @@
             </table>
         </div>
 
+        <!-- Firmas -->
+        <div class="pdf-seccion pdf-firmas">
+            <div class="pdf-firma-item">
+                <div class="pdf-firma-linea" aria-hidden="true"></div>
+                <span class="pdf-firma-nombre">@(Model.NomResponsableDepartamento ?? "—")</span>
+                <span class="pdf-firma-rol">Responsable del departamento</span>
+            </div>
+            <div class="pdf-firma-item">
+                <div class="pdf-firma-linea" aria-hidden="true"></div>
+                <span class="pdf-firma-nombre">@(Model.NomDirector ?? "—")</span>
+                <span class="pdf-firma-rol">Director</span>
+            </div>
+        </div>
+
         <!-- Botón imprimir (solo en pantalla) -->
         <div class="pdf-imprimir no-print">
             <button type="button" onclick="window.print();">
