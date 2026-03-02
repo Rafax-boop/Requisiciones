@@ -3,6 +3,7 @@
     var urlBuscarArticulos = container ? container.getAttribute('data-url-buscar-articulos') : '';
     var urlObtenerInfoArticulo = container ? container.getAttribute('data-url-obtener-info-articulo') : '';
     var esMensual = container ? container.getAttribute('data-tipo-requisicion') === 'mensual' : false;
+    var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
     flatpickr('#fechaEmisionPicker', {
         locale: 'es',
