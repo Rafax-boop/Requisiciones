@@ -1,8 +1,4 @@
-/**
- * Tabla de Requisiciones - Filtros (Flatpickr), modal de detalle, exportar PDF
- * Requiere: jQuery, Bootstrap, Flatpickr (cargados en layout/vista).
- * URLs desde data-url-obtener-detalles y data-url-ver-pdf en .tabla-requi-page
- */
+
 (function () {
   var container = document.querySelector(".tabla-requi-page");
   var obtenerDetallesUrl = container

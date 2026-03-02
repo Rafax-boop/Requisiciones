@@ -211,6 +211,7 @@
         $('#tablaArticulos tbody tr').each(function () {
             var select = $(this).find('.select-articulo');
             var cantidad = $(this).find('.cantidad-input');
+            var descripcionDetallada = $(this).find('.desc-hidden');
             if (!select.val()) {
                 valido = false;
                 mensajes.push('Debe seleccionar un artículo en todas las filas.');
@@ -219,6 +220,11 @@
             if (!cantidad.val() || parseFloat(cantidad.val()) <= 0) {
                 valido = false;
                 mensajes.push('La cantidad debe ser mayor a cero.');
+                return false;
+            }
+            if (!descripcionDetallada.val() || descripcionDetallada.val().trim() === '') {
+                valido = false;
+                mensajes.push('La descripción detallada es obligatoria para todos los artículos.');
                 return false;
             }
         });
