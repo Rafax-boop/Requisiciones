@@ -26,7 +26,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryDepartamento = repositoryDepartamento;
         }
 
-        public async Task<bool> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
+        public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
         {
             var requisicion = new TblRequisicion
             {
@@ -37,8 +37,8 @@ namespace Inventario.BLL.Implementacion
                 Correo = modelo.Correo,
                 Telefono = modelo.Telefono,
                 LugarEntrega = modelo.LugarEntrega,
-                UsoEspecifico = modelo.UsoEspecifico,
-                Justificacion = modelo.Justificacion,
+                UsoEspecifico = modelo.UsoEspecifico.ToUpper(),
+                Justificacion = modelo.Justificacion.ToUpper(),
                 CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
                 Donativo = modelo.UsoMaterial,
                 IdUsuario = idUsuario,
@@ -71,7 +71,7 @@ namespace Inventario.BLL.Implementacion
                     Cantidad = item.Cantidad,
                     UnidadMedida = item.UnidadMedida,
                     Descripcion = item.Descripcion,
-                    DescripcionDetallada = item.DescripcionDetallada,
+                    DescripcionDetallada = item.DescripcionDetallada.ToUpper(),
                     FechaRegistro = DateTime.Now.Date
                 };
                 listaArticulos.Add(detalle);
@@ -79,7 +79,7 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
 
-            return true;
+            return requiCreada;
         }
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento, int? idUsuarioMat = null)
@@ -216,7 +216,7 @@ namespace Inventario.BLL.Implementacion
                 Cantidad = item.Cantidad,
                 UnidadMedida = item.UnidadMedida,
                 Descripcion = item.Descripcion,
-                DescripcionDetallada = item.DescripcionDetallada,
+                DescripcionDetallada = item.DescripcionDetallada.ToUpper(),
                 FechaRegistro = DateTime.Now.Date
             }).ToList();
 
@@ -317,6 +317,17 @@ namespace Inventario.BLL.Implementacion
                 return true;
             }
             catch { throw; }
+        }
+        public async Task<string?> ObtenerObservacionesModificacion(int idRequisicion)
+        {
+            var query = await _repositoryBitacora.Consultar(b =>
+                b.IdRequisicion == idRequisicion &&
+                b.IdEstatus == 3);
+
+            return await query
+                .OrderByDescending(b => b.FechaEstatus)
+                .Select(b => b.Observacion)
+                .FirstOrDefaultAsync();
         }
 
         private string GenerarSelloDigital()

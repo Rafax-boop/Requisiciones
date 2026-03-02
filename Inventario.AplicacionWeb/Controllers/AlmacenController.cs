@@ -62,5 +62,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 return NotFound();
             return Json(dto);
         }
+
+        //nuevas acciones
     }
 }
