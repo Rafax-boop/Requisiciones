@@ -59,12 +59,10 @@
   letter-spacing: 2.5px;
   text-transform: uppercase;
   margin: 0;
-  background: linear-gradient(
-    135deg,
-    var(--rosa-400),
-    var(--rosa-500),
-    var(--rosa-accent)
-  );
+  background: linear-gradient(135deg,
+      var(--rosa-400),
+      var(--rosa-500),
+      var(--rosa-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -116,12 +114,10 @@
   top: 20%;
   height: 60%;
   width: 3px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--rosa-300),
-    transparent
-  );
+  background: linear-gradient(180deg,
+      transparent,
+      var(--rosa-300),
+      transparent);
   border-radius: 0 4px 4px 0;
   opacity: 0;
   transition: opacity 0.4s var(--ease-premium);
@@ -257,7 +253,7 @@
   gap: 12px 16px;
 }
 
-.formulario-uso-material-inline > label {
+.formulario-uso-material-inline>label {
   margin-bottom: 0;
   margin-right: 4px;
 }
@@ -341,16 +337,16 @@
   transition: background 0.3s var(--ease-premium);
 }
 
-.opcion input[type="radio"]:checked ~ .bullet {
+.opcion input[type="radio"]:checked~.bullet {
   border-color: var(--rosa-400);
   animation: explode 0.35s;
 }
 
-.opcion input[type="radio"]:checked ~ .bullet::after {
+.opcion input[type="radio"]:checked~.bullet::after {
   background: var(--rosa-400);
 }
 
-.opcion input[type="radio"]:checked ~ .bullet {
+.opcion input[type="radio"]:checked~.bullet {
   opacity: 1;
   animation: explode 0.35s;
 }
@@ -370,36 +366,43 @@
   width: 2px;
   height: 8px;
 }
+
 .opcion .line.one {
   right: -6px;
   top: -9px;
   transform: rotate(-55deg) translate(-9px);
 }
+
 .opcion .line.two {
   right: -17px;
   top: 8px;
   transform: translate(-9px);
 }
+
 .opcion .line.three {
   right: -6px;
   top: 28px;
   transform: rotate(55deg) translate(-9px);
 }
+
 .opcion .line.four {
   left: -6px;
   top: -9px;
   transform: rotate(55deg) translate(9px);
 }
+
 .opcion .line.five {
   left: -17px;
   top: 8px;
   transform: translate(9px);
 }
+
 .opcion .line.six {
   left: -6px;
   top: 28px;
   transform: rotate(-55deg) translate(9px);
 }
+
 .opcion .line.seven {
   left: 7px;
   bottom: -18px;
@@ -408,33 +411,40 @@
   height: 8px;
 }
 
-.opcion input[type="radio"]:checked ~ .bullet .line.zero {
+.opcion input[type="radio"]:checked~.bullet .line.zero {
   animation: drop-zero 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.one {
+
+.opcion input[type="radio"]:checked~.bullet .line.one {
   animation: drop-one 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.two {
+
+.opcion input[type="radio"]:checked~.bullet .line.two {
   animation: drop-two 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.three {
+
+.opcion input[type="radio"]:checked~.bullet .line.three {
   animation: drop-three 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.four {
+
+.opcion input[type="radio"]:checked~.bullet .line.four {
   animation: drop-four 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.five {
+
+.opcion input[type="radio"]:checked~.bullet .line.five {
   animation: drop-five 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.six {
+
+.opcion input[type="radio"]:checked~.bullet .line.six {
   animation: drop-six 0.9s 0.1s forwards;
 }
-.opcion input[type="radio"]:checked ~ .bullet .line.seven {
+
+.opcion input[type="radio"]:checked~.bullet .line.seven {
   animation: drop-seven 0.9s 0.1s forwards;
 }
 
 /* SPAN texto */
-.opcion input[type="radio"]:checked ~ .bullet + span {
+.opcion input[type="radio"]:checked~.bullet+span {
   color: var(--rosa-500);
 }
 
@@ -446,10 +456,12 @@
     opacity: 0;
     transform: scale(10);
   }
+
   60% {
     opacity: 1;
     transform: scale(0.5);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -462,9 +474,11 @@
     transform: translateY(20px);
     height: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translateY(-2px);
@@ -478,9 +492,11 @@
     transform: rotate(-55deg) translate(-20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: rotate(-55deg) translate(9px);
@@ -494,9 +510,11 @@
     transform: translate(-20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translate(9px);
@@ -510,9 +528,11 @@
     transform: rotate(55deg) translate(-20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: rotate(55deg) translate(9px);
@@ -526,9 +546,11 @@
     transform: rotate(55deg) translate(20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: rotate(55deg) translate(-9px);
@@ -542,9 +564,11 @@
     transform: translate(20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translate(-9px);
@@ -558,9 +582,11 @@
     transform: rotate(-55deg) translate(20px);
     width: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: rotate(-55deg) translate(-9px);
@@ -574,15 +600,18 @@
     transform: translateY(-20px);
     height: 10px;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translateY(2px);
     height: 0px;
   }
 }
+
 /* ──────────────────────────────────────────
    TABLA DE ARTÍCULOS
 ────────────────────────────────────────── */
@@ -804,6 +833,7 @@
     opacity: 0;
     transform: translateY(-6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -849,7 +879,7 @@
 /* ── Encabezado institucional ── */
 .pdf-encabezado {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   background: white;
@@ -857,7 +887,21 @@
   border-radius: 12px;
   padding: 16px 24px;
   margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+}
+
+.pdf-encabezado-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 90px;
+}
+
+.pdf-encabezado-logo img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .pdf-encabezado-texto {
@@ -904,7 +948,9 @@
   margin-top: 6px;
 }
 
-.pdf-requi-label { margin-top: 0; }
+.pdf-requi-label {
+  margin-top: 0;
+}
 
 .pdf-requi-num {
   font-size: 13px;
@@ -932,7 +978,7 @@
   border-radius: 10px;
   padding: 14px 20px;
   margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
 }
 
 .pdf-grid-2 {
@@ -978,7 +1024,7 @@
   flex-wrap: wrap;
 }
 
-.pdf-presupuesto-row > .pdf-campo-label {
+.pdf-presupuesto-row>.pdf-campo-label {
   flex: 1;
   min-width: 240px;
   font-size: 10px;
@@ -1135,19 +1181,25 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(236,72,153,.3);
+  box-shadow: 0 2px 8px rgba(236, 72, 153, .3);
   transition: opacity .2s;
 }
 
-.pdf-imprimir button:hover { opacity: .88; }
+.pdf-imprimir button:hover {
+  opacity: .88;
+}
 
 /* ══════════════════════════════════════════════
    REGLAS DE IMPRESIÓN
 ══════════════════════════════════════════════ */
 @media print {
-  @page { margin: 0; }
+  @page {
+    margin: 0;
+  }
 
-  .no-print { display: none !important; }
+  .no-print {
+    display: none !important;
+  }
 
   body {
     background: white !important;
@@ -1195,5 +1247,10 @@
 
   .pdf-tabla th {
     font-size: 9px;
+  }
+
+  .pdf-hash-container {
+    break-inside: avoid;
+    margin-top: 15px;
   }
 }

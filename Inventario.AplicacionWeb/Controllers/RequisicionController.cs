@@ -97,6 +97,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var vm = new VMRequiForm
             {
+                IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
@@ -238,7 +239,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuarioLog = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             try
             {
-                var resultado = await _requisicionService.AsignarRequisicion(idRequi, idUsuarioLog,idUsuario);
+                var resultado = await _requisicionService.AsignarRequisicion(idRequi, idUsuarioLog, idUsuario);
                 return Json(new { success = resultado });
             }
             catch

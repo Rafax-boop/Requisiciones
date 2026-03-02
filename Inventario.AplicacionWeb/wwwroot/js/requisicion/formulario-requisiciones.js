@@ -236,7 +236,8 @@
                     icon: 'error',
                     title: 'Campos incompletos',
                     html: '<ul style="text-align:left;">' + mensajes.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul>',
-                    confirmButtonText: 'Entendido'
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: 'var(--rosa-400)'
                 });
             }
             return;
