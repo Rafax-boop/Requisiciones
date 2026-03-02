@@ -8,9 +8,8 @@
     <link rel="icon" type="image/png" href="~/img/corazon.png" asp-append-version="true" />
     <script type="importmap"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
@@ -32,26 +31,26 @@
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
-        #page-loader.oculto {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+            #page-loader.oculto {
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
 
-        #page-loader img {
-            width: 110px;
-            animation: loader-pulse 1.1s ease-in-out infinite;
-            filter: drop-shadow(0 0 18px rgba(255, 105, 180, 0.45));
-        }
+            #page-loader img {
+                width: 110px;
+                animation: loader-pulse 1.1s ease-in-out infinite;
+                filter: drop-shadow(0 0 18px rgba(255, 105, 180, 0.45));
+            }
 
-        #page-loader p {
-            font-family: 'Outfit', sans-serif;
-            font-size: 15px;
-            font-weight: 500;
-            color: #d63384;
-            letter-spacing: 0.5px;
-            margin: 0;
-        }
+            #page-loader p {
+                font-family: 'Outfit', sans-serif;
+                font-size: 15px;
+                font-weight: 500;
+                color: #d63384;
+                letter-spacing: 0.5px;
+                margin: 0;
+            }
 
         @@keyframes loader-pulse {
 
@@ -84,21 +83,21 @@
 
                 <li class="nav-buttons">
                     <a href="@Url.Action("Index", "Home")"
-                        class="@(ViewData["Title"]?.ToString() == "Home Page" ? "active" : "")">
+                       class="@(ViewData["Title"]?.ToString() == "Home Page" ? "active" : "")">
                         Inicio
                     </a>
                     <a href="@Url.Action("TablaRequisiciones", "Requisicion")"
-                        class="@(ViewData["Title"]?.ToString() == "TablaRequisiciones" ? "active" : "")">
+                       class="@(ViewData["Title"]?.ToString() == "TablaRequisiciones" ? "active" : "")">
                         Requisición
                     </a>
                     <a href="@Url.Action("TablaRequisicionServicios", "Servicios")"
-                        class="@(ViewData["Title"]?.ToString() == "TablaRequisicionServicios" || ViewData["Title"]?.ToString() == "FormularioRequisicionServicios" || ViewData["Title"]?.ToString() == "Requisiciones de Servicios" || ViewData["Title"]?.ToString() == "Formulario Requisición de Servicios" ? "active" : "")">
+                       class="@(ViewData["Title"]?.ToString() == "TablaRequisicionServicios" || ViewData["Title"]?.ToString() == "FormularioRequisicionServicios" || ViewData["Title"]?.ToString() == "Requisiciones de Servicios" || ViewData["Title"]?.ToString() == "Formulario Requisición de Servicios" ? "active" : "")">
                         Servicios
                     </a>
                     @if (User.IsInRole("2") || User.IsInRole("5") || User.IsInRole("4"))
                     {
                         <a href="@Url.Action("Index", "Almacen")"
-                            class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
+                           class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">
                             Almacén
                         </a>
                     }
@@ -107,7 +106,7 @@
                 <div class="nav-bar-user">
                     <li class="nav-item dropdown list-unstyled">
                         <a class="nav-link dropdown-toggle p-1" href="#" id="navbarDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
+                           data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="line-md--account"></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end glass-effect-pestaña"
@@ -191,23 +190,45 @@
         })();
 
         @if (TempData["MensajeExito"] != null)
-            {
-                <text>
+        {
+                    <text>
                     window.addEventListener('load', function () {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Listo!',
-                            text: '@Html.Raw(TempData["MensajeExito"])',
-                            confirmButtonColor: '#d63384',
-                            confirmButtonText: 'Aceptar',
-                            timer: 3500,
-                            timerProgressBar: true
-                        });
-                        });
-                </text>
+                        @if (TempData["FolioCreado"] != null)
+                        {
+                                    <text>
+                                    // Modal ESPECIAL para CREAR Requisición con FOLIO
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: '¡Requisición Creada!',
+                                        html: '@Html.Raw(TempData["MensajeExito"])<br>' +
+                                              '<div style="font-size: 1.3em; font-weight: bold; color: #d63384; margin-top: 10px;">' +
+                                              '@TempData["FolioCreado"]</div>',
+                                        confirmButtonColor: '#d63384',
+                                        confirmButtonText: 'Ver en Tabla',
+                                        allowOutsideClick: false,
+                                        timer: 6000
+                                    });
+                                    </text>
+                        }
+                        else
+                        {
+                                    <text>
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: '¡Listo!',
+                                        text: '@Html.Raw(TempData["MensajeExito"])',
+                                        confirmButtonColor: '#d63384',
+                                        confirmButtonText: 'Aceptar',
+                                        timer: 3500,
+                                        timerProgressBar: true
+                                    });
+                                    </text>
+                        }
+                    });
+                    </text>
         }
-            @if (TempData["MensajeError"] != null)
-            {
+        @if (TempData["MensajeError"] != null)
+        {
                 <text>
                     window.addEventListener('load', function () {
                         Swal.fire({

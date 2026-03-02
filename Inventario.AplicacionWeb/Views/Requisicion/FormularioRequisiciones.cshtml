@@ -20,10 +20,21 @@
             <div class="requisicion-info">
                 <div class="requisicion">
                     <p class="info-body">Requisición:</p>
-                    <label class="info-body"></label>
+                    <label class="info-body">@Model.NumRequisicion</label>
                 </div>
             </div>
         </div>
+
+        @if (modoEdicion)
+        {
+            <div class="formulario-input">
+                <label>Observaciones de Modificación:</label>
+                <textarea name="ObservacionesBitacora" rows="3" readonly 
+                          placeholder="Observaciones previas de modificación (solo lectura)"
+                          class="form-control">@Model.ObservacionesBitacora</textarea>
+                <small class="form-text text-muted">Estas son las observaciones de la última modificación requerida</small>
+            </div>
+        }
     
         <div class="container-formulario">
             <div class="seccion-1">

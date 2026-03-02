@@ -157,6 +157,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 }).ToList()
             };
 
+            vm.ObservacionesBitacora = await _requisicionService.ObtenerObservacionesModificacion(id);
+
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisiciones", vm);
         }
@@ -185,17 +187,11 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
 
-            bool exito = await _requisicionService.CrearRequisicion(dto, idUsuario);
+            var requiCreada = await _requisicionService.CrearRequisicion(dto, idUsuario);
 
-            if (exito)
-            {
-                TempData["MensajeExito"] = "Requisición guardada correctamente.";
-                return RedirectToAction("TablaRequisiciones", "Requisicion");
-            }
-            else
-            {
-                return View(modelo);
-            }
+            TempData["MensajeExito"] = "Requisición guardada correctamente.";
+            TempData["FolioCreado"] = requiCreada.NumRequisicion;
+            return RedirectToAction("TablaRequisiciones", "Requisicion");
         }
 
         [HttpGet]
