@@ -27,11 +27,11 @@
 
         @if (modoEdicion)
         {
-            <div class="formulario-input">
-                <label>Observaciones de Modificación:</label>
-                <textarea name="ObservacionesBitacora" rows="3" readonly 
+            <div class="container-formulario">
+                <label class="info-body">Observaciones de Modificación:</label>
+                <textarea name="ObservacionesBitacora" rows="3" readonly disabled
                           placeholder="Observaciones previas de modificación (solo lectura)"
-                          class="form-control">@Model.ObservacionesBitacora</textarea>
+                          class=" form-control" style="font-family: var(--font-body)">@Model.ObservacionesBitacora</textarea>
                 <small class="form-text text-muted">Estas son las observaciones de la última modificación requerida</small>
             </div>
         }
