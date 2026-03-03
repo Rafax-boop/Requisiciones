@@ -290,6 +290,10 @@ namespace Inventario.AplicacionWeb.Controllers
                 modelo.Observaciones,
                 modelo.RequiereModificacion,
                 idUsuario,
+                modelo.IdPP,
+                modelo.FF,
+                modelo.TipoPrograma,
+                modelo.ClaveRegion,
                 modelo.CogsEditados.Select(c => (c.IdArticulo, c.Cog)).ToList()
             );
 

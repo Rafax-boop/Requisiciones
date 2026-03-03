@@ -277,6 +277,8 @@ namespace Inventario.BLL.Implementacion
         public async Task<bool> AtenderRequisicion(
             int idRequisicion, string observaciones,
             bool requiereModificacion, int idUsuario,
+            int idpp, string FF, string tipoPrograma,
+            int claveRegion,
             List<(int IdArticulo, int Cog)> cogsEditados = null
         )
         {
@@ -307,6 +309,10 @@ namespace Inventario.BLL.Implementacion
 
                 int nuevoEstatus = requiereModificacion ? 3 : 4;
                 requisicion.IdEstatus = nuevoEstatus;
+                requisicion.IdPp = idpp;
+                requisicion.Ff = FF;
+                requisicion.TipoPrograma = tipoPrograma;
+                requisicion.ClaveRegion = claveRegion;
                 requisicion.FechaSistema = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 

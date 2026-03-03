@@ -395,22 +395,25 @@
   });
 
   window.verDetalle = function (idMaestro, modo = "ver") {
-    const seccionAtender = document.getElementById("seccionAtender");
-    if (seccionAtender) {
-      const isAtender = modo === "atender";
-      seccionAtender.style.display = isAtender ? "block" : "none";
+    const seccionesAtender = document.querySelectorAll(".seccionAtender");
+      if (seccionesAtender.length > 0) {
+          const isAtender = modo === "atender";
 
-      if (isAtender) {
-        $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
-          dropdownParent: $("#modalDetalle"),
-          width: "100%",
-          language: "es",
-          placeholder: function () {
-            return $(this).data('placeholder');
+          seccionesAtender.forEach(function (sec) {
+              sec.style.display = isAtender ? "block" : "none";
+          });
+
+          if (isAtender) {
+              $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+                  dropdownParent: $("#modalDetalle"),
+                  width: "100%",
+                  language: "es",
+                  placeholder: function () {
+                      return $(this).data('placeholder');
+                  }
+              });
           }
-        });
       }
-    }
     if (!obtenerDetallesUrl) return;
 
     $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
