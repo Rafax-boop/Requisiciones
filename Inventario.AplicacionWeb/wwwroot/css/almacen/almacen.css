@@ -388,3 +388,33 @@
     border-color: #fde68a;
     background: #fffbeb;
 }
+
+/* ──────────────────────────────────────────
+   TABLAS RESPONSIVAS EN MODALES
+────────────────────────────────────────── */
+.table-responsive-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rosa-200) var(--slate-100);
+}
+
+.table-responsive-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive-container::-webkit-scrollbar-track {
+    background: var(--slate-100);
+    border-radius: 10px;
+}
+
+.table-responsive-container::-webkit-scrollbar-thumb {
+    background: var(--rosa-200);
+    border-radius: 10px;
+}
+
+.table-responsive-container::-webkit-scrollbar-thumb:hover {
+    background: var(--rosa-300);
+}

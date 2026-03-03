@@ -397,7 +397,19 @@
   window.verDetalle = function (idMaestro, modo = "ver") {
     const seccionAtender = document.getElementById("seccionAtender");
     if (seccionAtender) {
-      seccionAtender.style.display = modo === "atender" ? "block" : "none";
+      const isAtender = modo === "atender";
+      seccionAtender.style.display = isAtender ? "block" : "none";
+
+      if (isAtender) {
+        $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+          dropdownParent: $("#modalDetalle"),
+          width: "100%",
+          language: "es",
+          placeholder: function () {
+            return $(this).data('placeholder');
+          }
+        });
+      }
     }
     if (!obtenerDetallesUrl) return;
 

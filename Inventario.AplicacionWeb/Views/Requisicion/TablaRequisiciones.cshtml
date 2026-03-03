@@ -205,59 +205,78 @@
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
-                    <div id="seccionAtender" style="display:none; margin-top:20px;">
-
-                        <div class="formulario-input">
-                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select">
-                                <option value="">-- Selecciona actividad --</option>
-                                @foreach (var act in Model.ListaActividades)
-                                {
-                                    <option value="@act.Value">@act.Text</option>
-                                }
-                            </select>
+                    <div id="seccionAtender" style="display:none; margin-top:20px;" class="px-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="formulario-input">
+                                    <label>Actividad:</label>
+                                    <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select select2">
+                                        <option value="">-- Selecciona actividad --</option>
+                                        @foreach (var act in Model.ListaActividades)
+                                        {
+                                            <option value="@act.Value">@act.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="formulario-input">
+                                    <label>Fuente de Financiamiento:</label>
+                                    <select id="ffSelect" name="FFV" class="form-select select2">
+                                        <option value="">-- Selecciona Fuente de Financiamiento --</option>
+                                        <option value="1">Federal</option>
+                                        <option value="2">Estatal</option>
+                                    </select>
+                                    <input type="hidden" name="FF" id="ffTexto" />
+                                </div>
+                            </div>
                         </div>
 
-                        <div style="margin-top:15px;">
-                            <select id="ffSelect" name="FFV" class="form-select me-2">
-                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
-                                <option value="1">Federal</option>
-                                <option value="2">Estatal</option>
-                            </select>
-                            <input type="hidden" name="FF" id="ffTexto" />
-
-                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select me-2">
-                                <option value="">-- Selecciona el Tipo de Programa --</option>
-                                <option value="1">Prioritario</option>
-                                <option value="2">Adicional</option>
-                            </select>
-                            <input type="hidden" name="TipoPrograma" id="tipoProgramaTexto" />
-
-                            <select id="municipio" name="municipio" class="form-select">
-                                <option value="">-- Selecciona municipio --</option>
-                                @foreach (var act in Model.ListaMunicipios)
-                                {
-                                    <option value="@act.Value">@act.Text</option>
-                                }
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="formulario-input">
+                                    <label>Tipo de Programa:</label>
+                                    <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select select2">
+                                        <option value="">-- Selecciona el Tipo de Programa --</option>
+                                        <option value="1">Prioritario</option>
+                                        <option value="2">Adicional</option>
+                                    </select>
+                                    <input type="hidden" name="TipoPrograma" id="tipoProgramaTexto" />
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="formulario-input">
+                                    <label>Municipio:</label>
+                                    <select id="municipio" name="municipio" class="form-select select2">
+                                        <option value="">-- Selecciona municipio --</option>
+                                        @foreach (var act in Model.ListaMunicipios)
+                                        {
+                                            <option value="@act.Value">@act.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-body modal-body-premium">
-                        <table class="tabla-requisiciones" id="tablaModalDetalle">
-                            <thead>
-                                <tr>
-                                    <th>Nº Partida</th>
-                                    <th>ID Artículo</th>
-                                    <th>Cantidad</th>
-                                    <th>Unidad Medida</th>
-                                    <th>Descripción</th>
-                                    <th>Descripción Detallada</th>
-                                    <th>COG Editable</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaDetalle">
-                                <!-- Se carga dinámicamente -->
-                            </tbody>
-                        </table>
+                        <div class="table-responsive-container">
+                            <table class="tabla-requisiciones" id="tablaModalDetalle">
+                                <thead>
+                                    <tr>
+                                        <th>Nº Partida</th>
+                                        <th>ID Artículo</th>
+                                        <th>Cantidad</th>
+                                        <th>Unidad Medida</th>
+                                        <th>Descripción</th>
+                                        <th>Descripción Detallada</th>
+                                        <th>COG Editable</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaDetalle">
+                                    <!-- Se carga dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
                         <div id="seccionAtender" style="display:none; margin-top:20px;">
 
                             <div class="formulario-input">
