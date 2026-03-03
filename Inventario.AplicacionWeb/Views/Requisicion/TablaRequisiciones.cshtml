@@ -1,5 +1,5 @@
 @using Inventario.AplicacionWeb.Models.ViewModels
-@model List<VMRequisicionMaestra>
+@model VMTablaRequisiciones
 @{
     ViewData["Title"] = "TablaRequisiciones";
 }
@@ -85,7 +85,7 @@
                 @{
                     var idxReq = 0;
                 }
-                @foreach (var item in Model)
+                @foreach (var item in Model.Requisiciones)
                 {
                     idxReq++;
                     <tr>
@@ -204,6 +204,42 @@
                         <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
+                    </div>
+                    <div id="seccionAtender" style="display:none; margin-top:20px;">
+
+                        <div class="formulario-input">
+                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select">
+                                <option value="">-- Selecciona actividad --</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div style="margin-top:15px;">
+                            <select id="ffSelect" name="FFV" class="form-select me-2">
+                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
+                                <option value="1">Federal</option>
+                                <option value="2">Estatal</option>
+                            </select>
+                            <input type="hidden" name="FF" id="ffTexto" />
+
+                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select me-2">
+                                <option value="">-- Selecciona el Tipo de Programa --</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
+                            <input type="hidden" name="TipoPrograma" id="tipoProgramaTexto" />
+
+                            <select id="municipio" name="municipio" class="form-select">
+                                <option value="">-- Selecciona municipio --</option>
+                                @foreach (var act in Model.ListaMunicipios)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-body modal-body-premium">
                         <table class="tabla-requisiciones" id="tablaModalDetalle">

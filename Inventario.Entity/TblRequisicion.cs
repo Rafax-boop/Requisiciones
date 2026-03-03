@@ -45,13 +45,25 @@ public partial class TblRequisicion
 
     public string? Hash { get; set; }
 
+    public int? IdPp { get; set; }
+
+    public string? Ff { get; set; }
+
+    public string? TipoPrograma { get; set; }
+
+    public int? ClaveRegion { get; set; }
+
+    public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
+
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 
     public virtual TblEstatus? IdEstatusNavigation { get; set; }
 
-    public virtual TblUsuario? IdUsuarioNavigation { get; set; }
+    public virtual TblProgramaPresupuestario? IdPpNavigation { get; set; }
 
     public virtual TblUsuario? IdUsuarioMatNavigation { get; set; }
+
+    public virtual TblUsuario? IdUsuarioNavigation { get; set; }
 
     public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();
 

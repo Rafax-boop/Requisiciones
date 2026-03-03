@@ -27,6 +27,8 @@ namespace Inventario.IOC
             services.AddScoped<IRequisicionesService, RequisicionService>();
             services.AddScoped<IArticulosService, ArticulosService>();
             services.AddScoped<IAlmacenService, AlmacenService>();
+            services.AddScoped<IMunicipioServie, MunicipioService>();
+            services.AddScoped<IProgramaPresupuestarioService, ProgramaPresupuestarioService>();
         }
     }
 }

@@ -13,9 +13,9 @@ namespace Inventario.BLL.Interfaces
         Task<TblUsuario> ObtenerPorCredenciales(string usuario, string contrasena);
         Task<List<TblUsuario>> Lista();
         Task<List<TblUsuario>> ListaUsuariosMateriales();
-        Task<TblUsuario> Crear(TblUsuario entidad);
-        Task<TblUsuario> Editar(TblUsuario entidad);
-        Task<bool> Eliminar(int idUsuario);
+        //Task<TblUsuario> Crear(TblUsuario entidad);
+        //Task<TblUsuario> Editar(TblUsuario entidad);
+        //Task<bool> Eliminar(int idUsuario);
         Task<FormularioRequisicionDTO> ObtenerDatosDepartamento(int? idUsuario);
     }
 }

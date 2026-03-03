@@ -5,6 +5,7 @@ using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -17,13 +18,23 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMapper _mapper;
         private readonly IArticulosService _articulosService;
         private readonly IUsuarioService _usuarioService;
+        private readonly IMunicipioServie _municipioService;
+        private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
 
-        public RequisicionController(IRequisicionesService requisicionesService, IMapper mapper, IArticulosService articulosService, IUsuarioService usuarioService)
+        public RequisicionController(
+            IRequisicionesService requisicionesService,
+            IMapper mapper, IArticulosService articulosService,
+            IUsuarioService usuarioService,
+            IMunicipioServie municipioService,
+            IProgramaPresupuestarioService programaPresupuestarioService
+        )
         {
             _requisicionService = requisicionesService;
             _mapper = mapper;
             _articulosService = articulosService;
             _usuarioService = usuarioService;
+            _programaPresupuestarioService = programaPresupuestarioService;
+            _municipioService = municipioService;
         }
 
         [HttpGet]
@@ -48,26 +59,51 @@ namespace Inventario.AplicacionWeb.Controllers
         public async Task<IActionResult> TablaRequisiciones()
         {
             var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-            if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
+            if (string.IsNullOrEmpty(idDeptoClaim) ||
+                !int.TryParse(idDeptoClaim, out int idDepartamento))
+                return RedirectToAction("Login", "Acceso");
+
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) ||
+                !int.TryParse(idUsuarioClaim, out int idUsuario))
                 return RedirectToAction("Login", "Acceso");
 
             List<RequisicionMaestraDTO> listaDTO;
 
             if (User.IsInRole("3"))
             {
-                var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
-                    return RedirectToAction("Login", "Acceso");
-
-                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento, idUsuario);
+                listaDTO = await _requisicionService
+                    .ListarRequisiciones(idDepartamento, idUsuario);
             }
             else
             {
-                listaDTO = await _requisicionService.ListarRequisiciones(idDepartamento);
+                listaDTO = await _requisicionService
+                    .ListarRequisiciones(idDepartamento);
             }
 
-            var viewModel = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO);
-            return View(viewModel);
+            var actividades = await _programaPresupuestarioService
+                .ObtenerActividades();
+
+            var municipios = await _municipioService.ObtenerMunicipios();
+
+            var vm = new VMTablaRequisiciones
+            {
+                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO),
+
+                ListaActividades = actividades.Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = a.DescripcionActividad
+                }).ToList(),
+
+                ListaMunicipios = municipios.Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Municipio
+                }).ToList()
+            };
+
+            return View(vm);
         }
 
         [HttpGet]

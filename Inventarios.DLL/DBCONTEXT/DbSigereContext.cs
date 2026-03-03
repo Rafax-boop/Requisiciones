@@ -26,9 +26,13 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblInventario> TblInventarios { get; set; }
 
+    public virtual DbSet<TblMunicipio> TblMunicipios { get; set; }
+
     public virtual DbSet<TblPartidaPresupuestal> TblPartidaPresupuestals { get; set; }
 
     public virtual DbSet<TblPrioridad> TblPrioridads { get; set; }
+
+    public virtual DbSet<TblProgramaPresupuestario> TblProgramaPresupuestarios { get; set; }
 
     public virtual DbSet<TblProvedor> TblProvedors { get; set; }
 
@@ -145,6 +149,22 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.UnidadMedida).HasMaxLength(15);
         });
 
+        modelBuilder.Entity<TblMunicipio>(entity =>
+        {
+            entity.HasKey(e => e.IdMunicipio);
+
+            entity.ToTable("TblMunicipio");
+
+            entity.Property(e => e.IdMunicipio).ValueGeneratedNever();
+            entity.Property(e => e.ClaveRegion)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.NombreMunicipios)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.NombreRegion).HasMaxLength(50);
+        });
+
         modelBuilder.Entity<TblPartidaPresupuestal>(entity =>
         {
             entity.HasKey(e => e.IdPartida);
@@ -165,6 +185,37 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.NombrePrioridad)
                 .HasMaxLength(150)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblProgramaPresupuestario>(entity =>
+        {
+            entity.ToTable("TblProgramaPresupuestario");
+
+            entity.Property(e => e.Actividad)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Area)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.Componente)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Departamento)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.DescripcionActividad)
+                .HasMaxLength(2500)
+                .IsUnicode(false);
+            entity.Property(e => e.Pp)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("PP");
+            entity.Property(e => e.ProgramaSocial)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.UnidadMedida)
+                .HasMaxLength(50)
                 .IsUnicode(false);
         });
 
@@ -219,11 +270,16 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.FechaSistema).HasColumnType("datetime");
+            entity.Property(e => e.Ff)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasColumnName("FF");
             entity.Property(e => e.Hash)
                 .HasMaxLength(16)
                 .IsUnicode(false)
                 .IsFixedLength()
                 .HasColumnName("hash");
+            entity.Property(e => e.IdPp).HasColumnName("IdPP");
             entity.Property(e => e.IdUsuario).HasColumnName("idUsuario");
             entity.Property(e => e.Justificacion).IsUnicode(false);
             entity.Property(e => e.LugarEntrega)
@@ -241,7 +297,14 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Telefono)
                 .HasMaxLength(25)
                 .IsUnicode(false);
+            entity.Property(e => e.TipoPrograma)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.UsoEspecifico).IsUnicode(false);
+
+            entity.HasOne(d => d.ClaveRegionNavigation).WithMany(p => p.TblRequisicions)
+                .HasForeignKey(d => d.ClaveRegion)
+                .HasConstraintName("FK_tblRequisicion_TblMunicipio");
 
             entity.HasOne(d => d.IdDepartamentoNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdDepartamento)
@@ -251,13 +314,17 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdEstatus)
                 .HasConstraintName("FK_tblRequisicion_TblEstatus");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblRequisicions)
+            entity.HasOne(d => d.IdPpNavigation).WithMany(p => p.TblRequisicions)
+                .HasForeignKey(d => d.IdPp)
+                .HasConstraintName("FK_tblRequisicion_TblProgramaPresupuestario");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblRequisicionIdUsuarioNavigations)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK_tblRequisicion_TblUsuario");
 
             entity.HasOne(d => d.IdUsuarioMatNavigation).WithMany(p => p.TblRequisicionIdUsuarioMatNavigations)
                 .HasForeignKey(d => d.IdUsuarioMat)
-                .HasConstraintName("FK_tblRequisicion_TblUsuarioMat");
+                .HasConstraintName("FK_tblRequisicion_TblUsuario1");
         });
 
         modelBuilder.Entity<TblRequisicionDetalle>(entity =>
@@ -271,7 +338,7 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.DescripcionDetallada)
-                .HasMaxLength(1500)
+                .HasMaxLength(5000)
                 .IsUnicode(false);
             entity.Property(e => e.FechaRegistro).HasColumnType("datetime");
             entity.Property(e => e.UnidadMedida)

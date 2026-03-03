@@ -82,7 +82,7 @@ namespace Inventario.BLL.Implementacion
             return requiCreada;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int idDepartamento, int? idUsuarioMat = null)
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, int? idUsuarioMat = null)
         {
             IQueryable<TblRequisicion> query;
 

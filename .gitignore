@@ -10,3 +10,5 @@ Inventario.AplicacionWeb/appsettings.Development.json
 *.csproj.user
 *.pubxml
 *.pubxml.user
+
+*.log

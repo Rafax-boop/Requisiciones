@@ -21,68 +21,68 @@ namespace Inventario.BLL.Implementacion
             _repositorioDepartamentos = repositorioDepartamentos;
         }
 
-        public async Task<TblUsuario> Crear(TblUsuario entidad)
-        {
-            try
-            {
-                TblUsuario usuarioCreado = await _repositorioUsuarios.Crear(entidad);
+        //public async Task<TblUsuario> Crear(TblUsuario entidad)
+        //{
+        //    try
+        //    {
+        //        TblUsuario usuarioCreado = await _repositorioUsuarios.Crear(entidad);
 
-                if (usuarioCreado == null || usuarioCreado.IdUsuario == 0)
-                {
-                    throw new InvalidOperationException("No se pudo crear el usuario");
-                }
+        //        if (usuarioCreado == null || usuarioCreado.IdUsuario == 0)
+        //        {
+        //            throw new InvalidOperationException("No se pudo crear el usuario");
+        //        }
 
-                return usuarioCreado;
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+        //        return usuarioCreado;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //}
 
-        public async Task<TblUsuario> Editar(TblUsuario entidad)
-        {
-            try
-            {
-                IQueryable<TblUsuario> queryUsuario = await _repositorioUsuarios.Consultar(u => u.IdUsuario == entidad.IdUsuario);
+        //public async Task<TblUsuario> Editar(TblUsuario entidad)
+        //{
+        //    try
+        //    {
+        //        IQueryable<TblUsuario> queryUsuario = await _repositorioUsuarios.Consultar(u => u.IdUsuario == entidad.IdUsuario);
 
-                TblUsuario usuarioEditar = queryUsuario.First();
-                usuarioEditar.Usuario = entidad.Usuario;
-                usuarioEditar.Pasword = entidad.Pasword;
-                usuarioEditar.Telefono = entidad.Telefono;
-                usuarioEditar.Correo = entidad.Correo;
-                usuarioEditar.IdDepartamento = entidad.IdDepartamento;
-                usuarioEditar.IdRol = entidad.IdRol;
-                usuarioEditar.Activo = entidad.Activo;
+        //        TblUsuario usuarioEditar = queryUsuario.First();
+        //        usuarioEditar.Usuario = entidad.Usuario;
+        //        usuarioEditar.Pasword = entidad.Pasword;
+        //        usuarioEditar.Telefono = entidad.Telefono;
+        //        usuarioEditar.Correo = entidad.Correo;
+        //        usuarioEditar.IdDepartamento = entidad.IdDepartamento;
+        //        usuarioEditar.IdRol = entidad.IdRol;
+        //        usuarioEditar.Activo = entidad.Activo;
 
-                bool respuesta = await _repositorioUsuarios.Editar(usuarioEditar);
+        //        bool respuesta = await _repositorioUsuarios.Editar(usuarioEditar);
 
-                if (!respuesta)
-                {
-                    throw new InvalidOperationException("No se pudo editar el usuario");
-                }
-                return usuarioEditar;
-            }
-            catch
-            {
-                throw;
-            }
-        }
+        //        if (!respuesta)
+        //        {
+        //            throw new InvalidOperationException("No se pudo editar el usuario");
+        //        }
+        //        return usuarioEditar;
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //}
 
-        public async Task<bool> Eliminar(int idUsuario)
-        {
-            try
-            {
-                TblUsuario usuario = await _repositorioUsuarios.Obtener(u => u.IdUsuario == idUsuario);
+        //public async Task<bool> Eliminar(int idUsuario)
+        //{
+        //    try
+        //    {
+        //        TblUsuario usuario = await _repositorioUsuarios.Obtener(u => u.IdUsuario == idUsuario);
 
-                bool eliminado = await _repositorioUsuarios.Eliminar(usuario);
-                return true;
-            }
-            catch
-            {
-                throw;
-            }
-        }
+        //        bool eliminado = await _repositorioUsuarios.Eliminar(usuario);
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //}
 
         public async Task<List<TblUsuario>> Lista()
         {

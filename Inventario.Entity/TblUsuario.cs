@@ -27,7 +27,7 @@ public partial class TblUsuario
 
     public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();
 
-    public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
-
     public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioMatNavigations { get; set; } = new List<TblRequisicion>();
+
+    public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioNavigations { get; set; } = new List<TblRequisicion>();
 }
