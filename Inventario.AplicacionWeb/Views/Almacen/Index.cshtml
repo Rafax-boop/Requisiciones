@@ -12,7 +12,7 @@
 <div class="tabla-requi-page" data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")">
     <div class="tabla-requi-header">
         <div>
-            <h1 class="tabla-requi-titulo">Departamento de Almacén</h1>
+            <h1 class="info-titulo">Departamento de Almacén</h1>
             <p class="tabla-requi-subtitulo">DIF Puebla · Sistema de Requisiciones</p>
         </div>
     </div>
@@ -251,19 +251,19 @@
         </div>
     </div>
 
-<!-- Panel descripción detallada (ver completa, igual que Requisición y Servicios) -->
-<div id="desc-panel-modal" style="display:none;">
-    <div class="desc-panel-modal-header">
-        <span class="desc-panel-modal-titulo">Descripción detallada</span>
-        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
+    <!-- Panel descripción detallada (ver completa, igual que Requisición y Servicios) -->
+    <div id="desc-panel-modal" style="display:none;">
+        <div class="desc-panel-modal-header">
+            <span class="desc-panel-modal-titulo">Descripción detallada</span>
+            <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
     </div>
-    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
-</div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
-    <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
-}
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+        <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
+    }

@@ -271,50 +271,50 @@
     );
   };
 
-    window.enviarAtencion = function () {
-        const observaciones = document.getElementById("txtObservaciones").value.trim();
-        const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
+  window.enviarAtencion = function () {
+    const observaciones = document.getElementById("txtObservaciones").value.trim();
+    const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
 
-        if (!observaciones) {
-            alert("Debe escribir una observación.");
-            return;
-        }
+    if (!observaciones) {
+      alert("Debe escribir una observación.");
+      return;
+    }
 
-        // Recolectar COGs editables por fila
-        const cogsEditados = [];
-        document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
-            const inputCog = tr.querySelector(".select-cog-editable");
-            const idArticuloTd = tr.querySelectorAll("td")[1];
-            if (inputCog && idArticuloTd) {
-                cogsEditados.push({
-                    idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
-                    cog: parseInt($(inputCog).val()) || 0 || 0
-                });
-            }
+    // Recolectar COGs editables por fila
+    const cogsEditados = [];
+    document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
+      const inputCog = tr.querySelector(".select-cog-editable");
+      const idArticuloTd = tr.querySelectorAll("td")[1];
+      if (inputCog && idArticuloTd) {
+        cogsEditados.push({
+          idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
+          cog: parseInt($(inputCog).val()) || 0 || 0
         });
+      }
+    });
 
-        $.ajax({
-            url: atenderUrl,
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-                IdRequisicion: requisicionActual,
-                Observaciones: observaciones,
-                RequiereModificacion: requiereModificacion,
-                CogsEditados: cogsEditados
-            }),
-            success: function () {
-                const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
-                modal.hide();
-                document.getElementById("txtObservaciones").value = "";
-                document.getElementById("chkRequiereModificacion").checked = false;
-                location.reload();
-            },
-            error: function () {
-                alert("Error al atender la requisición.");
-            }
-        });
-    };
+    $.ajax({
+      url: atenderUrl,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({
+        IdRequisicion: requisicionActual,
+        Observaciones: observaciones,
+        RequiereModificacion: requiereModificacion,
+        CogsEditados: cogsEditados
+      }),
+      success: function () {
+        const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
+        modal.hide();
+        document.getElementById("txtObservaciones").value = "";
+        document.getElementById("chkRequiereModificacion").checked = false;
+        location.reload();
+      },
+      error: function () {
+        alert("Error al atender la requisición.");
+      }
+    });
+  };
 
   function mostrarMensajeVacio(totalVisibles) {
     var tbody = document.querySelector(
@@ -378,9 +378,9 @@
     _descPanelModalTrigger = null;
   };
 
-    $(document).on("select2:open", function () {
-        document.querySelector(".select2-search__field")?.focus();
-    });
+  $(document).on("select2:open", function () {
+    document.querySelector(".select2-search__field")?.focus();
+  });
 
   $(document).on("mousedown", function (e) {
     if (!_descPanelModalTrigger) return;
@@ -394,84 +394,84 @@
     }
   });
 
-    window.verDetalle = function (idMaestro, modo = "ver") {
-        const seccionAtender = document.getElementById("seccionAtender");
-        if (seccionAtender) {
-            seccionAtender.style.display = modo === "atender" ? "block" : "none";
-        }
-        if (!obtenerDetallesUrl) return;
+  window.verDetalle = function (idMaestro, modo = "ver") {
+    const seccionAtender = document.getElementById("seccionAtender");
+    if (seccionAtender) {
+      seccionAtender.style.display = modo === "atender" ? "block" : "none";
+    }
+    if (!obtenerDetallesUrl) return;
 
-        $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
-            var articulos = data.articulos || [];
-            var esDonativo = data.donativo === true;
+    $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+      var articulos = data.articulos || [];
+      var esDonativo = data.donativo === true;
 
-            var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
-            if (thCog) thCog.style.display = esDonativo ? "" : "none";
+      var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
+      if (thCog) thCog.style.display = esDonativo ? "" : "none";
 
-            var contenido = "";
-            if (articulos.length === 0) {
-                contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
-            } else {
-                articulos.forEach(function (item) {
-                    var textoCompleto = item.descripcionDetallada || "";
-                    var textoCorto = textoCompleto.length > 28
-                        ? textoCompleto.substring(0, 28) + "…"
-                        : textoCompleto || "Sin descripción...";
-                    var tieneTexto = textoCompleto ? "tiene-texto" : "";
-                    var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+      var contenido = "";
+      if (articulos.length === 0) {
+        contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
+      } else {
+        articulos.forEach(function (item) {
+          var textoCompleto = item.descripcionDetallada || "";
+          var textoCorto = textoCompleto.length > 28
+            ? textoCompleto.substring(0, 28) + "…"
+            : textoCompleto || "Sin descripción...";
+          var tieneTexto = textoCompleto ? "tiene-texto" : "";
+          var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
 
-                    
-                    var tdCog = esDonativo
-                        ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
-                        : "";
 
-                    contenido +=
-                        "<tr>" +
-                        "<td>" + (item.numPartida || "") + "</td>" +
-                        "<td>" + (item.idArticulo || "") + "</td>" +
-                        "<td>" + (item.cantidad || "") + "</td>" +
-                        "<td>" + (item.unidadMedida || "") + "</td>" +
-                        "<td>" + (item.descripcion || "") + "</td>" +
-                        '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
-                        '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
-                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
-                        tdCog +
-                        "</tr>";
-                });
-            }
+          var tdCog = esDonativo
+            ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
+            : "";
 
-            $("#tablaDetalle").html(contenido);
-
-            if (esDonativo) {
-                $("#tablaDetalle .select-cog-editable").each(function () {
-                    $(this).select2({
-                        dropdownParent: $("#modalDetalle"),
-                        width: "resolve",
-                        placeholder: "COG...",
-                        minimumInputLength: 1,
-                        language: "es",
-                        ajax: {
-                            url: urlBuscarCogs,
-                            dataType: "json",
-                            delay: 250,
-                            data: function (params) {
-                                return { term: params.term };
-                            },
-                            processResults: function (data) {
-                                return { results: data };
-                            },
-                            cache: true
-                        }
-                    });
-                });
-            }
-
-            var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
-            if (subtitulo)
-                subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
-
-            var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
-            modal.show();
+          contenido +=
+            "<tr>" +
+            "<td>" + (item.numPartida || "") + "</td>" +
+            "<td>" + (item.idArticulo || "") + "</td>" +
+            "<td>" + (item.cantidad || "") + "</td>" +
+            "<td>" + (item.unidadMedida || "") + "</td>" +
+            "<td>" + (item.descripcion || "") + "</td>" +
+            '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+            '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
+            '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+            tdCog +
+            "</tr>";
         });
-    };
+      }
+
+      $("#tablaDetalle").html(contenido);
+
+      if (esDonativo) {
+        $("#tablaDetalle .select-cog-editable").each(function () {
+          $(this).select2({
+            dropdownParent: $("#modalDetalle"),
+            width: "resolve",
+            placeholder: "COG...",
+            minimumInputLength: 1,
+            language: "es",
+            ajax: {
+              url: urlBuscarCogs,
+              dataType: "json",
+              delay: 250,
+              data: function (params) {
+                return { term: params.term };
+              },
+              processResults: function (data) {
+                return { results: data };
+              },
+              cache: true
+            }
+          });
+        });
+      }
+
+      var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+      if (subtitulo)
+        subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
+
+      var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
+      modal.show();
+    });
+  };
 })();

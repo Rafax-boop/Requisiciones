@@ -9,5 +9,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? Responsable { get; set; }
         public string? Estatus { get; set; }
         public int CantidadPartidas { get; set; }
+        public int DiasAsignado { get; set; }
+        public string? NombreAsignado { get; set; }
     }
 }

@@ -109,7 +109,13 @@ namespace Inventario.BLL.Implementacion
                     Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
                     Responsable = r.NomResponsableDepartamento,
                     Estatus = r.IdEstatusNavigation.NombreEstatus,
-                    CantidadPartidas = r.TblRequisicionDetalles.Count
+                    CantidadPartidas = r.TblRequisicionDetalles.Count,
+                    DiasAsignado = r.TblBitacoraEstatuses
+                        .Where(b => b.IdEstatus == 2)
+                        .OrderByDescending(b => b.FechaEstatus)
+                        .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
+                        .FirstOrDefault(),
+                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null
                 })
                 .ToListAsync();
 
@@ -226,7 +232,7 @@ namespace Inventario.BLL.Implementacion
             {
                 IdRequisicion = requisicion.IdRequisicion,
                 IdEstatus = requisicion.IdEstatus,
-                FechaEstatus = requisicion.FechaSistema,
+                FechaEstatus = DateTime.Now,
                 Observacion = "ModificaciónRequisiciones",
                 IdUsuario = idUsuario
             };
@@ -254,7 +260,7 @@ namespace Inventario.BLL.Implementacion
                 {
                     IdRequisicion = requisicion.IdRequisicion,
                     IdEstatus = requisicion.IdEstatus,
-                    FechaEstatus = requisicion.FechaSistema,
+                    FechaEstatus = DateTime.Now,
                     Observacion = "AsignarRequisiciones",
                     IdUsuario = idUsuario
                 };

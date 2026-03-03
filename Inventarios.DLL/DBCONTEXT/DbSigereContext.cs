@@ -78,6 +78,10 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblBitacoraEstatuses)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_TblBitacoraEstatus_tblRequisicion");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblBitacoraEstatuses)
+                .HasForeignKey(d => d.IdUsuario)
+                .HasConstraintName("FK_TblBitacoraEstatus_TblUsuario");
         });
 
         modelBuilder.Entity<TblDepartamento>(entity =>
@@ -250,6 +254,10 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK_tblRequisicion_TblUsuario");
+
+            entity.HasOne(d => d.IdUsuarioMatNavigation).WithMany(p => p.TblRequisicionIdUsuarioMatNavigations)
+                .HasForeignKey(d => d.IdUsuarioMat)
+                .HasConstraintName("FK_tblRequisicion_TblUsuarioMat");
         });
 
         modelBuilder.Entity<TblRequisicionDetalle>(entity =>

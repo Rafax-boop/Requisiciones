@@ -51,6 +51,8 @@ public partial class TblRequisicion
 
     public virtual TblUsuario? IdUsuarioNavigation { get; set; }
 
+    public virtual TblUsuario? IdUsuarioMatNavigation { get; set; }
+
     public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();
 
     public virtual ICollection<TblRequisicionDetalle> TblRequisicionDetalles { get; set; } = new List<TblRequisicionDetalle>();
