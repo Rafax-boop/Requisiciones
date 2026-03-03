@@ -18,4 +18,6 @@ public partial class TblBitacoraEstatus
     public int? IdUsuario { get; set; }
 
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
+
+    public virtual TblUsuario? IdUsuarioNavigation { get; set; }
 }
