@@ -143,6 +143,10 @@ namespace Inventario.BLL.Implementacion
             return new DetallesRequiDTO
             {
                 Donativo = maestra?.Donativo ?? false,
+                IdPp = maestra?.IdPp,
+                Ff = maestra?.Ff,
+                TipoPrograma = maestra?.TipoPrograma,
+                ClaveRegion = maestra?.ClaveRegion,
                 Articulos = lista
             };
         }

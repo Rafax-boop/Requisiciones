@@ -443,77 +443,96 @@
       }
     if (!obtenerDetallesUrl) return;
 
-    $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
-      var articulos = data.articulos || [];
-      var esDonativo = data.donativo === true;
+      $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+          var articulos = data.articulos || [];
+          var esDonativo = data.donativo === true;
 
-      var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
-      if (thCog) thCog.style.display = esDonativo ? "" : "none";
+          var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
+          if (thCog) thCog.style.display = esDonativo ? "" : "none";
 
-      var contenido = "";
-      if (articulos.length === 0) {
-        contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
-      } else {
-        articulos.forEach(function (item) {
-          var textoCompleto = item.descripcionDetallada || "";
-          var textoCorto = textoCompleto.length > 28
-            ? textoCompleto.substring(0, 28) + "…"
-            : textoCompleto || "Sin descripción...";
-          var tieneTexto = textoCompleto ? "tiene-texto" : "";
-          var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+          var contenido = "";
+          if (articulos.length === 0) {
+              contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
+          } else {
+              articulos.forEach(function (item) {
+                  var textoCompleto = item.descripcionDetallada || "";
+                  var textoCorto = textoCompleto.length > 28
+                      ? textoCompleto.substring(0, 28) + "…"
+                      : textoCompleto || "Sin descripción...";
+                  var tieneTexto = textoCompleto ? "tiene-texto" : "";
+                  var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+                  var tdCog = esDonativo
+                      ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
+                      : "";
+                  contenido +=
+                      "<tr>" +
+                      "<td>" + (item.numPartida || "") + "</td>" +
+                      "<td>" + (item.idArticulo || "") + "</td>" +
+                      "<td>" + (item.cantidad || "") + "</td>" +
+                      "<td>" + (item.unidadMedida || "") + "</td>" +
+                      "<td>" + (item.descripcion || "") + "</td>" +
+                      '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+                      '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
+                      '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                      tdCog +
+                      "</tr>";
+              });
+          }
 
+          $("#tablaDetalle").html(contenido);
 
-          var tdCog = esDonativo
-            ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
-            : "";
+          if (esDonativo) {
+              $("#tablaDetalle .select-cog-editable").each(function () {
+                  $(this).select2({
+                      dropdownParent: $("#modalDetalle"),
+                      width: "resolve",
+                      placeholder: "COG...",
+                      minimumInputLength: 1,
+                      language: "es",
+                      ajax: {
+                          url: urlBuscarCogs,
+                          dataType: "json",
+                          delay: 250,
+                          data: function (params) {
+                              return { term: params.term };
+                          },
+                          processResults: function (data) {
+                              return { results: data };
+                          },
+                          cache: true
+                      }
+                  });
+              });
+          }
 
-          contenido +=
-            "<tr>" +
-            "<td>" + (item.numPartida || "") + "</td>" +
-            "<td>" + (item.idArticulo || "") + "</td>" +
-            "<td>" + (item.cantidad || "") + "</td>" +
-            "<td>" + (item.unidadMedida || "") + "</td>" +
-            "<td>" + (item.descripcion || "") + "</td>" +
-            '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
-            '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
-            '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
-            tdCog +
-            "</tr>";
-        });
-      }
+          var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+          if (subtitulo)
+              subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
 
-      $("#tablaDetalle").html(contenido);
+          // ✅ Precargar selects si la requisición ya tiene datos previos
+          if (modo === "atender") {
+              if (data.idPp) {
+                  $("#actividadSeleccionada").val(data.idPp).trigger("change");
+              }
+              if (data.ff) {
+                  $("#ffSelect option").filter(function () {
+                      return $(this).text().trim() === data.ff;
+                  }).prop("selected", true);
+                  $("#ffSelect").trigger("change");
+              }
+              if (data.tipoPrograma) {
+                  $("#tipoProgramaSelect option").filter(function () {
+                      return $(this).text().trim() === data.tipoPrograma;
+                  }).prop("selected", true);
+                  $("#tipoProgramaSelect").trigger("change");
+              }
+              if (data.claveRegion) {
+                  $("#municipio").val(data.claveRegion).trigger("change");
+              }
+          }
 
-      if (esDonativo) {
-        $("#tablaDetalle .select-cog-editable").each(function () {
-          $(this).select2({
-            dropdownParent: $("#modalDetalle"),
-            width: "resolve",
-            placeholder: "COG...",
-            minimumInputLength: 1,
-            language: "es",
-            ajax: {
-              url: urlBuscarCogs,
-              dataType: "json",
-              delay: 250,
-              data: function (params) {
-                return { term: params.term };
-              },
-              processResults: function (data) {
-                return { results: data };
-              },
-              cache: true
-            }
-          });
-        });
-      }
-
-      var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
-      if (subtitulo)
-        subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
-
-      var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
-      modal.show();
-    });
+          var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
+          modal.show();
+      });
   };
 })();
