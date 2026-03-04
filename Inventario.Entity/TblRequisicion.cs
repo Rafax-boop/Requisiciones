@@ -37,7 +37,7 @@ public partial class TblRequisicion
 
     public bool? Activo { get; set; }
 
-    public DateTime? FechaSistema { get; set; }
+    public DateTime? FechaModificacion { get; set; }
 
     public int Consecutivo { get; set; }
 

@@ -20,13 +20,15 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IUsuarioService _usuarioService;
         private readonly IMunicipioServie _municipioService;
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
+        private readonly IAlmacenService _almacenService;
 
         public RequisicionController(
             IRequisicionesService requisicionesService,
             IMapper mapper, IArticulosService articulosService,
             IUsuarioService usuarioService,
             IMunicipioServie municipioService,
-            IProgramaPresupuestarioService programaPresupuestarioService
+            IProgramaPresupuestarioService programaPresupuestarioService,
+            IAlmacenService almacenService
         )
         {
             _requisicionService = requisicionesService;
@@ -35,6 +37,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _usuarioService = usuarioService;
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
+            _almacenService = almacenService;
         }
 
         [HttpGet]
@@ -85,6 +88,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ObtenerActividades();
 
             var municipios = await _municipioService.ObtenerMunicipios();
+            var estatus = await _almacenService.ObtenerEstatus();
 
             var vm = new VMTablaRequisiciones
             {
@@ -100,7 +104,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     Value = m.Id.ToString(),
                     Text = m.Municipio
-                }).ToList()
+                }).ToList(),
+                Estatus = estatus
             };
 
             return View(vm);

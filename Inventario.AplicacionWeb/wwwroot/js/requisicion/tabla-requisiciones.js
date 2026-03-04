@@ -14,14 +14,6 @@
   var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
   var _idRequiAsignar = null;
 
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".filtro-dropdown")) {
-      document
-        .querySelectorAll(".filtro-dropdown")
-        .forEach((d) => d.classList.remove("open"));
-    }
-  });
-
   var fechaSeleccionada = "";
 
   var fpInstance = flatpickr("#filtroFecha", {
@@ -59,7 +51,12 @@
       paginacionRequisicionesContainer = document.getElementById(
         "paginacionRequisiciones",
       );
-    }
+      }
+
+      var textoEstado = (
+          (document.getElementById("filtroEstado") &&
+              document.getElementById("filtroEstado").value) || ""
+      ).toLowerCase().trim();
 
     var textoNumReq = (
       (document.getElementById("filtroNumReq") &&
@@ -92,9 +89,12 @@
 
       var pasaNumReq = !textoNumReq || folio.indexOf(textoNumReq) !== -1;
       var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
-      var pasaDepto = !textoDepto || depto.indexOf(textoDepto) !== -1;
+        var pasaDepto = !textoDepto || depto.indexOf(textoDepto) !== -1;
 
-      if (pasaNumReq && pasaFecha && pasaDepto) {
+        var estado = (celdas[6] && celdas[6].textContent.toLowerCase()) || "";
+        var pasaEstado = !textoEstado || estado.indexOf(textoEstado) !== -1;
+
+        if (pasaNumReq && pasaFecha && pasaDepto && pasaEstado) {
         filasVisibles.push(fila);
       } else {
         fila.style.display = "none";
@@ -374,9 +374,11 @@
   aplicarPaginacionRequisiciones();
 
   var filtroNumReq = document.getElementById("filtroNumReq");
-  var filtroDepto = document.getElementById("filtroDepartamento");
+    var filtroDepto = document.getElementById("filtroDepartamento");
+    var filtroEstado = document.getElementById("filtroEstado");
   if (filtroNumReq) filtroNumReq.addEventListener("input", filtrarTabla);
-  if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
+    if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
+    if (filtroEstado) filtroEstado.addEventListener("change", filtrarTabla);
 
   window.verPdf = function (id) {
     var url = (verPdfUrl || "").replace(/\/$/, "") + "/" + id;

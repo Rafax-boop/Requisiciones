@@ -269,7 +269,7 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Correo)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaSistema).HasColumnType("datetime");
+            entity.Property(e => e.FechaModificacion).HasColumnType("datetime");
             entity.Property(e => e.Ff)
                 .HasMaxLength(10)
                 .IsUnicode(false)

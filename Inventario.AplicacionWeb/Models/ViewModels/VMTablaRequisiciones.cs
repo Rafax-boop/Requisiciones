@@ -9,5 +9,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public List<SelectListItem> ListaActividades { get; set; }
 
         public List<SelectListItem> ListaMunicipios { get; set; }
+        public List<string> Estatus { get; set; } = new();
     }
 }

@@ -57,6 +57,16 @@
             <label>Departamento</label>
             <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
         </div>
+        <div class="filtro-grupo">
+            <label>Estado</label>
+            <select id="filtroEstado" class="filtro-select-almacen">
+                <option value="">Todos los estados</option>
+                @foreach (var e in Model.Estatus)
+                {
+                    <option value="@e">@e</option>
+                }
+            </select>
+        </div>
     </div>
 
     <div class="container-formulario tabla-container">

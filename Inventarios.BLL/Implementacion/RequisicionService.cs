@@ -44,7 +44,7 @@ namespace Inventario.BLL.Implementacion
                 IdUsuario = idUsuario,
                 IdEstatus = 1,
                 Activo = true,
-                FechaSistema = DateTime.Now,
+                FechaModificacion = DateTime.Now,
                 Hash = GenerarSelloDigital()
             };
             var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
@@ -53,7 +53,7 @@ namespace Inventario.BLL.Implementacion
             {
                 IdRequisicion = requiCreada.IdRequisicion,
                 IdEstatus = requiCreada.IdEstatus,
-                FechaEstatus = requiCreada.FechaSistema,
+                FechaEstatus = requiCreada.FechaModificacion,
                 Observacion = "FormularioRequisiciones",
                 IdUsuario = idUsuario
             };
@@ -208,6 +208,7 @@ namespace Inventario.BLL.Implementacion
             requisicion.IdEstatus = 1;
             requisicion.CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario;
             requisicion.Donativo = modelo.UsoMaterial;
+            requisicion.FechaModificacion = DateTime.Now;
 
             await _repositoryRequisicion.Editar(requisicion);
 
@@ -257,6 +258,7 @@ namespace Inventario.BLL.Implementacion
 
                 requisicion.IdUsuarioMat = idUsuarioMat;
                 requisicion.IdEstatus = 2;
+                requisicion.FechaModificacion = DateTime.Now;
 
                 await _repositoryRequisicion.Editar(requisicion);
 
@@ -317,7 +319,7 @@ namespace Inventario.BLL.Implementacion
                 requisicion.Ff = FF;
                 requisicion.TipoPrograma = tipoPrograma;
                 requisicion.ClaveRegion = claveRegion;
-                requisicion.FechaSistema = DateTime.Now;
+                requisicion.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 
                 var bitacora = new TblBitacoraEstatus
