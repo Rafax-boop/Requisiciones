@@ -271,50 +271,77 @@
     );
   };
 
-  window.enviarAtencion = function () {
-    const observaciones = document.getElementById("txtObservaciones").value.trim();
-    const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
+    window.enviarAtencion = function () {
+        const observaciones = document.getElementById("txtObservaciones").value.trim();
+        const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
 
-    if (!observaciones) {
-      alert("Debe escribir una observación.");
-      return;
-    }
+        //Recoger los nuevos campos
+        const idpp = parseInt($("#actividadSeleccionada").val()) || 0;
+        const ff = $("#ffSelect").find("option:selected").text().trim();
+        const tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
+        const claveRegion = parseInt($("#municipio").val()) || 0;
 
-    // Recolectar COGs editables por fila
-    const cogsEditados = [];
-    document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
-      const inputCog = tr.querySelector(".select-cog-editable");
-      const idArticuloTd = tr.querySelectorAll("td")[1];
-      if (inputCog && idArticuloTd) {
-        cogsEditados.push({
-          idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
-          cog: parseInt($(inputCog).val()) || 0 || 0
+        if (!observaciones) {
+            alert("Debe escribir una observación.");
+            return;
+        }
+
+        //Validar que los campos requeridos tengan valor
+        if (!idpp) {
+            alert("Debe seleccionar una actividad.");
+            return;
+        }
+        if (!$("#ffSelect").val()) {
+            alert("Debe seleccionar una fuente de financiamiento.");
+            return;
+        }
+        if (!$("#tipoProgramaSelect").val()) {
+            alert("Debe seleccionar un tipo de programa.");
+            return;
+        }
+        if (!claveRegion) {
+            alert("Debe seleccionar un municipio.");
+            return;
+        }
+
+        const cogsEditados = [];
+        document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
+            const inputCog = tr.querySelector(".select-cog-editable");
+            const idArticuloTd = tr.querySelectorAll("td")[1];
+            if (inputCog && idArticuloTd) {
+                cogsEditados.push({
+                    idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
+                    cog: parseInt($(inputCog).val()) || 0
+                });
+            }
         });
-      }
-    });
 
-    $.ajax({
-      url: atenderUrl,
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify({
-        IdRequisicion: requisicionActual,
-        Observaciones: observaciones,
-        RequiereModificacion: requiereModificacion,
-        CogsEditados: cogsEditados
-      }),
-      success: function () {
-        const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
-        modal.hide();
-        document.getElementById("txtObservaciones").value = "";
-        document.getElementById("chkRequiereModificacion").checked = false;
-        location.reload();
-      },
-      error: function () {
-        alert("Error al atender la requisición.");
-      }
-    });
-  };
+        $.ajax({
+            url: atenderUrl,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                IdRequisicion: requisicionActual,
+                Observaciones: observaciones,
+                RequiereModificacion: requiereModificacion,
+                CogsEditados: cogsEditados,
+                IdPp: idpp,
+                FF: ff,
+                TipoPrograma: tipoPrograma,
+                ClaveRegion: claveRegion
+            }),
+            success: function () {
+                const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
+                modal.hide();
+                document.getElementById("txtObservaciones").value = "";
+                document.getElementById("chkRequiereModificacion").checked = false;
+                location.reload();
+            },
+            error: function () {
+                alert("Error al atender la requisición.");
+            }
+        });
+    };
 
   function mostrarMensajeVacio(totalVisibles) {
     var tbody = document.querySelector(
