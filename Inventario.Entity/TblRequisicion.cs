@@ -53,6 +53,10 @@ public partial class TblRequisicion
 
     public int? ClaveRegion { get; set; }
 
+    public string? TipoServicio { get; set; }
+
+    public DateOnly? FechaServicio { get; set; }
+
     public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }

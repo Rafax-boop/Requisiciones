@@ -9,95 +9,125 @@
 }
 
 <div class="mt-3 container" style="width:1300px;">
-    <div class="info-requisicion">
-        <div class="fantasma">
-            <div class="filtro-grupo">
-                <label class="m-0 info-body">Fecha de emisión:</label>
-                <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
+    <form asp-action= method="post" class="no-loader">
+        <div class="info-requisicion">
+            <div class="fantasma">
+                <div class="filtro-grupo">
+                    <label class="m-0 info-body">Fecha de emisión:</label>
+                    <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
+                </div>
+            </div>
+            <div class="container-info">
+                <p class="info-titulo mt-3">Requisición de servicios</p>
+            </div>
+            <div class="requisicion-info">
+                <div class="requisicion">
+                    <p class="info-body">Requisición:</p>
+                    <label class="info-body"></label>
+                </div>
             </div>
         </div>
-        <div class="container-info">
-            <p class="info-titulo mt-3">Requisición de servicios</p>
-        </div>
-        <div class="requisicion-info">
-            <div class="requisicion">
-                <p class="info-body">Requisición:</p>
-                <label class="info-body"></label>
-            </div>
-        </div>
-    </div>
 
-    <div class="container-formulario">
-        <div class="seccion-1">
-            <div class="formulario-input">
-                <label>Departamento solicitante:</label>
-                <input asp-for="IdDepartamento" type="hidden" />
-                <input type="text" placeholder="Ej: Recursos Humanos" value="@Model.Departamento" readonly />
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Departamento solicitante:</label>
+                    <input asp-for="IdDepartamento" type="hidden" />
+                    <input type="text" placeholder="Ej: Recursos Humanos" value="@Model.Departamento" readonly />
+                </div>
+                <div class="formulario-input">
+                    <label>Responsable:</label>
+                    <input asp-for="NomDirector" type="hidden" />
+                    <input type="text" name="NomResponsableDepartamento" placeholder="Nombre completo"
+                           value="@Model.NomResponsableDepartamento" readonly />
+                </div>
             </div>
-            <div class="formulario-input">
-                <label>Responsable:</label>
-                <input asp-for="NomDirector" type="hidden" />
-                <input type="text" name="NomResponsableDepartamento" placeholder="Nombre completo"
-                       value="@Model.NomResponsableDepartamento" readonly />
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Correo:</label>
+                    <input type="email" name="Correo" placeholder="correo@ejemplo.com" value="@Model.Correo" required />
+                </div>
+                <div class="formulario-input">
+                    <label>Teléfono:</label>
+                    <input type="tel" name="Telefono" placeholder="(222) 000-0000" value="@Model.Telefono" required />
+                </div>
             </div>
         </div>
-        <div class="seccion-2">
-            <div class="formulario-input">
-                <label>Correo:</label>
-                <input type="email" name="Correo" placeholder="correo@ejemplo.com" value="@Model.Correo" required />
-            </div>
-            <div class="formulario-input">
-                <label>Teléfono:</label>
-                <input type="tel" name="Telefono" placeholder="(222) 000-0000" value="@Model.Telefono" required />
-            </div>
-        </div>
-    </div>
 
-    <div class="container-formulario">
-        <div class="seccion-completa">
-            <label class="info-titulo text-center">Datos del servicio</label>
-            <div class="formulario-input">
-                <label>Especificar tipo de servicio solicitado:</label>
-                <select id="tipoServicio" name="TipoServicio" class="select2-tipo-servicio" style="width:100%" required>
-                    <option value="">-- Seleccionar tipo --</option>
-                    <option value="Mantenimiento">Mantenimiento</option>
-                    <option value="Servicio Proveedor">Servicio Proveedor</option>
-                </select>
-            </div>
-            <div class="formulario-input">
-                <label>Justificación del servicio solicitado:</label>
-                <textarea type="text" name="UsoEspecifico" placeholder="Justifique el servicio solicitado" value=""
-                          required></textarea>
-            </div>
-            <div class="formulario-input">
-                <label>Fecha de prestación del servicio:</label>
-                <input type="text" id="fechaPrestacionServicio" name="FechaPrestacion" placeholder="Seleccionar fecha"
-                       readonly required />
-            </div>
-            <div class="formulario-input">
-                <label>Lugar de prestación del servicio:</label>
-                <input type="text" name="LugarPrestacion" placeholder="Lugar de prestación del servicio" value=""
-                       required />
-            </div>
-            <div class="formulario-input">
-                <label>Nombre y puesto del enlace adaministrativo del area solicitante:</label>
-                <textarea type="text" name="NombrePuesto" placeholder="Nombre y puesto" value="" required></textarea>
-            </div>
-            <div class="formulario-input">
-                <label>Número celular del enlace adaministrativo del area solicitante:</label>
-                <input type="tel" min="7" max="12" name="NumeroCelular" placeholder="(222) 000-0000" value=""
-                       required />
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <label class="info-titulo text-center">Datos del servicio</label>
+                <div class="formulario-input">
+                    <label>Especificar tipo de servicio solicitado:</label>
+                    <select id="tipoServicio" name="TipoServicio" class="select2-tipo-servicio" style="width:100%" required>
+                        <option value="">-- Seleccionar tipo --</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Servicio Proveedor">Servicio Proveedor</option>
+                        <option value="Imprenta">Imprenta</option>
+                        <option value="Mobiliario">Mobiliario</option>
+                    </select>
+                </div>
+                <div class="formulario-input">
+                    <label>Justificación del servicio solicitado:</label>
+                    <textarea type="text" name="UsoEspecifico" placeholder="Justifique el servicio solicitado" value=""
+                              required></textarea>
+                </div>
+                <div class="formulario-input">
+                    <label>Fecha de prestación del servicio:</label>
+                    <input type="text" id="fechaPrestacionServicio" name="FechaPrestacion" placeholder="Seleccionar fecha"
+                           readonly required />
+                </div>
+                <div class="formulario-input">
+                    <label>Lugar de prestación del servicio:</label>
+                    <input type="text" name="LugarPrestacion" placeholder="Lugar de prestación del servicio" value=""
+                           required />
+                </div>
+                @*<div class="formulario-input">
+                    <label>Nombre y puesto del enlace administrativo del area solicitante:</label>
+                    <textarea type="text" name="NombrePuesto" placeholder="Nombre y puesto" value="" required></textarea>
+                </div>
+                <div class="formulario-input">
+                    <label>Número celular del enlace adaministrativo del area solicitante:</label>
+                    <input type="tel" min="7" max="12" name="NumeroCelular" placeholder="(222) 000-0000" value=""
+                           required />
+                </div> *@
             </div>
         </div>
-    </div>
 
-    <div class="container-formulario mt-4">
-        <div class="seccion-completa text-center">
-            <button type="button" class="btn boton-rosa btn-lg">
-                Crear Requisición
-            </button>
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <h5 class="mb-3 text-center">Artículos solicitados</h5>
+                <table class="table table-bordered" id="tablaArticulos">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%">ID</th>
+                            <th style="width: 10%">COG</th>
+                            <th style="width: 15%">Clave</th>
+                            <th style="width: 30%">Descripción</th>
+                            <th style="width: 15%">Unidad</th>
+                            <th style="width: 10%">Cantidad</th>
+                            <th style="width: 10%">Descripción Detallada</th>
+                            <th style="width: 10%">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Las filas se agregarán dinámicamente -->
+                    </tbody>
+                </table>
+                <button type="button" class="btn boton-gris" onclick="agregarArticulo()">
+                    <i class="fa-solid fa-plus"></i>  Agregar
+                </button>
+            </div>
         </div>
-    </div>
+
+        <div class="container-formulario mt-4">
+            <div class="seccion-completa text-center">
+                <button type="button" class="btn boton-rosa btn-lg">
+                    Crear Requisición
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

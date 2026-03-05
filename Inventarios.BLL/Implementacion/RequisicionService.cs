@@ -106,6 +106,7 @@ namespace Inventario.BLL.Implementacion
                     IdRequi = r.IdRequisicion,
                     NumRequi = r.NumRequisicion,
                     FechaEmision = r.FechaEmision,
+                    FechaModificacion = r.FechaModificacion,
                     Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
                     Responsable = r.NomResponsableDepartamento,
                     Estatus = r.IdEstatusNavigation.NombreEstatus,

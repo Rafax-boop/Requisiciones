@@ -84,7 +84,7 @@ namespace Inventario.AplicacionWeb.Controllers
                     .ListarRequisiciones(idDepartamento);
             }
 
-            listaDTO = listaDTO.OrderBy(r => r.FechaEmision).ToList();
+            listaDTO = listaDTO.OrderBy(r => r.FechaModificacion).ToList();
 
             var actividades = await _programaPresupuestarioService
                 .ObtenerActividades();

@@ -300,6 +300,9 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.TipoPrograma)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.TipoServicio)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.UsoEspecifico).IsUnicode(false);
 
             entity.HasOne(d => d.ClaveRegionNavigation).WithMany(p => p.TblRequisicions)
