@@ -35,7 +35,7 @@
 .almacen-tabs-btn.activo {
     border-bottom-color: var(--rosa-500);
     color: var(--rosa-500);
-    background: var(--rosa-50);
+    background: transparent;
 }
 
 /* ──────────────────────────────────────────

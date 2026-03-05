@@ -49,17 +49,54 @@
   let paginaRequisicionActual = 1;
   let paginacionRequisicionesContainer = null;
 
+  var modoTabs =
+    container &&
+    container.querySelectorAll(".almacen-tabs-btn").length > 0 &&
+    container.querySelectorAll(".almacen-tab-panel").length > 0;
+  var paginaPorTab = { principal: 1, autorizadas: 1 };
+
+  function getActiveTableContext() {
+    if (!modoTabs || !container) {
+      var tabla = document.querySelector(
+        ".tabla-requisiciones:not(#tablaModalDetalle)",
+      );
+      var pag = document.getElementById("paginacionRequisiciones");
+      return {
+        tbody: tabla ? tabla.querySelector("tbody") : null,
+        paginationContainer: pag,
+        tabKey: "principal",
+      };
+    }
+    var panel = container.querySelector(".almacen-tab-panel.activo");
+    if (!panel) return null;
+    var tabla = panel.querySelector(".tabla-requisiciones");
+    var pag = panel.querySelector(".almacen-paginacion");
+    var tabKey =
+      panel.id === "tab-principal"
+        ? "principal"
+        : panel.id === "tab-autorizadas"
+          ? "autorizadas"
+          : "principal";
+    return {
+      tbody: tabla ? tabla.querySelector("tbody") : null,
+      paginationContainer: pag,
+      tabKey: tabKey,
+    };
+  }
+
   function filtrarTabla() {
+    var ctx = getActiveTableContext();
+    if (ctx) paginaPorTab[ctx.tabKey] = 1;
     paginaRequisicionActual = 1;
     aplicarPaginacionRequisiciones();
   }
 
   function aplicarPaginacionRequisiciones() {
-    if (!paginacionRequisicionesContainer) {
-      paginacionRequisicionesContainer = document.getElementById(
-        "paginacionRequisiciones",
-      );
-    }
+    var ctx = getActiveTableContext();
+    if (!ctx || !ctx.tbody) return;
+
+    paginacionRequisicionesContainer = ctx.paginationContainer;
+    paginaRequisicionActual = paginaPorTab[ctx.tabKey] || 1;
 
     var textoNumReq = (
       (document.getElementById("filtroNumReq") &&
@@ -76,9 +113,7 @@
       .toLowerCase()
       .trim();
 
-    var todasLasFilas = document.querySelectorAll(
-      ".tabla-requisiciones:not(#tablaModalDetalle) tbody tr",
-    );
+    var todasLasFilas = [].slice.call(ctx.tbody.querySelectorAll("tr"));
     var filasVisibles = [];
 
     todasLasFilas.forEach(function (fila) {
@@ -108,6 +143,7 @@
     );
     if (paginaRequisicionActual > totalPaginas)
       paginaRequisicionActual = totalPaginas;
+    paginaPorTab[ctx.tabKey] = paginaRequisicionActual;
     const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
     const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
 
@@ -115,7 +151,7 @@
       fila.style.display = i >= inicio && i < fin ? "" : "none";
     });
 
-    mostrarMensajeVacio(total);
+    mostrarMensajeVacio(total, ctx.tbody);
     renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
   }
 
@@ -192,6 +228,7 @@
     var botones = paginacionRequisicionesContainer.querySelectorAll(
       ".almacen-paginacion-btn",
     );
+    var ctxPag = getActiveTableContext();
     for (var k = 0; k < botones.length; k++) {
       botones[k].addEventListener("click", function () {
         if (this.disabled) return;
@@ -206,6 +243,7 @@
         } else {
           paginaRequisicionActual = parseInt(pg, 10);
         }
+        if (ctxPag) paginaPorTab[ctxPag.tabKey] = paginaRequisicionActual;
         aplicarPaginacionRequisiciones();
       });
     }
@@ -343,10 +381,12 @@
         });
     };
 
-  function mostrarMensajeVacio(totalVisibles) {
-    var tbody = document.querySelector(
-      ".tabla-requisiciones:not(#tablaModalDetalle) tbody",
-    );
+  function mostrarMensajeVacio(totalVisibles, tbodyOptional) {
+    var tbody =
+      tbodyOptional ||
+      document.querySelector(
+        ".tabla-requisiciones:not(#tablaModalDetalle) tbody",
+      );
     if (!tbody) return;
 
     var filaVacia = tbody.querySelector(".fila-vacia");
@@ -369,6 +409,25 @@
     requisicionActual = idMaestro;
     verDetalle(idMaestro, "atender");
   };
+
+  if (modoTabs && container) {
+    var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
+    var tabPanels = container.querySelectorAll(".almacen-tab-panel");
+    tabBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var tab = this.getAttribute("data-tab");
+        tabBtns.forEach(function (b) {
+          b.classList.remove("activo");
+        });
+        tabPanels.forEach(function (p) {
+          p.classList.remove("activo");
+          if (p.id === "tab-" + tab) p.classList.add("activo");
+        });
+        this.classList.add("activo");
+        aplicarPaginacionRequisiciones();
+      });
+    });
+  }
 
   // Inicializar paginación al cargar el script
   aplicarPaginacionRequisiciones();
