@@ -29,7 +29,7 @@ namespace Inventario.DAL.Implementacion
                 int anio = DateTime.Now.Year;
 
                 var ultimoConsecutivo = await _dbContext.TblRequisicions
-                    .Where(r => r.FechaSistema.HasValue && r.FechaSistema.Value.Year == anio)
+                    .Where(r => r.FechaModificacion.HasValue && r.FechaModificacion.Value.Year == anio)
                     .MaxAsync(r => (int?)r.Consecutivo) ?? 0;
 
                 requisicion.Consecutivo = ultimoConsecutivo + 1;
