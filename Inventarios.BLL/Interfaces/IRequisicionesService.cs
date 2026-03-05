@@ -19,5 +19,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> AtenderRequisicion(int idRequisicion, string observaciones, bool requiereModificacion, int idUsuario, int idpp, string FF, string tipoPrograma,
             int claveRegion, List<(int IdArticulo, int Cog)> cogsEditados = null);
         Task<string?> ObtenerObservacionesModificacion(int idRequisicion);
+        Task<List<ProgresoPasoDTO>> ObtenerProgresoRequisicion(int idRequisicion);
     }
 }

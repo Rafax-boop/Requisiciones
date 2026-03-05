@@ -4,6 +4,12 @@
     bool modoEdicion = ViewBag.ModoEdicion == true;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}
+
 <div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")" data-tipo-requisicion="@ViewBag.TipoRequisicion">
     <form asp-action="@(modoEdicion ? "ActualizarRequisicion" : "CrearRequisicion")" method="post" class="no-loader">
         <input type="hidden" asp-for="IdRequiMaestra" />
@@ -192,8 +198,8 @@
 </div>
 
 @section Scripts {
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>

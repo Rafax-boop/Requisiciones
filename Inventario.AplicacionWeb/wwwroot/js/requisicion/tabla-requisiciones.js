@@ -113,11 +113,12 @@
       .toLowerCase()
       .trim();
 
-    var todasLasFilas = [].slice.call(ctx.tbody.querySelectorAll("tr"));
+    var todasLasFilas = [].slice.call(ctx.tbody.querySelectorAll("tr")).filter(function (tr) {
+      return !tr.classList.contains("fila-vacia") && !tr.classList.contains("fila-detalle");
+    });
     var filasVisibles = [];
 
     todasLasFilas.forEach(function (fila) {
-      if (fila.classList.contains("fila-vacia")) return;
       var celdas = fila.querySelectorAll("td");
       if (!celdas.length) return;
 
@@ -133,6 +134,8 @@
         filasVisibles.push(fila);
       } else {
         fila.style.display = "none";
+        var siguiente = fila.nextElementSibling;
+        if (siguiente && siguiente.classList.contains("fila-detalle")) siguiente.style.display = "none";
       }
     });
 
@@ -148,7 +151,10 @@
     const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
 
     filasVisibles.forEach(function (fila, i) {
-      fila.style.display = i >= inicio && i < fin ? "" : "none";
+      var visible = i >= inicio && i < fin;
+      fila.style.display = visible ? "" : "none";
+      var siguiente = fila.nextElementSibling;
+      if (siguiente && siguiente.classList.contains("fila-detalle")) siguiente.style.display = visible ? "" : "none";
     });
 
     mostrarMensajeVacio(total, ctx.tbody);
@@ -309,77 +315,77 @@
     );
   };
 
-    window.enviarAtencion = function () {
-        const observaciones = document.getElementById("txtObservaciones").value.trim();
-        const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
+  window.enviarAtencion = function () {
+    const observaciones = document.getElementById("txtObservaciones").value.trim();
+    const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
 
-        //Recoger los nuevos campos
-        const idpp = parseInt($("#actividadSeleccionada").val()) || 0;
-        const ff = $("#ffSelect").find("option:selected").text().trim();
-        const tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
-        const claveRegion = parseInt($("#municipio").val()) || 0;
+    //Recoger los nuevos campos
+    const idpp = parseInt($("#actividadSeleccionada").val()) || 0;
+    const ff = $("#ffSelect").find("option:selected").text().trim();
+    const tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
+    const claveRegion = parseInt($("#municipio").val()) || 0;
 
-        if (!observaciones) {
-            alert("Debe escribir una observación.");
-            return;
-        }
+    if (!observaciones) {
+      alert("Debe escribir una observación.");
+      return;
+    }
 
-        //Validar que los campos requeridos tengan valor
-        if (!idpp) {
-            alert("Debe seleccionar una actividad.");
-            return;
-        }
-        if (!$("#ffSelect").val()) {
-            alert("Debe seleccionar una fuente de financiamiento.");
-            return;
-        }
-        if (!$("#tipoProgramaSelect").val()) {
-            alert("Debe seleccionar un tipo de programa.");
-            return;
-        }
-        if (!claveRegion) {
-            alert("Debe seleccionar un municipio.");
-            return;
-        }
+    //Validar que los campos requeridos tengan valor
+    if (!idpp) {
+      alert("Debe seleccionar una actividad.");
+      return;
+    }
+    if (!$("#ffSelect").val()) {
+      alert("Debe seleccionar una fuente de financiamiento.");
+      return;
+    }
+    if (!$("#tipoProgramaSelect").val()) {
+      alert("Debe seleccionar un tipo de programa.");
+      return;
+    }
+    if (!claveRegion) {
+      alert("Debe seleccionar un municipio.");
+      return;
+    }
 
-        const cogsEditados = [];
-        document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
-            const inputCog = tr.querySelector(".select-cog-editable");
-            const idArticuloTd = tr.querySelectorAll("td")[1];
-            if (inputCog && idArticuloTd) {
-                cogsEditados.push({
-                    idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
-                    cog: parseInt($(inputCog).val()) || 0
-                });
-            }
+    const cogsEditados = [];
+    document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
+      const inputCog = tr.querySelector(".select-cog-editable");
+      const idArticuloTd = tr.querySelectorAll("td")[1];
+      if (inputCog && idArticuloTd) {
+        cogsEditados.push({
+          idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
+          cog: parseInt($(inputCog).val()) || 0
         });
+      }
+    });
 
-        $.ajax({
-            url: atenderUrl,
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-                IdRequisicion: requisicionActual,
-                Observaciones: observaciones,
-                RequiereModificacion: requiereModificacion,
-                CogsEditados: cogsEditados,
-                IdPp: idpp,
-                FF: ff,
-                TipoPrograma: tipoPrograma,
-                ClaveRegion: claveRegion
-            }),
-            success: function () {
-                const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
-                modal.hide();
-                document.getElementById("txtObservaciones").value = "";
-                document.getElementById("chkRequiereModificacion").checked = false;
-                location.reload();
-            },
-            error: function () {
-                alert("Error al atender la requisición.");
-            }
-        });
-    };
+    $.ajax({
+      url: atenderUrl,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({
+        IdRequisicion: requisicionActual,
+        Observaciones: observaciones,
+        RequiereModificacion: requiereModificacion,
+        CogsEditados: cogsEditados,
+        IdPp: idpp,
+        FF: ff,
+        TipoPrograma: tipoPrograma,
+        ClaveRegion: claveRegion
+      }),
+      success: function () {
+        const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
+        modal.hide();
+        document.getElementById("txtObservaciones").value = "";
+        document.getElementById("chkRequiereModificacion").checked = false;
+        location.reload();
+      },
+      error: function () {
+        alert("Error al atender la requisición.");
+      }
+    });
+  };
 
   function mostrarMensajeVacio(totalVisibles, tbodyOptional) {
     var tbody =
@@ -432,6 +438,48 @@
   // Inicializar paginación al cargar el script
   aplicarPaginacionRequisiciones();
 
+  /* Expandir/colapsar fila detalle al hacer clic en la fila de requisición */
+  function getTablaFromRow(tr) {
+    return tr ? tr.closest("table.tabla-requisiciones") : null;
+  }
+
+  function colapsarTodasDetalle(tabla) {
+    if (!tabla) return;
+    tabla.querySelectorAll(".fila-detalle.expanded").forEach(function (fila) {
+      fila.classList.remove("expanded");
+      fila.classList.add("collapsed");
+    });
+  }
+
+  if (container) {
+    container.addEventListener("click", function (e) {
+      var tr = e.target.closest("tr");
+      if (!tr || tr.classList.contains("fila-detalle") || tr.classList.contains("fila-vacia")) return;
+      if (e.target.closest(".acciones-grupo, button, a.btn-accion")) return;
+      if (!tr.classList.contains("fila-requi")) return;
+
+      var tabla = getTablaFromRow(tr);
+      var filaDetalle = tr.nextElementSibling;
+      if (!filaDetalle || !filaDetalle.classList.contains("fila-detalle")) return;
+
+      var yaExpandida = filaDetalle.classList.contains("expanded");
+      colapsarTodasDetalle(tabla);
+
+      if (!yaExpandida) {
+        filaDetalle.classList.remove("collapsed");
+        filaDetalle.classList.add("expanded");
+      }
+    });
+
+    // Colapsar fila-detalle al hacer clic fuera de cualquier tabla de requisiciones
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest("table.tabla-requisiciones")) {
+        const tablas = document.querySelectorAll("table.tabla-requisiciones");
+        tablas.forEach(t => colapsarTodasDetalle(t));
+      }
+    });
+  }
+
   var filtroNumReq = document.getElementById("filtroNumReq");
   var filtroDepto = document.getElementById("filtroDepartamento");
   if (filtroNumReq) filtroNumReq.addEventListener("input", filtrarTabla);
@@ -482,116 +530,177 @@
 
   window.verDetalle = function (idMaestro, modo = "ver") {
     const seccionesAtender = document.querySelectorAll(".seccionAtender");
-      if (seccionesAtender.length > 0) {
-          const isAtender = modo === "atender";
+    if (seccionesAtender.length > 0) {
+      const isAtender = modo === "atender";
 
-          seccionesAtender.forEach(function (sec) {
-              sec.style.display = isAtender ? "block" : "none";
-          });
+      seccionesAtender.forEach(function (sec) {
+        sec.style.display = isAtender ? "block" : "none";
+      });
 
-          if (isAtender) {
-              $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
-                  dropdownParent: $("#modalDetalle"),
-                  width: "100%",
-                  language: "es",
-                  placeholder: function () {
-                      return $(this).data('placeholder');
-                  }
-              });
+      if (isAtender) {
+        $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+          dropdownParent: $("#modalDetalle"),
+          width: "100%",
+          language: "es",
+          placeholder: function () {
+            return $(this).data('placeholder');
           }
+        });
       }
+    }
     if (!obtenerDetallesUrl) return;
 
-      $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
-          var articulos = data.articulos || [];
-          var esDonativo = data.donativo === true;
+    $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+      var articulos = data.articulos || [];
+      var esDonativo = data.donativo === true;
 
-          var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
-          if (thCog) thCog.style.display = esDonativo ? "" : "none";
+      var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
+      if (thCog) thCog.style.display = esDonativo ? "" : "none";
 
-          var contenido = "";
-          if (articulos.length === 0) {
-              contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
-          } else {
-              articulos.forEach(function (item) {
-                  var textoCompleto = item.descripcionDetallada || "";
-                  var textoCorto = textoCompleto.length > 28
-                      ? textoCompleto.substring(0, 28) + "…"
-                      : textoCompleto || "Sin descripción...";
-                  var tieneTexto = textoCompleto ? "tiene-texto" : "";
-                  var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
-                  var tdCog = esDonativo
-                      ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
-                      : "";
-                  contenido +=
-                      "<tr>" +
-                      "<td>" + (item.numPartida || "") + "</td>" +
-                      "<td>" + (item.idArticulo || "") + "</td>" +
-                      "<td>" + (item.cantidad || "") + "</td>" +
-                      "<td>" + (item.unidadMedida || "") + "</td>" +
-                      "<td>" + (item.descripcion || "") + "</td>" +
-                      '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
-                      '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
-                      '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
-                      tdCog +
-                      "</tr>";
-              });
-          }
+      var contenido = "";
+      if (articulos.length === 0) {
+        contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
+      } else {
+        articulos.forEach(function (item) {
+          var textoCompleto = item.descripcionDetallada || "";
+          var textoCorto = textoCompleto.length > 28
+            ? textoCompleto.substring(0, 28) + "…"
+            : textoCompleto || "Sin descripción...";
+          var tieneTexto = textoCompleto ? "tiene-texto" : "";
+          var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+          var tdCog = esDonativo
+            ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
+            : "";
+          contenido +=
+            "<tr>" +
+            "<td>" + (item.numPartida || "") + "</td>" +
+            "<td>" + (item.idArticulo || "") + "</td>" +
+            "<td>" + (item.cantidad || "") + "</td>" +
+            "<td>" + (item.unidadMedida || "") + "</td>" +
+            "<td>" + (item.descripcion || "") + "</td>" +
+            '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+            '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
+            '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+            tdCog +
+            "</tr>";
+        });
+      }
 
-          $("#tablaDetalle").html(contenido);
+      $("#tablaDetalle").html(contenido);
 
-          if (esDonativo) {
-              $("#tablaDetalle .select-cog-editable").each(function () {
-                  $(this).select2({
-                      dropdownParent: $("#modalDetalle"),
-                      width: "resolve",
-                      placeholder: "COG...",
-                      minimumInputLength: 1,
-                      language: "es",
-                      ajax: {
-                          url: urlBuscarCogs,
-                          dataType: "json",
-                          delay: 250,
-                          data: function (params) {
-                              return { term: params.term };
-                          },
-                          processResults: function (data) {
-                              return { results: data };
-                          },
-                          cache: true
-                      }
-                  });
-              });
-          }
+      if (esDonativo) {
+        $("#tablaDetalle .select-cog-editable").each(function () {
+          $(this).select2({
+            dropdownParent: $("#modalDetalle"),
+            width: "resolve",
+            placeholder: "COG...",
+            minimumInputLength: 1,
+            language: "es",
+            ajax: {
+              url: urlBuscarCogs,
+              dataType: "json",
+              delay: 250,
+              data: function (params) {
+                return { term: params.term };
+              },
+              processResults: function (data) {
+                return { results: data };
+              },
+              cache: true
+            }
+          });
+        });
+      }
 
-          var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
-          if (subtitulo)
-              subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
+      var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+      if (subtitulo)
+        subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
 
-          // ✅ Precargar selects si la requisición ya tiene datos previos
-          if (modo === "atender") {
-              if (data.idPp) {
-                  $("#actividadSeleccionada").val(data.idPp).trigger("change");
-              }
-              if (data.ff) {
-                  $("#ffSelect option").filter(function () {
-                      return $(this).text().trim() === data.ff;
-                  }).prop("selected", true);
-                  $("#ffSelect").trigger("change");
-              }
-              if (data.tipoPrograma) {
-                  $("#tipoProgramaSelect option").filter(function () {
-                      return $(this).text().trim() === data.tipoPrograma;
-                  }).prop("selected", true);
-                  $("#tipoProgramaSelect").trigger("change");
-              }
-              if (data.claveRegion) {
-                  $("#municipio").val(data.claveRegion).trigger("change");
-              }
-          }
+      // ✅ Precargar selects si la requisición ya tiene datos previos
+      if (modo === "atender") {
+        if (data.idPp) {
+          $("#actividadSeleccionada").val(data.idPp).trigger("change");
+        }
+        if (data.ff) {
+          $("#ffSelect option").filter(function () {
+            return $(this).text().trim() === data.ff;
+          }).prop("selected", true);
+          $("#ffSelect").trigger("change");
+        }
+        if (data.tipoPrograma) {
+          $("#tipoProgramaSelect option").filter(function () {
+            return $(this).text().trim() === data.tipoPrograma;
+          }).prop("selected", true);
+          $("#tipoProgramaSelect").trigger("change");
+        }
+        if (data.claveRegion) {
+          $("#municipio").val(data.claveRegion).trigger("change");
+        }
+      }
 
-          var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
-          modal.show();
-      });
+      var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
+      modal.show();
+    });
   };
+
+  /* ══════════════════════════════════════════════
+     MODAL DE HISTORIAL COMPLETO
+  ══════════════════════════════════════════════ */
+  window.verHistorialTimeline = function (idRequi, numRequi) {
+    document.getElementById('historialSubtitle').textContent = numRequi;
+
+    // Dummy data simulando historial hasta tener endpoint real
+    const STEPS = [
+      { dept: 'Solicitud creada', date: '20 Feb 2026', state: 'done', by: 'A. Celis', time: '08:50 AM', action: 'Requisición capturada', comment: 'Equipo de cómputo solicitado.' },
+      { dept: 'Jefatura de Área', date: '20 Feb 2026', state: 'done', by: 'Lic. Torres', time: '10:15 AM', action: 'Aprobada sin observaciones', comment: 'Validado por jefe inmediato.' },
+      { dept: 'Rec. Materiales', date: '21 Feb 2026', state: 'done', by: 'Arq. Medina', time: '09:40 AM', action: 'Sin existencias en almacén', comment: 'Se requiere compra a proveedor.' },
+      { dept: 'Subdirección', date: '21 Feb 2026', state: 'done', by: 'Dr. Gutiérrez', time: '03:22 PM', action: 'Presupuesto autorizado', comment: 'Partida 2111 con saldo suficiente.' },
+      { dept: 'Compras y Adquisiciones', date: 'Hoy', state: 'active', by: 'C.P. Flores', time: 'En curso', action: 'Solicitando cotizaciones', comment: '3 proveedores contactados.' },
+      { dept: 'Finanzas', date: '—', state: 'pending', by: '—', time: '—', action: '', comment: '' },
+      { dept: 'Entrega', date: '—', state: 'pending', by: '—', time: '—', action: '', comment: '' },
+    ];
+
+    const done = STEPS.filter(s => s.state === 'done').length;
+    const active = STEPS.filter(s => s.state === 'active').length;
+    const pending = STEPS.filter(s => s.state === 'pending').length;
+
+    document.getElementById('historialSummary').innerHTML = `
+          <div class="summary-item"><div class="summary-num" style="color:#15803d">${done}</div><div class="summary-label">Aprobados</div></div>
+          <div class="summary-item"><div class="summary-num" style="color:#b45309">${active}</div><div class="summary-label">En proceso</div></div>
+          <div class="summary-item"><div class="summary-num" style="color:#be185d">${pending}</div><div class="summary-label">Pendientes</div></div>
+      `;
+
+    const mtl = document.getElementById('historialTl');
+    mtl.innerHTML = '';
+
+    STEPS.forEach(s => {
+      const bCls = s.state === 'done' ? 'mbadge-done' : s.state === 'active' ? 'mbadge-active' : 'mbadge-pending';
+      const bTxt = s.state === 'done' ? 'Completado' : s.state === 'active' ? 'En curso' : 'Pendiente';
+      const tStr = s.time !== '—' ? ` · ${s.time}` : '';
+
+      const item = document.createElement('div');
+      item.className = `mtl-item ${s.state}`;
+      item.innerHTML = `
+              <div class="mtl-dot-col"><div class="mtl-dot"></div></div>
+              <div class="mtl-content">
+                  <div class="mtl-dept">${s.dept}</div>
+                  <div class="mtl-meta">
+                      <span class="mtl-badge ${bCls}">${bTxt}</span>
+                      <span class="mtl-time">${s.date}${tStr}</span>
+                  </div>
+                  ${s.comment ? `
+                  <div class="mtl-detail">
+                      <div class="mtl-dr"><span class="dr-lbl">Responsable</span>${s.by}</div>
+                      <div class="mtl-dr"><span class="dr-lbl">Acción</span>${s.action}</div>
+                      <div class="mtl-dr"><span class="dr-lbl">Nota</span>${s.comment}</div>
+                  </div>` : ''}
+              </div>
+          `;
+      mtl.appendChild(item);
+    });
+
+    var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
+    modal.show();
+  };
+
 })();

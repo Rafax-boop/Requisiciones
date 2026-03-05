@@ -3,7 +3,9 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
 }
 
 <div class="tabla-requi-page">
@@ -146,5 +148,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
 }

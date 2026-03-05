@@ -125,6 +125,13 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> ObtenerProgresoRequisicion(int idRequisicion)
+        {
+            var pasos = await _requisicionService.ObtenerProgresoRequisicion(idRequisicion);
+            return Json(pasos);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> VerParaPdf(int id)
         {
             var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);

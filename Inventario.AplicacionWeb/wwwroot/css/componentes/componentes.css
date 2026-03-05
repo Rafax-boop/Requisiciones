@@ -149,9 +149,7 @@
     color: var(--rosa-500);
 }
 
-/* ══════════════════════════════════════
-           FONDO ANIMADO
-══════════════════════════════════════ */
+/* Fondo animado (usado en Home y Login; el HTML solo se renderiza en esas vistas) */
 .home-bg {
     position: fixed;
     inset: 0;
@@ -209,24 +207,12 @@
 }
 
 @keyframes flotar {
-    0%, 100% {
-        transform: translate(0, 0) scale(1);
-    }
-
-    25% {
-        transform: translate(40px, -30px) scale(1.05);
-    }
-
-    50% {
-        transform: translate(-20px, 20px) scale(0.95);
-    }
-
-    75% {
-        transform: translate(30px, 40px) scale(1.02);
-    }
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(40px, -30px) scale(1.05); }
+    50% { transform: translate(-20px, 20px) scale(0.95); }
+    75% { transform: translate(30px, 40px) scale(1.02); }
 }
 
-/* Textura de puntos sutiles sobre todo */
 .home-bg::after {
     content: '';
     position: absolute;
@@ -234,3 +220,4 @@
     background-image: radial-gradient(circle, rgba(255, 64, 129, 0.04) 1px, transparent 1px);
     background-size: 28px 28px;
 }
+

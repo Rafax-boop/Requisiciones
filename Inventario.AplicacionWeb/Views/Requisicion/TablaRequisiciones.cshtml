@@ -5,7 +5,9 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
@@ -101,7 +103,7 @@
                     @foreach (var item in requisicionesPrincipal)
                     {
                         idxPrincipal++;
-                        <tr>
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxPrincipal</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -162,6 +164,72 @@
                                 </div>
                             </td>
                         </tr>
+                        <tr class="fila-detalle collapsed" data-requi-id="@item.IdRequi">
+                            <td colspan="@numColsReq">
+                                <div class="timeline-container">
+                                    @{
+                                        var paso1 = true;
+                                        var paso2 = item.NombreAsignado != null;
+                                        var paso3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var paso4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
+                                        var paso5 = item.Estatus == "REQUISICION AUTORIZADA";
+                                        var esMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        
+                                        var progress = 0;
+                                        if (paso5) progress = 100;
+                                        else if (paso4) progress = 75;
+                                        else if (paso3) progress = 50;
+                                        else if (paso2) progress = 25;
+                                    }
+                                    <ul class="timeline-track" style="--progress: @(progress)%;">
+                                        <li class="timeline-step @(paso1 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                            <div class="step-label">Capturada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Capturada</strong>
+                                                <span>Emisión @item.FechaEmision</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
+                                            <div class="step-label">Asignada</div>
+                                            <div class="step-tooltip">
+                                                <strong>@(paso2 ? "Asignada" : "Sin Asignar")</strong>
+                                                <span>@(paso2 ? item.NombreAsignado : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso3 ? (esMod ? "warning" : "completed") : "")">
+                                            <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "En Proceso")</div>
+                                            <div class="step-tooltip">
+                                                <strong>Atención Almacén</strong>
+                                                <span>@(esMod ? "Regresada para cambios" : (paso3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso4 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-tooltip">
+                                                <strong>Firma Pendiente</strong>
+                                                <span>@(paso4 ? "Esperando firmas" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso5 ? "completed" : "")">
+                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                            <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                            </button>
+                                            <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Autorizada</strong>
+                                                <span>@(paso5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
                     }
                     @if (!requisicionesPrincipal.Any())
                     {
@@ -204,7 +272,7 @@
                     @foreach (var item in requisicionesAutorizadas)
                     {
                         idxAutorizadas++;
-                        <tr>
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxAutorizadas</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -241,6 +309,72 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="fila-detalle collapsed" data-requi-id="@item.IdRequi">
+                            <td colspan="@numColsReq">
+                                <div class="timeline-container">
+                                    @{
+                                        var p1 = true;
+                                        var p2 = item.NombreAsignado != null;
+                                        var p3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var p4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
+                                        var p5 = item.Estatus == "REQUISICION AUTORIZADA";
+                                        var eMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+
+                                        var progA = 0;
+                                        if (p5) progA = 100;
+                                        else if (p4) progA = 75;
+                                        else if (p3) progA = 50;
+                                        else if (p2) progA = 25;
+                                    }
+                                    <ul class="timeline-track" style="--progress: @(progA)%;">
+                                        <li class="timeline-step @(p1 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                            <div class="step-label">Capturada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Capturada</strong>
+                                                <span>Emisión @item.FechaEmision</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
+                                            <div class="step-label">Asignada</div>
+                                            <div class="step-tooltip">
+                                                <strong>@(p2 ? "Asignada" : "Sin Asignar")</strong>
+                                                <span>@(p2 ? item.NombreAsignado : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p3 ? (eMod ? "warning" : "completed") : "")">
+                                            <div class="step-icon"><i class="fa-solid @(eMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                            <div class="step-label">@(eMod ? "A Modificar" : "En Proceso")</div>
+                                            <div class="step-tooltip">
+                                                <strong>Atención Almacén</strong>
+                                                <span>@(eMod ? "Regresada para cambios" : (p3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p4 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-tooltip">
+                                                <strong>Firma Pendiente</strong>
+                                                <span>@(p4 ? "Esperando firmas" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p5 ? "completed" : "")">
+                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                            <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                            </button>
+                                            <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Autorizada</strong>
+                                                <span>@(p5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>
@@ -438,7 +572,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
         <div id="desc-panel-modal" style="display:none;">
             <div class="desc-panel-modal-header">
@@ -450,7 +583,35 @@
             <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
         </div>
 
+        <!-- MODAL HISTORIAL (Estilo Premium/Timeline Vertical) -->
+        <div class="modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-historial-dialog">
+                <div class="modal-content modal-premium modal-historial-content">
+                    <div class="modal-header modal-header-premium">
+                        <div>
+                            <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
+                            <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
+                        </div>
+                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body modal-body-premium">
+                        <div class="modal-summary" id="historialSummary">
+                            <!-- Datos resumen se inyectarán por JS -->
+                        </div>
+                        <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
+                        <div class="modal-tl" id="historialTl">
+                            <!-- Timeline vertical se inyectará por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @section Scripts {
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
             <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
