@@ -42,37 +42,60 @@
         </div>
     </div>
 
-    <div class="container-formulario tabla-container">
-        <table class="tabla-requisiciones">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Folio</th>
-                    <th>Fecha de emisión</th>
-                    <th>Departamento</th>
-                    <th>Responsable</th>
-                    <th>Items</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @* Maquetado sin datos de DB — filas de ejemplo o vacío *@
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div id="paginacionRequisicionServicios" class="almacen-paginacion">
-            <div class="almacen-paginacion-info">Mostrando 0 de 0 registros</div>
-            <div class="almacen-paginacion-btns">
-                <button type="button" class="almacen-paginacion-btn" disabled>Anterior</button>
-                <span class="almacen-paginacion-nums">
-                    <button type="button" class="almacen-paginacion-btn almacen-paginacion-num activo">1</button>
-                </span>
-                <button type="button" class="almacen-paginacion-btn" disabled>Siguiente</button>
-            </div>
+    <nav class="almacen-tabs">
+        <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
+    </nav>
+
+    <!-- Pestaña En seguimiento -->
+    <div id="tab-principal" class="almacen-tab-panel activo">
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaRequisicionServiciosPrincipal">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha de emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="fila-vacia">
+                        <td colspan="8" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="paginacionServiciosPrincipal" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
+    <!-- Pestaña Requisiciones autorizadas -->
+    <div id="tab-autorizadas" class="almacen-tab-panel">
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaRequisicionServiciosAutorizadas">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha de emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="fila-vacia">
+                        <td colspan="8" class="text-center text-muted py-4">No hay requisiciones autorizadas.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="paginacionServiciosAutorizadas" class="almacen-paginacion"></div>
         </div>
     </div>
 </div>
