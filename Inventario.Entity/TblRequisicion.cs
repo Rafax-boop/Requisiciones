@@ -35,8 +35,6 @@ public partial class TblRequisicion
 
     public int? IdEstatus { get; set; }
 
-    public bool? Activo { get; set; }
-
     public DateTime? FechaModificacion { get; set; }
 
     public int Consecutivo { get; set; }
@@ -56,6 +54,8 @@ public partial class TblRequisicion
     public string? TipoServicio { get; set; }
 
     public DateOnly? FechaServicio { get; set; }
+
+    public bool? RequiServicio { get; set; }
 
     public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
 

@@ -1,0 +1,143 @@
+/* ══════════════════════════════════════
+   CONTENEDOR Y GRUPOS DE FORMULARIO (tabla requisiciones + formulario)
+   Reutilizado por: TablaRequisiciones, FormularioRequisiciones, Servicios, Almacén
+══════════════════════════════════════ */
+.container-formulario {
+  display: flex;
+  gap: 40px;
+  margin: 24px 50px;
+  padding: 32px 40px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-100);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  transition: all 0.4s var(--ease-premium);
+}
+
+.container-formulario:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--rosa-100);
+}
+
+.container-formulario::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--rosa-300), transparent);
+  border-radius: 0 4px 4px 0;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-premium);
+}
+
+.container-formulario:hover::before {
+  opacity: 1;
+}
+
+.container-formulario button {
+  margin: 0 auto;
+}
+
+/* .filtro-grupo y .formulario-input comparten el mismo patrón visual */
+.filtro-grupo,
+.formulario-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filtro-grupo {
+  flex: 1;
+  min-width: 180px;
+}
+
+.filtro-grupo label,
+.formulario-input label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.filtro-grupo input,
+.filtro-grupo select,
+.formulario-input input {
+  padding: 12px 16px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--slate-800);
+  background: var(--slate-50);
+  outline: none;
+  transition: all 0.35s var(--ease-premium);
+}
+
+.formulario-input input {
+  padding: 13px 18px;
+}
+
+.filtro-grupo input::placeholder,
+.filtro-grupo select::placeholder,
+.formulario-input input::placeholder {
+  color: var(--slate-300);
+  font-weight: 400;
+}
+
+.filtro-grupo input:hover,
+.filtro-grupo select:hover,
+.formulario-input input:hover {
+  border-color: var(--rosa-200);
+  background: white;
+}
+
+.filtro-grupo input:focus,
+.filtro-grupo select:focus,
+.formulario-input input:focus {
+  border-color: var(--rosa-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 64, 129, 0.08);
+}
+
+.formulario-input input:focus {
+  color: var(--slate-800);
+}
+
+.formulario-input textarea {
+  padding: 13px 18px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--slate-800);
+  outline: none;
+  background: var(--slate-50);
+  transition: all 0.35s var(--ease-premium);
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.6;
+}
+
+.formulario-input textarea::placeholder {
+  color: var(--slate-300);
+  font-weight: 400;
+}
+
+.formulario-input textarea:hover {
+  border-color: var(--rosa-200);
+  background: white;
+}
+
+.formulario-input textarea:focus {
+  border-color: var(--rosa-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 64, 129, 0.08);
+  color: var(--slate-800);
+}

@@ -17,13 +17,15 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
         private readonly IGenericRepository<TblDepartamento> _repositoryDepartamento;
+        private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
 
-        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblDepartamento> repositoryDepartamento)
+        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblDepartamento> repositoryDepartamento, IGenericRepository<TblEstatus> repositoryEstatus)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
             _repositoryBitacora = repositoryBitacora;
             _repositoryDepartamento = repositoryDepartamento;
+            _repositoryEstatus = repositoryEstatus;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
@@ -347,6 +349,57 @@ namespace Inventario.BLL.Implementacion
                 .OrderByDescending(b => b.FechaEstatus)
                 .Select(b => b.Observacion)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<ProgresoPasoDTO>> ObtenerProgresoRequisicion(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null)
+                return new List<ProgresoPasoDTO>();
+
+            int idEstatusActual = requisicion.IdEstatus ?? 0;
+            var todosEstatus = await _repositoryEstatus.Consultar(e => e.Actvio);
+            var listaEstatus = await todosEstatus.OrderBy(e => e.IdEstatus).ToListAsync();
+
+            var bitacoras = await _repositoryBitacora.Consultar(b => b.IdRequisicion == idRequisicion);
+            var bitacorasConUsuario = await bitacoras
+                .OrderByDescending(b => b.FechaEstatus)
+                .Select(b => new { b.IdEstatus, b.FechaEstatus, b.Observacion, Usuario = b.IdUsuarioNavigation != null ? b.IdUsuarioNavigation.Usuario : "" })
+                .ToListAsync();
+
+            var resultado = new List<ProgresoPasoDTO>();
+            foreach (var est in listaEstatus)
+            {
+                string state = "pending";
+                if (est.IdEstatus < idEstatusActual) state = "done";
+                else if (est.IdEstatus == idEstatusActual) state = "active";
+
+                var ultimaBitacora = bitacorasConUsuario.FirstOrDefault(b => b.IdEstatus == est.IdEstatus);
+                string date = "—";
+                string time = "—";
+                string by = "—";
+                string comment = "";
+                if (ultimaBitacora != null && ultimaBitacora.FechaEstatus.HasValue)
+                {
+                    var dt = ultimaBitacora.FechaEstatus.Value;
+                    date = dt.ToString("dd MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
+                    time = state == "active" && dt.Date == DateTime.Now.Date ? "En curso" : dt.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
+                    by = ultimaBitacora.Usuario ?? "—";
+                    comment = ultimaBitacora.Observacion ?? "";
+                }
+
+                resultado.Add(new ProgresoPasoDTO
+                {
+                    Dept = est.NombreEstatus,
+                    Date = date,
+                    State = state,
+                    By = by,
+                    Time = time,
+                    Action = comment,
+                    Comment = comment
+                });
+            }
+            return resultado;
         }
 
         private string GenerarSelloDigital()
