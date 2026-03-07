@@ -1,3 +1,5 @@
+@using Inventario.AplicacionWeb.Models.ViewModels
+@model VMTablaRequisiciones
 @{
     ViewData["Title"] = "Requisiciones de Servicios";
 }
@@ -6,9 +8,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page">
+<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+     data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")"
+     data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
+     data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
+     data-url-atender="@Url.Action("Atender", "Requisicion")"
+     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -42,6 +50,16 @@
             <label>Departamento</label>
             <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
         </div>
+        <div class="filtro-grupo">
+            <label>Estado</label>
+            <select id="filtroEstado" class="filtro-select-almacen">
+                <option value="">Todos los estados</option>
+                @foreach (var e in Model.Estatus)
+                {
+                    <option value="@e">@e</option>
+                }
+            </select>
+        </div>
     </div>
 
     <nav class="almacen-tabs">
@@ -49,10 +67,18 @@
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
     </nav>
 
+    @{
+        var numColsReq = 8;
+        if (User.IsInRole("4")) numColsReq++;
+        if (User.IsInRole("3") || User.IsInRole("4")) numColsReq++;
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.Estatus != "REQUISICION AUTORIZADA").ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.Estatus == "REQUISICION AUTORIZADA").ToList();
+    }
+
     <!-- Pestaña En seguimiento -->
     <div id="tab-principal" class="almacen-tab-panel activo">
         <div class="container-formulario tabla-container">
-            <table class="tabla-requisiciones" id="tablaRequisicionServiciosPrincipal">
+            <table class="tabla-requisiciones" id="tablaRequisicionesPrincipal">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -60,25 +86,171 @@
                         <th>Fecha de emisión</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
-                        <th>Items</th>
+                        <th style="text-align:center">Items</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        @if (User.IsInRole("4"))
+                        {
+                            <th>Asignado</th>
+                        }
+                        @if (User.IsInRole("3") || User.IsInRole("4"))
+                        {
+                            <th>Estatus</th>
+                        }
+                        <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="fila-vacia">
-                        <td colspan="8" class="text-center text-muted py-4">No hay requisiciones de servicios registradas.</td>
-                    </tr>
+                    @{
+                        var idxPrincipal = 0;
+                    }
+                    @foreach (var item in requisicionesPrincipal)
+                    {
+                        idxPrincipal++;
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                            <td style="text-align:center">@idxPrincipal</td>
+                            <td>@item.NumRequi</td>
+                            <td>@item.FechaEmision</td>
+                            <td>@item.Departamento</td>
+                            <td>@item.Responsable</td>
+                            <td style="text-align:center">@item.CantidadPartidas</td>
+                            <td>@item.Estatus</td>
+                            @if (User.IsInRole("4"))
+                            {
+                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                            }
+                            @if (User.IsInRole("3") || User.IsInRole("4"))
+                            {
+                                <td>
+                                    @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
+                                    {
+                                        var claseColorP = item.DiasAsignado <= 5 ? "badge-semaforo-verde" : (item.DiasAsignado <= 8 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                                        <span class="badge-semaforo-premium @claseColorP">
+                                            <i class="fa-solid fa-circle"></i>
+                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size: 11px; font-style: italic;">Sin asignación</span>
+                                    }
+                                </td>
+                            }
+                            <td>
+                                <div class="acciones-grupo" style="justify-content:center">
+                                    @if (!User.IsInRole("3"))
+                                    {
+                                        <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    }
+                                    @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
+                                    {
+                                        <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
+                                           class="btn-accion btn-editar" title="Editar">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </a>
+                                    }
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </button>
+                                    @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
+                                    {
+                                        <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
+                                            <i class="fa-solid fa-clipboard-user"></i>
+                                        </button>
+                                    }
+                                    @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
+                                    {
+                                        <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
+                                            <i class="fa-solid fa-hand-holding"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="fila-detalle collapsed" data-requi-id="@item.IdRequi">
+                            <td colspan="@numColsReq">
+                                <div class="timeline-container">
+                                    @{
+                                        var paso1 = true;
+                                        var paso2 = item.NombreAsignado != null;
+                                        var paso3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var paso4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
+                                        var paso5 = item.Estatus == "REQUISICION AUTORIZADA";
+                                        var esMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+
+                                        var progress = 0;
+                                        if (paso5) progress = 100;
+                                        else if (paso4) progress = 75;
+                                        else if (paso3) progress = 50;
+                                        else if (paso2) progress = 25;
+                                    }
+                                    <ul class="timeline-track" style="--progress: @(progress)%;">
+                                        <li class="timeline-step @(paso1 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                            <div class="step-label">Capturada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Capturada</strong>
+                                                <span>Emisión @item.FechaEmision</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
+                                            <div class="step-label">Asignada</div>
+                                            <div class="step-tooltip">
+                                                <strong>@(paso2 ? "Asignada" : "Sin Asignar")</strong>
+                                                <span>@(paso2? item.NombreAsignado: "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso3 ? (esMod ? "warning" : "completed") : "")">
+                                            <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "En Proceso")</div>
+                                            <div class="step-tooltip">
+                                                <strong>Atención Almacén</strong>
+                                                <span>@(esMod ? "Regresada para cambios" : (paso3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso4 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-tooltip">
+                                                <strong>Firma Pendiente</strong>
+                                                <span>@(paso4 ? "Esperando firmas" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(paso5 ? "completed" : "")">
+                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                            <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                            </button>
+                                            <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Autorizada</strong>
+                                                <span>@(paso5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!requisicionesPrincipal.Any())
+                    {
+                        <tr class="fila-vacia">
+                            <td colspan="@numColsReq" class="text-center">No hay requisiciones en seguimiento</td>
+                        </tr>
+                    }
                 </tbody>
             </table>
-            <div id="paginacionServiciosPrincipal" class="almacen-paginacion"></div>
+            <div id="paginacionRequisiciones" class="almacen-paginacion"></div>
         </div>
     </div>
 
     <!-- Pestaña Requisiciones autorizadas -->
     <div id="tab-autorizadas" class="almacen-tab-panel">
         <div class="container-formulario tabla-container">
-            <table class="tabla-requisiciones" id="tablaRequisicionServiciosAutorizadas">
+            <table class="tabla-requisiciones" id="tablaRequisicionesAutorizadas">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -88,16 +260,140 @@
                         <th>Responsable</th>
                         <th>Items</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        @if (User.IsInRole("4"))
+                        {
+                            <th>Asignado</th>
+                        }
+                        @if (User.IsInRole("3") || User.IsInRole("4"))
+                        {
+                            <th>Estatus</th>
+                        }
+                        <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="fila-vacia">
-                        <td colspan="8" class="text-center text-muted py-4">No hay requisiciones autorizadas.</td>
-                    </tr>
+                    @{
+                        var idxAutorizadas = 0;
+                    }
+                    @foreach (var item in requisicionesAutorizadas)
+                    {
+                        idxAutorizadas++;
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                            <td style="text-align:center">@idxAutorizadas</td>
+                            <td>@item.NumRequi</td>
+                            <td>@item.FechaEmision</td>
+                            <td>@item.Departamento</td>
+                            <td>@item.Responsable</td>
+                            <td style="text-align:center">@item.CantidadPartidas</td>
+                            <td>@item.Estatus</td>
+                            @if (User.IsInRole("4"))
+                            {
+                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                            }
+                            @if (User.IsInRole("3") || User.IsInRole("4"))
+                            {
+                                <td>
+                                    @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
+                                    {
+                                        var claseColorA = item.DiasAsignado <= 5 ? "badge-semaforo-verde" : (item.DiasAsignado <= 8 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                                        <span class="badge-semaforo-premium @claseColorA">
+                                            <i class="fa-solid fa-circle"></i>
+                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size: 11px; font-style: italic;">Sin asignación</span>
+                                    }
+                                </td>
+                            }
+                            <td>
+                                <div class="acciones-grupo" style="justify-content:center">
+                                    <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="fila-detalle collapsed" data-requi-id="@item.IdRequi">
+                            <td colspan="@numColsReq">
+                                <div class="timeline-container">
+                                    @{
+                                        var p1 = true;
+                                        var p2 = item.NombreAsignado != null;
+                                        var p3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var p4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
+                                        var p5 = item.Estatus == "REQUISICION AUTORIZADA";
+                                        var eMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+
+                                        var progA = 0;
+                                        if (p5) progA = 100;
+                                        else if (p4) progA = 75;
+                                        else if (p3) progA = 50;
+                                        else if (p2) progA = 25;
+                                    }
+                                    <ul class="timeline-track" style="--progress: @(progA)%;">
+                                        <li class="timeline-step @(p1 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                            <div class="step-label">Capturada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Capturada</strong>
+                                                <span>Emisión @item.FechaEmision</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
+                                            <div class="step-label">Asignada</div>
+                                            <div class="step-tooltip">
+                                                <strong>@(p2 ? "Asignada" : "Sin Asignar")</strong>
+                                                <span>@(p2? item.NombreAsignado: "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p3 ? (eMod ? "warning" : "completed") : "")">
+                                            <div class="step-icon"><i class="fa-solid @(eMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                            <div class="step-label">@(eMod ? "A Modificar" : "En Proceso")</div>
+                                            <div class="step-tooltip">
+                                                <strong>Atención Almacén</strong>
+                                                <span>@(eMod ? "Regresada para cambios" : (p3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p4 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-tooltip">
+                                                <strong>Firma Pendiente</strong>
+                                                <span>@(p4 ? "Esperando firmas" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                        <li class="timeline-step @(p5 ? "completed" : "")">
+                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                            <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                            </button>
+                                            <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-tooltip">
+                                                <strong>Requisición Autorizada</strong>
+                                                <span>@(p5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!requisicionesAutorizadas.Any())
+                    {
+                        <tr class="fila-vacia">
+                            <td colspan="@numColsReq" class="text-center">No hay requisiciones autorizadas</td>
+                        </tr>
+                    }
                 </tbody>
             </table>
-            <div id="paginacionServiciosAutorizadas" class="almacen-paginacion"></div>
+            <div id="paginacionAutorizadas" class="almacen-paginacion"></div>
         </div>
     </div>
 </div>
@@ -115,22 +411,134 @@
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
+            <div style="display:none; margin-top:20px;" class="px-4 seccionAtender">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Actividad:</label>
+                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select select2">
+                                <option value="">-- Selecciona actividad --</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Fuente de Financiamiento:</label>
+                            <select id="ffSelect" name="FFV" class="form-select select2">
+                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
+                                <option value="1">Federal</option>
+                                <option value="2">Estatal</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Tipo de Programa:</label>
+                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select select2">
+                                <option value="">-- Selecciona el Tipo de Programa --</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Municipio:</label>
+                            <select id="municipio" name="municipio" class="form-select select2">
+                                <option value="">-- Selecciona municipio --</option>
+                                @foreach (var act in Model.ListaMunicipios)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="modal-body modal-body-premium">
-                <table class="tabla-requisiciones" id="tablaModalDetalle">
-                    <thead>
-                        <tr>
-                            <th>Nº Partida</th>
-                            <th>ID Artículo</th>
-                            <th>Cantidad</th>
-                            <th>Unidad Medida</th>
-                            <th>Descripción</th>
-                            <th>Descripción Detallada</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaDetalle">
-                        <!-- Se carga dinámicamente -->
-                    </tbody>
-                </table>
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaModalDetalle">
+                        <thead>
+                            <tr>
+                                <th>Nº Partida</th>
+                                <th>ID Artículo</th>
+                                <th>Cantidad</th>
+                                <th>Unidad Medida</th>
+                                <th>Descripción</th>
+                                <th>Descripción Detallada</th>
+                                <th>COG Editable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDetalle">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="seccionAtender" style="display:none; margin-top:20px;">
+                    <div class="formulario-input">
+                        <label>Observaciones</label>
+                        <textarea id="txtObservaciones" class="form-control" rows="4"
+                                  placeholder="Escriba las observaciones aquí..."></textarea>
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        <label class="atender-opcion">
+                            <input type="checkbox" id="chkRequiereModificacion" />
+                            <div class="bullet">
+                                <div class="line zero"></div>
+                                <div class="line one"></div>
+                                <div class="line two"></div>
+                                <div class="line three"></div>
+                                <div class="line four"></div>
+                                <div class="line five"></div>
+                                <div class="line six"></div>
+                                <div class="line seven"></div>
+                            </div>
+                            <span>Requiere modificación</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:20px; text-align:right;">
+                        <button type="button" class="btn boton-rosa" onclick="enviarAtencion()">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="formulario-input">
+                    <label>Responsable:</label>
+                    <select id="selectUsuarioAsignar" class="form-select select2">
+                        <option value="">-- Seleccionar responsable --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
             </div>
         </div>
     </div>
@@ -147,8 +555,37 @@
 <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
 </div>
 
+<!-- MODAL HISTORIAL (Estilo Premium/Timeline Vertical) -->
+<div class="modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-historial-dialog">
+        <div class="modal-content modal-premium modal-historial-content">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
+                    <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="modal-summary" id="historialSummary">
+                    <!-- Datos resumen se inyectarán por JS -->
+                </div>
+                <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
+                <div class="modal-tl" id="historialTl">
+                    <!-- Timeline vertical se inyectará por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
+
 }

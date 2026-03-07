@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\js\servicio\**" />
+    <Content Remove="wwwroot\js\servicio\**" />
+    <EmbeddedResource Remove="wwwroot\js\servicio\**" />
+    <None Remove="wwwroot\js\servicio\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Inventario.Entity\Inventario.Entity.csproj" />
     <ProjectReference Include="..\Inventario.IOC\Inventario.IOC.csproj" />
     <ProjectReference Include="..\Inventarios.BLL\Inventario.BLL.csproj" />
@@ -14,7 +21,6 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\img\" />
-    <Folder Include="wwwroot\js\servicio\" />
   </ItemGroup>
 
   <ItemGroup>

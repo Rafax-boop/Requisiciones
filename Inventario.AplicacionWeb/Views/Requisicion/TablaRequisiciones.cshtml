@@ -402,227 +402,225 @@
     </div>
 </div>
 
-    @if (DateTime.Now.Day <= 5 || int.Parse(User.FindFirst("IdDepartamento")?.Value ?? "0") == 29)
-    {
-        <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
-             aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
-                <div class="modal-content modal-premium">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
-                            <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
-                        </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+@if (DateTime.Now.Day <= 5 || int.Parse(User.FindFirst("IdDepartamento")?.Value ?? "0") == 29)
+{
+    <div class="modal" id="modalNuevaRequisicion" tabindex="-1" aria-labelledby="modalNuevaRequisicionLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-nueva-requisicion">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium" id="modalNuevaRequisicionLabel">Nueva Requisición</h5>
+                        <p class="modal-subtitulo-premium">Seleccione el tipo de requisición para continuar</p>
                     </div>
-                    <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
-                        <div class="btn-stack">
-                            <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
-                                <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
-                                <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
-                            </a>
-                            <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })"
-                                   class="btn btn-secondary-nueva">
-                                <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
-                                <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del
-                                    mes</small></span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-            </div>
-        }
-
-        <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content modal-premium">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
-                            <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
-                        </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div style="display:none; margin-top:20px;" class="px-4 seccionAtender">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div class="formulario-input">
-                                    <label>Actividad:</label>
-                                    <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select select2">
-                                        <option value="">-- Selecciona actividad --</option>
-                                        @foreach (var act in Model.ListaActividades)
-                                        {
-                                            <option value="@act.Value">@act.Text</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="formulario-input">
-                                    <label>Fuente de Financiamiento:</label>
-                                    <select id="ffSelect" name="FFV" class="form-select select2">
-                                        <option value="">-- Selecciona Fuente de Financiamiento --</option>
-                                        <option value="1">Federal</option>
-                                        <option value="2">Estatal</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div class="formulario-input">
-                                    <label>Tipo de Programa:</label>
-                                    <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select select2">
-                                        <option value="">-- Selecciona el Tipo de Programa --</option>
-                                        <option value="1">Prioritario</option>
-                                        <option value="2">Adicional</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="formulario-input">
-                                    <label>Municipio:</label>
-                                    <select id="municipio" name="municipio" class="form-select select2">
-                                        <option value="">-- Selecciona municipio --</option>
-                                        @foreach (var act in Model.ListaMunicipios)
-                                        {
-                                            <option value="@act.Value">@act.Text</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-body modal-body-premium">
-                        <div class="table-responsive-container">
-                            <table class="tabla-requisiciones" id="tablaModalDetalle">
-                                <thead>
-                                    <tr>
-                                        <th>Nº Partida</th>
-                                        <th>ID Artículo</th>
-                                        <th>Cantidad</th>
-                                        <th>Unidad Medida</th>
-                                        <th>Descripción</th>
-                                        <th>Descripción Detallada</th>
-                                        <th>COG Editable</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaDetalle">
-                                    <!-- Se carga dinámicamente -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="seccionAtender" style="display:none; margin-top:20px;">
-
-                            <div class="formulario-input">
-                                <label>Observaciones</label>
-                                <textarea id="txtObservaciones" class="form-control" rows="4"
-                                          placeholder="Escriba las observaciones aquí..."></textarea>
-                            </div>
-
-                            <div style="margin-top:15px;">
-                                <label class="atender-opcion">
-                                    <input type="checkbox" id="chkRequiereModificacion" />
-                                    <div class="bullet">
-                                        <div class="line zero"></div>
-                                        <div class="line one"></div>
-                                        <div class="line two"></div>
-                                        <div class="line three"></div>
-                                        <div class="line four"></div>
-                                        <div class="line five"></div>
-                                        <div class="line six"></div>
-                                        <div class="line seven"></div>
-                                    </div>
-                                    <span>Requiere modificación</span>
-                                </label>
-                            </div>
-
-                            <div style="margin-top:20px; text-align:right;">
-                                <button type="button" class="btn boton-rosa" onclick="enviarAtencion()">
-                                    Enviar
-                                </button>
-                            </div>
-
-                        </div>
+                <div class="modal-body modal-body-premium modal-body-nueva-requisicion">
+                    <div class="btn-stack">
+                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion")" class="btn btn-primary-nueva">
+                            <span class="btn-icon-nueva"><i class="fa-solid fa-clipboard-list"></i></span>
+                            <span class="btn-text">Requisición General<small>Bienes y suministros varios</small></span>
+                        </a>
+                        <a href="@Url.Action("FormularioRequisiciones", "Requisicion", new { tipo = "mensual" })"
+                               class="btn btn-secondary-nueva">
+                            <span class="btn-icon-nueva"><i class="fa-solid fa-box"></i></span>
+                            <span class="btn-text">Requisición de Materiales Mensual<small>Abastecimiento recurrente del
+                                mes</small></span>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+}
 
-        <div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content modal-premium">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
-                            <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
-                        </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body modal-body-premium">
-                        <div class="formulario-input">
-                            <label>Responsable:</label>
-                            <select id="selectUsuarioAsignar" class="form-select select2">
-                                <option value="">-- Seleccionar responsable --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
-                    </div>
+<div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
                 </div>
-            </div>
-        </div>
-        <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
-        <div id="desc-panel-modal" style="display:none;">
-            <div class="desc-panel-modal-header">
-                <span class="desc-panel-modal-titulo">Descripción detallada</span>
-                <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
-        </div>
-
-        <!-- MODAL HISTORIAL (Estilo Premium/Timeline Vertical) -->
-        <div class="modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-historial-dialog">
-                <div class="modal-content modal-premium modal-historial-content">
-                    <div class="modal-header modal-header-premium">
-                        <div>
-                            <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
-                            <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
+            <div style="display:none; margin-top:20px;" class="px-4 seccionAtender">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Actividad:</label>
+                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select select2">
+                                <option value="">-- Selecciona actividad --</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
                         </div>
-                        <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
                     </div>
-                    <div class="modal-body modal-body-premium">
-                        <div class="modal-summary" id="historialSummary">
-                            <!-- Datos resumen se inyectarán por JS -->
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Fuente de Financiamiento:</label>
+                            <select id="ffSelect" name="FFV" class="form-select select2">
+                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
+                                <option value="1">Federal</option>
+                                <option value="2">Estatal</option>
+                            </select>
                         </div>
-                        <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
-                        <div class="modal-tl" id="historialTl">
-                            <!-- Timeline vertical se inyectará por JS -->
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Tipo de Programa:</label>
+                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select select2">
+                                <option value="">-- Selecciona el Tipo de Programa --</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Municipio:</label>
+                            <select id="municipio" name="municipio" class="form-select select2">
+                                <option value="">-- Selecciona municipio --</option>
+                                @foreach (var act in Model.ListaMunicipios)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+            <div class="modal-body modal-body-premium">
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaModalDetalle">
+                        <thead>
+                            <tr>
+                                <th>Nº Partida</th>
+                                <th>ID Artículo</th>
+                                <th>Cantidad</th>
+                                <th>Unidad Medida</th>
+                                <th>Descripción</th>
+                                <th>Descripción Detallada</th>
+                                <th>COG Editable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDetalle">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="seccionAtender" style="display:none; margin-top:20px;">
+                    <div class="formulario-input">
+                        <label>Observaciones</label>
+                        <textarea id="txtObservaciones" class="form-control" rows="4"
+                                  placeholder="Escriba las observaciones aquí..."></textarea>
+                    </div>
 
-        @section Scripts {
-            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-            <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
-            <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
-        }
+                    <div style="margin-top:15px;">
+                        <label class="atender-opcion">
+                            <input type="checkbox" id="chkRequiereModificacion" />
+                            <div class="bullet">
+                                <div class="line zero"></div>
+                                <div class="line one"></div>
+                                <div class="line two"></div>
+                                <div class="line three"></div>
+                                <div class="line four"></div>
+                                <div class="line five"></div>
+                                <div class="line six"></div>
+                                <div class="line seven"></div>
+                            </div>
+                            <span>Requiere modificación</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:20px; text-align:right;">
+                        <button type="button" class="btn boton-rosa" onclick="enviarAtencion()">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
+                    <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="formulario-input">
+                    <label>Responsable:</label>
+                    <select id="selectUsuarioAsignar" class="form-select select2">
+                        <option value="">-- Seleccionar responsable --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
+</div>
+
+<!-- MODAL HISTORIAL (Estilo Premium/Timeline Vertical) -->
+<div class="modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-historial-dialog">
+        <div class="modal-content modal-premium modal-historial-content">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
+                    <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="modal-summary" id="historialSummary">
+                    <!-- Datos resumen se inyectarán por JS -->
+                </div>
+                <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
+                <div class="modal-tl" id="historialTl">
+                    <!-- Timeline vertical se inyectará por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
+}

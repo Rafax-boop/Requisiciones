@@ -119,7 +119,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             TempData["MensajeExito"] = "Requisición guardada correctamente.";
             TempData["FolioCreado"] = requiCreada.NumRequisicion;
-            return RedirectToAction("TablaRequisiciones", "Requisicion");
+            return RedirectToAction("TablaRequisicionServicios", "Servicios");
         }
 
         [HttpGet]
