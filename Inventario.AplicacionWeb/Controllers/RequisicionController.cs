@@ -76,12 +76,12 @@ namespace Inventario.AplicacionWeb.Controllers
             if (User.IsInRole("3"))
             {
                 listaDTO = await _requisicionService
-                    .ListarRequisiciones(idDepartamento, idUsuario);
+                    .ListarRequisiciones(idDepartamento, false, idUsuario);
             }
             else
             {
                 listaDTO = await _requisicionService
-                    .ListarRequisiciones(idDepartamento);
+                    .ListarRequisiciones(idDepartamento, false);
             }
 
             listaDTO = listaDTO.OrderBy(r => r.FechaModificacion).ToList();
@@ -238,7 +238,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
 
-            var requiCreada = await _requisicionService.CrearRequisicion(dto, idUsuario);
+            var requiCreada = await _requisicionService.CrearRequisicion(dto, idUsuario, false);
 
             TempData["MensajeExito"] = "Requisición guardada correctamente.";
             TempData["FolioCreado"] = requiCreada.NumRequisicion;

@@ -28,7 +28,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryEstatus = repositoryEstatus;
         }
 
-        public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario)
+        public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
         {
             var requisicion = new TblRequisicion
             {
@@ -39,15 +39,17 @@ namespace Inventario.BLL.Implementacion
                 Correo = modelo.Correo,
                 Telefono = modelo.Telefono,
                 LugarEntrega = modelo.LugarEntrega,
-                UsoEspecifico = modelo.UsoEspecifico.ToUpper(),
+                UsoEspecifico = !servicio ? modelo.UsoEspecifico.ToUpper() : null,
                 Justificacion = modelo.Justificacion.ToUpper(),
                 CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
-                Donativo = modelo.UsoMaterial,
+                Donativo = !servicio ? modelo.UsoMaterial : null,
                 IdUsuario = idUsuario,
                 IdEstatus = 1,
-                Activo = true,
                 FechaModificacion = DateTime.Now,
-                Hash = GenerarSelloDigital()
+                Hash = GenerarSelloDigital(),
+                RequiServicio = servicio,
+                TipoServicio = servicio ? modelo.TipoServicio : null,
+                FechaServicio = servicio ? modelo.FechaServicio : null
             };
             var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
 
@@ -84,13 +86,12 @@ namespace Inventario.BLL.Implementacion
             return requiCreada;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, int? idUsuarioMat = null)
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null)
         {
             IQueryable<TblRequisicion> query;
 
             if (idUsuarioMat.HasValue)
             {
-                // Rol 3: solo ve las que tiene asignadas
                 query = await _repositoryRequisicion.Consultar(r => r.IdUsuarioMat == idUsuarioMat.Value);
             }
             else if (idDepartamento < 110)
@@ -101,6 +102,8 @@ namespace Inventario.BLL.Implementacion
             {
                 query = await _repositoryRequisicion.Consultar();
             }
+
+            query = query.Where(r => r.RequiServicio == servicio);
 
             var resultado = await query
                 .Select(r => new RequisicionMaestraDTO

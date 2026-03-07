@@ -23,8 +23,11 @@ namespace Inventario.BLL.DTO
         public bool? CuentaProgramaPresupuestario { get; set; }
         public bool? UsoMaterial { get; set; }
         public int? IdUsuario { get; set; }
-        public bool? Activo { get; set; }
         public DateTime? FechaSistema { get; set; }
+        public string? TipoServicio { get; set; }
+        public DateOnly? FechaServicio { get; set; }
+        public bool? RequiServicio { get; set; }
+
         public List<FormularioRequisicionDetalleDTO> Articulos { get; set; } = new();
     }
 

@@ -10,8 +10,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
 }
 
-<div class="mt-3 container" style="width:1300px;">
-    <form asp-action= method="post" class="no-loader">
+<div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Servicios")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Servicios")" data-tipo-requisicion="servicio">
+    <form asp-action="CrearRequisicion" method="post" class="no-loader">
+        <input type="hidden" asp-for="IdRequiMaestra" />
         <div class="info-requisicion">
             <div class="fantasma">
                 <div class="filtro-grupo">
@@ -25,7 +26,7 @@
             <div class="requisicion-info">
                 <div class="requisicion">
                     <p class="info-body">Requisición:</p>
-                    <label class="info-body"></label>
+                    <label class="info-body">@Model.NumRequisicion</label>
                 </div>
             </div>
         </div>
@@ -71,17 +72,17 @@
                 </div>
                 <div class="formulario-input">
                     <label>Justificación del servicio solicitado:</label>
-                    <textarea type="text" name="UsoEspecifico" placeholder="Justifique el servicio solicitado" value=""
+                    <textarea type="text" name="Justificacion" placeholder="Justifique el servicio solicitado" value=""
                               required></textarea>
                 </div>
                 <div class="formulario-input">
                     <label>Fecha de prestación del servicio:</label>
-                    <input type="text" id="fechaPrestacionServicio" name="FechaPrestacion" placeholder="Seleccionar fecha"
+                    <input type="text" id="fechaServicio" name="FechaServicio" placeholder="Seleccionar fecha"
                            readonly required />
                 </div>
                 <div class="formulario-input">
                     <label>Lugar de prestación del servicio:</label>
-                    <input type="text" name="LugarPrestacion" placeholder="Lugar de prestación del servicio" value=""
+                    <input type="text" name="LugarEntrega" placeholder="Lugar de prestación del servicio" value=""
                            required />
                 </div>
                 @*<div class="formulario-input">
@@ -124,7 +125,7 @@
 
         <div class="container-formulario mt-4">
             <div class="seccion-completa text-center">
-                <button type="button" class="btn boton-rosa btn-lg">
+                <button type="submit" class="btn boton-rosa btn-lg">
                     Crear Requisición
                 </button>
             </div>
@@ -132,31 +133,15 @@
     </form>
 </div>
 
+<div id="desc-panel-global" style="display:none;">
+    <textarea id="desc-textarea-global"
+              class="desc-textarea"
+              placeholder="Escribe la descripción detallada aquí..."></textarea>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-        if (typeof flatpickr !== 'undefined') {
-        flatpickr('#fechaPrestacionServicio', {
-        locale: 'es',
-        dateFormat: 'Y-m-d',
-        altInput: true,
-        altFormat: 'd / m / Y',
-        defaultDate: new Date(),
-        allowInput: false,
-        disableMobile: true
-        });
-        }
-
-        // Inicializar Select2
-        if (typeof $.fn.select2 !== 'undefined') {
-        $('.select2-tipo-servicio').select2({
-        placeholder: '-- Seleccionar tipo --',
-        allowClear: true
-        });
-        }
-        });
-    </script>
+    <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>
 }

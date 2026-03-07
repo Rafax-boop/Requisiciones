@@ -10,8 +10,8 @@ namespace Inventario.BLL.Interfaces
 {
     public interface IRequisicionesService
     {
-        Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario);
-        Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, int? idUsuarioMat = null);
+        Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio);
+        Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null);
         Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro);
         Task<RequisicionCompletaDTO?> ObtenerRequisicionCompletaPorId(int idRequisicion);
         Task<bool> ActualizarRequisicion(int idRequisicion, FormularioRequisicionDTO modelo, int idUsuario);

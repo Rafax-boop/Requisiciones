@@ -3,6 +3,7 @@
     var urlBuscarArticulos = container ? container.getAttribute('data-url-buscar-articulos') : '';
     var urlObtenerInfoArticulo = container ? container.getAttribute('data-url-obtener-info-articulo') : '';
     var esMensual = container ? container.getAttribute('data-tipo-requisicion') === 'mensual' : false;
+    var esServicio = container ? container.getAttribute('data-tipo-requisicion') === 'servicio' : false;
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
     flatpickr('#fechaEmisionPicker', {
@@ -24,6 +25,28 @@
             });
         } else {
             agregarArticulo();
+        }
+
+        if (esServicio) {
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr('#fechaServicio', {
+                        locale: 'es',
+                        dateFormat: 'Y-m-d',
+                        altInput: true,
+                        altFormat: 'd / m / Y',
+                        defaultDate: new Date(),
+                        allowInput: false,
+                        disableMobile: true
+                    });
+                }
+
+                // Inicializar Select2
+                if (typeof $.fn.select2 !== 'undefined') {
+                    $('.select2-tipo-servicio').select2({
+                        placeholder: '-- Seleccionar tipo --',
+                        allowClear: true
+                    });
+                }
         }
     });
 
@@ -228,6 +251,20 @@
                 return false;
             }
         });
+
+        if (esServicio) {
+            var tipoServicio = $('[name="TipoServicio"]').val();
+            var fechaServicio = $('[name="FechaServicio"]').val();
+
+            if (!tipoServicio) {
+                valido = false;
+                mensajes.push('Debe seleccionar un tipo de servicio.');
+            }
+            if (!fechaServicio) {
+                valido = false;
+                mensajes.push('Debe seleccionar la fecha de prestación del servicio.');
+            }
+        }
 
         if (!valido) {
             e.preventDefault();
