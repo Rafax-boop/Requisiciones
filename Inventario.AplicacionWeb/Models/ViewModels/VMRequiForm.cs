@@ -6,7 +6,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
     {
         public int? IdRequiMaestra { get; set; }
         public string? ObservacionesBitacora { get; set; }
-        public int? IdProvedor { get; set; }
         public string? NumRequisicion { get; set; }
         public DateOnly? FechaEmision { get; set; }
         public int? IdDepartamento { get; set; }

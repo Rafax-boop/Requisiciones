@@ -198,6 +198,8 @@ namespace Inventario.BLL.Implementacion
                 CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
                 UsoMaterial = requisicion.Donativo,
                 Hash = requisicion.Hash,
+                FechaServicio = requisicion.FechaServicio,
+                TipoServicio = requisicion.TipoServicio,
                 Articulos = articulos
             };
         }
@@ -210,11 +212,14 @@ namespace Inventario.BLL.Implementacion
             requisicion.Correo = modelo.Correo;
             requisicion.Telefono = modelo.Telefono;
             requisicion.UsoEspecifico = modelo.UsoEspecifico;
+            requisicion.LugarEntrega = modelo.LugarEntrega;
             requisicion.Justificacion = modelo.Justificacion;
-            requisicion.IdEstatus = 1;
+            requisicion.IdEstatus = 2;
             requisicion.CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario;
             requisicion.Donativo = modelo.UsoMaterial;
             requisicion.FechaModificacion = DateTime.Now;
+            requisicion.FechaServicio = modelo.FechaServicio;
+            requisicion.TipoServicio = modelo.TipoServicio;
 
             await _repositoryRequisicion.Editar(requisicion);
 

@@ -18,6 +18,9 @@ namespace Inventario.BLL.DTO
         public string? Justificacion { get; set; }
         public bool? CuentaProgramaPresupuestario { get; set; }
         public bool? UsoMaterial { get; set; }
+        public string? TipoServicio { get; set; }
+        public DateOnly? FechaServicio { get; set; }
+        public bool? RequiServicio { get; set; }
         public string? Hash { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; } = new();
     }

@@ -85,15 +85,21 @@
                        class="@(ViewData["Title"]?.ToString() == "Home Page" ? "active" : "")">
                         Inicio
                     </a>
-                    <a href="@Url.Action("TablaRequisiciones", "Requisicion")"
-                       class="@(ViewData["Title"]?.ToString() == "TablaRequisiciones" ? "active" : "")">
-                        Requisición
-                    </a>
-                    <a href="@Url.Action("TablaRequisicionServicios", "Servicios")"
-                       class="@(ViewData["Title"]?.ToString() == "TablaRequisicionServicios" || ViewData["Title"]?.ToString() == "FormularioRequisicionServicios" || ViewData["Title"]?.ToString() == "Requisiciones de Servicios" || ViewData["Title"]?.ToString() == "Formulario Requisición de Servicios" ? "active" : "")">
-                        Servicios
-                    </a>
-                    @if (User.IsInRole("2") || User.IsInRole("5") || User.IsInRole("4"))
+                    @if (User.IsInRole("1") || User.IsInRole("3") || User.IsInRole("4") || User.IsInRole("5"))
+                    {
+                        <a href="@Url.Action("TablaRequisiciones", "Requisicion")"
+                        class="@(ViewData["Title"]?.ToString() == "TablaRequisiciones" ? "active" : "")">
+                            Requisición
+                        </a>
+                    }
+                    @if (User.IsInRole("1") || User.IsInRole("6") || User.IsInRole("7") || User.IsInRole("5"))
+                    {
+                        <a href="@Url.Action("TablaRequisicionServicios", "Servicios")"
+                        class="@(ViewData["Title"]?.ToString() == "TablaRequisicionServicios" || ViewData["Title"]?.ToString() == "FormularioRequisicionServicios" || ViewData["Title"]?.ToString() == "Requisiciones de Servicios" || ViewData["Title"]?.ToString() == "Formulario Requisición de Servicios" ? "active" : "")">
+                            Servicios
+                        </a>
+                    }
+                    @if (User.IsInRole("2") || User.IsInRole("5"))
                     {
                         <a href="@Url.Action("Index", "Almacen")"
                            class="@(ViewData["Title"]?.ToString() == "Almacen" ? "active" : "")">

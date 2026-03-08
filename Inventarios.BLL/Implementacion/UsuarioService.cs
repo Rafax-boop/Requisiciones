@@ -90,9 +90,9 @@ namespace Inventario.BLL.Implementacion
             return query.ToList();
         }
 
-        public async Task<List<TblUsuario>> ListaUsuariosMateriales()
+        public async Task<List<TblUsuario>> ListaUsuariosAsignar(int idRol)
         {
-            IQueryable<TblUsuario> query = await _repositorioUsuarios.Consultar(u => u.IdRol == 3);
+            IQueryable<TblUsuario> query = await _repositorioUsuarios.Consultar(u => u.IdRol == idRol);
             return query.ToList();
         }
 

@@ -6,16 +6,6 @@
     var esServicio = container ? container.getAttribute('data-tipo-requisicion') === 'servicio' : false;
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
-    flatpickr('#fechaEmisionPicker', {
-        locale: 'es',
-        dateFormat: 'Y-m-d',
-        altInput: true,
-        altFormat: 'd / m / Y',
-        defaultDate: new Date(),
-        allowInput: false,
-        disableMobile: true
-    });
-
     var contadorArticulos = 0;
 
     $(document).ready(function () {
@@ -28,25 +18,28 @@
         }
 
         if (esServicio) {
-                if (typeof flatpickr !== 'undefined') {
-                    flatpickr('#fechaServicio', {
-                        locale: 'es',
-                        dateFormat: 'Y-m-d',
-                        altInput: true,
-                        altFormat: 'd / m / Y',
-                        defaultDate: new Date(),
-                        allowInput: false,
-                        disableMobile: true
-                    });
-                }
 
-                // Inicializar Select2
-                if (typeof $.fn.select2 !== 'undefined') {
-                    $('.select2-tipo-servicio').select2({
-                        placeholder: '-- Seleccionar tipo --',
-                        allowClear: true
-                    });
-                }
+            var elemento = document.getElementById('fechaServicio');
+
+            if (elemento && typeof flatpickr !== 'undefined') {
+
+                flatpickr(elemento, {
+                    locale: 'es',
+                    dateFormat: 'Y-m-d',
+                    altInput: true,
+                    altFormat: 'd / m / Y',
+                    defaultDate: elemento.value || null,
+                    allowInput: false,
+                    disableMobile: true
+                });
+            }
+
+            if (typeof $.fn.select2 !== 'undefined') {
+                $('.select2-tipo-servicio').select2({
+                    placeholder: '-- Seleccionar tipo --',
+                    allowClear: true
+                });
+            }
         }
     });
 
@@ -224,6 +217,15 @@
     });
 
     $('form').on('submit', function (e) {
+        $('#tablaArticulos tbody tr').each(function (nuevoIndex) {
+            $(this).find('[name]').each(function () {
+                var name = $(this).attr('name');
+                if (name && name.startsWith('Articulos[')) {
+                    $(this).attr('name', name.replace(/Articulos\[\d+\]/, 'Articulos[' + nuevoIndex + ']'));
+                }
+            });
+        });
+
         var valido = true;
         var mensajes = [];
 

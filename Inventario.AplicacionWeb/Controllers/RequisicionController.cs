@@ -116,7 +116,7 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<JsonResult> ObtenerUsuariosMateriales()
         {
-            var usuarios = await _usuarioService.ListaUsuariosMateriales();
+            var usuarios = await _usuarioService.ListaUsuariosAsignar(3);
             var resultado = usuarios.Select(u => new
             {
                 id = u.IdUsuario,
@@ -197,6 +197,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 UsoEspecifico = dto.UsoEspecifico,
                 Justificacion = dto.Justificacion,
                 CuentaProgramaPresupuestario = dto.CuentaProgramaPresupuestario,
+                UsoMaterial = dto.UsoMaterial,
                 Articulos = dto.Articulos.Select(a => new ItemRequiVM
                 {
                     IdArticulo = a.IdArticulo,

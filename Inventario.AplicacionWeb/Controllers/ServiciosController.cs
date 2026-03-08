@@ -54,7 +54,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             List<RequisicionMaestraDTO> listaDTO;
 
-            if (User.IsInRole("3"))
+            if (User.IsInRole("7"))
             {
                 listaDTO = await _requisicionesService
                     .ListarRequisiciones(idDepartamento, true, idUsuario);
@@ -136,6 +136,61 @@ namespace Inventario.AplicacionWeb.Controllers
             });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditarRequisicion(int id)
+        {
+            var dto = await _requisicionesService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var vm = new VMRequiForm
+            {
+                IdRequiMaestra = id,
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                LugarEntrega = dto.LugarEntrega,
+                Justificacion = dto.Justificacion,
+                TipoServicio = dto.TipoServicio,
+                FechaServicio = dto.FechaServicio,
+                Articulos = dto.Articulos.Select(a => new ItemRequiVM
+                {
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    Cantidad = a.Cantidad,
+                    UnidadMedida = a.UnidadMedida,
+                    Descripcion = a.Descripcion,
+                    DescripcionDetallada = a.DescripcionDetallada
+                }).ToList()
+            };
+
+            vm.ObservacionesBitacora = await _requisicionesService.ObtenerObservacionesModificacion(id);
+
+            ViewBag.ModoEdicion = true;
+            return View("FormularioRequisicionServicios", vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActualizarRequisicion(VMRequiForm modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
+
+            bool exito = await _requisicionesService.ActualizarRequisicion(modelo.IdRequiMaestra!.Value, dto, idUsuario);
+
+            if (exito)
+            {
+                TempData["MensajeExito"] = "Requisición editada correctamente.";
+                return RedirectToAction("TablaRequisicionServicios", "Servicios");
+            }
+
+            return View("FormularioRequisicionServicios", modelo);
+        }
+
         public async Task<JsonResult> BuscarArticulos(string term, bool mensual = false)
         {
             var articulos = await _articulosService.BuscarArticulos(term, mensual);
@@ -146,6 +201,18 @@ namespace Inventario.AplicacionWeb.Controllers
                 text = a.Descripcion
             }).ToList();
 
+            return Json(resultado);
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerUsuariosServicios()
+        {
+            var usuarios = await _usuarioService.ListaUsuariosAsignar(7);
+            var resultado = usuarios.Select(u => new
+            {
+                id = u.IdUsuario,
+                nombre = u.Usuario
+            }).ToList();
             return Json(resultado);
         }
     }

@@ -1,13 +1,17 @@
 
 (function () {
-  var container = document.querySelector(".tabla-requi-page");
+    var container = document.querySelector(".tabla-requi-page");
+    var esTablaServicios = container?.getAttribute('data-tipo-tabla') === 'servicios';
   var obtenerDetallesUrl = container
     ? container.getAttribute("data-url-obtener-detalles")
     : "";
   var verPdfUrl = container ? container.getAttribute("data-url-ver-pdf") : "";
   var urlUsuariosMateriales = container
     ? container.getAttribute("data-url-usuarios-materiales")
-    : "";
+        : "";
+  var urlUsuariosServicios = container
+      ? container.getAttribute("data-url-usuarios-servicios")
+      : "";
   var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
   const contenedor = document.querySelector(".tabla-requi-page");
   const atenderUrl = contenedor.dataset.urlAtender;
@@ -262,7 +266,9 @@
     if ($select.data("select2")) $select.select2("destroy");
     select.innerHTML = '<option value="">Cargando...</option>';
 
-    $.get(urlUsuariosMateriales, function (data) {
+    var urlUsuarios = esTablaServicios ? urlUsuariosServicios : urlUsuariosMateriales;
+
+    $.get(urlUsuarios, function (data) {
       select.innerHTML =
         '<option value="">-- Seleccionar responsable --</option>';
       data.forEach(function (u) {

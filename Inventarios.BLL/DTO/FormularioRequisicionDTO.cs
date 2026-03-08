@@ -8,7 +8,6 @@ namespace Inventario.BLL.DTO
 {
     public class FormularioRequisicionDTO
     {
-        public int? IdProvedor { get; set; }
         public string? NumRequisicion { get; set; }
         public DateOnly? FechaEmision { get; set; }
         public int? IdDepartamento { get; set; }

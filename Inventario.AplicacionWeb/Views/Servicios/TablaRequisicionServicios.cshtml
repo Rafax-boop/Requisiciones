@@ -11,12 +11,12 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+<div class="tabla-requi-page" data-tipo-tabla="servicios" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
      data-url-ver-pdf="@Url.Action("VerParaPdf", "Requisicion")"
-     data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
+     data-url-usuarios-servicios="@Url.Action("ObtenerUsuariosServicios", "Servicios")"
      data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
      data-url-atender="@Url.Action("Atender", "Requisicion")"
-     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")">
+     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")"><!--Se debe de ver el cambio de este respecto a adquisiciones-->
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -69,8 +69,8 @@
 
     @{
         var numColsReq = 8;
-        if (User.IsInRole("4")) numColsReq++;
-        if (User.IsInRole("3") || User.IsInRole("4")) numColsReq++;
+        if (User.IsInRole("6")) numColsReq++;
+        if (User.IsInRole("7") || User.IsInRole("6")) numColsReq++;
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.Estatus != "REQUISICION AUTORIZADA").ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.Estatus == "REQUISICION AUTORIZADA").ToList();
     }
@@ -88,11 +88,11 @@
                         <th>Responsable</th>
                         <th style="text-align:center">Items</th>
                         <th>Estado</th>
-                        @if (User.IsInRole("4"))
+                        @if (User.IsInRole("6"))
                         {
                             <th>Asignado</th>
                         }
-                        @if (User.IsInRole("3") || User.IsInRole("4"))
+                        @if (User.IsInRole("7") || User.IsInRole("6"))
                         {
                             <th>Estatus</th>
                         }
@@ -114,11 +114,11 @@
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@item.Estatus</td>
-                            @if (User.IsInRole("4"))
+                            @if (User.IsInRole("6"))
                             {
                                 <td>@(item.NombreAsignado ?? "Sin asignar")</td>
                             }
-                            @if (User.IsInRole("3") || User.IsInRole("4"))
+                            @if (User.IsInRole("7") || User.IsInRole("6"))
                             {
                                 <td>
                                     @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
@@ -137,7 +137,7 @@
                             }
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    @if (!User.IsInRole("3"))
+                                    @if (!User.IsInRole("7"))
                                     {
                                         <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                             <i class="fa-solid fa-eye"></i>
@@ -145,7 +145,7 @@
                                     }
                                     @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
                                     {
-                                        <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
+                                        <a href="@Url.Action("EditarRequisicion", "Servicios", new { id = item.IdRequi })"
                                            class="btn-accion btn-editar" title="Editar">
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
@@ -153,13 +153,13 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
-                                    @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
+                                    @if (User.IsInRole("6") && item.Estatus == "REQUISICION CAPTURADA")
                                     {
                                         <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
                                             <i class="fa-solid fa-clipboard-user"></i>
                                         </button>
                                     }
-                                    @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
+                                    @if (User.IsInRole("7") && item.Estatus == "REQUISICION EN PROCESO")
                                     {
                                         <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
                                             <i class="fa-solid fa-hand-holding"></i>
@@ -260,11 +260,11 @@
                         <th>Responsable</th>
                         <th>Items</th>
                         <th>Estado</th>
-                        @if (User.IsInRole("4"))
+                        @if (User.IsInRole("6"))
                         {
                             <th>Asignado</th>
                         }
-                        @if (User.IsInRole("3") || User.IsInRole("4"))
+                        @if (User.IsInRole("7") || User.IsInRole("6"))
                         {
                             <th>Estatus</th>
                         }
@@ -286,11 +286,11 @@
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@item.Estatus</td>
-                            @if (User.IsInRole("4"))
+                            @if (User.IsInRole("6"))
                             {
                                 <td>@(item.NombreAsignado ?? "Sin asignar")</td>
                             }
-                            @if (User.IsInRole("3") || User.IsInRole("4"))
+                            @if (User.IsInRole("7") || User.IsInRole("6"))
                             {
                                 <td>
                                     @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
