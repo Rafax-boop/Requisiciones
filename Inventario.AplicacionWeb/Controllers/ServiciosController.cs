@@ -117,7 +117,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var requiCreada = await _requisicionesService.CrearRequisicion(dto, idUsuario, true);
 
-            TempData["MensajeExito"] = "Requisición guardada correctamente.";
+            TempData["MensajeExito"] = "Requisiciï¿½n guardada correctamente.";
             TempData["FolioCreado"] = requiCreada.NumRequisicion;
             return RedirectToAction("TablaRequisicionServicios", "Servicios");
         }
@@ -184,7 +184,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (exito)
             {
-                TempData["MensajeExito"] = "Requisición editada correctamente.";
+                TempData["MensajeExito"] = "Requisiciï¿½n editada correctamente.";
                 return RedirectToAction("TablaRequisicionServicios", "Servicios");
             }
 
@@ -214,6 +214,44 @@ namespace Inventario.AplicacionWeb.Controllers
                 nombre = u.Usuario
             }).ToList();
             return Json(resultado);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> VerParaPdf(int id)
+        {
+            var dto = await _requisicionesService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var vm = new VMRequiForm
+            {
+                IdRequiMaestra = id,
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                NomDirector = dto.NomDirector,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                LugarEntrega = dto.LugarEntrega,
+                Justificacion = dto.Justificacion,
+                TipoServicio = dto.TipoServicio,
+                FechaServicio = dto.FechaServicio,
+                UsoMaterial = dto.UsoMaterial,
+                Hash = dto.Hash,
+                Articulos = dto.Articulos.Select(a => new ItemRequiVM
+                {
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    Cantidad = a.Cantidad,
+                    UnidadMedida = a.UnidadMedida,
+                    Descripcion = a.Descripcion,
+                    DescripcionDetallada = a.DescripcionDetallada
+                }).ToList()
+            };
+
+            return View("RequisicionServiciosParaPdf", vm);
         }
     }
 }

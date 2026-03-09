@@ -567,7 +567,7 @@
 
       var contenido = "";
       if (articulos.length === 0) {
-        contenido = '<tr><td colspan="' + (esDonativo ? 7 : 6) + '" class="text-center">Sin artículos</td></tr>';
+        contenido = '<tr><td colspan="' + (esDonativo ? 6 : 5) + '" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
@@ -582,7 +582,6 @@
           contenido +=
             "<tr>" +
             "<td>" + (item.numPartida || "") + "</td>" +
-            "<td>" + (item.idArticulo || "") + "</td>" +
             "<td>" + (item.cantidad || "") + "</td>" +
             "<td>" + (item.unidadMedida || "") + "</td>" +
             "<td>" + (item.descripcion || "") + "</td>" +

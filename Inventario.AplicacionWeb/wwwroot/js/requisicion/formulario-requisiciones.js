@@ -48,7 +48,6 @@
 
         var fila = [
             '<tr data-index="', index, '">',
-            '<td class="id-' + index + '">' + (art.idArticulo || '-') + '</td>',
             '<td class="cog-' + index + '">' + (art.cog || '-') + '</td>',
             '<td class="clave-' + index + '">-</td>',
             '<td>',
@@ -84,7 +83,6 @@
 
         var fila = [
             '<tr data-index="', index, '">',
-            '<td class="id-' + index + '">-</td>',
             '<td class="cog-' + index + '">-</td>',
             '<td class="clave-' + index + '">-</td>',
             '<td>',
@@ -140,7 +138,6 @@
 
         if (idArticulo && urlObtenerInfoArticulo) {
             $.get(urlObtenerInfoArticulo, { id: idArticulo }, function (data) {
-                $('.id-' + index).text(data.id);
                 $('.cog-' + index).text(data.cog);
                 $('.clave-' + index).text(data.clave);
                 $('.unidad-' + index).text(data.unidadMedida);

@@ -1,0 +1,169 @@
+@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@{
+    Layout = null;
+    var fechaTexto = Model.FechaEmision.HasValue ? Model.FechaEmision.Value.Day.ToString("D2") + "-" +
+        Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Year : "—";
+    var fechaServicioTexto = Model.FechaServicio.HasValue
+        ? Model.FechaServicio.Value.Day.ToString("D2") + "-" + Model.FechaServicio.Value.Month.ToString("D2") + "-" + Model.FechaServicio.Value.Year
+        : "—";
+    var numRequi = Model.NumRequisicion ?? "—";
+}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Requisición de Servicios @numRequi</title>
+    <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+</head>
+
+<body>
+    <div class="pdf-wrapper">
+
+        <!-- Encabezado institucional -->
+        <div class="pdf-encabezado">
+            <div class="pdf-encabezado-logo">
+                <img src="~/img/familias-dif-rosa.png" alt="Logo DIF" />
+            </div>
+            <div class="pdf-encabezado-texto">
+                <p>Sistema para el Desarrollo Integral de la Familia</p>
+                <p>del Estado de Puebla</p>
+                <p>Ave. Reforma No. 1305 Colonia Centro &nbsp;|&nbsp; Puebla, Pue., C.P. 72000</p>
+                <p>Dirección de Administración y Finanzas</p>
+                <p>Depto. de Recursos Materiales y Servicios Generales</p>
+                <p>Sección de Almacén e Inventarios</p>
+                <p class="pdf-encabezado-titulo">Requisición de Servicios</p>
+            </div>
+            <div class="pdf-encabezado-cuadro">
+                <span class="pdf-requi-label">Requisición</span>
+                <span class="pdf-requi-num">@numRequi</span>
+                <span class="pdf-fecha-label">Fecha de emisión</span>
+                <span class="pdf-fecha-valor">@fechaTexto</span>
+            </div>
+        </div>
+
+        <!-- Sección: Departamento, Responsable, Correo, Teléfono -->
+        <div class="pdf-seccion pdf-grid-2">
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Departamento solicitante</span>
+                <span class="pdf-campo-valor">@(Model.Departamento ?? "—")</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Responsable</span>
+                <span class="pdf-campo-valor">@(Model.NomResponsableDepartamento ?? "—")</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Correo</span>
+                <span class="pdf-campo-valor">@(Model.Correo ?? "—")</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Teléfono</span>
+                <span class="pdf-campo-valor">@(Model.Telefono ?? "—")</span>
+            </div>
+        </div>
+
+        <!-- Sección: Datos del servicio -->
+        <div class="pdf-seccion pdf-grid-1">
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Tipo de servicio solicitado</span>
+                <span class="pdf-campo-valor">@(Model.TipoServicio ?? "—")</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Justificación del servicio solicitado</span>
+                <span class="pdf-campo-valor">@(Model.Justificacion ?? "—")</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Fecha de prestación del servicio</span>
+                <span class="pdf-campo-valor">@fechaServicioTexto</span>
+            </div>
+            <div class="pdf-campo">
+                <span class="pdf-campo-label">Lugar de prestación del servicio</span>
+                <span class="pdf-campo-valor">@(Model.LugarEntrega ?? "—")</span>
+            </div>
+        </div>
+
+        <!-- Tabla de artículos -->
+        <div class="pdf-seccion">
+            <p class="pdf-tabla-titulo">Artículos solicitados</p>
+            <table class="pdf-tabla">
+                <thead>
+                    <tr>
+                        <th style="width:10%">Nº Partida</th>
+                        <th style="width:8%">ID</th>
+                        <th style="width:22%">Descripción</th>
+                        <th style="width:12%">Unidad</th>
+                        <th style="width:10%">Cantidad</th>
+                        <th style="width:38%">Descripción detallada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Articulos != null && Model.Articulos.Any())
+                    {
+                        @foreach (var a in Model.Articulos)
+                        {
+                            <tr>
+                                <td>@(a.Cog?.ToString() ?? "—")</td>
+                                <td>@(a.IdArticulo?.ToString() ?? "—")</td>
+                                <td>@(a.Descripcion ?? "—")</td>
+                                <td>@(a.UnidadMedida ?? "—")</td>
+                                <td>@(a.Cantidad.HasValue ? ((int)a.Cantidad.Value).ToString() : "—")</td>
+                                <td>@(a.DescripcionDetallada ?? "—")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Sin artículos registrados</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Firmas -->
+        <div class="pdf-seccion pdf-firmas">
+            <div class="pdf-firma-item">
+                <div class="pdf-firma-linea" aria-hidden="true"></div>
+                <span class="pdf-firma-nombre">@(Model.NomResponsableDepartamento ?? "—")</span>
+                <span class="pdf-firma-rol">Responsable del departamento</span>
+            </div>
+            <div class="pdf-firma-item">
+                <div class="pdf-firma-linea" aria-hidden="true"></div>
+                <span class="pdf-firma-nombre">@(Model.NomDirector ?? "—")</span>
+                <span class="pdf-firma-rol">Director</span>
+            </div>
+        </div>
+
+        <div class="pdf-hash-container mt-4 text-center">
+            <span class="pdf-hash-label d-block text-muted"
+                  style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Sello Digital:</span>
+            <span class="pdf-hash-valor d-block font-monospace"
+                  style="font-size: 11px; word-break: break-all; color: #4b5563; border: 1.5px dashed #cbd5e1; padding: 6px 10px; display: inline-block; margin-top: 6px; border-radius: 6px; background-color: #f8fafc;">
+                ||@(Model.IdRequiMaestra)|@(Model.NumRequisicion)|@(Model.FechaEmision.HasValue ?
+                    Model.FechaEmision.Value.Day.ToString("D2") + "-" + Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Year : "—")|@(Model.Hash ?? "—")||
+            </span>
+        </div>
+
+        <!-- Botón imprimir (solo en pantalla) -->
+        <div class="pdf-imprimir no-print">
+            <button type="button" onclick="window.print();">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" />
+                    <path
+                    d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z" />
+                </svg>
+                Imprimir / Guardar como PDF
+            </button>
+        </div>
+
+    </div>
+</body>
+
+</html>
