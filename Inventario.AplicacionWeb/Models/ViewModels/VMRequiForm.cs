@@ -26,6 +26,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public DateOnly? FechaServicio { get; set; }
         public bool? RequiServicio { get; set; }
         public List<ItemRequiVM> Articulos { get; set; } = new();
+        public List<string> FotosExistentes { get; set; } = new();
     }
 
     public class ItemRequiVM

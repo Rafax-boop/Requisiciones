@@ -1,8 +1,10 @@
-using System.Text.Json;
 using Inventario.AplicacionWeb.Utilidades.AutoMapper;
+using Inventario.BLL.Implementacion;
+using Inventario.BLL.Interfaces;
 using Inventario.IOC;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
+using System.Text.Json;
 
 // #region agent log
 void DebugLog(object data)
@@ -37,6 +39,11 @@ builder.Services.InyectarDependencias(builder.Configuration);
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
+});
+
 var app = builder.Build();
 
 // #region agent log
@@ -69,6 +76,8 @@ app.Use(async (ctx, next) =>
         DebugLog(new { hypothesisId = "F", requestPath = path, responseStatusCode = ctx.Response.StatusCode });
 });
 // #endregion
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

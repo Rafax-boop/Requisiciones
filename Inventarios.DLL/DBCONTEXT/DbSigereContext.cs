@@ -38,6 +38,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblProvedorTipo> TblProvedorTipos { get; set; }
 
+    public virtual DbSet<TblRegistroDiseno> TblRegistroDisenos { get; set; }
+
     public virtual DbSet<TblRequisicion> TblRequisicions { get; set; }
 
     public virtual DbSet<TblRequisicionDetalle> TblRequisicionDetalles { get; set; }
@@ -257,6 +259,20 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Sigla)
                 .HasMaxLength(10)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblRegistroDiseno>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__registro__3214EC077678AF4C");
+
+            entity.Property(e => e.FechaSubida).HasColumnType("datetime");
+            entity.Property(e => e.Ruta)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRegistroDisenos)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblRegistroDisenos_tblRequisicion");
         });
 
         modelBuilder.Entity<TblRequisicion>(entity =>

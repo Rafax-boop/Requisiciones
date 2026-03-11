@@ -9,11 +9,13 @@ namespace Inventario.BLL.DTO
     public class DetallesRequiDTO
     {
         public bool Donativo { get; set; }
+        public string?  TipoServicio { get; set; }
         public int? IdPp { get; set; }
         public string? Ff { get; set; }
         public string? TipoPrograma { get; set; }
         public int? ClaveRegion { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; }
+        public List<string> Fotos { get; set; } = new();
     }
 
     public class DetalleArticuloDTO

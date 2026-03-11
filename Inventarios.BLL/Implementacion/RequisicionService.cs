@@ -7,6 +7,7 @@ using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventario.BLL.Implementacion
@@ -18,14 +19,23 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
         private readonly IGenericRepository<TblDepartamento> _repositoryDepartamento;
         private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
+        private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
 
-        public RequisicionService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblDepartamento> repositoryDepartamento, IGenericRepository<TblEstatus> repositoryEstatus)
+        public RequisicionService(
+            IRequisicionRepository repositoryRequisicion,
+            IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle,
+            IGenericRepository<TblBitacoraEstatus> repositoryBitacora,
+            IGenericRepository<TblDepartamento> repositoryDepartamento,
+            IGenericRepository<TblEstatus> repositoryEstatus,
+            IGenericRepository<TblRegistroDiseno> repositoryDisenos
+        )
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
             _repositoryBitacora = repositoryBitacora;
             _repositoryDepartamento = repositoryDepartamento;
             _repositoryEstatus = repositoryEstatus;
+            _repositoryDisenos = repositoryDisenos;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -146,9 +156,18 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
+            List<string> fotos = new();
+            if (maestra?.TipoServicio == "Imprenta")
+            {
+                var queryFotos = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idMaestro);
+                fotos = await queryFotos.Select(f => f.Ruta).ToListAsync();
+            }
+
             return new DetallesRequiDTO
             {
                 Donativo = maestra?.Donativo ?? false,
+                TipoServicio = maestra?.TipoServicio,
+                Fotos = fotos,
                 IdPp = maestra?.IdPp,
                 Ff = maestra?.Ff,
                 TipoPrograma = maestra?.TipoPrograma,
@@ -410,10 +429,51 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
+        public async Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath)
+        {
+            var carpeta = Path.Combine(webRootPath, "uploads", "diseños", idRequisicion.ToString());
+            Directory.CreateDirectory(carpeta);
+
+            foreach (var foto in fotos)
+            {
+                if (foto.Length == 0) continue;
+
+                var nombreArchivo = $"{Guid.NewGuid()}{Path.GetExtension(foto.FileName)}";
+                var rutaCompleta = Path.Combine(carpeta, nombreArchivo);
+
+                using (var stream = new FileStream(rutaCompleta, FileMode.Create))
+                    await foto.CopyToAsync(stream);
+
+                await _repositoryDisenos.Crear(new TblRegistroDiseno
+                {
+                    IdRequisicion = idRequisicion,
+                    Ruta = $"/uploads/diseños/{idRequisicion}/{nombreArchivo}",
+                    FechaSubida = DateTime.Now
+                });
+            }
+
+            return true;
+        }
+
+        public async Task<List<string>> ObtenerFotosRequisicion(int idRequisicion)
+        {
+            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion);
+            return await query.Select(f => f.Ruta).ToListAsync();
+        }
+
+        public async Task<bool> EliminarFotoRequisicion(int idFoto)
+        {
+            var foto = await _repositoryDisenos.Obtener(f => f.Id == idFoto);
+            if (foto == null) return false;
+
+            await _repositoryDisenos.Eliminar(foto);
+            return true;
+        }
+
         private string GenerarSelloDigital()
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
             return BitConverter.ToString(bytes).Replace("-", "");
-        }
+        }        
     }
 }

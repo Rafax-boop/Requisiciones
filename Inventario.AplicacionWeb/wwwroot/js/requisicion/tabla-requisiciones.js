@@ -537,6 +537,8 @@
   });
 
   window.verDetalle = function (idMaestro, modo = "ver") {
+        document.getElementById('galeriaFotosDetalle').innerHTML = '';
+        document.getElementById('seccionFotosDetalle').style.display = 'none';
     const seccionesAtender = document.querySelectorAll(".seccionAtender");
     if (seccionesAtender.length > 0) {
       const isAtender = modo === "atender";
@@ -618,6 +620,29 @@
           });
         });
       }
+
+        var seccionFotos = document.getElementById('seccionFotosDetalle');
+        var galeriaFotos = document.getElementById('galeriaFotosDetalle');
+
+        if (data.tipoServicio === 'Imprenta' && data.fotos && data.fotos.length > 0) {
+            galeriaFotos.innerHTML = '';
+            data.fotos.forEach(function (ruta) {
+                var wrapper = document.createElement('div');
+                wrapper.style.cssText = 'display:inline-block; text-align:center;';
+
+                var img = document.createElement('img');
+                img.src = ruta;
+                img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
+                img.title = 'Click para ver en tamaño completo';
+                img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+
+                wrapper.appendChild(img);
+                galeriaFotos.appendChild(wrapper);
+            });
+            seccionFotos.style.display = 'block';
+        } else {
+            seccionFotos.style.display = 'none';
+        }
 
       var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
       if (subtitulo)

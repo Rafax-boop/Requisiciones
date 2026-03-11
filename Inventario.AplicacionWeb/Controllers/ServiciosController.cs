@@ -18,6 +18,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IAlmacenService _almacenService;
         private readonly IProgramaPresupuestarioService _programaService;
         private readonly IMunicipioServie _municipioService;
+        private readonly IWebHostEnvironment _env;
 
         public ServiciosController(
             IUsuarioService usuarioService,
@@ -26,7 +27,8 @@ namespace Inventario.AplicacionWeb.Controllers
             IArticulosService articulosService,
             IAlmacenService almacenService,
             IMunicipioServie municipioService,
-            IProgramaPresupuestarioService programaService
+            IProgramaPresupuestarioService programaService,
+            IWebHostEnvironment env
         )
         {
             _usuarioService = usuarioService;
@@ -36,6 +38,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _almacenService = almacenService;
             _municipioService = municipioService;
             _programaService = programaService;
+            _env = env;
         }
 
         [HttpGet]
@@ -110,12 +113,15 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearRequisicion(VMRequiForm modelo)
+        public async Task<IActionResult> CrearRequisicion(VMRequiForm modelo, List<IFormFile> Fotos)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
 
             var requiCreada = await _requisicionesService.CrearRequisicion(dto, idUsuario, true);
+
+            if (modelo.TipoServicio == "Imprenta" && Fotos != null && Fotos.Any())
+                await _requisicionesService.GuardarFotosRequisicion(requiCreada.IdRequisicion, Fotos, _env.WebRootPath);
 
             TempData["MensajeExito"] = "Requisici�n guardada correctamente.";
             TempData["FolioCreado"] = requiCreada.NumRequisicion;
@@ -165,7 +171,10 @@ namespace Inventario.AplicacionWeb.Controllers
                     UnidadMedida = a.UnidadMedida,
                     Descripcion = a.Descripcion,
                     DescripcionDetallada = a.DescripcionDetallada
-                }).ToList()
+                }).ToList(),
+                FotosExistentes = dto.TipoServicio == "Imprenta"
+                    ? await _requisicionesService.ObtenerFotosRequisicion(id)
+                    : new List<string>()
             };
 
             vm.ObservacionesBitacora = await _requisicionesService.ObtenerObservacionesModificacion(id);
@@ -175,7 +184,7 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ActualizarRequisicion(VMRequiForm modelo)
+        public async Task<IActionResult> ActualizarRequisicion(VMRequiForm modelo, List<IFormFile> Fotos)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var dto = _mapper.Map<FormularioRequisicionDTO>(modelo);
@@ -184,6 +193,9 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (exito)
             {
+                if (modelo.TipoServicio == "Imprenta" && Fotos != null && Fotos.Any())
+                    await _requisicionesService.GuardarFotosRequisicion(modelo.IdRequiMaestra!.Value, Fotos, _env.WebRootPath);
+
                 TempData["MensajeExito"] = "Requisici�n editada correctamente.";
                 return RedirectToAction("TablaRequisicionServicios", "Servicios");
             }

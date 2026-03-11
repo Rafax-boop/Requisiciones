@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Inventario.BLL.DTO;
 using Inventario.Entity;
+using Microsoft.AspNetCore.Http;
 
 namespace Inventario.BLL.Interfaces
 {
@@ -20,5 +21,10 @@ namespace Inventario.BLL.Interfaces
             int claveRegion, List<(int IdArticulo, int Cog)> cogsEditados = null);
         Task<string?> ObtenerObservacionesModificacion(int idRequisicion);
         Task<List<ProgresoPasoDTO>> ObtenerProgresoRequisicion(int idRequisicion);
+
+        //metodos para las iamgenes de los diseños
+        Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
+        Task<List<string>> ObtenerFotosRequisicion(int idRequisicion);
+        Task<bool> EliminarFotoRequisicion(int idFoto);
     }
 }

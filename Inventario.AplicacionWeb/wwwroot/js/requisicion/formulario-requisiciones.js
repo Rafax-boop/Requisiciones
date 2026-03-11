@@ -7,6 +7,10 @@
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
     var contadorArticulos = 0;
+    let archivosSeleccionados = [];
+
+    // Tipos permitidos
+    const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
 
     $(document).ready(function () {
         if (window.articulosIniciales && window.articulosIniciales.length > 0) {
@@ -40,8 +44,91 @@
                     allowClear: true
                 });
             }
+
+            $('#tipoServicio').on('select2:select select2:clear change', function () {
+                const seccionFotos = document.getElementById('seccionFotos');
+                const valor = $(this).val();
+
+                if (valor === 'Imprenta') {
+                    seccionFotos.style.display = 'block';
+                } else {
+                    seccionFotos.style.display = 'none';
+                    archivosSeleccionados = [];
+                    actualizarInput();
+                    document.getElementById('previsualizacionFotos').innerHTML = '';
+                }
+            });
+
+            if ($('#tipoServicio').val() === 'Imprenta') {
+                document.getElementById('seccionFotos').style.display = 'block';
+            }
         }
+    });    
+
+    document.getElementById('inputFotos').addEventListener('change', function () {
+        // Agregar solo archivos nuevos y válidos (evitar duplicados por nombre)
+        Array.from(this.files).forEach(file => {
+            const yaExiste = archivosSeleccionados.find(f => f.name === file.name && f.size === file.size);
+            if (!yaExiste && tiposPermitidos.includes(file.type)) {
+                archivosSeleccionados.push(file);
+            }
+        });
+
+        // Limpiar el input y reasignar solo los válidos
+        actualizarInput();
+        renderizarPrevisualizacion();
     });
+
+    function actualizarInput() {
+        const dt = new DataTransfer();
+        archivosSeleccionados.forEach(file => dt.items.add(file));
+        document.getElementById('inputFotos').files = dt.files;
+    }
+
+    function renderizarPrevisualizacion() {
+        const contenedor = document.getElementById('previsualizacionFotos');
+        contenedor.innerHTML = '';
+
+        archivosSeleccionados.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative; display:inline-block;';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = 'width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc;';
+
+                // Nombre del archivo debajo
+                const nombre = document.createElement('div');
+                nombre.textContent = file.name.length > 12 ? file.name.substring(0, 10) + '…' : file.name;
+                nombre.style.cssText = 'font-size:10px; text-align:center; max-width:80px; word-break:break-all; color:#555;';
+
+                const btnEliminar = document.createElement('span');
+                btnEliminar.textContent = '✕';
+                btnEliminar.style.cssText = `
+                position:absolute; top:-5px; right:-5px;
+                background:red; color:white; border-radius:50%;
+                width:18px; height:18px; font-size:11px;
+                display:flex; align-items:center; justify-content:center;
+                cursor:pointer;
+            `;
+
+                //elimina del array real y re-renderiza
+                btnEliminar.addEventListener('click', function () {
+                    archivosSeleccionados.splice(index, 1);
+                    actualizarInput();
+                    renderizarPrevisualizacion();
+                });
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(nombre);
+                wrapper.appendChild(btnEliminar);
+                contenedor.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
     function cargarArticuloExistente(art) {
         var index = contadorArticulos++;

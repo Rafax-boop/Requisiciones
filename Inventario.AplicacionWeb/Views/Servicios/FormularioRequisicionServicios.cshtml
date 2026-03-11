@@ -13,7 +13,7 @@
 }
 
 <div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Servicios")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Servicios")" data-tipo-requisicion="servicio">
-    <form asp-action="@(modoEdicion ? "ActualizarRequisicion" : "CrearRequisicion")" method="post" class="no-loader">
+    <form asp-action="@(modoEdicion ? "ActualizarRequisicion" : "CrearRequisicion")" method="post" enctype="multipart/form-data" class="no-loader">
         <input type="hidden" asp-for="IdRequiMaestra" />
         <div class="info-requisicion">
             <div class="fantasma">
@@ -107,6 +107,32 @@
                     <input type="tel" min="7" max="12" name="NumeroCelular" placeholder="(222) 000-0000" value=""
                            required />
                 </div> *@
+                <div class="formulario-input" id="seccionFotos" style="display:none;">
+                    <label>Fotos de referencia:</label>
+                    @if (modoEdicion && Model.FotosExistentes != null && Model.FotosExistentes.Any())
+                    {
+                        <div style="margin-bottom:12px;">
+                            <small class="text-muted">Fotos guardadas anteriormente:</small>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;" 
+                                 id="fotosExistentes">
+                                @foreach (var ruta in Model.FotosExistentes)
+                                {
+                                    <div style="position:relative; display:inline-block;" 
+                                         class="foto-existente-wrapper">
+                                        <img src="@ruta"
+                                             style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;"
+                                             onclick="window.open('@ruta', '_blank')"
+                                             title="Click para ver completa" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <small class="text-muted">Subir nuevas fotos (se agregarán a las existentes):</small>
+                    }
+                    <input type="file" id="inputFotos" name="Fotos" multiple accept="image/*" />
+    
+                    <div id="previsualizacionFotos" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
+                </div>
             </div>
         </div>
 
