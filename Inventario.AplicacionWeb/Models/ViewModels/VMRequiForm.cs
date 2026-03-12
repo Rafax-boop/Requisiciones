@@ -26,7 +26,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public DateOnly? FechaServicio { get; set; }
         public bool? RequiServicio { get; set; }
         public List<ItemRequiVM> Articulos { get; set; } = new();
-        public List<string> FotosExistentes { get; set; } = new();
+        public List<VMFotoExistente> FotosExistentes { get; set; } = new();
     }
 
     public class ItemRequiVM
@@ -39,5 +39,11 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? Descripcion { get; set; }
         public string? DescripcionDetallada { get; set; }
         public DateTime? FechaRegistro { get; set; }
+    }
+
+    public class VMFotoExistente
+    {
+        public int IdFoto { get; set; }
+        public string Ruta { get; set; }
     }
 }

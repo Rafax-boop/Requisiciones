@@ -390,4 +390,43 @@
             form.submit();
         }
     });
+
+    window.eliminarFotoExistente = function (idFoto) {
+        Swal.fire({
+            title: '¿Eliminar esta foto?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e53e3e',
+            cancelButtonColor: 'var(--slate-500)',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                $.post('/Servicios/EliminarFoto', { idFoto: idFoto }, function (res) {
+                    if (res.success) {
+                        // Quitar el wrapper de la foto de la vista
+                        var wrapper = document.getElementById('foto-wrapper-' + idFoto);
+                        if (wrapper) wrapper.remove();
+
+                        // Si ya no quedan fotos existentes, ocultar el contenedor
+                        var fotosRestantes = document.querySelectorAll('.foto-existente-wrapper');
+                        if (fotosRestantes.length === 0) {
+                            var contenedor = document.getElementById('fotosExistentes');
+                            if (contenedor) contenedor.closest('div').remove();
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Foto eliminada',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'No se pudo eliminar la foto' });
+                    }
+                });
+            }
+        });
+    };
 })();

@@ -112,22 +112,30 @@
                     @if (modoEdicion && Model.FotosExistentes != null && Model.FotosExistentes.Any())
                     {
                         <div style="margin-bottom:12px;">
-                            <small class="text-muted">Fotos guardadas anteriormente:</small>
+                            <small class="text-muted">Fotos guardadas — click en ✕ para eliminar:</small>
                             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;" 
                                  id="fotosExistentes">
-                                @foreach (var ruta in Model.FotosExistentes)
+                                @foreach (var foto in Model.FotosExistentes)
                                 {
                                     <div style="position:relative; display:inline-block;" 
-                                         class="foto-existente-wrapper">
-                                        <img src="@ruta"
+                                         class="foto-existente-wrapper" 
+                                         id="foto-wrapper-@foto.IdFoto">
+                                        <img src="@foto.Ruta"
                                              style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;"
-                                             onclick="window.open('@ruta', '_blank')"
+                                             onclick="window.open('@foto.Ruta', '_blank')"
                                              title="Click para ver completa" />
+                                        <span onclick="eliminarFotoExistente(@foto.IdFoto)"
+                                              style="position:absolute; top:-5px; right:-5px;
+                                                     background:red; color:white; border-radius:50%;
+                                                     width:18px; height:18px; font-size:11px;
+                                                     display:flex; align-items:center; justify-content:center;
+                                                     cursor:pointer;"
+                                              title="Eliminar foto">✕</span>
                                     </div>
                                 }
                             </div>
                         </div>
-                        <small class="text-muted">Subir nuevas fotos (se agregarán a las existentes):</small>
+                        <small class="text-muted">Subir nuevas fotos:</small>
                     }
                     <input type="file" id="inputFotos" name="Fotos" multiple accept="image/*" />
     

@@ -26,5 +26,8 @@ namespace Inventario.BLL.Interfaces
         Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
         Task<List<string>> ObtenerFotosRequisicion(int idRequisicion);
         Task<bool> EliminarFotoRequisicion(int idFoto);
+        Task<TblRegistroDiseno?> ObtenerFotoPorId(int idFoto);
+
+        Task<List<TblRegistroDiseno>> ObtenerFotosConIdRequisicion(int idRequisicion);
     }
 }

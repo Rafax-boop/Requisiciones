@@ -470,6 +470,17 @@ namespace Inventario.BLL.Implementacion
             return true;
         }
 
+        public async Task<TblRegistroDiseno?> ObtenerFotoPorId(int idFoto)
+        {
+            return await _repositoryDisenos.Obtener(f => f.Id == idFoto);
+        }
+
+        public async Task<List<TblRegistroDiseno>> ObtenerFotosConIdRequisicion(int idRequisicion)
+        {
+            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion);
+            return await query.ToListAsync();
+        }
+
         private string GenerarSelloDigital()
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);

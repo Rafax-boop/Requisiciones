@@ -173,8 +173,10 @@ namespace Inventario.AplicacionWeb.Controllers
                     DescripcionDetallada = a.DescripcionDetallada
                 }).ToList(),
                 FotosExistentes = dto.TipoServicio == "Imprenta"
-                    ? await _requisicionesService.ObtenerFotosRequisicion(id)
-                    : new List<string>()
+                    ? (await _requisicionesService.ObtenerFotosConIdRequisicion(id))
+                        .Select(f => new VMFotoExistente { IdFoto = f.Id, Ruta = f.Ruta })
+                        .ToList()
+                    : new List<VMFotoExistente>()
             };
 
             vm.ObservacionesBitacora = await _requisicionesService.ObtenerObservacionesModificacion(id);
@@ -264,6 +266,21 @@ namespace Inventario.AplicacionWeb.Controllers
             };
 
             return View("RequisicionServiciosParaPdf", vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EliminarFoto(int idFoto)
+        {
+            var foto = await _requisicionesService.ObtenerFotoPorId(idFoto);
+            if (foto != null)
+            {
+                var rutaFisica = Path.Combine(_env.WebRootPath, foto.Ruta.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                if (System.IO.File.Exists(rutaFisica))
+                    System.IO.File.Delete(rutaFisica);
+            }
+
+            bool exito = await _requisicionesService.EliminarFotoRequisicion(idFoto);
+            return Json(new { success = exito });
         }
     }
 }
