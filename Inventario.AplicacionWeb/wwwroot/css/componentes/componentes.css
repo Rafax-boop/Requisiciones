@@ -143,6 +143,51 @@
 }
 
 /* ══════════════════════════════════════
+   📁 INPUT FILE ROSA
+══════════════════════════════════════ */
+.input-file-rosa {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rosa-500) !important;
+    background: white;
+    border: none;
+    border-radius: var(--radius-full);
+    outline: none;
+    transition: all 0.4s var(--ease-premium);
+    width: 100%;
+    cursor: pointer;
+    box-shadow: var(--shadow-rosa);
+    padding: 0;
+}
+
+.input-file-rosa:hover {
+    box-shadow: var(--shadow-rosa-hover);
+    transform: translateY(-2px);
+}
+
+.input-file-rosa::file-selector-button {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: white !important;
+    background: linear-gradient(135deg, var(--rosa-400), var(--rosa-500), var(--rosa-accent)) !important;
+    border: none;
+    border-radius: var(--radius-full) 0 0 var(--radius-full);
+    padding: 10px 24px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: all 0.35s var(--ease-premium);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 2px 0 8px rgba(255, 64, 129, 0.2);
+}
+
+.input-file-rosa:hover::file-selector-button {
+    filter: brightness(1.05);
+}
+
+/* ══════════════════════════════════════
    📝 UTILIDAD DE TEXTO
 ══════════════════════════════════════ */
 .texto-rosa {

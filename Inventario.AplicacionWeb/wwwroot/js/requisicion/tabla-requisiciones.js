@@ -634,7 +634,7 @@
                 img.src = ruta;
                 img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
                 img.title = 'Click para ver en tamaño completo';
-                img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+                img.addEventListener('click', function () { abrirVisorImagenTabla(ruta); });
 
                 wrapper.appendChild(img);
                 galeriaFotos.appendChild(wrapper);
@@ -734,5 +734,38 @@
     var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
     modal.show();
   };
+
+  /* ══════════════════════════════════════════════
+     VISOR DE IMÁGENES (LIGHTBOX) para la tabla
+  ══════════════════════════════════════════════ */
+  function abrirVisorImagenTabla(src) {
+    var overlay = document.getElementById('visor-imagenes-tabla');
+    var img = document.getElementById('visor-imagenes-tabla-img');
+    if (overlay && img) {
+      img.src = src;
+      overlay.classList.add('activo');
+    }
+  }
+
+  function cerrarVisorImagenTabla() {
+    var overlay = document.getElementById('visor-imagenes-tabla');
+    if (overlay) {
+      overlay.classList.remove('activo');
+      setTimeout(function () {
+        var img = document.getElementById('visor-imagenes-tabla-img');
+        if (img && !overlay.classList.contains('activo')) {
+          img.src = '';
+        }
+      }, 300);
+    }
+  }
+
+  // Cierre al hacer clic FUERA de la imagen (en el fondo oscuro)
+  var visorTabla = document.getElementById('visor-imagenes-tabla');
+  if (visorTabla) {
+    visorTabla.addEventListener('click', function (e) {
+      if (e.target === visorTabla) cerrarVisorImagenTabla();
+    });
+  }
 
 })();

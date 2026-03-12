@@ -231,3 +231,51 @@
     text-transform: uppercase;
 }
 
+/* ══════════════════════════════════════
+    AJUSTES RESPONSIVOS (EXCLUSIVO MÓVIL)
+══════════════════════════════════════ */
+@media (max-width: 767.98px) {
+    /* Hacer el texto central más pequeño y asegurar su centrado perfecto */
+    .home-content {
+        padding: 20px; /* Reducir padding lateral para dar más espacio al texto */
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Centrado perfecto de los hijos */
+    }
+
+    .home-titulo {
+        font-size: 38px; /* Tamaño mucho menor al original de 64px */
+        line-height: 1.15;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .home-subtitulo {
+        font-size: 13px;
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    /* Reducir el tamaño de los botones */
+    .home-btn-primary, 
+    .home-btn-secondary {
+        padding: 12px 24px;
+        font-size: 13px;
+    }
+
+    .home-acciones {
+        gap: 12px;
+        flex-direction: column; /* Apilar para mejor apariencia si es muy estrecho, o dejarlos en fila si caben */
+        width: 100%;
+        max-width: 300px; /* Evitar que los botones se alarguen excesivamente */
+    }
+
+    .home-btn-primary,
+    .home-btn-secondary {
+        width: 100%; /* Botones de ancho completo pero contenidos por el max-width */
+        justify-content: center; /* Mantener texto de botones centrado */
+    }
+}
+

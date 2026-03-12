@@ -122,7 +122,7 @@
                                          id="foto-wrapper-@foto.IdFoto">
                                         <img src="@foto.Ruta"
                                              style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;"
-                                             onclick="window.open('@foto.Ruta', '_blank')"
+                                             onclick="abrirVisorImagen('@foto.Ruta')"
                                              title="Click para ver completa" />
                                         <span onclick="eliminarFotoExistente(@foto.IdFoto)"
                                               style="position:absolute; top:-5px; right:-5px;
@@ -135,9 +135,9 @@
                                 }
                             </div>
                         </div>
-                        <small class="text-muted">Subir nuevas fotos:</small>
+                        <small class="info-body">Subir nuevas fotos:</small>
                     }
-                    <input type="file" id="inputFotos" name="Fotos" multiple accept="image/*" />
+                    <input type="file" id="inputFotos" name="Fotos" multiple accept="image/*" class="input-file-rosa" />
     
                     <div id="previsualizacionFotos" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
                 </div>
@@ -183,6 +183,11 @@
     <textarea id="desc-textarea-global"
               class="desc-textarea"
               placeholder="Escribe la descripción detallada aquí..."></textarea>
+</div>
+
+<!-- Lightbox para imágenes -->
+<div id="visor-imagenes-global" class="visor-imagenes-overlay" onclick="if(event.target===this) cerrarVisorImagen()">
+    <img id="visor-imagenes-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
 
 @section Scripts {
