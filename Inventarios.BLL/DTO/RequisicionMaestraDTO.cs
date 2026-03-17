@@ -14,6 +14,7 @@ namespace Inventario.BLL.DTO
         public DateTime? FechaModificacion { get; set; }
         public string? Departamento { get; set; }
         public string? Responsable { get; set; }
+        public int IdEstatus { get; set; }
         public string? Estatus { get; set; }
         public int CantidadPartidas { get; set; }
         public int DiasAsignado { get; set; }

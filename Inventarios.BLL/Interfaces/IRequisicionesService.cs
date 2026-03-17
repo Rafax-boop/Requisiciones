@@ -13,6 +13,7 @@ namespace Inventario.BLL.Interfaces
     {
         Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio);
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null);
+        Task<List<RequisicionMaestraDTO>> ListarRequisicionesAutorizadas();
         Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro);
         Task<RequisicionCompletaDTO?> ObtenerRequisicionCompletaPorId(int idRequisicion);
         Task<bool> ActualizarRequisicion(int idRequisicion, FormularioRequisicionDTO modelo, int idUsuario);
@@ -21,13 +22,14 @@ namespace Inventario.BLL.Interfaces
             int claveRegion, List<(int IdArticulo, int Cog)> cogsEditados = null);
         Task<string?> ObtenerObservacionesModificacion(int idRequisicion);
         Task<List<ProgresoPasoDTO>> ObtenerProgresoRequisicion(int idRequisicion);
+        Task<bool> EnviarAAlmacen(int idRequisicion, int idUsuario);
+        Task<bool> RechazarRequisicion(int idRequisicion, int idUsuario, string motivo);
 
         //metodos para las iamgenes de los diseños
         Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
         Task<List<string>> ObtenerFotosRequisicion(int idRequisicion);
         Task<bool> EliminarFotoRequisicion(int idFoto);
         Task<TblRegistroDiseno?> ObtenerFotoPorId(int idFoto);
-
         Task<List<TblRegistroDiseno>> ObtenerFotosConIdRequisicion(int idRequisicion);
     }
 }

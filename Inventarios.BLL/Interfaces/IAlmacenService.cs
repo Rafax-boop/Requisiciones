@@ -9,7 +9,7 @@ namespace Inventario.BLL.Interfaces
 {
     public interface IAlmacenService
     {
-        Task<List<RequisicionMaestraDTO>> ListarRequisicionesAutorizadas();
+        Task<List<RequisicionMaestraDTO>> ListarRequisicionesAlmacen();
         Task<List<InventarioItemDTO>> ObtenerInventario();
         Task<List<string>> ObtenerEstatus();
     }

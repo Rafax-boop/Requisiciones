@@ -24,9 +24,9 @@ namespace Inventario.BLL.Implementacion
             _repoInventario = repoInventario;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesAutorizadas()
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesAlmacen()
         {
-            IQueryable<TblRequisicion> query = await _repositoryRequisicion.Consultar(r => r.IdEstatus == 4);
+            IQueryable<TblRequisicion> query = await _repositoryRequisicion.Consultar(r => r.IdEstatus == 9);
 
             var resultado = await query
                 .Select(r => new RequisicionMaestraDTO

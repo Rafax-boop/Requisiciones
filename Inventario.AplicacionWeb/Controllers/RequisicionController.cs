@@ -153,7 +153,9 @@ namespace Inventario.AplicacionWeb.Controllers
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
                 NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                CargoResponsableDepartamento = dto.CargoResponsableDepartamento,
                 NomDirector = dto.NomDirector,
+                CargoDirector = dto.CargoDirector,
                 Correo = dto.Correo,
                 Telefono = dto.Telefono,
                 LugarEntrega = dto.LugarEntrega,
@@ -314,6 +316,36 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> EnviarAAlmacen(int idRequi)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            try
+            {
+                var resultado = await _requisicionService.EnviarAAlmacen(idRequi, idUsuario);
+                return Json(new { success = resultado });
+            }
+            catch
+            {
+                return Json(new { success = false });
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> RechazarRequisicion(int idRequi, string motivo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            try
+            {
+                var resultado = await _requisicionService.RechazarRequisicion(idRequi, idUsuario, motivo);
+                return Json(new { success = resultado });
+            }
+            catch
+            {
+                return Json(new { success = false });
+            }
         }
     }
 }
