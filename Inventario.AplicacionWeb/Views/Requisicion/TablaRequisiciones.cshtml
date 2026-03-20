@@ -16,7 +16,9 @@
      data-url-usuarios-materiales="@Url.Action("ObtenerUsuariosMateriales", "Requisicion")"
      data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
      data-url-atender="@Url.Action("Atender", "Requisicion")"
-     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")">
+     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")"
+     data-url-enviar-almacen="@Url.Action("EnviarAAlmacen", "Requisicion")"
+     data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -80,8 +82,8 @@
         var numColsReq = 8;
         if (User.IsInRole("4")) numColsReq++;
         if (User.IsInRole("3") || User.IsInRole("4")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.Estatus != "REQUISICION AUTORIZADA").ToList();
-        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.Estatus == "REQUISICION AUTORIZADA").ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4).ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -149,7 +151,7 @@
                                         <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                             <i class="fa-solid fa-eye"></i></button>
                                     }
-                                    @if (item.Estatus == "REQUISICION MODIFICACIÓN" && User.IsInRole("1"))
+                                    @if (item.IdEstatus == 3 && User.IsInRole("1"))
                                     {
                                         <a href="@Url.Action("EditarRequisicion", "Requisicion", new { id = item.IdRequi })"
                                            class="btn-accion btn-editar" title="Editar">
@@ -159,13 +161,13 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
-                                    @if (User.IsInRole("4") && item.Estatus == "REQUISICION CAPTURADA")
+                                    @if (User.IsInRole("4") && item.IdEstatus == 1)
                                     {
                                         <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
                                             <i class="fa-solid fa-clipboard-user"></i>
                                         </button>
                                     }
-                                    @if (User.IsInRole("3") && item.Estatus == "REQUISICION EN PROCESO")
+                                    @if (User.IsInRole("3") && item.IdEstatus == 2)
                                     {
                                         <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
                                             <i class="fa-solid fa-hand-holding"></i>
@@ -178,12 +180,13 @@
                             <td colspan="@numColsReq">
                                 <div class="timeline-container">
                                     @{
+                                        /* Pasos basados en IdEstatus: 1=Capturada, 2=En proceso (asignada), 3=Modificación, 4=Autorizada, 5=Por autorizar */
                                         var paso1 = true;
-                                        var paso2 = item.NombreAsignado != null;
-                                        var paso3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
-                                        var paso4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
-                                        var paso5 = item.Estatus == "REQUISICION AUTORIZADA";
-                                        var esMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var paso2 = item.IdEstatus >= 2;
+                                        var paso3 = item.IdEstatus >= 2;
+                                        var paso4 = item.IdEstatus == 5 || item.IdEstatus == 4;
+                                        var paso5 = item.IdEstatus == 4;
+                                        var esMod = item.IdEstatus == 3;
                                         
                                         var progress = 0;
                                         if (paso5) progress = 100;
@@ -326,12 +329,13 @@
                             <td colspan="@numColsReq">
                                 <div class="timeline-container">
                                     @{
+                                        /* Pasos basados en IdEstatus: 1=Capturada, 2=En proceso (asignada), 3=Modificación, 4=Autorizada, 5=Por autorizar */
                                         var p1 = true;
-                                        var p2 = item.NombreAsignado != null;
-                                        var p3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
-                                        var p4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
-                                        var p5 = item.Estatus == "REQUISICION AUTORIZADA";
-                                        var eMod = item.Estatus == "REQUISICION MODIFICACIÓN";
+                                        var p2 = item.IdEstatus >= 2;
+                                        var p3 = item.IdEstatus >= 2;
+                                        var p4 = item.IdEstatus == 5 || item.IdEstatus == 4;
+                                        var p5 = item.IdEstatus == 4;
+                                        var eMod = item.IdEstatus == 3;
 
                                         var progA = 0;
                                         if (p5) progA = 100;
@@ -557,24 +561,126 @@
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">Asignar Requisición</h5>
-                    <p class="modal-subtitulo-premium">Seleccione el responsable de atender esta solicitud</p>
+                    <h5 class="modal-title modal-titulo-premium">Gestionar requisición</h5>
+                    <p class="modal-subtitulo-premium" id="modalAsignarSubtitulo">Selecciona una acción</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
+
             <div class="modal-body modal-body-premium">
-                <div class="formulario-input">
-                    <label>Responsable:</label>
-                    <select id="selectUsuarioAsignar" class="form-select select2">
-                        <option value="">-- Seleccionar responsable --</option>
-                    </select>
+
+                <!-- PASO 1: Las 3 opciones -->
+                <div id="pasoOpciones">
+                    <p style="font-size:13px; color:var(--color-text-secondary, #888); margin:0 0 1rem;">
+                        Selecciona una acción para esta requisición:
+                    </p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+
+                        <button type="button" onclick="mostrarPasoAsignar()"
+                                style="display:flex; align-items:center; gap:12px; padding:12px 16px;
+                                   border-radius:8px; border:1px solid #ddd; background:white;
+                                   cursor:pointer; text-align:left; width:100%;">
+                            <div style="width:32px; height:32px; border-radius:50%; background:#EBF5FB;
+                                        display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fa-solid fa-clipboard-user" style="color:#2980B9; font-size:14px;"></i>
+                            </div>
+                            <div>
+                                <p style="font-size:14px; font-weight:500; margin:0;">Asignar a responsable</p>
+                                <p style="font-size:12px; color:#888; margin:2px 0 0;">Turnar a alguien de tu equipo</p>
+                            </div>
+                        </button>
+
+                        <button type="button" id="btnOpcionAlmacen" onclick="mostrarPasoAlmacen()"
+                                style="display:flex; align-items:center; gap:12px; padding:12px 16px;
+                                   border-radius:8px; border:1px solid #ddd; background:white;
+                                   cursor:pointer; text-align:left; width:100%;">
+                            <div style="width:32px; height:32px; border-radius:50%; background:#EAFAF1;
+                                        display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fa-solid fa-arrow-right" style="color:#27AE60; font-size:14px;"></i>
+                            </div>
+                            <div>
+                                <p style="font-size:14px; font-weight:500; margin:0;">Enviar a almacén</p>
+                                <p style="font-size:12px; color:#888; margin:2px 0 0;">Pasar directamente al área de almacén</p>
+                            </div>
+                        </button>
+
+                        <button type="button" onclick="mostrarPasoRechazar()"
+                                style="display:flex; align-items:center; gap:12px; padding:12px 16px;
+                                   border-radius:8px; border:1px solid #f5c6c6; background:white;
+                                   cursor:pointer; text-align:left; width:100%;">
+                            <div style="width:32px; height:32px; border-radius:50%; background:#FDEDEC;
+                                        display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fa-solid fa-circle-xmark" style="color:#E74C3C; font-size:14px;"></i>
+                            </div>
+                            <div>
+                                <p style="font-size:14px; font-weight:500; margin:0; color:#E74C3C;">Rechazar requisición</p>
+                                <p style="font-size:12px; color:#888; margin:2px 0 0;">Devolver con observaciones</p>
+                            </div>
+                        </button>
+
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Asignar</button>
+
+                <!-- PASO 2A: Asignar -->
+                <div id="pasoAsignar" style="display:none;">
+                    <button type="button" onclick="volverOpciones()"
+                            style="display:flex; align-items:center; gap:6px; background:none; border:none;
+                               cursor:pointer; color:#888; font-size:13px; padding:0; margin-bottom:1rem;">
+                        <i class="fa-solid fa-arrow-left" style="font-size:11px;"></i> Volver
+                    </button>
+                    <div class="formulario-input">
+                        <label>Responsable:</label>
+                        <select id="selectUsuarioAsignar" class="form-select select2">
+                            <option value="">-- Seleccionar responsable --</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1rem;">
+                        <button type="button" class="btn boton-gris" onclick="volverOpciones()">Cancelar</button>
+                        <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">Confirmar asignación</button>
+                    </div>
+                </div>
+
+                <!-- PASO 2B: Enviar a almacén -->
+                <div id="pasoAlmacen" style="display:none;">
+                    <button type="button" onclick="volverOpciones()"
+                            style="display:flex; align-items:center; gap:6px; background:none; border:none;
+                               cursor:pointer; color:#888; font-size:13px; padding:0; margin-bottom:1rem;">
+                        <i class="fa-solid fa-arrow-left" style="font-size:11px;"></i> Volver
+                    </button>
+                    <p style="font-size:14px; font-weight:500; margin:0 0 6px;">¿Enviar a almacén?</p>
+                    <p style="font-size:13px; color:#888; margin:0 0 1.5rem;">
+                        La requisición será turnada directamente al área de almacén sin asignación previa.
+                    </p>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="btn boton-gris" onclick="volverOpciones()">Cancelar</button>
+                        <button type="button" class="btn boton-rosa" onclick="confirmarEnvioAlmacen()">
+                            Sí, enviar a almacén
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASO 2C: Rechazar -->
+                <div id="pasoRechazar" style="display:none;">
+                    <button type="button" onclick="volverOpciones()"
+                            style="display:flex; align-items:center; gap:6px; background:none; border:none;
+                               cursor:pointer; color:#888; font-size:13px; padding:0; margin-bottom:1rem;">
+                        <i class="fa-solid fa-arrow-left" style="font-size:11px;"></i> Volver
+                    </button>
+                    <div class="formulario-input">
+                        <label>Motivo del rechazo:</label>
+                        <textarea id="txtMotivoRechazo" class="form-control" rows="3"
+                                  placeholder="Escribe el motivo del rechazo..."></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1rem;">
+                        <button type="button" class="btn boton-gris" onclick="volverOpciones()">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="confirmarRechazo()">
+                            Confirmar rechazo
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

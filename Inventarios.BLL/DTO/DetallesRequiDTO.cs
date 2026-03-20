@@ -20,6 +20,7 @@ namespace Inventario.BLL.DTO
 
     public class DetalleArticuloDTO
     {
+        public int IdRequisicionDetalle { get; set; }
         public int? NumPartida { get; set; }
         public int? IdArticulo { get; set; }
         public decimal? Cantidad { get; set; }

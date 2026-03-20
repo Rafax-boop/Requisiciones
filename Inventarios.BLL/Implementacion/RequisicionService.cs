@@ -124,6 +124,7 @@ namespace Inventario.BLL.Implementacion
                     FechaModificacion = r.FechaModificacion,
                     Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
                     Responsable = r.NomResponsableDepartamento,
+                    IdEstatus = r.IdEstatus ?? 0,
                     Estatus = r.IdEstatusNavigation.NombreEstatus,
                     CantidadPartidas = r.TblRequisicionDetalles.Count,
                     DiasAsignado = r.TblBitacoraEstatuses
@@ -132,6 +133,26 @@ namespace Inventario.BLL.Implementacion
                         .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
                         .FirstOrDefault(),
                     NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null
+                })
+                .ToListAsync();
+
+            return resultado;
+        }
+
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesAutorizadas()
+        {
+            IQueryable<TblRequisicion> query = await _repositoryRequisicion.Consultar(r => r.IdEstatus == 4);
+
+            var resultado = await query
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus,
+                    CantidadPartidas = r.TblRequisicionDetalles.Count
                 })
                 .ToListAsync();
 
@@ -147,6 +168,7 @@ namespace Inventario.BLL.Implementacion
             var lista = await query
                 .Select(r => new DetalleArticuloDTO
                 {
+                    IdRequisicionDetalle = r.IdRequisicionDetalle,
                     NumPartida = r.NumPartida,
                     IdArticulo = r.IdArticulo,
                     Cantidad = r.Cantidad,
@@ -192,6 +214,7 @@ namespace Inventario.BLL.Implementacion
             var articulos = await queryDetalles
                 .Select(r => new DetalleArticuloDTO
                 {
+                    IdRequisicionDetalle = r.IdRequisicionDetalle,
                     NumPartida = r.NumPartida,
                     IdArticulo = r.IdArticulo,
                     Cantidad = r.Cantidad,
@@ -208,7 +231,9 @@ namespace Inventario.BLL.Implementacion
                 IdDepartamento = requisicion.IdDepartamento,
                 Departamento = nombreDepartamento ?? requisicion.IdDepartamento?.ToString(),
                 NomResponsableDepartamento = requisicion.NomResponsableDepartamento,
+                CargoResponsableDepartamento = requisicion.IdDepartamentoNavigation.CargoJefe,
                 NomDirector = requisicion.NombreDirector,
+                CargoDirector = requisicion.IdDepartamentoNavigation.CargoDirector,
                 Correo = requisicion.Correo,
                 Telefono = requisicion.Telefono,
                 LugarEntrega = requisicion.LugarEntrega,
@@ -429,6 +454,50 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
+        public async Task<bool> EnviarAAlmacen(int idRequisicion, int idUsuario)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.IdEstatus = 9;
+            requisicion.FechaModificacion = DateTime.Now;
+            await _repositoryRequisicion.Editar(requisicion);
+
+            var bitacora = new TblBitacoraEstatus
+            {
+                IdRequisicion = requisicion.IdRequisicion,
+                IdEstatus = 9,
+                FechaEstatus = DateTime.Now,
+                Observacion = "Enviada a Almacén",
+                IdUsuario = idUsuario
+            };
+            await _repositoryBitacora.Crear(bitacora);
+
+            return true;
+        }
+
+        public async Task<bool> RechazarRequisicion(int idRequisicion, int idUsuario, string motivo)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.IdEstatus = 5;
+            requisicion.FechaModificacion = DateTime.Now;
+            await _repositoryRequisicion.Editar(requisicion);
+
+            var bitacora = new TblBitacoraEstatus
+            {
+                IdRequisicion = requisicion.IdRequisicion,
+                IdEstatus = 5,
+                FechaEstatus = DateTime.Now,
+                Observacion = motivo,
+                IdUsuario = idUsuario
+            };
+            await _repositoryBitacora.Crear(bitacora);
+
+            return true;
+        }
+
         public async Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath)
         {
             var carpeta = Path.Combine(webRootPath, "uploads", "diseños", idRequisicion.ToString());
@@ -485,6 +554,6 @@ namespace Inventario.BLL.Implementacion
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
             return BitConverter.ToString(bytes).Replace("-", "");
-        }        
+        }
     }
 }

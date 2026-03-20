@@ -6,6 +6,7 @@ using Inventario.Entity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
@@ -28,7 +29,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var requisicionesDto = await _almacenService.ListarRequisicionesAutorizadas();
+            var requisicionesDto = await _almacenService.ListarRequisicionesAlmacen();
             var requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisicionesDto);
 
             var inventarioDto = await _almacenService.ObtenerInventario();
@@ -63,6 +64,107 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(dto);
         }
 
-        //nuevas acciones
+        [HttpPost]
+        public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioRequest request)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            var (ok, error) = await _almacenService.RegistrarIngresoInventario(
+                request.Clave,
+                request.Descripcion ?? "",
+                request.UnidadMedida ?? "",
+                request.Cantidad,
+                idUsuario,
+                request.Motivo ?? "");
+
+            return Json(new { ok, error });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AprobarCompleta([FromBody] AprobarRequest request)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            var (ok, error) = await _almacenService.AprobarRequisicionCompleta(request.IdRequisicion, idUsuario);
+            return Json(new { ok, error });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AprobarParcial([FromBody] AprobarParcialRequest request)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            var partidas = (request.Partidas ?? new List<AprobarParcialPartidaRequest>())
+                .Select(p => (p.IdRequisicionDetalle, p.CantidadAprobada));
+
+            var (ok, error) = await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, idUsuario, partidas);
+            return Json(new { ok, error });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Rechazar([FromBody] RechazarRequest request)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            var (ok, error) = await _almacenService.RechazarRequisicionAlmacen(request.IdRequisicion, idUsuario, request.Motivo ?? "");
+            return Json(new { ok, error });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AnularMovimiento([FromBody] AnularMovimientoRequest request)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            var (ok, error) = await _almacenService.AnularMovimientoInventario(request.IdMovimiento, idUsuario, request.Motivo ?? "");
+            return Json(new { ok, error });
+        }
+
+        public class IngresoInventarioRequest
+        {
+            public string? Clave { get; set; }
+            public string? Descripcion { get; set; }
+            public string? UnidadMedida { get; set; }
+            public int Cantidad { get; set; }
+            public string? Motivo { get; set; }
+        }
+
+        public class AprobarRequest
+        {
+            public int IdRequisicion { get; set; }
+        }
+
+        public class AprobarParcialRequest
+        {
+            public int IdRequisicion { get; set; }
+            public List<AprobarParcialPartidaRequest>? Partidas { get; set; }
+        }
+
+        public class AprobarParcialPartidaRequest
+        {
+            public int IdRequisicionDetalle { get; set; }
+            public int CantidadAprobada { get; set; }
+        }
+
+        public class RechazarRequest
+        {
+            public int IdRequisicion { get; set; }
+            public string? Motivo { get; set; }
+        }
+
+        public class AnularMovimientoRequest
+        {
+            public int IdMovimiento { get; set; }
+            public string? Motivo { get; set; }
+        }
     }
 }

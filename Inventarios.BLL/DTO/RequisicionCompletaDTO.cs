@@ -10,7 +10,9 @@ namespace Inventario.BLL.DTO
         public int? IdDepartamento { get; set; }
         public string? Departamento { get; set; }
         public string? NomResponsableDepartamento { get; set; }
+        public string? CargoResponsableDepartamento { get; set; }
         public string? NomDirector { get; set; }
+        public string? CargoDirector { get; set; }
         public string? Correo { get; set; }
         public string? Telefono { get; set; }
         public string? LugarEntrega { get; set; }

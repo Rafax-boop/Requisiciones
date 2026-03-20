@@ -154,12 +154,12 @@ Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Y
             <div class="pdf-firma-item">
                 <div class="pdf-firma-linea" aria-hidden="true"></div>
                 <span class="pdf-firma-nombre">@(Model.NomResponsableDepartamento ?? "—")</span>
-                <span class="pdf-firma-rol">Responsable del departamento</span>
+                <span class="pdf-firma-rol">@(Model.CargoResponsableDepartamento ?? "Jefe del departamento")</span>
             </div>
             <div class="pdf-firma-item">
                 <div class="pdf-firma-linea" aria-hidden="true"></div>
                 <span class="pdf-firma-nombre">@(Model.NomDirector ?? "—")</span>
-                <span class="pdf-firma-rol">Director</span>
+                <span class="pdf-firma-rol">@(Model.CargoDirector ?? "Director del Area")</span>
             </div>
         </div>
 

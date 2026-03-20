@@ -9,7 +9,13 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page" data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")">
+<div class="tabla-requi-page"
+     data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")"
+     data-url-aprobar-completa="@Url.Action("AprobarCompleta", "Almacen")"
+     data-url-aprobar-parcial="@Url.Action("AprobarParcial", "Almacen")"
+     data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
+     data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
+     data-url-anular-movimiento="@Url.Action("AnularMovimiento", "Almacen")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Departamento de Almacén</h1>
@@ -28,7 +34,7 @@
         @{
             var pendientes = Model.Requisiciones.Count(r => r.Estatus == "Pendiente");
             var enProceso = Model.Requisiciones.Count(r => r.Estatus == "En Análisis" || r.Estatus == "Verificando Inventario");
-            var aprobadas = Model.Requisiciones.Count(r => r.Estatus == "Aprobada" || r.Estatus == "Aprobada Parcial");
+            var aprobadas = Model.Requisiciones.Count(r => r.IdEstatus == 4 || r.IdEstatus == 10);
         }
         <div class="almacen-stats">
             <div class="stat-card">
@@ -115,6 +121,35 @@
 
     <!-- Pestaña Inventario -->
     <div id="tab-inventario" class="almacen-tab-panel">
+        <div class="container-formulario" style="margin-bottom:16px;">
+            <h4 style="margin:0 0 10px 0; font-family: var(--font-display); color: var(--slate-700);">Ingreso de material</h4>
+            <div class="filtros-container">
+                <div class="filtro-grupo" style="flex:1; min-width: 180px;">
+                    <label>Clave (solo si es nuevo)</label>
+                    <input type="text" id="ingresoClave" class="input-app" placeholder="Clave" />
+                </div>
+                <div class="filtro-grupo" style="flex:2; min-width: 260px;">
+                    <label>Descripción</label>
+                    <input type="text" id="ingresoDescripcion" class="input-app" placeholder="Descripción del material" />
+                </div>
+                <div class="filtro-grupo" style="flex:1; min-width: 160px;">
+                    <label>Unidad de medida</label>
+                    <input type="text" id="ingresoUnidad" class="input-app" placeholder="PZA, CAJA, etc." />
+                </div>
+                <div class="filtro-grupo" style="flex:1; min-width: 140px;">
+                    <label>Cantidad</label>
+                    <input type="number" id="ingresoCantidad" class="input-app" min="1" step="1" placeholder="0" />
+                </div>
+                <div class="filtro-grupo" style="flex:2; min-width: 260px;">
+                    <label>Motivo</label>
+                    <input type="text" id="ingresoMotivo" class="input-app" placeholder="Compra, donación, ajuste..." />
+                </div>
+                <div class="filtro-grupo" style="min-width: 160px;">
+                    <label>&nbsp;</label>
+                    <button type="button" id="btnRegistrarIngreso" class="boton-rosa" style="width:100%;">Registrar ingreso</button>
+                </div>
+            </div>
+        </div>
         <div class="container-formulario filtros-container">
             <div class="filtro-grupo filtro-grupo-unidad">
                 <label>Unidad de medida</label>

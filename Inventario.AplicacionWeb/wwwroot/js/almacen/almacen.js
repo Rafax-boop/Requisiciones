@@ -6,9 +6,27 @@
 (function () {
     var container = document.querySelector('.tabla-requi-page');
     var urlObtenerRequisicion = container ? container.getAttribute('data-url-obtener-requisicion') : '';
+    var urlAprobarCompleta = container ? container.getAttribute('data-url-aprobar-completa') : '';
+    var urlAprobarParcial = container ? container.getAttribute('data-url-aprobar-parcial') : '';
+    var urlRechazar = container ? container.getAttribute('data-url-rechazar') : '';
+    var urlRegistrarIngreso = container ? container.getAttribute('data-url-registrar-ingreso') : '';
 
     const tabPanels = document.querySelectorAll('.almacen-tab-panel');
     const tabBtns = document.querySelectorAll('.almacen-tabs-btn');
+
+    function postJson(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {})
+        }).then(async (r) => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) {
+                return Promise.reject(data && data.error ? data.error : 'Error en la petición.');
+            }
+            return data;
+        });
+    }
 
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function () {
@@ -228,6 +246,7 @@
     const modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
     const modalBody = document.getElementById('modalAlmacenBody');
     let reqCompleta = null;
+    let reqActualId = null;
 
     window.verDescDetalleModal = function (el) {
         var panel = document.getElementById('desc-panel-modal');
@@ -272,13 +291,20 @@
         if (i === 0) {
             const articulos = reqCompleta.articulos || [];
             let html = '<div class="almacen-resumen-cards"><div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div></div>';
-            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Descripción</th><th>Descripción Detallada</th></tr></thead><tbody>';
+            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Aprobar</th><th>Descripción</th><th>Descripción Detallada</th></tr></thead><tbody>';
             articulos.forEach(a => {
                 var textoCompleto = a.descripcionDetallada || '';
                 var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + '…' : (textoCompleto || 'Sin descripción...');
                 var tieneTexto = textoCompleto ? 'tiene-texto' : '';
                 var fullEscapado = (textoCompleto || '').replace(/"/g, '&quot;');
-                html += '<tr><td>' + (a.descripcion || '') + '</td><td>' + (a.cantidad ?? '') + '</td><td>' + (a.unidadMedida || '') + '</td><td>' + (a.descripcion || '') + '</td>';
+                var cantSolicitada = (a.cantidad ?? 0);
+                var idDetalle = (a.idRequisicionDetalle ?? 0);
+                html += '<tr>';
+                html += '<td>' + (a.descripcion || '') + '</td>';
+                html += '<td>' + cantSolicitada + '</td>';
+                html += '<td>' + (a.unidadMedida || '') + '</td>';
+                html += '<td><input type="number" class="input-app almacen-aprob-cant" min="0" step="1" value="' + cantSolicitada + '" max="' + cantSolicitada + '" data-detalle="' + idDetalle + '" style="width:110px; padding:8px 10px;" /></td>';
+                html += '<td>' + (a.descripcion || '') + '</td>';
                 html += '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)"><span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + '</span><i class="fa-solid fa-eye desc-icon"></i></div></td></tr>';
             });
             html += '</tbody></table>';
@@ -302,6 +328,7 @@
     }
 
     window.abrirModal = function (id, folio, departamento, estatus) {
+        reqActualId = id;
         document.getElementById('modalAlmacenTitulo').textContent = (folio || '') + ' — ' + (departamento || '');
         document.getElementById('modalAlmacenSubtitulo').textContent = 'Estado: ' + (estatus || '');
         modalBody.innerHTML = '<p class="text-muted">Cargando...</p>';
@@ -332,6 +359,95 @@
         }
     });
 
+    // Acciones Almacén: aprobar completa/parcial, rechazar
+    document.body.addEventListener('click', function (e) {
+        const btnAprobar = e.target.closest('.btn-almacen-aprobar');
+        const btnParcial = e.target.closest('.btn-almacen-parcial');
+        const btnRechazar = e.target.closest('.btn-almacen-rechazar');
+        if (!btnAprobar && !btnParcial && !btnRechazar) return;
+
+        if (!reqActualId) {
+            alert('No se pudo identificar la requisición.');
+            return;
+        }
+
+        if (btnAprobar) {
+            if (!urlAprobarCompleta) { alert('No hay URL para aprobar.'); return; }
+            postJson(urlAprobarCompleta, { idRequisicion: reqActualId })
+                .then(r => {
+                    if (r.ok) location.reload();
+                    else alert(r.error || 'No se pudo aprobar.');
+                })
+                .catch(err => alert(err || 'No se pudo aprobar.'));
+        }
+
+        if (btnParcial) {
+            if (!urlAprobarParcial) { alert('No hay URL para aprobar parcial.'); return; }
+            const inputs = document.querySelectorAll('.almacen-aprob-cant[data-detalle]');
+            const partidas = [];
+            let invalido = false;
+            inputs.forEach(inp => {
+                const idDetalle = parseInt(inp.getAttribute('data-detalle'), 10);
+                const val = parseInt((inp.value || '0'), 10);
+                const max = parseInt((inp.getAttribute('max') || '0'), 10);
+                if (idDetalle > 0 && !isNaN(val) && val > 0) {
+                    if (!isNaN(max) && max > 0 && val > max) {
+                        invalido = true;
+                        return;
+                    }
+                    partidas.push({ idRequisicionDetalle: idDetalle, cantidadAprobada: val });
+                }
+            });
+            if (invalido) { alert('Una cantidad aprobada excede la solicitada.'); return; }
+            if (partidas.length === 0) { alert('Captura al menos una cantidad aprobada.'); return; }
+
+            postJson(urlAprobarParcial, { idRequisicion: reqActualId, partidas: partidas })
+                .then(r => {
+                    if (r.ok) location.reload();
+                    else alert(r.error || 'No se pudo aprobar parcial.');
+                })
+                .catch(err => alert(err || 'No se pudo aprobar parcial.'));
+        }
+
+        if (btnRechazar) {
+            if (!urlRechazar) { alert('No hay URL para rechazar.'); return; }
+            const obs = (document.getElementById('obs-textarea')?.value || '').trim();
+            if (!obs) { alert('Escribe observaciones en la pestaña Observaciones para poder rechazar.'); return; }
+
+            postJson(urlRechazar, { idRequisicion: reqActualId, motivo: obs })
+                .then(r => {
+                    if (r.ok) location.reload();
+                    else alert(r.error || 'No se pudo rechazar.');
+                })
+                .catch(err => alert(err || 'No se pudo rechazar.'));
+        }
+    });
+
+    // Ingreso de inventario
+    const btnIngreso = document.getElementById('btnRegistrarIngreso');
+    if (btnIngreso) {
+        btnIngreso.addEventListener('click', function () {
+            if (!urlRegistrarIngreso) { alert('No hay URL para registrar ingreso.'); return; }
+            const clave = (document.getElementById('ingresoClave')?.value || '').trim();
+            const descripcion = (document.getElementById('ingresoDescripcion')?.value || '').trim();
+            const unidadMedida = (document.getElementById('ingresoUnidad')?.value || '').trim();
+            const cantidad = parseInt((document.getElementById('ingresoCantidad')?.value || '0'), 10);
+            const motivo = (document.getElementById('ingresoMotivo')?.value || '').trim();
+
+            if (!descripcion) { alert('La descripción es obligatoria.'); return; }
+            if (!unidadMedida) { alert('La unidad de medida es obligatoria.'); return; }
+            if (!cantidad || cantidad <= 0) { alert('La cantidad debe ser mayor a 0.'); return; }
+            if (!motivo) { alert('El motivo es obligatorio.'); return; }
+
+            postJson(urlRegistrarIngreso, { clave, descripcion, unidadMedida, cantidad, motivo })
+                .then(r => {
+                    if (r.ok) location.reload();
+                    else alert(r.error || 'No se pudo registrar el ingreso.');
+                })
+                .catch(err => alert(err || 'No se pudo registrar el ingreso.'));
+        });
+    }
+
     // Select2 para filtros Estado e Inventario (Unidad de medida)
     $(function () {
         $('#filtroEstado').select2({
@@ -343,7 +459,7 @@
         $('#filtroUnidadMedida').select2({
             width: '100%',
             language: 'es',
-            minimumResultsForSearch: Infinity,
+            minimumResultsForSearch: 10,
             placeholder: 'Todas las unidades',
             allowClear: true
         });

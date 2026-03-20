@@ -15,7 +15,9 @@
   var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
   const contenedor = document.querySelector(".tabla-requi-page");
   const atenderUrl = contenedor.dataset.urlAtender;
-  var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
+    var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
+    var urlEnviarAlmacen = container ? container.getAttribute("data-url-enviar-almacen") : "";
+    var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
   var _idRequiAsignar = null;
 
   var fechaSeleccionada = "";
@@ -259,34 +261,135 @@
     }
   }
 
-  window.abrirModalAsignar = function (idRequi) {
-    _idRequiAsignar = idRequi;
-    var select = document.getElementById("selectUsuarioAsignar");
-    var $select = $("#selectUsuarioAsignar");
-    if ($select.data("select2")) $select.select2("destroy");
-    select.innerHTML = '<option value="">Cargando...</option>';
+    function ocultarTodosPasos() {
+        ['pasoOpciones', 'pasoAsignar', 'pasoAlmacen', 'pasoRechazar'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
 
-    var urlUsuarios = esTablaServicios ? urlUsuariosServicios : urlUsuariosMateriales;
+    window.volverOpciones = function () {
+        ocultarTodosPasos();
+        document.getElementById('pasoOpciones').style.display = 'block';
+    };
 
-    $.get(urlUsuarios, function (data) {
-      select.innerHTML =
-        '<option value="">-- Seleccionar responsable --</option>';
-      data.forEach(function (u) {
-        select.innerHTML +=
-          '<option value="' + u.id + '">' + u.nombre + "</option>";
-      });
-      $select.select2({
-        language: "es",
-        placeholder: "-- Seleccionar responsable --",
-        allowClear: false,
-        minimumResultsForSearch: Infinity,
-        width: "100%"
-      });
-    });
+    window.mostrarPasoAsignar = function () {
+        ocultarTodosPasos();
+        document.getElementById('pasoAsignar').style.display = 'block';
+    };
 
-    var modal = new bootstrap.Modal(document.getElementById("modalAsignar"));
-    modal.show();
-  };
+    window.mostrarPasoAlmacen = function () {
+        ocultarTodosPasos();
+        document.getElementById('pasoAlmacen').style.display = 'block';
+    };
+
+    window.mostrarPasoRechazar = function () {
+        ocultarTodosPasos();
+        document.getElementById('pasoRechazar').style.display = 'block';
+    };
+
+    // Abrir modal — siempre arranca en paso 1
+    window.abrirModalAsignar = function (idRequi) {
+        _idRequiAsignar = idRequi;
+
+        if (esTablaServicios) {
+            // Servicios: Asignar + Rechazar (sin Enviar a almacén)
+            volverOpciones();
+            document.getElementById('txtMotivoRechazo').value = '';
+
+            //Ocultar el botón de enviar a almacén
+            var btnAlmacen = document.getElementById('btnOpcionAlmacen');
+            if (btnAlmacen) btnAlmacen.style.display = 'none';
+
+            var $select = $("#selectUsuarioAsignar");
+            if ($select.data("select2")) $select.select2("destroy");
+            $select.html('<option value="">-- Seleccionar responsable --</option>');
+
+            $.get(urlUsuariosServicios, function (data) {
+                data.forEach(function (u) {
+                    $select.append('<option value="' + u.id + '">' + u.nombre + '</option>');
+                });
+                $select.select2({
+                    language: "es",
+                    placeholder: "-- Seleccionar responsable --",
+                    allowClear: false,
+                    minimumResultsForSearch: Infinity,
+                    width: "100%"
+                });
+            });
+
+        } else {
+            // Requisiciones: los 3 botones
+            volverOpciones();
+            document.getElementById('txtMotivoRechazo').value = '';
+
+            //Asegurar que el botón de almacén esté visible
+            var btnAlmacen = document.getElementById('btnOpcionAlmacen');
+            if (btnAlmacen) btnAlmacen.style.display = '';
+
+            var $select = $("#selectUsuarioAsignar");
+            if ($select.data("select2")) $select.select2("destroy");
+            $select.html('<option value="">-- Seleccionar responsable --</option>');
+
+            $.get(urlUsuariosMateriales, function (data) {
+                data.forEach(function (u) {
+                    $select.append('<option value="' + u.id + '">' + u.nombre + '</option>');
+                });
+                $select.select2({
+                    language: "es",
+                    placeholder: "-- Seleccionar responsable --",
+                    allowClear: false,
+                    minimumResultsForSearch: Infinity,
+                    width: "100%"
+                });
+            });
+        }
+
+        var modal = new bootstrap.Modal(document.getElementById("modalAsignar"));
+        modal.show();
+    };
+
+    // Confirmar envío a almacén
+    window.confirmarEnvioAlmacen = function () {
+        $.post(urlEnviarAlmacen, { idRequi: _idRequiAsignar }, function (res) {
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Enviada a almacén',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo enviar a almacén' });
+            }
+        });
+    };
+
+    // Confirmar rechazo
+    window.confirmarRechazo = function () {
+        var motivo = document.getElementById('txtMotivoRechazo').value.trim();
+        if (!motivo) {
+            Swal.fire({ icon: 'warning', title: 'Escribe el motivo del rechazo', confirmButtonText: 'Ok' });
+            return;
+        }
+
+        $.post(urlRechazar, { idRequi: _idRequiAsignar, motivo: motivo }, function (res) {
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Requisición rechazada',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo rechazar la requisición' });
+            }
+        });
+    };
 
   window.confirmarAsignacion = function () {
     var idUsuario = $("#selectUsuarioAsignar").val();
@@ -536,9 +639,11 @@
     }
   });
 
-  window.verDetalle = function (idMaestro, modo = "ver") {
-        document.getElementById('galeriaFotosDetalle').innerHTML = '';
-        document.getElementById('seccionFotosDetalle').style.display = 'none';
+    window.verDetalle = function (idMaestro, modo = "ver") {
+     var galeriaFotosDetalle = document.getElementById('galeriaFotosDetalle');
+     var seccionFotosDetalle = document.getElementById('seccionFotosDetalle');
+     if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = '';
+     if (seccionFotosDetalle) seccionFotosDetalle.style.display = 'none';
     const seccionesAtender = document.querySelectorAll(".seccionAtender");
     if (seccionesAtender.length > 0) {
       const isAtender = modo === "atender";
@@ -624,31 +729,31 @@
         var seccionFotos = document.getElementById('seccionFotosDetalle');
         var galeriaFotos = document.getElementById('galeriaFotosDetalle');
 
-        if (data.tipoServicio === 'Imprenta' && data.fotos && data.fotos.length > 0) {
-            galeriaFotos.innerHTML = '';
-            data.fotos.forEach(function (ruta) {
-                var wrapper = document.createElement('div');
-                wrapper.style.cssText = 'display:inline-block; text-align:center;';
-
-                var img = document.createElement('img');
-                img.src = ruta;
-                img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
-                img.title = 'Click para ver en tamaño completo';
-                img.addEventListener('click', function () { abrirVisorImagenTabla(ruta); });
-
-                wrapper.appendChild(img);
-                galeriaFotos.appendChild(wrapper);
-            });
-            seccionFotos.style.display = 'block';
-        } else {
-            seccionFotos.style.display = 'none';
+        if (seccionFotos && galeriaFotos) {
+            if (data.tipoServicio === 'Imprenta' && data.fotos && data.fotos.length > 0) {
+                galeriaFotos.innerHTML = '';
+                data.fotos.forEach(function (ruta) {
+                    var wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'display:inline-block; text-align:center;';
+                    var img = document.createElement('img');
+                    img.src = ruta;
+                    img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
+                    img.title = 'Click para ver en tamaño completo';
+                    img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+                    wrapper.appendChild(img);
+                    galeriaFotos.appendChild(wrapper);
+                });
+                seccionFotos.style.display = 'block';
+            } else {
+                seccionFotos.style.display = 'none';
+            }
         }
 
       var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
       if (subtitulo)
         subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
 
-      // ✅ Precargar selects si la requisición ya tiene datos previos
+      //Precargar selects si la requisición ya tiene datos previos
       if (modo === "atender") {
         if (data.idPp) {
           $("#actividadSeleccionada").val(data.idPp).trigger("change");

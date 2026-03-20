@@ -37,7 +37,7 @@
                 <p>Ave. Reforma No. 1305 Colonia Centro &nbsp;|&nbsp; Puebla, Pue., C.P. 72000</p>
                 <p>Dirección de Administración y Finanzas</p>
                 <p>Depto. de Recursos Materiales y Servicios Generales</p>
-                <p>Sección de Almacén e Inventarios</p>
+                <p>Sección de Bienes y Servicios</p>
                 <p class="pdf-encabezado-titulo">Requisición de Servicios</p>
             </div>
             <div class="pdf-encabezado-cuadro">
@@ -132,12 +132,12 @@
             <div class="pdf-firma-item">
                 <div class="pdf-firma-linea" aria-hidden="true"></div>
                 <span class="pdf-firma-nombre">@(Model.NomResponsableDepartamento ?? "—")</span>
-                <span class="pdf-firma-rol">Responsable del departamento</span>
+                <span class="pdf-firma-rol">@(Model.CargoResponsableDepartamento ?? "Jefe del departamento")</span>
             </div>
             <div class="pdf-firma-item">
                 <div class="pdf-firma-linea" aria-hidden="true"></div>
                 <span class="pdf-firma-nombre">@(Model.NomDirector ?? "—")</span>
-                <span class="pdf-firma-rol">Director</span>
+                <span class="pdf-firma-rol">@(Model.CargoDirector ?? "Director del Area")</span>
             </div>
         </div>
 

@@ -59,30 +59,32 @@
                 }
             });
 
-            if ($('#tipoServicio').val() === 'Imprenta') {
+            if ($('#tipoServicio').val() === 'Servicio Impresion') {
                 document.getElementById('seccionFotos').style.display = 'block';
             }
         }
     });    
 
-    document.getElementById('inputFotos').addEventListener('change', function () {
-        // Agregar solo archivos nuevos y válidos (evitar duplicados por nombre)
-        Array.from(this.files).forEach(file => {
-            const yaExiste = archivosSeleccionados.find(f => f.name === file.name && f.size === file.size);
-            if (!yaExiste && tiposPermitidos.includes(file.type)) {
-                archivosSeleccionados.push(file);
-            }
+    var inputFotos = document.getElementById('inputFotos');
+    if (inputFotos) {
+        inputFotos.addEventListener('change', function () {
+            Array.from(this.files).forEach(file => {
+                const yaExiste = archivosSeleccionados.find(f => f.name === file.name && f.size === file.size);
+                if (!yaExiste && tiposPermitidos.includes(file.type)) {
+                    archivosSeleccionados.push(file);
+                }
+            });
+            actualizarInput();
+            renderizarPrevisualizacion();
         });
-
-        // Limpiar el input y reasignar solo los válidos
-        actualizarInput();
-        renderizarPrevisualizacion();
-    });
+    }
 
     function actualizarInput() {
+        var input = document.getElementById('inputFotos');
+        if (!input) return;
         const dt = new DataTransfer();
         archivosSeleccionados.forEach(file => dt.items.add(file));
-        document.getElementById('inputFotos').files = dt.files;
+        input.files = dt.files;
     }
 
     function renderizarPrevisualizacion() {
