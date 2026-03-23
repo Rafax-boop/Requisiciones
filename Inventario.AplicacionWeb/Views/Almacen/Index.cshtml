@@ -15,7 +15,8 @@
      data-url-aprobar-parcial="@Url.Action("AprobarParcial", "Almacen")"
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
      data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
-     data-url-anular-movimiento="@Url.Action("AnularMovimiento", "Almacen")">
+     data-url-anular-movimiento="@Url.Action("AnularMovimiento", "Almacen")"
+     data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Departamento de Almacén</h1>
@@ -277,10 +278,10 @@
                     <p class="text-muted">Cargando...</p>
                 </div>
                 <div class="almacen-modal-footer">
-                    <button type="button" class="btn-accion" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn-accion btn-almacen-rechazar">Rechazar</button>
-                    <button type="button" class="btn-accion btn-almacen-parcial">Aprobar Parcial</button>
-                    <button type="button" class="btn-accion btn-almacen-aprobar">Aprobar Completa</button>
+                    <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> Cerrar</button>
+                    <button type="button" class="almacen-btn almacen-btn-rechazar btn-almacen-rechazar"><i class="fa-solid fa-ban"></i> Rechazar</button>
+                    <button type="button" class="almacen-btn almacen-btn-parcial btn-almacen-parcial"><i class="fa-solid fa-list-check"></i> Aprobar Parcial</button>
+                    <button type="button" class="almacen-btn almacen-btn-completa btn-almacen-aprobar" id="btnAprobarCompleta"><i class="fa-solid fa-circle-check"></i> Aprobar Completa</button>
                 </div>
             </div>
         </div>

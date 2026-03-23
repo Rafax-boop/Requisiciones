@@ -64,69 +64,84 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(dto);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ConsultarStock(int id)
+        {
+            var stock = await _almacenService.ConsultarStockParaRequisicion(id);
+            return Json(stock);
+        }
+
+        private int? GetUserId()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(idClaim) && int.TryParse(idClaim, out int id))
+                return id;
+            return null;
+        }
+
         [HttpPost]
         public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioRequest request)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
-                return Unauthorized(new { ok = false, error = "No autorizado." });
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, error) = await _almacenService.RegistrarIngresoInventario(
+            var (ok, mensaje, error) = await _almacenService.RegistrarIngresoInventario(
                 request.Clave,
                 request.Descripcion ?? "",
                 request.UnidadMedida ?? "",
                 request.Cantidad,
-                idUsuario,
+                userId.Value,
                 request.Motivo ?? "");
 
-            return Json(new { ok, error });
+            return Json(new { ok, mensaje, error });
         }
 
         [HttpPost]
         public async Task<IActionResult> AprobarCompleta([FromBody] AprobarRequest request)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
-                return Unauthorized(new { ok = false, error = "No autorizado." });
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, error) = await _almacenService.AprobarRequisicionCompleta(request.IdRequisicion, idUsuario);
-            return Json(new { ok, error });
+            var (ok, mensaje, error) = await _almacenService.AprobarRequisicionCompleta(request.IdRequisicion, userId.Value);
+            return Json(new { ok, mensaje, error });
         }
 
         [HttpPost]
         public async Task<IActionResult> AprobarParcial([FromBody] AprobarParcialRequest request)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
-                return Unauthorized(new { ok = false, error = "No autorizado." });
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
             var partidas = (request.Partidas ?? new List<AprobarParcialPartidaRequest>())
                 .Select(p => (p.IdRequisicionDetalle, p.CantidadAprobada));
 
-            var (ok, error) = await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, idUsuario, partidas);
-            return Json(new { ok, error });
+            var (ok, mensaje, error) = await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, userId.Value, partidas);
+            return Json(new { ok, mensaje, error });
         }
 
         [HttpPost]
         public async Task<IActionResult> Rechazar([FromBody] RechazarRequest request)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
-                return Unauthorized(new { ok = false, error = "No autorizado." });
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, error) = await _almacenService.RechazarRequisicionAlmacen(request.IdRequisicion, idUsuario, request.Motivo ?? "");
-            return Json(new { ok, error });
+            var (ok, mensaje, error) = await _almacenService.RechazarRequisicionAlmacen(request.IdRequisicion, userId.Value, request.Motivo ?? "");
+            return Json(new { ok, mensaje, error });
         }
 
         [HttpPost]
         public async Task<IActionResult> AnularMovimiento([FromBody] AnularMovimientoRequest request)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out int idUsuario))
-                return Unauthorized(new { ok = false, error = "No autorizado." });
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, error) = await _almacenService.AnularMovimientoInventario(request.IdMovimiento, idUsuario, request.Motivo ?? "");
-            return Json(new { ok, error });
+            var (ok, mensaje, error) = await _almacenService.AnularMovimientoInventario(request.IdMovimiento, userId.Value, request.Motivo ?? "");
+            return Json(new { ok, mensaje, error });
         }
 
         public class IngresoInventarioRequest

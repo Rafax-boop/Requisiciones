@@ -13,7 +13,7 @@ namespace Inventario.BLL.Interfaces
         Task<List<InventarioItemDTO>> ObtenerInventario();
         Task<List<string>> ObtenerEstatus();
 
-        Task<(bool ok, string? error)> RegistrarIngresoInventario(
+        Task<(bool ok, string? mensaje, string? error)> RegistrarIngresoInventario(
             string? clave,
             string descripcion,
             string unidadMedida,
@@ -21,15 +21,17 @@ namespace Inventario.BLL.Interfaces
             int idUsuario,
             string motivo);
 
-        Task<(bool ok, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario);
+        Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario);
 
-        Task<(bool ok, string? error)> AprobarRequisicionParcial(
+        Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionParcial(
             int idRequisicion,
             int idUsuario,
             IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas);
 
-        Task<(bool ok, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
+        Task<(bool ok, string? mensaje, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
 
-        Task<(bool ok, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion);
+        Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion);
+
+        Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
     }
 }

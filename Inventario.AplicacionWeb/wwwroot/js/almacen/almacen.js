@@ -1,7 +1,6 @@
 /**
- * Almacén - Tabs, filtros, paginación inventario, modal de análisis
- * Requiere: jQuery, Bootstrap, Select2 (cargados en la vista).
- * URL de API desde data-url-obtener-requisicion en .tabla-requi-page
+ * Almacén - Tabs, filtros, paginación inventario, modal de análisis, SweetAlert2
+ * Requiere: jQuery, Bootstrap, Select2, SweetAlert2 (cargados globalmente).
  */
 (function () {
     var container = document.querySelector('.tabla-requi-page');
@@ -10,6 +9,7 @@
     var urlAprobarParcial = container ? container.getAttribute('data-url-aprobar-parcial') : '';
     var urlRechazar = container ? container.getAttribute('data-url-rechazar') : '';
     var urlRegistrarIngreso = container ? container.getAttribute('data-url-registrar-ingreso') : '';
+    var urlConsultarStock = container ? container.getAttribute('data-url-consultar-stock') : '';
 
     const tabPanels = document.querySelectorAll('.almacen-tab-panel');
     const tabBtns = document.querySelectorAll('.almacen-tabs-btn');
@@ -19,8 +19,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body || {})
-        }).then(async (r) => {
-            const data = await r.json().catch(() => ({}));
+        }).then(async function (r) {
+            var data = await r.json().catch(function () { return {}; });
             if (!r.ok) {
                 return Promise.reject(data && data.error ? data.error : 'Error en la petición.');
             }
@@ -28,11 +28,38 @@
         });
     }
 
-    tabBtns.forEach(btn => {
+    function swalError(msg) {
+        Swal.fire({ icon: 'error', title: 'Error', text: msg || 'Ocurrió un error.', confirmButtonColor: '#e11d48' });
+    }
+
+    function swalExito(msg) {
+        return Swal.fire({ icon: 'success', title: '¡Listo!', text: msg || 'Operación exitosa.', confirmButtonColor: '#e11d48' });
+    }
+
+    function swalWarning(msg) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: msg, confirmButtonColor: '#e11d48' });
+    }
+
+    function swalConfirmar(titulo, texto, botonTexto) {
+        return Swal.fire({
+            title: titulo,
+            text: texto,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: botonTexto || 'Sí, continuar',
+            cancelButtonText: 'Cancelar'
+        });
+    }
+
+    /* ========== TABS ========== */
+
+    tabBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
-            const tab = this.getAttribute('data-tab');
-            tabBtns.forEach(b => b.classList.remove('activo'));
-            tabPanels.forEach(p => {
+            var tab = this.getAttribute('data-tab');
+            tabBtns.forEach(function (b) { b.classList.remove('activo'); });
+            tabPanels.forEach(function (p) {
                 p.classList.remove('activo');
                 if (p.id === 'tab-' + tab) p.classList.add('activo');
             });
@@ -40,54 +67,48 @@
         });
     });
 
-    // Filtro tabla requisiciones
-    const filtroBuscar = document.getElementById('filtroBuscar');
-    const filtroEstado = document.getElementById('filtroEstado');
-    const tbodyReq = document.querySelector('#tablaRequisiciones tbody');
-    if (filtroBuscar) {
-        filtroBuscar.addEventListener('input', filtrarTabla);
-    }
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', filtrarTabla);
-    }
-    // Paginación tabla requisiciones (7 por página)
-    const filaRequisicionesVacia = tbodyReq ? tbodyReq.querySelector('.fila-vacia') : null;
-    const paginacionRequisiciones = document.getElementById('paginacionRequisiciones');
-    const TAMANO_PAGINA_REQUISICIONES = 7;
-    let paginaRequisicionActual = 1;
+    /* ========== FILTROS + PAGINACIÓN REQUISICIONES ========== */
+
+    var filtroBuscar = document.getElementById('filtroBuscar');
+    var filtroEstado = document.getElementById('filtroEstado');
+    var tbodyReq = document.querySelector('#tablaRequisiciones tbody');
+    if (filtroBuscar) filtroBuscar.addEventListener('input', filtrarTabla);
+    if (filtroEstado) filtroEstado.addEventListener('change', filtrarTabla);
+
+    var paginacionRequisiciones = document.getElementById('paginacionRequisiciones');
+    var TAMANO_PAGINA_REQUISICIONES = 7;
+    var paginaRequisicionActual = 1;
 
     function getFilasRequisicionesVisibles() {
-        const texto = (filtroBuscar?.value || '').toLowerCase().trim();
-        const estado = (filtroEstado?.value || '').trim();
-        const filas = tbodyReq ? [].slice.call(tbodyReq.querySelectorAll('tr[data-id]')) : [];
-
+        var texto = (filtroBuscar ? filtroBuscar.value : '').toLowerCase().trim();
+        var estado = (filtroEstado ? filtroEstado.value : '').trim();
+        var filas = tbodyReq ? [].slice.call(tbodyReq.querySelectorAll('tr[data-id]')) : [];
         return filas.filter(function (tr) {
-            const folio = (tr.getAttribute('data-folio') || '').toLowerCase();
-            const depto = (tr.getAttribute('data-depto') || '').toLowerCase();
-            const est = (tr.getAttribute('data-estatus') || '');
-            const matchTexto = !texto || folio.includes(texto) || depto.includes(texto) || (tr.textContent || '').toLowerCase().includes(texto);
-            const matchEstado = !estado || est === estado;
+            var folio = (tr.getAttribute('data-folio') || '').toLowerCase();
+            var depto = (tr.getAttribute('data-depto') || '').toLowerCase();
+            var est = (tr.getAttribute('data-estatus') || '');
+            var matchTexto = !texto || folio.includes(texto) || depto.includes(texto) || (tr.textContent || '').toLowerCase().includes(texto);
+            var matchEstado = !estado || est === estado;
             return matchTexto && matchEstado;
         });
     }
 
     function aplicarPaginacionRequisiciones() {
-        const visibles = getFilasRequisicionesVisibles();
-        const total = visibles.length;
-        const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_REQUISICIONES));
+        var visibles = getFilasRequisicionesVisibles();
+        var total = visibles.length;
+        var totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_REQUISICIONES));
         if (paginaRequisicionActual > totalPaginas) paginaRequisicionActual = totalPaginas;
-        const inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
-        const fin = inicio + TAMANO_PAGINA_REQUISICIONES;
+        var inicio = (paginaRequisicionActual - 1) * TAMANO_PAGINA_REQUISICIONES;
+        var fin = inicio + TAMANO_PAGINA_REQUISICIONES;
 
         if (tbodyReq) {
-            tbodyReq.querySelectorAll('tr[data-id]').forEach(tr => { tr.style.display = 'none'; });
-            visibles.forEach((tr, i) => {
+            tbodyReq.querySelectorAll('tr[data-id]').forEach(function (tr) { tr.style.display = 'none'; });
+            visibles.forEach(function (tr, i) {
                 tr.style.display = (i >= inicio && i < fin) ? '' : 'none';
             });
         }
 
-        // Manejar el mensaje vacio si existiera, o añadir uno si no
-        let trVacio = tbodyReq ? tbodyReq.querySelector('.fila-vacia') : null;
+        var trVacio = tbodyReq ? tbodyReq.querySelector('.fila-vacia') : null;
         if (total === 0) {
             if (!trVacio && tbodyReq) {
                 trVacio = document.createElement('tr');
@@ -102,24 +123,16 @@
         }
 
         if (paginacionRequisiciones) {
-            if (total === 0) {
-                paginacionRequisiciones.innerHTML = '';
-                return;
-            }
+            if (total === 0) { paginacionRequisiciones.innerHTML = ''; return; }
             var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' requisiciones';
             var html = '<div class="almacen-paginacion-info">' + info + '</div>';
             html += '<div class="almacen-paginacion-btns">';
             html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaRequisicionActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
             html += ' <span class="almacen-paginacion-nums">';
-            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas;
-            var actual = paginaRequisicionActual;
+            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas, actual = paginaRequisicionActual;
             var set = {};
             for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
-            if (actual > 0 && actual <= totalPag) {
-                set[actual] = true;
-                if (actual - 1 >= 1) set[actual - 1] = true;
-                if (actual + 1 <= totalPag) set[actual + 1] = true;
-            }
+            if (actual > 0 && actual <= totalPag) { set[actual] = true; if (actual - 1 >= 1) set[actual - 1] = true; if (actual + 1 <= totalPag) set[actual + 1] = true; }
             for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
             var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
             var prev = 0;
@@ -152,62 +165,47 @@
         aplicarPaginacionRequisiciones();
     }
 
-    // Inicializar paginación de requisiciones
     aplicarPaginacionRequisiciones();
 
-    // Filtro tabla inventario por unidad de medida + paginación (15 por página)
-    const filtroUnidadMedida = document.getElementById('filtroUnidadMedida');
-    const tbodyInv = document.querySelector('#tablaInventario tbody');
-    const filaInventarioVacio = document.getElementById('filaInventarioVacio');
-    const paginacionInventario = document.getElementById('paginacionInventario');
-    const TAMANO_PAGINA_INVENTARIO = 15;
-    let paginaInventarioActual = 1;
+    /* ========== FILTROS + PAGINACIÓN INVENTARIO ========== */
+
+    var tbodyInv = document.querySelector('#tablaInventario tbody');
+    var filaInventarioVacio = document.getElementById('filaInventarioVacio');
+    var paginacionInventario = document.getElementById('paginacionInventario');
+    var TAMANO_PAGINA_INVENTARIO = 15;
+    var paginaInventarioActual = 1;
 
     function getFilasInventarioVisibles() {
         var unidad = ($('#filtroUnidadMedida').val() || '').toString().trim();
-        const filas = tbodyInv ? [].slice.call(tbodyInv.querySelectorAll('tr[data-unidad]')) : [];
-        return unidad
-            ? filas.filter(function (tr) { return (tr.getAttribute('data-unidad') || '').trim() === unidad; })
-            : filas;
+        var filas = tbodyInv ? [].slice.call(tbodyInv.querySelectorAll('tr[data-unidad]')) : [];
+        return unidad ? filas.filter(function (tr) { return (tr.getAttribute('data-unidad') || '').trim() === unidad; }) : filas;
     }
 
     function aplicarPaginacionInventario() {
-        const visibles = getFilasInventarioVisibles();
-        const total = visibles.length;
-        const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_INVENTARIO));
+        var visibles = getFilasInventarioVisibles();
+        var total = visibles.length;
+        var totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_INVENTARIO));
         if (paginaInventarioActual > totalPaginas) paginaInventarioActual = totalPaginas;
-        const inicio = (paginaInventarioActual - 1) * TAMANO_PAGINA_INVENTARIO;
-        const fin = inicio + TAMANO_PAGINA_INVENTARIO;
+        var inicio = (paginaInventarioActual - 1) * TAMANO_PAGINA_INVENTARIO;
+        var fin = inicio + TAMANO_PAGINA_INVENTARIO;
 
         if (tbodyInv) {
-            tbodyInv.querySelectorAll('tr[data-unidad]').forEach(tr => { tr.style.display = 'none'; });
-            visibles.forEach((tr, i) => {
-                tr.style.display = (i >= inicio && i < fin) ? '' : 'none';
-            });
+            tbodyInv.querySelectorAll('tr[data-unidad]').forEach(function (tr) { tr.style.display = 'none'; });
+            visibles.forEach(function (tr, i) { tr.style.display = (i >= inicio && i < fin) ? '' : 'none'; });
         }
-        if (filaInventarioVacio) {
-            filaInventarioVacio.style.display = total === 0 ? '' : 'none';
-        }
+        if (filaInventarioVacio) filaInventarioVacio.style.display = total === 0 ? '' : 'none';
 
         if (paginacionInventario) {
-            if (total === 0) {
-                paginacionInventario.innerHTML = '';
-                return;
-            }
+            if (total === 0) { paginacionInventario.innerHTML = ''; return; }
             var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' materiales';
             var html = '<div class="almacen-paginacion-info">' + info + '</div>';
             html += '<div class="almacen-paginacion-btns">';
             html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaInventarioActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
             html += ' <span class="almacen-paginacion-nums">';
-            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas;
-            var actual = paginaInventarioActual;
+            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas, actual = paginaInventarioActual;
             var set = {};
             for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
-            if (actual > 0 && actual <= totalPag) {
-                set[actual] = true;
-                if (actual - 1 >= 1) set[actual - 1] = true;
-                if (actual + 1 <= totalPag) set[actual + 1] = true;
-            }
+            if (actual > 0 && actual <= totalPag) { set[actual] = true; if (actual - 1 >= 1) set[actual - 1] = true; if (actual + 1 <= totalPag) set[actual + 1] = true; }
             for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
             var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
             var prev = 0;
@@ -242,11 +240,13 @@
 
     aplicarPaginacionInventario();
 
-    // Modal: tabs internos
-    const modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
-    const modalBody = document.getElementById('modalAlmacenBody');
-    let reqCompleta = null;
-    let reqActualId = null;
+    /* ========== MODAL: TABS INTERNOS + DESCRIPCIÓN ========== */
+
+    var modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
+    var modalBody = document.getElementById('modalAlmacenBody');
+    var reqCompleta = null;
+    var reqActualId = null;
+    var stockData = {};
 
     window.verDescDetalleModal = function (el) {
         var panel = document.getElementById('desc-panel-modal');
@@ -276,42 +276,111 @@
         }
     });
 
-    modalTabsBtns.forEach(btn => {
+    modalTabsBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             if (!reqCompleta) return;
-            modalTabsBtns.forEach(b => b.classList.remove('activo'));
+            modalTabsBtns.forEach(function (b) { b.classList.remove('activo'); });
             this.classList.add('activo');
-            const i = parseInt(this.getAttribute('data-modal-tab'), 10);
+            var i = parseInt(this.getAttribute('data-modal-tab'), 10);
             renderModalTab(i);
         });
     });
 
+    function getStockInfo(idDetalle) {
+        return stockData[idDetalle] || null;
+    }
+
+    function buildStockBadge(info, cantSolicitada) {
+        if (!info) return '<span class="stock-badge stock-badge-no-existe"><i class="fa-solid fa-question"></i> Cargando...</span>';
+        if (!info.existeEnInventario) return '<span class="stock-badge stock-badge-no-existe"><i class="fa-solid fa-xmark"></i> No existe</span>';
+        if (info.stockDisponible <= 0) return '<span class="stock-badge stock-badge-sin"><i class="fa-solid fa-triangle-exclamation"></i> Sin stock (0)</span>';
+        if (info.stockDisponible < cantSolicitada) return '<span class="stock-badge stock-badge-parcial"><i class="fa-solid fa-exclamation"></i> Parcial (' + info.stockDisponible + ')</span>';
+        return '<span class="stock-badge stock-badge-ok"><i class="fa-solid fa-check"></i> Disponible (' + info.stockDisponible + ')</span>';
+    }
+
+    function actualizarBotonCompleta() {
+        var btnCompleta = document.getElementById('btnAprobarCompleta');
+        if (!btnCompleta || !reqCompleta) return;
+        var articulos = reqCompleta.articulos || [];
+        var puedeCompleta = articulos.length > 0;
+        articulos.forEach(function (a) {
+            var info = getStockInfo(a.idRequisicionDetalle ?? 0);
+            var cantSolicitada = (a.cantidad ?? 0);
+            if (!info || !info.existeEnInventario || info.stockDisponible < cantSolicitada) {
+                puedeCompleta = false;
+            }
+        });
+        btnCompleta.disabled = !puedeCompleta;
+        if (!puedeCompleta) {
+            btnCompleta.title = 'No hay stock suficiente para todos los materiales. Use Aprobar Parcial.';
+        } else {
+            btnCompleta.title = '';
+        }
+    }
+
     function renderModalTab(i) {
         if (!reqCompleta || !modalBody) return;
         if (i === 0) {
-            const articulos = reqCompleta.articulos || [];
-            let html = '<div class="almacen-resumen-cards"><div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div></div>';
-            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Aprobar</th><th>Descripción</th><th>Descripción Detallada</th></tr></thead><tbody>';
-            articulos.forEach(a => {
+            var articulos = reqCompleta.articulos || [];
+
+            var countOk = 0, countParcial = 0, countSin = 0;
+            articulos.forEach(function (a) {
+                var info = getStockInfo(a.idRequisicionDetalle ?? 0);
+                var cantSol = (a.cantidad ?? 0);
+                if (!info || !info.existeEnInventario || info.stockDisponible <= 0) countSin++;
+                else if (info.stockDisponible < cantSol) countParcial++;
+                else countOk++;
+            });
+
+            var html = '<div class="almacen-resumen-cards">';
+            html += '<div class="almacen-resumen-card"><span>Total Items</span><strong>' + articulos.length + '</strong></div>';
+            html += '<div class="almacen-resumen-card" style="border-color:#a7f3d0"><span style="color:#059669">Disponibles</span><strong style="color:#059669">' + countOk + '</strong></div>';
+            if (countParcial > 0) html += '<div class="almacen-resumen-card" style="border-color:#fde68a"><span style="color:#d97706">Stock parcial</span><strong style="color:#d97706">' + countParcial + '</strong></div>';
+            if (countSin > 0) html += '<div class="almacen-resumen-card" style="border-color:#fecaca"><span style="color:#dc2626">Sin stock</span><strong style="color:#dc2626">' + countSin + '</strong></div>';
+            html += '</div>';
+
+            html += '<div class="table-responsive-container">';
+            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Solicitado</th><th>Unidad</th><th>Stock</th><th>Aprobar</th><th>Detalle</th></tr></thead><tbody>';
+            articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || '';
                 var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + '…' : (textoCompleto || 'Sin descripción...');
                 var tieneTexto = textoCompleto ? 'tiene-texto' : '';
                 var fullEscapado = (textoCompleto || '').replace(/"/g, '&quot;');
                 var cantSolicitada = (a.cantidad ?? 0);
                 var idDetalle = (a.idRequisicionDetalle ?? 0);
+                var info = getStockInfo(idDetalle);
+
+                var valorInput = cantSolicitada;
+                var inputClass = 'input-app almacen-aprob-cant';
+                var inputDisabled = '';
+                var maxVal = cantSolicitada;
+
+                if (info) {
+                    if (!info.existeEnInventario || info.stockDisponible <= 0) {
+                        valorInput = 0;
+                        inputClass += ' stock-insuficiente';
+                        inputDisabled = ' disabled';
+                    } else if (info.stockDisponible < cantSolicitada) {
+                        valorInput = info.stockDisponible;
+                        inputClass += ' stock-parcial-warn';
+                    }
+                }
+
                 html += '<tr>';
                 html += '<td>' + (a.descripcion || '') + '</td>';
-                html += '<td>' + cantSolicitada + '</td>';
+                html += '<td style="text-align:center;font-weight:600;">' + cantSolicitada + '</td>';
                 html += '<td>' + (a.unidadMedida || '') + '</td>';
-                html += '<td><input type="number" class="input-app almacen-aprob-cant" min="0" step="1" value="' + cantSolicitada + '" max="' + cantSolicitada + '" data-detalle="' + idDetalle + '" style="width:110px; padding:8px 10px;" /></td>';
-                html += '<td>' + (a.descripcion || '') + '</td>';
+                html += '<td>' + buildStockBadge(info, cantSolicitada) + '</td>';
+                html += '<td><input type="number" class="' + inputClass + '" min="0" step="1" value="' + valorInput + '" max="' + maxVal + '" data-detalle="' + idDetalle + '" data-stock="' + (info ? info.stockDisponible : 0) + '" style="width:90px; padding:8px 10px;"' + inputDisabled + ' /></td>';
                 html += '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)"><span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + '</span><i class="fa-solid fa-eye desc-icon"></i></div></td></tr>';
             });
             html += '</tbody></table>';
+            html += '</div>';
             modalBody.innerHTML = html;
+            actualizarBotonCompleta();
         } else if (i === 1) {
-            const r = reqCompleta;
-            let html = '<div class="almacen-grid2"><div><h4 style="margin-top:0">Información del Solicitante</h4>';
+            var r = reqCompleta;
+            var html = '<div class="almacen-grid2"><div><h4 style="margin-top:0">Información del Solicitante</h4>';
             html += '<div class="almacen-campo"><label>Departamento</label><input type="text" disabled value="' + (r.departamento || '') + '" /></div>';
             html += '<div class="almacen-campo"><label>Responsable</label><input type="text" disabled value="' + (r.nomResponsableDepartamento || '') + '" /></div>';
             html += '<div class="almacen-campo"><label>Correo</label><input type="text" disabled value="' + (r.correo || '') + '" /></div>';
@@ -329,126 +398,235 @@
 
     window.abrirModal = function (id, folio, departamento, estatus) {
         reqActualId = id;
+        stockData = {};
         document.getElementById('modalAlmacenTitulo').textContent = (folio || '') + ' — ' + (departamento || '');
         document.getElementById('modalAlmacenSubtitulo').textContent = 'Estado: ' + (estatus || '');
-        modalBody.innerHTML = '<p class="text-muted">Cargando...</p>';
+        modalBody.innerHTML = '<p class="text-muted">Cargando requisición e inventario...</p>';
         reqCompleta = null;
-        const modal = new bootstrap.Modal(document.getElementById('modalAlmacen'));
+
+        var btnCompleta = document.getElementById('btnAprobarCompleta');
+        if (btnCompleta) btnCompleta.disabled = true;
+
+        var modal = new bootstrap.Modal(document.getElementById('modalAlmacen'));
         modal.show();
 
-        var url = (urlObtenerRequisicion || '').replace(/\/$/, '') + '?id=' + id;
-        fetch(url)
-            .then(res => res.ok ? res.json() : Promise.reject())
-            .then(data => {
-                reqCompleta = data;
-                document.querySelectorAll('.almacen-modal-tabs-btn').forEach(b => b.classList.remove('activo'));
-                document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="0"]').classList.add('activo');
-                renderModalTab(0);
-            })
-            .catch(() => {
-                modalBody.innerHTML = '<p class="text-danger">No se pudo cargar la requisición.</p>';
+        var urlReq = (urlObtenerRequisicion || '').replace(/\/$/, '') + '?id=' + id;
+        var urlStock = (urlConsultarStock || '').replace(/\/$/, '') + '?id=' + id;
+
+        Promise.all([
+            fetch(urlReq).then(function (r) { return r.ok ? r.json() : Promise.reject('req'); }),
+            fetch(urlStock).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+        ]).then(function (results) {
+            reqCompleta = results[0];
+            var stockArr = results[1] || [];
+            stockData = {};
+            stockArr.forEach(function (s) {
+                stockData[s.idRequisicionDetalle] = s;
             });
+            document.querySelectorAll('.almacen-modal-tabs-btn').forEach(function (b) { b.classList.remove('activo'); });
+            document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="0"]').classList.add('activo');
+            renderModalTab(0);
+        }).catch(function () {
+            modalBody.innerHTML = '<p class="text-danger">No se pudo cargar la requisición.</p>';
+        });
     };
 
     document.body.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-almacen-analizar]');
+        var btn = e.target.closest('[data-almacen-analizar]');
         if (btn) {
             e.preventDefault();
-            const id = parseInt(btn.getAttribute('data-id'), 10);
+            var id = parseInt(btn.getAttribute('data-id'), 10);
             abrirModal(id, btn.getAttribute('data-folio') || '', btn.getAttribute('data-depto') || '', btn.getAttribute('data-estatus') || '');
         }
     });
 
-    // Acciones Almacén: aprobar completa/parcial, rechazar
+    /* ========== ACCIONES ALMACÉN CON SWEETALERT2 ========== */
+
+    function cerrarModalAlmacen() {
+        var modalEl = document.getElementById('modalAlmacen');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+
     document.body.addEventListener('click', function (e) {
-        const btnAprobar = e.target.closest('.btn-almacen-aprobar');
-        const btnParcial = e.target.closest('.btn-almacen-parcial');
-        const btnRechazar = e.target.closest('.btn-almacen-rechazar');
+        var btnAprobar = e.target.closest('.btn-almacen-aprobar');
+        var btnParcial = e.target.closest('.btn-almacen-parcial');
+        var btnRechazar = e.target.closest('.btn-almacen-rechazar');
         if (!btnAprobar && !btnParcial && !btnRechazar) return;
 
-        if (!reqActualId) {
-            alert('No se pudo identificar la requisición.');
-            return;
-        }
+        if (!reqActualId) { swalError('No se pudo identificar la requisición.'); return; }
 
+        /* ---- APROBAR COMPLETA ---- */
         if (btnAprobar) {
-            if (!urlAprobarCompleta) { alert('No hay URL para aprobar.'); return; }
-            postJson(urlAprobarCompleta, { idRequisicion: reqActualId })
-                .then(r => {
-                    if (r.ok) location.reload();
-                    else alert(r.error || 'No se pudo aprobar.');
-                })
-                .catch(err => alert(err || 'No se pudo aprobar.'));
+            if (!urlAprobarCompleta) { swalError('URL de aprobación no configurada.'); return; }
+
+            swalConfirmar(
+                'Aprobar completa',
+                'Se descontará del inventario el total de materiales solicitados. ¿Desea continuar?',
+                'Sí, aprobar'
+            ).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({ title: 'Procesando...', text: 'Aplicando egreso de inventario...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+                postJson(urlAprobarCompleta, { idRequisicion: reqActualId })
+                    .then(function (r) {
+                        if (r.ok) {
+                            cerrarModalAlmacen();
+                            swalExito(r.mensaje || 'Requisición autorizada completa.').then(function () { location.reload(); });
+                        } else {
+                            swalError(r.error || 'No se pudo aprobar.');
+                        }
+                    })
+                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo aprobar.'); });
+            });
         }
 
+        /* ---- APROBAR PARCIAL ---- */
         if (btnParcial) {
-            if (!urlAprobarParcial) { alert('No hay URL para aprobar parcial.'); return; }
-            const inputs = document.querySelectorAll('.almacen-aprob-cant[data-detalle]');
-            const partidas = [];
-            let invalido = false;
-            inputs.forEach(inp => {
-                const idDetalle = parseInt(inp.getAttribute('data-detalle'), 10);
-                const val = parseInt((inp.value || '0'), 10);
-                const max = parseInt((inp.getAttribute('max') || '0'), 10);
-                if (idDetalle > 0 && !isNaN(val) && val > 0) {
+            if (!urlAprobarParcial) { swalError('URL de aprobación parcial no configurada.'); return; }
+
+            var inputs = document.querySelectorAll('.almacen-aprob-cant[data-detalle]');
+            var partidas = [];
+            var invalido = false;
+            var errorMsg = '';
+            inputs.forEach(function (inp) {
+                var idDetalle = parseInt(inp.getAttribute('data-detalle'), 10);
+                var val = parseInt((inp.value || '0'), 10);
+                var max = parseInt((inp.getAttribute('max') || '0'), 10);
+                var stockDisp = parseInt((inp.getAttribute('data-stock') || '0'), 10);
+                if (isNaN(val) || val < 0) { invalido = true; errorMsg = 'Las cantidades no pueden ser negativas.'; return; }
+                if (idDetalle > 0 && val > 0) {
                     if (!isNaN(max) && max > 0 && val > max) {
                         invalido = true;
+                        errorMsg = 'Una cantidad aprobada excede la solicitada.';
+                        return;
+                    }
+                    if (val > stockDisp) {
+                        invalido = true;
+                        errorMsg = 'La cantidad aprobada (' + val + ') excede el stock disponible (' + stockDisp + ').';
                         return;
                     }
                     partidas.push({ idRequisicionDetalle: idDetalle, cantidadAprobada: val });
                 }
             });
-            if (invalido) { alert('Una cantidad aprobada excede la solicitada.'); return; }
-            if (partidas.length === 0) { alert('Captura al menos una cantidad aprobada.'); return; }
+            if (invalido) { swalWarning(errorMsg); return; }
+            if (partidas.length === 0) { swalWarning('Capture al menos una cantidad aprobada mayor a 0.'); return; }
 
-            postJson(urlAprobarParcial, { idRequisicion: reqActualId, partidas: partidas })
-                .then(r => {
-                    if (r.ok) location.reload();
-                    else alert(r.error || 'No se pudo aprobar parcial.');
-                })
-                .catch(err => alert(err || 'No se pudo aprobar parcial.'));
+            swalConfirmar(
+                'Aprobar parcial',
+                'Se descontará del inventario solo las cantidades especificadas. ¿Desea continuar?',
+                'Sí, aprobar parcial'
+            ).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({ title: 'Procesando...', text: 'Aplicando egreso parcial de inventario...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+                postJson(urlAprobarParcial, { idRequisicion: reqActualId, partidas: partidas })
+                    .then(function (r) {
+                        if (r.ok) {
+                            cerrarModalAlmacen();
+                            var iconType = (r.mensaje && r.mensaje.toLowerCase().indexOf('faltante') >= 0) ? 'warning' : 'success';
+                            Swal.fire({
+                                icon: iconType,
+                                title: iconType === 'warning' ? 'Aprobada parcial con faltantes' : '¡Aprobada parcial!',
+                                html: '<p>' + (r.mensaje || 'Requisición autorizada parcial.') + '</p>',
+                                confirmButtonColor: '#e11d48'
+                            }).then(function () { location.reload(); });
+                        } else {
+                            swalError(r.error || 'No se pudo aprobar parcial.');
+                        }
+                    })
+                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo aprobar parcial.'); });
+            });
         }
 
+        /* ---- RECHAZAR ---- */
         if (btnRechazar) {
-            if (!urlRechazar) { alert('No hay URL para rechazar.'); return; }
-            const obs = (document.getElementById('obs-textarea')?.value || '').trim();
-            if (!obs) { alert('Escribe observaciones en la pestaña Observaciones para poder rechazar.'); return; }
+            if (!urlRechazar) { swalError('URL de rechazo no configurada.'); return; }
 
-            postJson(urlRechazar, { idRequisicion: reqActualId, motivo: obs })
-                .then(r => {
-                    if (r.ok) location.reload();
-                    else alert(r.error || 'No se pudo rechazar.');
-                })
-                .catch(err => alert(err || 'No se pudo rechazar.'));
+            var obs = '';
+            var obsArea = document.getElementById('obs-textarea');
+            if (obsArea) obs = (obsArea.value || '').trim();
+
+            if (!obs) {
+                modalTabsBtns.forEach(function (b) { b.classList.remove('activo'); });
+                var btnObs = document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="2"]');
+                if (btnObs) btnObs.classList.add('activo');
+                renderModalTab(2);
+                setTimeout(function () {
+                    var ta = document.getElementById('obs-textarea');
+                    if (ta) ta.focus();
+                }, 150);
+                swalWarning('Escribe las observaciones para poder rechazar la requisición.');
+                return;
+            }
+
+            swalConfirmar(
+                'Rechazar requisición',
+                'La requisición será rechazada con el motivo capturado. ¿Desea continuar?',
+                'Sí, rechazar'
+            ).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({ title: 'Procesando...', text: 'Rechazando requisición...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+                postJson(urlRechazar, { idRequisicion: reqActualId, motivo: obs })
+                    .then(function (r) {
+                        if (r.ok) {
+                            cerrarModalAlmacen();
+                            swalExito(r.mensaje || 'Requisición rechazada.').then(function () { location.reload(); });
+                        } else {
+                            swalError(r.error || 'No se pudo rechazar.');
+                        }
+                    })
+                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo rechazar.'); });
+            });
         }
     });
 
-    // Ingreso de inventario
-    const btnIngreso = document.getElementById('btnRegistrarIngreso');
+    /* ========== INGRESO DE INVENTARIO CON SWEETALERT2 ========== */
+
+    var btnIngreso = document.getElementById('btnRegistrarIngreso');
     if (btnIngreso) {
         btnIngreso.addEventListener('click', function () {
-            if (!urlRegistrarIngreso) { alert('No hay URL para registrar ingreso.'); return; }
-            const clave = (document.getElementById('ingresoClave')?.value || '').trim();
-            const descripcion = (document.getElementById('ingresoDescripcion')?.value || '').trim();
-            const unidadMedida = (document.getElementById('ingresoUnidad')?.value || '').trim();
-            const cantidad = parseInt((document.getElementById('ingresoCantidad')?.value || '0'), 10);
-            const motivo = (document.getElementById('ingresoMotivo')?.value || '').trim();
+            if (!urlRegistrarIngreso) { swalError('URL de ingreso no configurada.'); return; }
 
-            if (!descripcion) { alert('La descripción es obligatoria.'); return; }
-            if (!unidadMedida) { alert('La unidad de medida es obligatoria.'); return; }
-            if (!cantidad || cantidad <= 0) { alert('La cantidad debe ser mayor a 0.'); return; }
-            if (!motivo) { alert('El motivo es obligatorio.'); return; }
+            var clave = (document.getElementById('ingresoClave') ? document.getElementById('ingresoClave').value : '').trim();
+            var descripcion = (document.getElementById('ingresoDescripcion') ? document.getElementById('ingresoDescripcion').value : '').trim();
+            var unidadMedida = (document.getElementById('ingresoUnidad') ? document.getElementById('ingresoUnidad').value : '').trim();
+            var cantidad = parseInt((document.getElementById('ingresoCantidad') ? document.getElementById('ingresoCantidad').value : '0'), 10);
+            var motivo = (document.getElementById('ingresoMotivo') ? document.getElementById('ingresoMotivo').value : '').trim();
 
-            postJson(urlRegistrarIngreso, { clave, descripcion, unidadMedida, cantidad, motivo })
-                .then(r => {
-                    if (r.ok) location.reload();
-                    else alert(r.error || 'No se pudo registrar el ingreso.');
-                })
-                .catch(err => alert(err || 'No se pudo registrar el ingreso.'));
+            if (!descripcion) { swalWarning('La descripción es obligatoria.'); return; }
+            if (!unidadMedida) { swalWarning('La unidad de medida es obligatoria.'); return; }
+            if (!cantidad || cantidad <= 0) { swalWarning('La cantidad debe ser mayor a 0.'); return; }
+            if (!motivo) { swalWarning('El motivo es obligatorio.'); return; }
+
+            swalConfirmar(
+                'Registrar ingreso',
+                'Se dará de alta o se sumará al stock el material: ' + descripcion + ' (' + unidadMedida + ') x' + cantidad + '. ¿Continuar?',
+                'Sí, registrar'
+            ).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({ title: 'Procesando...', text: 'Registrando ingreso de inventario...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+                postJson(urlRegistrarIngreso, { clave: clave, descripcion: descripcion, unidadMedida: unidadMedida, cantidad: cantidad, motivo: motivo })
+                    .then(function (r) {
+                        if (r.ok) {
+                            swalExito(r.mensaje || 'Ingreso registrado correctamente.').then(function () { location.reload(); });
+                        } else {
+                            swalError(r.error || 'No se pudo registrar el ingreso.');
+                        }
+                    })
+                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo registrar el ingreso.'); });
+            });
         });
     }
 
-    // Select2 para filtros Estado e Inventario (Unidad de medida)
+    /* ========== SELECT2 ========== */
+
     $(function () {
         $('#filtroEstado').select2({
             width: '100%',
