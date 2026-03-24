@@ -24,6 +24,9 @@ namespace Inventario.BLL.Implementacion
         private const int ESTATUS_APROBADA_ALMACEN = 4;
         private const int ESTATUS_APROBADA_PARCIAL_ALMACEN = 10;
         private const int ESTATUS_RECHAZADA_ALMACEN = 5;
+        private const int ESTATUS_AUTORIZADA_PARCIAL = 11;
+        private const int ESTATUS_EN_COMPRA = 12;
+        private const int ESTATUS_ENTREGADO = 13;
 
         public AlmacenService(
             IRequisicionRepository requisicionRepository,
@@ -441,6 +444,138 @@ namespace Inventario.BLL.Implementacion
             {
                 await tx.RollbackAsync();
                 return (false, null, "No se pudo anular el movimiento. " + ex.Message);
+            }
+        }
+
+        public async Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
+            int idRequisicion,
+            int idUsuario,
+            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
+            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras)
+        {
+            var listaEntregas = (entregas ?? Enumerable.Empty<(int, int)>()).ToList();
+            var listaCompras = (compras ?? Enumerable.Empty<(int, int)>()).ToList();
+
+            if (listaEntregas.Count == 0 && listaCompras.Count == 0)
+                return (false, null, "Debe indicar al menos una entrega o una compra.");
+            if (listaEntregas.Any(x => x.cantidadAprobada < 0))
+                return (false, null, "Las cantidades de entrega no pueden ser negativas.");
+            if (listaCompras.Any(x => x.cantidadComprar <= 0))
+                return (false, null, "Las cantidades de compra deben ser mayores a 0.");
+
+            var comprasSet = new HashSet<int>(listaCompras.Select(c => c.idRequisicionDetalle));
+
+            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var req = await _dbContext.TblRequisicions
+                    .Include(r => r.TblRequisicionDetalles)
+                    .FirstOrDefaultAsync(r => r.IdRequisicion == idRequisicion);
+
+                if (req == null) return (false, null, "No se encontró la requisición.");
+                if (req.IdEstatus != ESTATUS_EN_ALMACEN)
+                    return (false, null, "La requisición no está en estatus de Almacén. No se puede procesar.");
+
+                var detallesById = req.TblRequisicionDetalles.ToDictionary(d => d.IdRequisicionDetalle);
+
+                var resumenEntregas = new List<string>();
+                var resumenCompras = new List<string>();
+
+                foreach (var (idDetalle, cantAprobada) in listaEntregas)
+                {
+                    if (cantAprobada <= 0) continue;
+                    if (!detallesById.TryGetValue(idDetalle, out var d))
+                        return (false, null, "Una de las partidas de entrega no pertenece a la requisición.");
+
+                    var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
+                    if (cantAprobada > cantSolicitada)
+                        return (false, null, $"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
+
+                    var desc = (d.Descripcion ?? "").Trim();
+                    var unidad = (d.UnidadMedida ?? "").Trim();
+                    if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
+                        return (false, null, "Hay partidas sin descripción o unidad de medida.");
+
+                    var inv = await _dbContext.TblInventarios
+                        .FirstOrDefaultAsync(i => i.Descripcion == desc && i.UnidadMedida == unidad);
+                    if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
+                    if (inv.Existencia < cantAprobada)
+                        return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
+
+                    inv.Existencia -= cantAprobada;
+                    _dbContext.TblInventarios.Update(inv);
+
+                    _dbContext.Set<TblMovimientoInventario>().Add(new TblMovimientoInventario
+                    {
+                        IdInventario = inv.Id,
+                        TipoMovimiento = "E",
+                        Cantidad = cantAprobada,
+                        Fecha = DateTime.Now,
+                        Motivo = $"Egreso por procesamiento requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
+                        IdRequisicion = req.IdRequisicion,
+                        IdRequisicionDetalle = d.IdRequisicionDetalle,
+                        IdUsuario = idUsuario,
+                        Anulado = false
+                    });
+
+                    resumenEntregas.Add($"{desc} x{cantAprobada}");
+
+                    if (comprasSet.Contains(idDetalle))
+                        d.IdEstatus = ESTATUS_EN_COMPRA;
+                    else
+                        d.IdEstatus = ESTATUS_ENTREGADO;
+                }
+
+                foreach (var (idDetalle, cantComprar) in listaCompras)
+                {
+                    if (!detallesById.TryGetValue(idDetalle, out var d))
+                        return (false, null, "Una de las partidas de compra no pertenece a la requisición.");
+
+                    d.IdEstatus = ESTATUS_EN_COMPRA;
+                    resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
+                }
+
+                req.IdEstatus = ESTATUS_AUTORIZADA_PARCIAL;
+                req.FechaModificacion = DateTime.Now;
+                _dbContext.TblRequisicions.Update(req);
+
+                var obsBuilder = new StringBuilder("Almacén procesó requisición.");
+                if (resumenEntregas.Count > 0)
+                {
+                    obsBuilder.Append(" Entregados: ");
+                    obsBuilder.Append(string.Join(", ", resumenEntregas));
+                    obsBuilder.Append('.');
+                }
+                if (resumenCompras.Count > 0)
+                {
+                    obsBuilder.Append(" Enviados a compra: ");
+                    obsBuilder.Append(string.Join(", ", resumenCompras));
+                    obsBuilder.Append('.');
+                }
+                var observacion = obsBuilder.ToString();
+
+                _dbContext.Set<TblBitacoraEstatus>().Add(new TblBitacoraEstatus
+                {
+                    IdRequisicion = req.IdRequisicion,
+                    IdEstatus = ESTATUS_AUTORIZADA_PARCIAL,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
+                    IdUsuario = idUsuario
+                });
+
+                await _dbContext.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                var msg = $"Requisición {req.NumRequisicion} procesada.";
+                if (resumenEntregas.Count > 0) msg += $" Entregados: {resumenEntregas.Count} material(es).";
+                if (resumenCompras.Count > 0) msg += $" Enviados a compra: {resumenCompras.Count} material(es).";
+
+                return (true, msg, null);
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                return (false, null, "No se pudo procesar la requisición. " + ex.Message);
             }
         }
 

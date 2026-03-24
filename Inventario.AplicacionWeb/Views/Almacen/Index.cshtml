@@ -16,7 +16,8 @@
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
      data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
      data-url-anular-movimiento="@Url.Action("AnularMovimiento", "Almacen")"
-     data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")">
+     data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
+     data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Departamento de Almacén</h1>
@@ -152,6 +153,10 @@
             </div>
         </div>
         <div class="container-formulario filtros-container">
+            <div class="filtro-grupo" style="flex: 2;">
+                <label>Buscar artículo</label>
+                <input type="text" id="filtroBuscarInventario" placeholder="Buscar por descripción de material..." />
+            </div>
             <div class="filtro-grupo filtro-grupo-unidad">
                 <label>Unidad de medida</label>
                 <select id="filtroUnidadMedida" class="filtro-select-almacen">

@@ -144,6 +144,24 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(new { ok, mensaje, error });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> ProcesarRequisicion([FromBody] ProcesarRequisicionRequest request)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+
+            var entregas = (request.Entregas ?? new List<PartidaEntrega>())
+                .Select(e => (e.IdRequisicionDetalle, e.CantidadAprobada));
+
+            var comprasParam = (request.Compras ?? new List<PartidaCompra>())
+                .Select(c => (c.IdRequisicionDetalle, c.CantidadComprar));
+
+            var (ok, mensaje, error) = await _almacenService.ProcesarRequisicion(
+                request.IdRequisicion, userId.Value, entregas, comprasParam);
+            return Json(new { ok, mensaje, error });
+        }
+
         public class IngresoInventarioRequest
         {
             public string? Clave { get; set; }
@@ -180,6 +198,25 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             public int IdMovimiento { get; set; }
             public string? Motivo { get; set; }
+        }
+
+        public class ProcesarRequisicionRequest
+        {
+            public int IdRequisicion { get; set; }
+            public List<PartidaEntrega>? Entregas { get; set; }
+            public List<PartidaCompra>? Compras { get; set; }
+        }
+
+        public class PartidaEntrega
+        {
+            public int IdRequisicionDetalle { get; set; }
+            public int CantidadAprobada { get; set; }
+        }
+
+        public class PartidaCompra
+        {
+            public int IdRequisicionDetalle { get; set; }
+            public int CantidadComprar { get; set; }
         }
     }
 }

@@ -33,5 +33,11 @@ namespace Inventario.BLL.Interfaces
         Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion);
 
         Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
+
+        Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
+            int idRequisicion,
+            int idUsuario,
+            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
+            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras);
     }
 }
