@@ -478,7 +478,8 @@
             articulos: articulos,
             currentIndex: 0,
             lastTipo: null,
-            lastWasChanged: false
+            lastWasChanged: false,
+            omitidos: 0
         });
     }
 
@@ -497,6 +498,9 @@
                 ? '<i class="fa-solid fa-check"></i> Finalizar'
                 : 'Siguiente <i class="fa-solid fa-arrow-right"></i>',
             confirmButtonColor: 'var(--rosa-400)',
+            showDenyButton: true,
+            denyButtonText: '<i class="fa-solid fa-forward"></i> Omitir artículo',
+            denyButtonColor: 'var(--slate-500)',
             showCancelButton: true,
             cancelButtonText: 'Cancelar',
             cancelButtonColor: 'var(--slate-500)',
@@ -528,7 +532,15 @@
                 if (state.currentIndex < state.articulos.length) {
                     mostrarPasoArticulo(state);
                 } else {
-                    finalizarWizard();
+                    finalizarWizard(state);
+                }
+            } else if (result.isDenied) {
+                state.omitidos++;
+                state.currentIndex++;
+                if (state.currentIndex < state.articulos.length) {
+                    mostrarPasoArticulo(state);
+                } else {
+                    finalizarWizard(state);
                 }
             }
         });
@@ -642,15 +654,36 @@
         }
     }
 
-    function finalizarWizard() {
+    function finalizarWizard(state) {
+        var totalArticulos = state.articulos.length;
+        var programados = totalArticulos - state.omitidos;
+
+        if (programados === 0) {
+            Swal.fire({
+                title: 'Sin artículos programados',
+                text: 'Todos los artículos fueron omitidos. La requisición se guardará sin programación.',
+                icon: 'info',
+                iconColor: 'var(--rosa-400)',
+                confirmButtonText: 'Aceptar',
+                confirmButtonColor: 'var(--rosa-400)'
+            }).then(function (r) {
+                if (r.isConfirmed) enviarFormulario();
+            });
+            return;
+        }
+
         var btnC = document.getElementById('btnContinuar');
         var btnG = document.getElementById('btnGuardarFinal');
         if (btnC) btnC.style.display = 'none';
         if (btnG) btnG.style.display = '';
 
+        var mensaje = state.omitidos === 0
+            ? 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.'
+            : programados + ' de ' + totalArticulos + ' artículos fueron programados. ' + state.omitidos + ' artículo(s) omitido(s). Presione "Crear Requisición" para guardar.';
+
         Swal.fire({
             title: 'Programación completada',
-            text: 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.',
+            text: mensaje,
             icon: 'success',
             iconColor: 'var(--rosa-400)',
             confirmButtonText: 'Entendido',
