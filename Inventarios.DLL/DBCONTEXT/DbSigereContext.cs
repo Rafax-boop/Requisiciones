@@ -166,6 +166,7 @@ public partial class DbSigereContext : DbContext
 
             entity.ToTable("TblEstatus");
 
+            entity.Property(e => e.IdEstatus).ValueGeneratedNever();
             entity.Property(e => e.NombreEstatus)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -398,6 +399,10 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.UnidadMedida)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.IdEstatusNavigation).WithMany(p => p.TblRequisicionDetalles)
+                .HasForeignKey(d => d.IdEstatus)
+                .HasConstraintName("FK_TblRequisicionDetalle_TblEstatus");
 
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalles)
                 .HasForeignKey(d => d.IdRequisicion)
