@@ -29,6 +29,8 @@ public partial class TblRequisicionDetalle
 
     public bool? Activo { get; set; }
 
+    public virtual TblEstatus? IdEstatusNavigation { get; set; }
+
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
 
     public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();

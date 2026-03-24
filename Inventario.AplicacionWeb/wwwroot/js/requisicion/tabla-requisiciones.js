@@ -362,7 +362,9 @@
                     timerProgressBar: true
                 }).then(function () { location.reload(); });
             } else {
-                Swal.fire({ icon: 'error', title: 'No se pudo enviar a almacén' });
+                Swal.fire({
+                    icon: 'error', title: 'No se pudo enviar a almacén', text: res.mensaje || 'Error desconocido',
+                    footer: res.detalle || '' });
             }
         });
     };

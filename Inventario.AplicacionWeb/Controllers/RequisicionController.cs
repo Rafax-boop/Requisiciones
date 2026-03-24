@@ -329,9 +329,9 @@ namespace Inventario.AplicacionWeb.Controllers
                 var resultado = await _requisicionService.EnviarAAlmacen(idRequi, idUsuario);
                 return Json(new { success = resultado });
             }
-            catch
+            catch (Exception ex)
             {
-                return Json(new { success = false });
+                return Json(new { success = false, mensaje = ex.Message, detalle = ex.InnerException?.Message });
             }
         }
 
