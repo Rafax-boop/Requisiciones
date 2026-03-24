@@ -10,6 +10,7 @@
     var urlRechazar = container ? container.getAttribute('data-url-rechazar') : '';
     var urlRegistrarIngreso = container ? container.getAttribute('data-url-registrar-ingreso') : '';
     var urlConsultarStock = container ? container.getAttribute('data-url-consultar-stock') : '';
+    var urlProcesarRequisicion = container ? container.getAttribute('data-url-procesar-requisicion') : '';
 
     const tabPanels = document.querySelectorAll('.almacen-tab-panel');
     const tabBtns = document.querySelectorAll('.almacen-tabs-btn');
@@ -175,10 +176,18 @@
     var TAMANO_PAGINA_INVENTARIO = 15;
     var paginaInventarioActual = 1;
 
+    var filtroBuscarInventario = document.getElementById('filtroBuscarInventario');
+    if (filtroBuscarInventario) filtroBuscarInventario.addEventListener('input', filtrarTablaInventario);
+
     function getFilasInventarioVisibles() {
         var unidad = ($('#filtroUnidadMedida').val() || '').toString().trim();
+        var texto = (filtroBuscarInventario ? filtroBuscarInventario.value : '').toLowerCase().trim();
         var filas = tbodyInv ? [].slice.call(tbodyInv.querySelectorAll('tr[data-unidad]')) : [];
-        return unidad ? filas.filter(function (tr) { return (tr.getAttribute('data-unidad') || '').trim() === unidad; }) : filas;
+        return filas.filter(function (tr) {
+            var matchUnidad = !unidad || (tr.getAttribute('data-unidad') || '').trim() === unidad;
+            var matchTexto = !texto || (tr.textContent || '').toLowerCase().includes(texto);
+            return matchUnidad && matchTexto;
+        });
     }
 
     function aplicarPaginacionInventario() {
@@ -340,7 +349,7 @@
             html += '</div>';
 
             html += '<div class="table-responsive-container">';
-            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Solicitado</th><th>Unidad</th><th>Stock</th><th>Aprobar</th><th>Detalle</th></tr></thead><tbody>';
+            html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Solicitado</th><th>Unidad</th><th>Stock</th><th>Entregar</th><th>Comprar</th><th>Cant. Compra</th><th>Detalle</th></tr></thead><tbody>';
             articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || '';
                 var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + '…' : (textoCompleto || 'Sin descripción...');
@@ -366,17 +375,34 @@
                     }
                 }
 
+                var faltante = cantSolicitada - valorInput;
+                var cantCompraDefault = faltante > 0 ? faltante : '';
+
                 html += '<tr>';
                 html += '<td>' + (a.descripcion || '') + '</td>';
                 html += '<td style="text-align:center;font-weight:600;">' + cantSolicitada + '</td>';
                 html += '<td>' + (a.unidadMedida || '') + '</td>';
                 html += '<td>' + buildStockBadge(info, cantSolicitada) + '</td>';
                 html += '<td><input type="number" class="' + inputClass + '" min="0" step="1" value="' + valorInput + '" max="' + maxVal + '" data-detalle="' + idDetalle + '" data-stock="' + (info ? info.stockDisponible : 0) + '" style="width:90px; padding:8px 10px;"' + inputDisabled + ' /></td>';
+                html += '<td style="text-align:center"><input type="checkbox" class="almacen-chk-compra" data-detalle="' + idDetalle + '" style="width:18px;height:18px;cursor:pointer;" /></td>';
+                html += '<td><input type="number" class="input-app almacen-cant-compra" min="1" step="1" value="' + cantCompraDefault + '" data-detalle="' + idDetalle + '" style="width:90px; padding:8px 10px;" disabled /></td>';
                 html += '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)"><span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + '</span><i class="fa-solid fa-eye desc-icon"></i></div></td></tr>';
             });
             html += '</tbody></table>';
             html += '</div>';
             modalBody.innerHTML = html;
+
+            modalBody.querySelectorAll('.almacen-chk-compra').forEach(function (chk) {
+                chk.addEventListener('change', function () {
+                    var detId = this.getAttribute('data-detalle');
+                    var cantInput = modalBody.querySelector('.almacen-cant-compra[data-detalle="' + detId + '"]');
+                    if (cantInput) {
+                        cantInput.disabled = !this.checked;
+                        if (!this.checked) cantInput.value = '';
+                    }
+                });
+            });
+
             actualizarBotonCompleta();
         } else if (i === 1) {
             var r = reqCompleta;
@@ -482,62 +508,78 @@
             });
         }
 
-        /* ---- APROBAR PARCIAL ---- */
+        /* ---- APROBAR PARCIAL / PROCESAR ---- */
         if (btnParcial) {
-            if (!urlAprobarParcial) { swalError('URL de aprobación parcial no configurada.'); return; }
+            if (!urlProcesarRequisicion) { swalError('URL de procesamiento no configurada.'); return; }
 
-            var inputs = document.querySelectorAll('.almacen-aprob-cant[data-detalle]');
-            var partidas = [];
+            var inputsEntrega = document.querySelectorAll('.almacen-aprob-cant[data-detalle]');
+            var entregas = [];
+            var comprasArr = [];
             var invalido = false;
             var errorMsg = '';
-            inputs.forEach(function (inp) {
+
+            inputsEntrega.forEach(function (inp) {
                 var idDetalle = parseInt(inp.getAttribute('data-detalle'), 10);
                 var val = parseInt((inp.value || '0'), 10);
                 var max = parseInt((inp.getAttribute('max') || '0'), 10);
                 var stockDisp = parseInt((inp.getAttribute('data-stock') || '0'), 10);
-                if (isNaN(val) || val < 0) { invalido = true; errorMsg = 'Las cantidades no pueden ser negativas.'; return; }
+                if (isNaN(val) || val < 0) { invalido = true; errorMsg = 'Las cantidades de entrega no pueden ser negativas.'; return; }
                 if (idDetalle > 0 && val > 0) {
                     if (!isNaN(max) && max > 0 && val > max) {
                         invalido = true;
-                        errorMsg = 'Una cantidad aprobada excede la solicitada.';
+                        errorMsg = 'Una cantidad de entrega excede la solicitada.';
                         return;
                     }
                     if (val > stockDisp) {
                         invalido = true;
-                        errorMsg = 'La cantidad aprobada (' + val + ') excede el stock disponible (' + stockDisp + ').';
+                        errorMsg = 'La cantidad de entrega (' + val + ') excede el stock disponible (' + stockDisp + ').';
                         return;
                     }
-                    partidas.push({ idRequisicionDetalle: idDetalle, cantidadAprobada: val });
+                    entregas.push({ idRequisicionDetalle: idDetalle, cantidadAprobada: val });
                 }
             });
+
+            var chksCompra = document.querySelectorAll('.almacen-chk-compra:checked');
+            chksCompra.forEach(function (chk) {
+                var idDetalle = parseInt(chk.getAttribute('data-detalle'), 10);
+                var cantInput = document.querySelector('.almacen-cant-compra[data-detalle="' + idDetalle + '"]');
+                var cantVal = cantInput ? parseInt((cantInput.value || '0'), 10) : 0;
+                if (cantVal <= 0) { invalido = true; errorMsg = 'Ingrese la cantidad a comprar para todos los artículos marcados.'; return; }
+                comprasArr.push({ idRequisicionDetalle: idDetalle, cantidadComprar: cantVal });
+            });
+
             if (invalido) { swalWarning(errorMsg); return; }
-            if (partidas.length === 0) { swalWarning('Capture al menos una cantidad aprobada mayor a 0.'); return; }
+            if (entregas.length === 0 && comprasArr.length === 0) { swalWarning('Debe indicar al menos una entrega o marcar al menos un artículo para compra.'); return; }
+
+            var textoConfirm = '';
+            if (entregas.length > 0) textoConfirm += entregas.length + ' material(es) se entregarán del stock. ';
+            if (comprasArr.length > 0) textoConfirm += comprasArr.length + ' material(es) se enviarán a compra. ';
+            textoConfirm += '¿Desea continuar?';
 
             swalConfirmar(
-                'Aprobar parcial',
-                'Se descontará del inventario solo las cantidades especificadas. ¿Desea continuar?',
-                'Sí, aprobar parcial'
+                'Procesar requisición',
+                textoConfirm,
+                'Sí, procesar'
             ).then(function (result) {
                 if (!result.isConfirmed) return;
 
-                Swal.fire({ title: 'Procesando...', text: 'Aplicando egreso parcial de inventario...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+                Swal.fire({ title: 'Procesando...', text: 'Procesando requisición...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
 
-                postJson(urlAprobarParcial, { idRequisicion: reqActualId, partidas: partidas })
+                postJson(urlProcesarRequisicion, { idRequisicion: reqActualId, entregas: entregas, compras: comprasArr })
                     .then(function (r) {
                         if (r.ok) {
                             cerrarModalAlmacen();
-                            var iconType = (r.mensaje && r.mensaje.toLowerCase().indexOf('faltante') >= 0) ? 'warning' : 'success';
                             Swal.fire({
-                                icon: iconType,
-                                title: iconType === 'warning' ? 'Aprobada parcial con faltantes' : '¡Aprobada parcial!',
-                                html: '<p>' + (r.mensaje || 'Requisición autorizada parcial.') + '</p>',
+                                icon: 'success',
+                                title: '¡Requisición procesada!',
+                                html: '<p>' + (r.mensaje || 'Requisición procesada correctamente.') + '</p>',
                                 confirmButtonColor: '#e11d48'
                             }).then(function () { location.reload(); });
                         } else {
-                            swalError(r.error || 'No se pudo aprobar parcial.');
+                            swalError(r.error || 'No se pudo procesar la requisición.');
                         }
                     })
-                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo aprobar parcial.'); });
+                    .catch(function (err) { swalError(typeof err === 'string' ? err : 'No se pudo procesar la requisición.'); });
             });
         }
 
