@@ -71,7 +71,11 @@
             <div class="seccion-completa">
                 <div class="formulario-input">
                     <label>Lugar de entrega:</label>
-                    <input type="text" name="LugarEntrega" placeholder="Dirección o área de entrega" readonly value="ALMACEN GENERAL"/>
+                    <select id="tipoServicio" name="LugarEntrega" class="select2" style="width:100%" required>
+                        <option value="">-- Seleccionar tipo --</option>
+                        <option value="ALMACEN GENERAL">ALMACEN GENERAL</option>
+                        <option value="CASA DE ASISTENCIA">CASA DE ASISTENCIA</option>
+                    </select>
                 </div>
                 <div class="formulario-input">
                     <label>Uso específico del material:</label>

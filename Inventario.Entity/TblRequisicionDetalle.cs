@@ -25,7 +25,11 @@ public partial class TblRequisicionDetalle
 
     public int? CogEditable { get; set; }
 
+    public int? IdEstatus { get; set; }
+
     public bool? Activo { get; set; }
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
+
+    public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
 }

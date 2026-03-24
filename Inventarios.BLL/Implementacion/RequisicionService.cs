@@ -20,6 +20,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblDepartamento> _repositoryDepartamento;
         private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
+        private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
 
         public RequisicionService(
             IRequisicionRepository repositoryRequisicion,
@@ -27,7 +28,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblBitacoraEstatus> repositoryBitacora,
             IGenericRepository<TblDepartamento> repositoryDepartamento,
             IGenericRepository<TblEstatus> repositoryEstatus,
-            IGenericRepository<TblRegistroDiseno> repositoryDisenos
+            IGenericRepository<TblRegistroDiseno> repositoryDisenos,
+            IGenericRepository<TblArticulosProgramado> repositoryProgramacion
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -36,6 +38,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryDepartamento = repositoryDepartamento;
             _repositoryEstatus = repositoryEstatus;
             _repositoryDisenos = repositoryDisenos;
+            _repositoryProgramacion = repositoryProgramacion;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -92,6 +95,42 @@ namespace Inventario.BLL.Implementacion
             }
 
             await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
+
+            // Guardar programación si algún artículo la trae
+            var listaProgramacion = new List<TblArticulosProgramado>();
+
+            for (int i = 0; i < modelo.Articulos.Count; i++)
+            {
+                var item = modelo.Articulos[i];
+
+                if (string.IsNullOrEmpty(item.TipoProgramacion)) continue;
+
+                var detalle = listaArticulos[i]; // ← mismo índice, siempre correcto
+
+                var prog = new TblArticulosProgramado
+                {
+                    IdRequisicion = requiCreada.IdRequisicion,
+                    IdRequisicionDetalle = detalle.IdRequisicionDetalle,
+                    IdArticulo = item.IdArticulo,
+                    TipoProgramacion = item.TipoProgramacion,
+                    Llenado1 = item.Llenado1,
+                    Llenado2 = item.Llenado2,
+                    Llenado3 = item.Llenado3,
+                    Llenado4 = item.Llenado4,
+                    Llenado5 = item.TipoProgramacion == "anual" ? item.Llenado5 : null,
+                    Llenado6 = item.TipoProgramacion == "anual" ? item.Llenado6 : null,
+                    Llenado7 = item.TipoProgramacion == "anual" ? item.Llenado7 : null,
+                    Llenado8 = item.TipoProgramacion == "anual" ? item.Llenado8 : null,
+                    Llenado9 = item.TipoProgramacion == "anual" ? item.Llenado9 : null,
+                    Llenado10 = item.TipoProgramacion == "anual" ? item.Llenado10 : null,
+                    Llenado11 = item.TipoProgramacion == "anual" ? item.Llenado11 : null,
+                    Llenado12 = item.TipoProgramacion == "anual" ? item.Llenado12 : null,
+                };
+                listaProgramacion.Add(prog);
+            }
+
+            if (listaProgramacion.Any())
+                await _repositoryProgramacion.CrearRango(listaProgramacion);
 
             return requiCreada;
         }

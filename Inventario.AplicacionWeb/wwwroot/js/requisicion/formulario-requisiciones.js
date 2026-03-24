@@ -8,6 +8,7 @@
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
     var contadorArticulos = 0;
+    var programacionWizard = {}
     let archivosSeleccionados = [];
 
     // Tipos permitidos
@@ -134,7 +135,7 @@
             };
             reader.readAsDataURL(file);
         });
-    }
+    }    
 
     function cargarArticuloExistente(art) {
         var index = contadorArticulos++;
@@ -526,6 +527,19 @@
         }).then(function (result) {
             if (result.isConfirmed) {
                 var chosen = result.value.tipo;
+
+                var $row = $('#tablaArticulos tbody tr').eq(state.currentIndex);
+                var idArticulo = $row.find('.select-articulo').val();
+
+                // ← NUEVO: guardar distribución de este artículo
+                var valores = [];
+                document.querySelectorAll('.wizard-periodo-input').forEach(function (inp) {
+                    valores.push(parseInt(inp.value) || 0);
+                });
+                programacionWizard[idArticulo] = {
+                    tipo: chosen,
+                    llenos: valores
+                };
                 state.lastWasChanged = preseleccionado !== null && chosen !== preseleccionado;
                 state.lastTipo = chosen;
                 state.currentIndex++;
@@ -654,36 +668,47 @@
         }
     }
 
-    function finalizarWizard(state) {
-        var totalArticulos = state.articulos.length;
-        var programados = totalArticulos - state.omitidos;
+    function serializarProgramacion() {
+        // Elimina inputs previos
+        document.querySelectorAll('.wizard-hidden-prog').forEach(function (el) { el.remove(); });
 
-        if (programados === 0) {
-            Swal.fire({
-                title: 'Sin artículos programados',
-                text: 'Todos los artículos fueron omitidos. La requisición se guardará sin programación.',
-                icon: 'info',
-                iconColor: 'var(--rosa-400)',
-                confirmButtonText: 'Aceptar',
-                confirmButtonColor: 'var(--rosa-400)'
-            }).then(function (r) {
-                if (r.isConfirmed) enviarFormulario();
-            });
-            return;
-        }
+        var form = document.querySelector('form');
+        $('#tablaArticulos tbody tr').each(function (i) {
+            var $row = $(this);
+            var idArticulo = $row.find('.select-articulo').val();
+            if (!idArticulo) return;
+
+            var prog = programacionWizard[idArticulo];
+            if (!prog) return;
+
+            function addHidden(name, value) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = name;
+                inp.value = value !== null && value !== undefined ? value : '';
+                inp.className = 'wizard-hidden-prog';
+                form.appendChild(inp);
+            }
+
+            addHidden('Articulos[' + i + '].TipoProgramacion', prog.tipo);
+            for (var j = 0; j < prog.llenos.length; j++) {
+                addHidden('Articulos[' + i + '].Llenado' + (j + 1), prog.llenos[j]);
+            }
+        });
+    }
+
+    function finalizarWizard(state) {
+        reindexarArticulos();        // ← asegura índices correctos
+        serializarProgramacion();    // ← inyecta los hidden
 
         var btnC = document.getElementById('btnContinuar');
         var btnG = document.getElementById('btnGuardarFinal');
         if (btnC) btnC.style.display = 'none';
         if (btnG) btnG.style.display = '';
 
-        var mensaje = state.omitidos === 0
-            ? 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.'
-            : programados + ' de ' + totalArticulos + ' artículos fueron programados. ' + state.omitidos + ' artículo(s) omitido(s). Presione "Crear Requisición" para guardar.';
-
         Swal.fire({
             title: 'Programación completada',
-            text: mensaje,
+            text: 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.',
             icon: 'success',
             iconColor: 'var(--rosa-400)',
             confirmButtonText: 'Entendido',

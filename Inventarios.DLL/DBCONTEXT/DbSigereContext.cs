@@ -18,6 +18,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblArticulo> TblArticulos { get; set; }
 
+    public virtual DbSet<TblArticulosProgramado> TblArticulosProgramados { get; set; }
+
     public virtual DbSet<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; }
 
     public virtual DbSet<TblDepartamento> TblDepartamentos { get; set; }
@@ -25,8 +27,6 @@ public partial class DbSigereContext : DbContext
     public virtual DbSet<TblEstatus> TblEstatuses { get; set; }
 
     public virtual DbSet<TblInventario> TblInventarios { get; set; }
-
-    public virtual DbSet<TblMovimientoInventario> TblMovimientoInventarios { get; set; }
 
     public virtual DbSet<TblMunicipio> TblMunicipios { get; set; }
 
@@ -72,6 +72,39 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(1)
                 .IsUnicode(false);
             entity.Property(e => e.UnidadMedida).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<TblArticulosProgramado>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TblArtic__3214EC075D80BFDB");
+
+            entity.Property(e => e.Llenado1).HasDefaultValue(0);
+            entity.Property(e => e.Llenado10).HasDefaultValue(0);
+            entity.Property(e => e.Llenado11).HasDefaultValue(0);
+            entity.Property(e => e.Llenado12).HasDefaultValue(0);
+            entity.Property(e => e.Llenado2).HasDefaultValue(0);
+            entity.Property(e => e.Llenado3).HasDefaultValue(0);
+            entity.Property(e => e.Llenado4).HasDefaultValue(0);
+            entity.Property(e => e.Llenado5).HasDefaultValue(0);
+            entity.Property(e => e.Llenado6).HasDefaultValue(0);
+            entity.Property(e => e.Llenado7).HasDefaultValue(0);
+            entity.Property(e => e.Llenado8).HasDefaultValue(0);
+            entity.Property(e => e.Llenado9).HasDefaultValue(0);
+            entity.Property(e => e.TipoProgramacion)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdArticuloNavigation).WithMany(p => p.TblArticulosProgramados)
+                .HasForeignKey(d => d.IdArticulo)
+                .HasConstraintName("FK_TblArticulosProgramados_tblArticulos");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblArticulosProgramados)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblArticulosProgramados_tblRequisicion");
+
+            entity.HasOne(d => d.IdRequisicionDetalleNavigation).WithMany(p => p.TblArticulosProgramados)
+                .HasForeignKey(d => d.IdRequisicionDetalle)
+                .HasConstraintName("FK_TblArticulosProgramados_TblRequisicionDetalle");
         });
 
         modelBuilder.Entity<TblBitacoraEstatus>(entity =>
@@ -151,28 +184,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Iva).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Total).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.UnidadMedida).HasMaxLength(15);
-        });
-
-        modelBuilder.Entity<TblMovimientoInventario>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_TblMovimientoInventario");
-
-            entity.ToTable("TblMovimientoInventario");
-
-            entity.Property(e => e.TipoMovimiento)
-                .HasMaxLength(1)
-                .IsUnicode(false);
-
-            entity.Property(e => e.Fecha).HasColumnType("datetime");
-
-            entity.Property(e => e.Motivo).HasMaxLength(1000);
-
-            entity.Property(e => e.MotivoAnulacion).HasMaxLength(1000);
-
-            entity.HasOne(d => d.IdInventarioNavigation).WithMany()
-                .HasForeignKey(d => d.IdInventario)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_TblMovimientoInventario_tblInventario");
         });
 
         modelBuilder.Entity<TblMunicipio>(entity =>

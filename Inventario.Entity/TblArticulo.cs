@@ -28,4 +28,6 @@ public partial class TblArticulo
     public int? Maximo { get; set; }
 
     public int? Estatus { get; set; }
+
+    public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
 }
