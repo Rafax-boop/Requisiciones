@@ -56,6 +56,8 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var vm = _mapper.Map<VMRequiForm>(dto);
 
+            ViewBag.UsaFlujoContinuar = true;
+
             return View(vm);
         }
 

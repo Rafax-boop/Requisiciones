@@ -182,9 +182,19 @@
 
         <div class="container-formulario mt-4">
             <div class="seccion-completa text-center">
-                <button type="submit" class="btn boton-rosa btn-lg">
-                    @(modoEdicion ? "Guardar cambios" : "Crear Requisición")
-                </button>
+                @if (modoEdicion)
+                {
+                    <button type="submit" class="btn boton-rosa btn-lg">Guardar cambios</button>
+                }
+                else
+                {
+                    <button type="button" class="btn boton-rosa btn-lg" id="btnContinuar">
+                        Continuar <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <button type="submit" class="btn boton-rosa btn-lg" id="btnGuardarFinal" style="display:none;">
+                        Crear Requisición
+                    </button>
+                }
             </div>
         </div>
     </form>

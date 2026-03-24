@@ -888,6 +888,146 @@
 }
 
 /* ══════════════════════════════════════════════
+   WIZARD DE PROGRAMACIÓN
+══════════════════════════════════════════════ */
+.swal2-popup.wizard-popup {
+  max-width: 1200px !important;
+}
+
+.wizard-paso {
+  text-align: left;
+}
+
+.wizard-tipo-grupo {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.wizard-tipo-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: 2px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate-500);
+  background: var(--slate-50);
+  transition: all 0.25s ease;
+}
+
+.wizard-tipo-btn:hover {
+  border-color: var(--rosa-200);
+  background: white;
+}
+
+.wizard-tipo-btn.activo {
+  border-color: var(--rosa-400);
+  background: var(--rosa-50);
+  color: var(--rosa-500);
+  box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+}
+
+.wizard-tipo-btn input[type="radio"] {
+  display: none;
+}
+
+.wizard-info-cantidad {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--slate-600);
+  margin-bottom: 16px;
+}
+
+.wizard-info-cantidad strong {
+  color: var(--rosa-500);
+  font-size: 16px;
+}
+
+.wizard-tabla-scroll {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--slate-200);
+}
+
+.wizard-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 580px;
+}
+
+.wizard-tabla th {
+  padding: 10px 10px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--rosa-500);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--rosa-50), white);
+  border-bottom: 2px solid var(--rosa-100);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.wizard-tabla td {
+  padding: 10px 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--slate-600);
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.wizard-desc-cell {
+  text-align: left !important;
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.wizard-periodo-input {
+  width: 58px;
+  padding: 6px 4px;
+  text-align: center;
+  border: 1.5px solid var(--slate-200);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-700);
+  background: var(--slate-50);
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.wizard-periodo-input:focus {
+  border-color: var(--rosa-400);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+}
+
+.wizard-total-cell strong {
+  color: var(--rosa-500);
+  font-size: 15px;
+}
+
+.wizard-placeholder {
+  text-align: center;
+  color: var(--slate-400);
+  font-style: italic;
+  padding: 24px;
+  font-family: var(--font-body);
+}
+
+/* ══════════════════════════════════════════════
    VISOR DE IMÁGENES (LIGHTBOX)
 ══════════════════════════════════════════════ */
 .visor-imagenes-overlay {

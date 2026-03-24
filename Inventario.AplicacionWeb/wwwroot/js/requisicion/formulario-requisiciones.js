@@ -4,6 +4,7 @@
     var urlObtenerInfoArticulo = container ? container.getAttribute('data-url-obtener-info-articulo') : '';
     var esMensual = container ? container.getAttribute('data-tipo-requisicion') === 'mensual' : false;
     var esServicio = container ? container.getAttribute('data-tipo-requisicion') === 'servicio' : false;
+    var flujoContinuar = !!document.getElementById('btnContinuar');
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
     var contadorArticulos = 0;
@@ -305,7 +306,7 @@
         }
     });
 
-    $('form').on('submit', function (e) {
+    function reindexarArticulos() {
         $('#tablaArticulos tbody tr').each(function (nuevoIndex) {
             $(this).find('[name]').each(function () {
                 var name = $(this).attr('name');
@@ -314,7 +315,10 @@
                 }
             });
         });
+    }
 
+    function validarFormulario() {
+        reindexarArticulos();
         var valido = true;
         var mensajes = [];
 
@@ -346,28 +350,37 @@
         if (esServicio) {
             var tipoServicio = $('[name="TipoServicio"]').val();
             var fechaServicio = $('[name="FechaServicio"]').val();
-
-            if (!tipoServicio) {
-                valido = false;
-                mensajes.push('Debe seleccionar un tipo de servicio.');
-            }
-            if (!fechaServicio) {
-                valido = false;
-                mensajes.push('Debe seleccionar la fecha de prestación del servicio.');
-            }
+            if (!tipoServicio) { valido = false; mensajes.push('Debe seleccionar un tipo de servicio.'); }
+            if (!fechaServicio) { valido = false; mensajes.push('Debe seleccionar la fecha de prestación del servicio.'); }
         }
 
-        if (!valido) {
+        return { valido: valido, mensajes: mensajes };
+    }
+
+    function mostrarErroresValidacion(mensajes) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Campos incompletos',
+                html: '<ul style="text-align:left;">' + mensajes.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul>',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: 'var(--rosa-400)'
+            });
+        }
+    }
+
+    function enviarFormulario() {
+        var loader = document.getElementById('page-loader');
+        if (loader) loader.classList.remove('oculto');
+        document.querySelector('form').submit();
+    }
+
+    $('form').on('submit', function (e) {
+        var resultado = validarFormulario();
+
+        if (!resultado.valido) {
             e.preventDefault();
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Campos incompletos',
-                    html: '<ul style="text-align:left;">' + mensajes.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul>',
-                    confirmButtonText: 'Entendido',
-                    confirmButtonColor: 'var(--rosa-400)'
-                });
-            }
+            mostrarErroresValidacion(resultado.mensajes);
             return;
         }
 
@@ -384,7 +397,7 @@
                 cancelButtonColor: 'var(--slate-500)',
                 confirmButtonText: 'Sí, guardar',
                 cancelButtonText: 'No, cancelar'
-            }).then((result) => {
+            }).then(function (result) {
                 if (result.isConfirmed) {
                     var loader = document.getElementById('page-loader');
                     if (loader) loader.classList.remove('oculto');
@@ -395,6 +408,255 @@
             form.submit();
         }
     });
+
+    // ═══════════════════════════════════════════
+    //  WIZARD DE PROGRAMACIÓN (flujo "Continuar")
+    // ═══════════════════════════════════════════
+
+    if (flujoContinuar) {
+        var btnContinuar = document.getElementById('btnContinuar');
+        var btnGuardarFinal = document.getElementById('btnGuardarFinal');
+
+        if (btnContinuar) {
+            btnContinuar.addEventListener('click', function () {
+                var resultado = validarFormulario();
+                if (!resultado.valido) {
+                    mostrarErroresValidacion(resultado.mensajes);
+                    return;
+                }
+
+                Swal.fire({
+                    title: '¿Programar requisición?',
+                    icon: 'question',
+                    iconColor: 'var(--rosa-400)',
+                    showDenyButton: true,
+                    showCancelButton: false,
+                    confirmButtonText: 'Sí',
+                    denyButtonText: 'No',
+                    confirmButtonColor: 'var(--rosa-400)',
+                    denyButtonColor: 'var(--slate-500)'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        iniciarWizardProgramacion();
+                    } else if (result.isDenied) {
+                        Swal.fire({
+                            title: 'Se guardará la requisición',
+                            text: 'La requisición se guardará sin programación.',
+                            icon: 'info',
+                            iconColor: 'var(--rosa-400)',
+                            confirmButtonText: 'Aceptar',
+                            confirmButtonColor: 'var(--rosa-400)'
+                        }).then(function (r) {
+                            if (r.isConfirmed) enviarFormulario();
+                        });
+                    }
+                });
+            });
+        }
+    }
+
+    function obtenerSnapshotArticulos() {
+        var articulos = [];
+        $('#tablaArticulos tbody tr').each(function (i) {
+            var $row = $(this);
+            var idx = $row.data('index');
+            articulos.push({
+                numero: i + 1,
+                idArticulo: $row.find('.select-articulo').val(),
+                descripcionDetallada: $row.find('.desc-hidden').val() || 'Sin descripción',
+                unidadMedida: $row.find('.unidad-hidden-' + idx).val() || $row.find('.unidad-' + idx).text().trim() || '-',
+                cantidad: parseFloat($row.find('.cantidad-input').val()) || 0
+            });
+        });
+        return articulos;
+    }
+
+    function iniciarWizardProgramacion() {
+        var articulos = obtenerSnapshotArticulos();
+        if (articulos.length === 0) return;
+        mostrarPasoArticulo({
+            articulos: articulos,
+            currentIndex: 0,
+            lastTipo: null,
+            lastWasChanged: false
+        });
+    }
+
+    function mostrarPasoArticulo(state) {
+        var art = state.articulos[state.currentIndex];
+        var esUltimo = state.currentIndex === state.articulos.length - 1;
+        var preseleccionado = (state.lastTipo && !state.lastWasChanged) ? state.lastTipo : null;
+        var html = construirHtmlPaso(art, preseleccionado);
+
+        Swal.fire({
+            title: 'Artículo ' + art.numero + ' de ' + state.articulos.length,
+            html: html,
+            width: '95%',
+            customClass: { popup: 'wizard-popup' },
+            confirmButtonText: esUltimo
+                ? '<i class="fa-solid fa-check"></i> Finalizar'
+                : 'Siguiente <i class="fa-solid fa-arrow-right"></i>',
+            confirmButtonColor: 'var(--rosa-400)',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            cancelButtonColor: 'var(--slate-500)',
+            allowOutsideClick: false,
+            didOpen: function () {
+                configurarEventosPaso(art);
+            },
+            preConfirm: function () {
+                var tipoSel = document.querySelector('input[name="wizardTipo"]:checked');
+                if (!tipoSel) {
+                    Swal.showValidationMessage('Debe seleccionar Mensual o Anual');
+                    return false;
+                }
+                var total = calcularTotalPaso();
+                if (Math.abs(total - art.cantidad) > 0.01) {
+                    Swal.showValidationMessage(
+                        'El total (' + total + ') debe ser igual a la cantidad requerida (' + art.cantidad + ')'
+                    );
+                    return false;
+                }
+                return { tipo: tipoSel.value };
+            }
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                var chosen = result.value.tipo;
+                state.lastWasChanged = preseleccionado !== null && chosen !== preseleccionado;
+                state.lastTipo = chosen;
+                state.currentIndex++;
+                if (state.currentIndex < state.articulos.length) {
+                    mostrarPasoArticulo(state);
+                } else {
+                    finalizarWizard();
+                }
+            }
+        });
+    }
+
+    function construirHtmlPaso(art, preseleccionado) {
+        var h = '<div class="wizard-paso">';
+
+        h += '<div class="wizard-tipo-grupo">';
+        h += '<label class="wizard-tipo-btn' + (preseleccionado === 'mensual' ? ' activo' : '') + '">';
+        h += '<input type="radio" name="wizardTipo" value="mensual"' + (preseleccionado === 'mensual' ? ' checked' : '') + '>';
+        h += '<span>Mensual</span></label>';
+        h += '<label class="wizard-tipo-btn' + (preseleccionado === 'anual' ? ' activo' : '') + '">';
+        h += '<input type="radio" name="wizardTipo" value="anual"' + (preseleccionado === 'anual' ? ' checked' : '') + '>';
+        h += '<span>Anual</span></label>';
+        h += '</div>';
+
+        h += '<div class="wizard-info-cantidad">Cantidad requerida: <strong>' + art.cantidad + '</strong></div>';
+
+        h += '<div id="wizardTablaContainer" data-cantidad-requerida="' + art.cantidad + '">';
+        if (preseleccionado) {
+            h += generarTablaDistribucion(art, preseleccionado);
+        } else {
+            h += '<p class="wizard-placeholder">Seleccione el tipo de distribución para continuar</p>';
+        }
+        h += '</div>';
+
+        h += '</div>';
+        return h;
+    }
+
+    function generarTablaDistribucion(art, tipo) {
+        var encabezados, claves;
+        if (tipo === 'mensual') {
+            encabezados = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+            claves = ['sem1', 'sem2', 'sem3', 'sem4'];
+        } else {
+            encabezados = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            claves = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        }
+
+        var h = '<div class="wizard-tabla-scroll"><table class="wizard-tabla">';
+        h += '<thead><tr><th>No.</th><th>Descripción Detallada</th><th>Unidad</th>';
+        for (var i = 0; i < encabezados.length; i++) h += '<th>' + encabezados[i] + '</th>';
+        h += '<th>Total</th></tr></thead>';
+
+        var descCorta = art.descripcionDetallada.length > 80
+            ? art.descripcionDetallada.substring(0, 80) + '…'
+            : art.descripcionDetallada;
+
+        h += '<tbody><tr>';
+        h += '<td>' + art.numero + '</td>';
+        h += '<td class="wizard-desc-cell">' + escapeHtmlWizard(descCorta) + '</td>';
+        h += '<td>' + escapeHtmlWizard(art.unidadMedida) + '</td>';
+        for (var j = 0; j < claves.length; j++) {
+            h += '<td><input type="number" class="wizard-periodo-input" data-clave="' + claves[j] + '" min="0" step="1" value="0"></td>';
+        }
+        h += '<td class="wizard-total-cell"><strong>0 / ' + art.cantidad + '</strong></td>';
+        h += '</tr></tbody></table></div>';
+        return h;
+    }
+
+    function escapeHtmlWizard(str) {
+        if (!str) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    function configurarEventosPaso(art) {
+        document.querySelectorAll('input[name="wizardTipo"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.wizard-tipo-btn').forEach(function (btn) {
+                    btn.classList.remove('activo');
+                });
+                this.closest('.wizard-tipo-btn').classList.add('activo');
+                actualizarTablaPaso(art, this.value);
+            });
+        });
+        document.querySelectorAll('.wizard-periodo-input').forEach(function (input) {
+            input.addEventListener('input', calcularYMostrarTotal);
+        });
+    }
+
+    function actualizarTablaPaso(art, tipo) {
+        var cont = document.getElementById('wizardTablaContainer');
+        if (!cont) return;
+        cont.setAttribute('data-cantidad-requerida', art.cantidad);
+        cont.innerHTML = generarTablaDistribucion(art, tipo);
+        cont.querySelectorAll('.wizard-periodo-input').forEach(function (input) {
+            input.addEventListener('input', calcularYMostrarTotal);
+        });
+    }
+
+    function calcularTotalPaso() {
+        var total = 0;
+        document.querySelectorAll('.wizard-periodo-input').forEach(function (input) {
+            total += parseFloat(input.value) || 0;
+        });
+        return total;
+    }
+
+    function calcularYMostrarTotal() {
+        var total = calcularTotalPaso();
+        var cont = document.getElementById('wizardTablaContainer');
+        var requerida = cont ? parseFloat(cont.getAttribute('data-cantidad-requerida')) || 0 : 0;
+        var celda = document.querySelector('.wizard-total-cell strong');
+        if (celda) {
+            celda.textContent = total + ' / ' + requerida;
+            celda.style.color = Math.abs(total - requerida) < 0.01 ? '#22c55e' : '#ef4444';
+        }
+    }
+
+    function finalizarWizard() {
+        var btnC = document.getElementById('btnContinuar');
+        var btnG = document.getElementById('btnGuardarFinal');
+        if (btnC) btnC.style.display = 'none';
+        if (btnG) btnG.style.display = '';
+
+        Swal.fire({
+            title: 'Programación completada',
+            text: 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.',
+            icon: 'success',
+            iconColor: 'var(--rosa-400)',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: 'var(--rosa-400)'
+        });
+    }
 
     window.eliminarFotoExistente = function (idFoto) {
         Swal.fire({
