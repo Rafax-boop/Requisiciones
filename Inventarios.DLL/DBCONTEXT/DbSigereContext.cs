@@ -410,10 +410,6 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdRequisicion)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblRequisicionDetalle_tblRequisicion");
-
-            entity.HasOne(d => d.IdEstatusNavigation).WithMany()
-                .HasForeignKey(d => d.IdEstatus)
-                .HasConstraintName("FK_TblRequisicionDetalle_TblEstatus");
         });
 
         modelBuilder.Entity<TblRol>(entity =>
