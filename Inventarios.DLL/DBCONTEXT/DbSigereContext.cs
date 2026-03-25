@@ -170,6 +170,8 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NombreEstatus)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            // Columna en BD: Actvio (typo histórico)
+            entity.Property(e => e.Actvio).HasColumnName("Actvio");
         });
 
         modelBuilder.Entity<TblInventario>(entity =>
