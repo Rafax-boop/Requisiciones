@@ -194,1011 +194,1012 @@ namespace Inventario.BLL.Implementacion
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> RegistrarIngresoInventario(
+        //    public async Task<(bool ok, string? mensaje, string? error)> RegistrarIngresoInventario(
 
-            string? clave,
+        //        string? clave,
 
-            string descripcion,
+        //        string descripcion,
 
-            string unidadMedida,
+        //        string unidadMedida,
 
-            int cantidad,
+        //        int cantidad,
 
-            int idUsuario,
+        //        int idUsuario,
 
-            string motivo)
+        //        string motivo)
 
-        {
+        //    {
 
-            descripcion = (descripcion ?? "").Trim();
+        //        descripcion = (descripcion ?? "").Trim();
 
-            unidadMedida = (unidadMedida ?? "").Trim();
+        //        unidadMedida = (unidadMedida ?? "").Trim();
 
-            motivo = (motivo ?? "").Trim();
+        //        motivo = (motivo ?? "").Trim();
 
 
 
-            if (string.IsNullOrWhiteSpace(descripcion)) return (false, null, "La descripción es obligatoria.");
+        //        if (string.IsNullOrWhiteSpace(descripcion)) return (false, null, "La descripción es obligatoria.");
 
-            if (string.IsNullOrWhiteSpace(unidadMedida)) return (false, null, "La unidad de medida es obligatoria.");
+        //        if (string.IsNullOrWhiteSpace(unidadMedida)) return (false, null, "La unidad de medida es obligatoria.");
 
-            if (cantidad <= 0) return (false, null, "La cantidad debe ser mayor a 0.");
+        //        if (cantidad <= 0) return (false, null, "La cantidad debe ser mayor a 0.");
 
-            if (string.IsNullOrWhiteSpace(motivo)) return (false, null, "El motivo es obligatorio.");
+        //        if (string.IsNullOrWhiteSpace(motivo)) return (false, null, "El motivo es obligatorio.");
 
 
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var inv = await _repoInventario.Obtener(i => i.Descripcion == descripcion && i.UnidadMedida == unidadMedida);
+        //            var inv = await _repoInventario.Obtener(i => i.Descripcion == descripcion && i.UnidadMedida == unidadMedida);
 
 
 
-                bool esNuevo = inv == null;
+        //            bool esNuevo = inv == null;
 
 
 
-                if (inv == null)
+        //            if (inv == null)
 
-                {
+        //            {
 
-                    if (string.IsNullOrWhiteSpace(clave)) return (false, null, "La clave es obligatoria para dar de alta un material nuevo.");
+        //                if (string.IsNullOrWhiteSpace(clave)) return (false, null, "La clave es obligatoria para dar de alta un material nuevo.");
 
 
 
-                    inv = new TblInventario
+        //                inv = new TblInventario
 
-                    {
+        //                {
 
-                        Clave = clave.Trim(),
+        //                    Clave = clave.Trim(),
 
-                        Descripcion = descripcion,
+        //                    Descripcion = descripcion,
 
-                        UnidadMedida = unidadMedida,
+        //                    UnidadMedida = unidadMedida,
 
-                        Entrada = 0,
+        //                    Entrada = 0,
 
-                        Existencia = 0,
+        //                    Existencia = 0,
 
-                        Costo = 0,
+        //                    Costo = 0,
 
-                        Iva = 0,
+        //                    Iva = 0,
 
-                        CostoUnitario = 0,
+        //                    CostoUnitario = 0,
 
-                        Total = 0
+        //                    Total = 0
 
-                    };
+        //                };
 
-                    inv = await _repoInventario.Crear(inv);
+        //                inv = await _repoInventario.Crear(inv);
 
-                }
+        //            }
 
 
 
-                inv.Existencia += cantidad;
+        //            inv.Existencia += cantidad;
 
-                await _repoInventario.Editar(inv);
+        //            await _repoInventario.Editar(inv);
 
 
 
-                await _repoMovimiento.Crear(new TblMovimientoInventario
+        //            await _repoMovimiento.Crear(new TblMovimientoInventario
 
-                {
+        //            {
 
-                    IdInventario = inv.Id,
+        //                IdInventario = inv.Id,
 
-                    TipoMovimiento = "I",
+        //                TipoMovimiento = "I",
 
-                    Cantidad = cantidad,
+        //                Cantidad = cantidad,
 
-                    Fecha = DateTime.Now,
+        //                Fecha = DateTime.Now,
 
-                    Motivo = motivo,
+        //                Motivo = motivo,
 
-                    IdUsuario = idUsuario,
+        //                IdUsuario = idUsuario,
 
-                    Anulado = false
+        //                Anulado = false
 
-                });
+        //            });
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
 
 
-                var msg = esNuevo
+        //            var msg = esNuevo
 
-                    ? $"Material nuevo registrado: {descripcion} ({unidadMedida}). Stock: {inv.Existencia}."
+        //                ? $"Material nuevo registrado: {descripcion} ({unidadMedida}). Stock: {inv.Existencia}."
 
-                    : $"Ingreso registrado para {descripcion} ({unidadMedida}). Nuevo stock: {inv.Existencia}.";
+        //                : $"Ingreso registrado para {descripcion} ({unidadMedida}). Nuevo stock: {inv.Existencia}.";
 
 
 
-                return (true, msg, null);
+        //            return (true, msg, null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo registrar el ingreso. " + ex.Message);
+        //            return (false, null, "No se pudo registrar el ingreso. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario)
+        //    public async Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario)
 
-        {
+        //    {
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
+        //            var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
 
 
 
-                if (req == null) return (false, null, "No se encontró la requisición.");
+        //            if (req == null) return (false, null, "No se encontró la requisición.");
 
-                if (req.IdEstatus != ESTATUS_EN_ALMACEN)
+        //            if (req.IdEstatus != ESTATUS_EN_ALMACEN)
 
-                    return (false, null, "La requisición no está en estatus de Almacén. No se puede aprobar.");
+        //                return (false, null, "La requisición no está en estatus de Almacén. No se puede aprobar.");
 
 
 
-                var detalles = req.TblRequisicionDetalles.ToList();
+        //            var detalles = req.TblRequisicionDetalles.ToList();
 
-                if (detalles.Count == 0) return (false, null, "La requisición no tiene partidas.");
+        //            if (detalles.Count == 0) return (false, null, "La requisición no tiene partidas.");
 
 
 
-                var resumenEgresos = new List<string>();
+        //            var resumenEgresos = new List<string>();
 
 
 
-                foreach (var d in detalles)
+        //            foreach (var d in detalles)
 
-                {
+        //            {
 
-                    var cantDecimal = d.Cantidad ?? 0m;
+        //                var cantDecimal = d.Cantidad ?? 0m;
 
-                    if (cantDecimal <= 0) continue;
+        //                if (cantDecimal <= 0) continue;
 
-                    var cant = (int)Math.Ceiling(cantDecimal);
+        //                var cant = (int)Math.Ceiling(cantDecimal);
 
 
 
-                    var desc = (d.Descripcion ?? "").Trim();
+        //                var desc = (d.Descripcion ?? "").Trim();
 
-                    var unidad = (d.UnidadMedida ?? "").Trim();
+        //                var unidad = (d.UnidadMedida ?? "").Trim();
 
-                    if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
+        //                if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
 
-                        return (false, null, "Hay partidas sin descripción o unidad de medida.");
+        //                    return (false, null, "Hay partidas sin descripción o unidad de medida.");
 
 
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
+        //                var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
 
-                    if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
+        //                if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
 
-                    if (inv.Existencia < cant)
+        //                if (inv.Existencia < cant)
 
-                        return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, requerido: {cant}. Considere aprobar parcial.");
+        //                    return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, requerido: {cant}. Considere aprobar parcial.");
 
 
 
-                    inv.Existencia -= cant;
+        //                inv.Existencia -= cant;
 
-                    await _repoInventario.Editar(inv);
+        //                await _repoInventario.Editar(inv);
 
 
 
-                    await _repoMovimiento.Crear(new TblMovimientoInventario
+        //                await _repoMovimiento.Crear(new TblMovimientoInventario
 
-                    {
+        //                {
 
-                        IdInventario = inv.Id,
+        //                    IdInventario = inv.Id,
 
-                        TipoMovimiento = "E",
+        //                    TipoMovimiento = "E",
 
-                        Cantidad = cant,
+        //                    Cantidad = cant,
 
-                        Fecha = DateTime.Now,
+        //                    Fecha = DateTime.Now,
 
-                        Motivo = $"Egreso por autorización completa requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
+        //                    Motivo = $"Egreso por autorización completa requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
 
-                        IdRequisicion = req.IdRequisicion,
+        //                    IdRequisicion = req.IdRequisicion,
 
-                        IdRequisicionDetalle = d.IdRequisicionDetalle,
+        //                    IdRequisicionDetalle = d.IdRequisicionDetalle,
 
-                        IdUsuario = idUsuario,
+        //                    IdUsuario = idUsuario,
 
-                        Anulado = false
+        //                    Anulado = false
 
-                    });
+        //                });
 
 
 
-                    resumenEgresos.Add($"{desc} x{cant}");
+        //                resumenEgresos.Add($"{desc} x{cant}");
 
-                }
+        //            }
 
 
 
-                req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
+        //            req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
 
-                req.FechaModificacion = DateTime.Now;
+        //            req.FechaModificacion = DateTime.Now;
 
-                await _repositoryRequisicion.Editar(req);
+        //            await _repositoryRequisicion.Editar(req);
 
 
 
-                var observacion = $"Almacén autorizó completa. Egreso aplicado: {string.Join(", ", resumenEgresos)}.";
+        //            var observacion = $"Almacén autorizó completa. Egreso aplicado: {string.Join(", ", resumenEgresos)}.";
 
 
 
-                await _repoBitacora.Crear(new TblBitacoraEstatus
+        //            await _repoBitacora.Crear(new TblBitacoraEstatus
 
-                {
+        //            {
 
-                    IdRequisicion = req.IdRequisicion,
+        //                IdRequisicion = req.IdRequisicion,
 
-                    IdEstatus = ESTATUS_APROBADA_ALMACEN,
+        //                IdEstatus = ESTATUS_APROBADA_ALMACEN,
 
-                    FechaEstatus = DateTime.Now,
+        //                FechaEstatus = DateTime.Now,
 
-                    Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
+        //                Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
 
-                    IdUsuario = idUsuario
+        //                IdUsuario = idUsuario
 
-                });
+        //            });
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
-                return (true, $"Requisición {req.NumRequisicion} autorizada completa. Se descontó el inventario.", null);
+        //            return (true, $"Requisición {req.NumRequisicion} autorizada completa. Se descontó el inventario.", null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo aprobar la requisición. " + ex.Message);
+        //            return (false, null, "No se pudo aprobar la requisición. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionParcial(
+        //    public async Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionParcial(
 
-            int idRequisicion,
+        //        int idRequisicion,
 
-            int idUsuario,
+        //        int idUsuario,
 
-            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas)
+        //        IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas)
 
-        {
+        //    {
 
-            var lista = (partidas ?? Enumerable.Empty<(int, int)>()).ToList();
+        //        var lista = (partidas ?? Enumerable.Empty<(int, int)>()).ToList();
 
-            if (lista.Count == 0) return (false, null, "No se recibieron partidas para aprobar.");
+        //        if (lista.Count == 0) return (false, null, "No se recibieron partidas para aprobar.");
 
-            if (lista.Any(x => x.cantidadAprobada < 0)) return (false, null, "Las cantidades aprobadas no pueden ser negativas.");
+        //        if (lista.Any(x => x.cantidadAprobada < 0)) return (false, null, "Las cantidades aprobadas no pueden ser negativas.");
 
 
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
+        //            var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
 
 
 
-                if (req == null) return (false, null, "No se encontró la requisición.");
+        //            if (req == null) return (false, null, "No se encontró la requisición.");
 
-                if (req.IdEstatus != ESTATUS_EN_ALMACEN)
+        //            if (req.IdEstatus != ESTATUS_EN_ALMACEN)
 
-                    return (false, null, "La requisición no está en estatus de Almacén. No se puede aprobar.");
+        //                return (false, null, "La requisición no está en estatus de Almacén. No se puede aprobar.");
 
 
 
-                var detallesById = req.TblRequisicionDetalles.ToDictionary(d => d.IdRequisicionDetalle);
+        //            var detallesById = req.TblRequisicionDetalles.ToDictionary(d => d.IdRequisicionDetalle);
 
 
 
-                bool haySurtido = lista.Any(x => x.cantidadAprobada > 0);
+        //            bool haySurtido = lista.Any(x => x.cantidadAprobada > 0);
 
-                if (!haySurtido) return (false, null, "Debe aprobar al menos una partida con cantidad mayor a 0.");
+        //            if (!haySurtido) return (false, null, "Debe aprobar al menos una partida con cantidad mayor a 0.");
 
 
 
-                var resumenEgresos = new List<string>();
+        //            var resumenEgresos = new List<string>();
 
-                var faltantes = new List<string>();
+        //            var faltantes = new List<string>();
 
 
 
-                foreach (var (idDetalle, cantAprobada) in lista)
+        //            foreach (var (idDetalle, cantAprobada) in lista)
 
-                {
+        //            {
 
-                    if (cantAprobada <= 0) continue;
+        //                if (cantAprobada <= 0) continue;
 
-                    if (!detallesById.TryGetValue(idDetalle, out var d))
+        //                if (!detallesById.TryGetValue(idDetalle, out var d))
 
-                        return (false, null, "Una de las partidas no pertenece a la requisición.");
+        //                    return (false, null, "Una de las partidas no pertenece a la requisición.");
 
 
 
-                    var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
+        //                var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
 
-                    if (cantAprobada > cantSolicitada)
+        //                if (cantAprobada > cantSolicitada)
 
-                        return (false, null, $"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
+        //                    return (false, null, $"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
 
 
 
-                    var desc = (d.Descripcion ?? "").Trim();
+        //                var desc = (d.Descripcion ?? "").Trim();
 
-                    var unidad = (d.UnidadMedida ?? "").Trim();
+        //                var unidad = (d.UnidadMedida ?? "").Trim();
 
-                    if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
+        //                if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
 
-                        return (false, null, "Hay partidas sin descripción o unidad de medida.");
+        //                    return (false, null, "Hay partidas sin descripción o unidad de medida.");
 
 
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
+        //                var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
 
-                    if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
+        //                if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
 
-                    if (inv.Existencia < cantAprobada)
+        //                if (inv.Existencia < cantAprobada)
 
-                        return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
+        //                    return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
 
 
 
-                    inv.Existencia -= cantAprobada;
+        //                inv.Existencia -= cantAprobada;
 
-                    await _repoInventario.Editar(inv);
+        //                await _repoInventario.Editar(inv);
 
 
 
-                    await _repoMovimiento.Crear(new TblMovimientoInventario
+        //                await _repoMovimiento.Crear(new TblMovimientoInventario
 
-                    {
+        //                {
 
-                        IdInventario = inv.Id,
+        //                    IdInventario = inv.Id,
 
-                        TipoMovimiento = "E",
+        //                    TipoMovimiento = "E",
 
-                        Cantidad = cantAprobada,
+        //                    Cantidad = cantAprobada,
 
-                        Fecha = DateTime.Now,
+        //                    Fecha = DateTime.Now,
 
-                        Motivo = $"Egreso por autorización parcial requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
+        //                    Motivo = $"Egreso por autorización parcial requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
 
-                        IdRequisicion = req.IdRequisicion,
+        //                    IdRequisicion = req.IdRequisicion,
 
-                        IdRequisicionDetalle = d.IdRequisicionDetalle,
+        //                    IdRequisicionDetalle = d.IdRequisicionDetalle,
 
-                        IdUsuario = idUsuario,
+        //                    IdUsuario = idUsuario,
 
-                        Anulado = false
+        //                    Anulado = false
 
-                    });
+        //                });
 
 
 
-                    resumenEgresos.Add($"{desc} x{cantAprobada}");
+        //                resumenEgresos.Add($"{desc} x{cantAprobada}");
 
 
 
-                    if (cantAprobada < cantSolicitada)
+        //                if (cantAprobada < cantSolicitada)
 
-                        faltantes.Add($"{desc}: surtido {cantAprobada}/{cantSolicitada}");
+        //                    faltantes.Add($"{desc}: surtido {cantAprobada}/{cantSolicitada}");
 
-                }
+        //            }
 
 
 
-                foreach (var det in detallesById.Values)
+        //            foreach (var det in detallesById.Values)
 
-                {
+        //            {
 
-                    if (!lista.Any(x => x.idRequisicionDetalle == det.IdRequisicionDetalle && x.cantidadAprobada > 0))
+        //                if (!lista.Any(x => x.idRequisicionDetalle == det.IdRequisicionDetalle && x.cantidadAprobada > 0))
 
-                    {
+        //                {
 
-                        var cantSol = (int)Math.Ceiling(det.Cantidad ?? 0m);
+        //                    var cantSol = (int)Math.Ceiling(det.Cantidad ?? 0m);
 
-                        if (cantSol > 0)
+        //                    if (cantSol > 0)
 
-                            faltantes.Add($"{(det.Descripcion ?? "").Trim()}: no surtido (solicitado {cantSol})");
+        //                        faltantes.Add($"{(det.Descripcion ?? "").Trim()}: no surtido (solicitado {cantSol})");
 
-                    }
+        //                }
 
-                }
+        //            }
 
 
 
-                req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
+        //            req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
 
-                req.FechaModificacion = DateTime.Now;
+        //            req.FechaModificacion = DateTime.Now;
 
-                await _repositoryRequisicion.Editar(req);
+        //            await _repositoryRequisicion.Editar(req);
 
 
 
-                var obsBuilder = new StringBuilder("Almacén autorizó parcial. Egreso: ");
+        //            var obsBuilder = new StringBuilder("Almacén autorizó parcial. Egreso: ");
 
-                obsBuilder.Append(string.Join(", ", resumenEgresos));
+        //            obsBuilder.Append(string.Join(", ", resumenEgresos));
 
-                if (faltantes.Count > 0)
+        //            if (faltantes.Count > 0)
 
-                {
+        //            {
 
-                    obsBuilder.Append(". FALTANTES: ");
+        //                obsBuilder.Append(". FALTANTES: ");
 
-                    obsBuilder.Append(string.Join("; ", faltantes));
+        //                obsBuilder.Append(string.Join("; ", faltantes));
 
-                    obsBuilder.Append(". Urgente resurtir stock.");
+        //                obsBuilder.Append(". Urgente resurtir stock.");
 
-                }
+        //            }
 
-                var observacion = obsBuilder.ToString();
+        //            var observacion = obsBuilder.ToString();
 
 
 
-                await _repoBitacora.Crear(new TblBitacoraEstatus
+        //            await _repoBitacora.Crear(new TblBitacoraEstatus
 
-                {
+        //            {
 
-                    IdRequisicion = req.IdRequisicion,
+        //                IdRequisicion = req.IdRequisicion,
 
-                    IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN,
+        //                IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN,
 
-                    FechaEstatus = DateTime.Now,
+        //                FechaEstatus = DateTime.Now,
 
-                    Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
+        //                Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
 
-                    IdUsuario = idUsuario
+        //                IdUsuario = idUsuario
 
-                });
+        //            });
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
 
 
-                var msgFaltante = faltantes.Count > 0
+        //            var msgFaltante = faltantes.Count > 0
 
-                    ? $" Faltantes: {string.Join("; ", faltantes)}. Urgente resurtir stock."
+        //                ? $" Faltantes: {string.Join("; ", faltantes)}. Urgente resurtir stock."
 
-                    : "";
+        //                : "";
 
 
 
-                return (true, $"Requisición {req.NumRequisicion} autorizada parcial. Se descontó el inventario.{msgFaltante}", null);
+        //            return (true, $"Requisición {req.NumRequisicion} autorizada parcial. Se descontó el inventario.{msgFaltante}", null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo aprobar parcialmente. " + ex.Message);
+        //            return (false, null, "No se pudo aprobar parcialmente. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo)
+        //    public async Task<(bool ok, string? mensaje, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo)
 
-        {
+        //    {
 
-            motivo = (motivo ?? "").Trim();
+        //        motivo = (motivo ?? "").Trim();
 
-            if (string.IsNullOrWhiteSpace(motivo)) return (false, null, "El motivo de rechazo es obligatorio.");
+        //        if (string.IsNullOrWhiteSpace(motivo)) return (false, null, "El motivo de rechazo es obligatorio.");
 
 
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+        //            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
 
-                if (req == null) return (false, null, "No se encontró la requisición.");
+        //            if (req == null) return (false, null, "No se encontró la requisición.");
 
-                if (req.IdEstatus != ESTATUS_EN_ALMACEN)
+        //            if (req.IdEstatus != ESTATUS_EN_ALMACEN)
 
-                    return (false, null, "La requisición no está en estatus de Almacén. No se puede rechazar.");
+        //                return (false, null, "La requisición no está en estatus de Almacén. No se puede rechazar.");
 
 
 
-                req.IdEstatus = ESTATUS_RECHAZADA_ALMACEN;
+        //            req.IdEstatus = ESTATUS_RECHAZADA_ALMACEN;
 
-                req.FechaModificacion = DateTime.Now;
+        //            req.FechaModificacion = DateTime.Now;
 
-                await _repositoryRequisicion.Editar(req);
+        //            await _repositoryRequisicion.Editar(req);
 
 
 
-                var observacion = $"Almacén rechazó requisición. Motivo: {motivo}";
+        //            var observacion = $"Almacén rechazó requisición. Motivo: {motivo}";
 
 
 
-                await _repoBitacora.Crear(new TblBitacoraEstatus
+        //            await _repoBitacora.Crear(new TblBitacoraEstatus
 
-                {
+        //            {
 
-                    IdRequisicion = req.IdRequisicion,
+        //                IdRequisicion = req.IdRequisicion,
 
-                    IdEstatus = ESTATUS_RECHAZADA_ALMACEN,
+        //                IdEstatus = ESTATUS_RECHAZADA_ALMACEN,
 
-                    FechaEstatus = DateTime.Now,
+        //                FechaEstatus = DateTime.Now,
 
-                    Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
+        //                Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
 
-                    IdUsuario = idUsuario
+        //                IdUsuario = idUsuario
 
-                });
+        //            });
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
-                return (true, $"Requisición {req.NumRequisicion} rechazada.", null);
+        //            return (true, $"Requisición {req.NumRequisicion} rechazada.", null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo rechazar. " + ex.Message);
+        //            return (false, null, "No se pudo rechazar. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion)
+        //    public async Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion)
 
-        {
+        //    {
 
-            motivoAnulacion = (motivoAnulacion ?? "").Trim();
+        //        motivoAnulacion = (motivoAnulacion ?? "").Trim();
 
-            if (string.IsNullOrWhiteSpace(motivoAnulacion)) return (false, null, "El motivo de anulación es obligatorio.");
+        //        if (string.IsNullOrWhiteSpace(motivoAnulacion)) return (false, null, "El motivo de anulación es obligatorio.");
 
 
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var mov = await _repoMovimiento.Obtener(m => m.Id == idMovimiento);
+        //            var mov = await _repoMovimiento.Obtener(m => m.Id == idMovimiento);
 
-                if (mov == null) return (false, null, "No se encontró el movimiento.");
+        //            if (mov == null) return (false, null, "No se encontró el movimiento.");
 
-                if (mov.Anulado) return (false, null, "El movimiento ya está anulado.");
+        //            if (mov.Anulado) return (false, null, "El movimiento ya está anulado.");
 
 
 
-                var inv = await _repoInventario.Obtener(i => i.Id == mov.IdInventario);
+        //            var inv = await _repoInventario.Obtener(i => i.Id == mov.IdInventario);
 
-                if (inv == null) return (false, null, "No se encontró el inventario asociado.");
+        //            if (inv == null) return (false, null, "No se encontró el inventario asociado.");
 
 
 
-                if (mov.TipoMovimiento == "E")
+        //            if (mov.TipoMovimiento == "E")
 
-                {
+        //            {
 
-                    inv.Existencia += mov.Cantidad;
+        //                inv.Existencia += mov.Cantidad;
 
-                }
+        //            }
 
-                else if (mov.TipoMovimiento == "I")
+        //            else if (mov.TipoMovimiento == "I")
 
-                {
+        //            {
 
-                    if (inv.Existencia < mov.Cantidad) return (false, null, "No se puede anular: el stock quedaría negativo.");
+        //                if (inv.Existencia < mov.Cantidad) return (false, null, "No se puede anular: el stock quedaría negativo.");
 
-                    inv.Existencia -= mov.Cantidad;
+        //                inv.Existencia -= mov.Cantidad;
 
-                }
+        //            }
 
 
 
-                mov.Anulado = true;
+        //            mov.Anulado = true;
 
-                mov.MotivoAnulacion = motivoAnulacion;
+        //            mov.MotivoAnulacion = motivoAnulacion;
 
-                mov.FechaAnulacion = DateTime.Now;
+        //            mov.FechaAnulacion = DateTime.Now;
 
-                mov.IdUsuarioAnula = idUsuario;
+        //            mov.IdUsuarioAnula = idUsuario;
 
 
 
-                await _repoInventario.Editar(inv);
+        //            await _repoInventario.Editar(inv);
 
-                await _repoMovimiento.Editar(mov);
+        //            await _repoMovimiento.Editar(mov);
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
-                return (true, "Movimiento anulado correctamente. Stock actualizado.", null);
+        //            return (true, "Movimiento anulado correctamente. Stock actualizado.", null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo anular el movimiento. " + ex.Message);
+        //            return (false, null, "No se pudo anular el movimiento. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
+        //    public async Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
 
-            int idRequisicion,
+        //        int idRequisicion,
 
-            int idUsuario,
+        //        int idUsuario,
 
-            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
+        //        IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
 
-            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras)
+        //        IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras)
 
-        {
+        //    {
 
-            var listaEntregas = (entregas ?? Enumerable.Empty<(int, int)>()).ToList();
+        //        var listaEntregas = (entregas ?? Enumerable.Empty<(int, int)>()).ToList();
 
-            var listaCompras = (compras ?? Enumerable.Empty<(int, int)>()).ToList();
+        //        var listaCompras = (compras ?? Enumerable.Empty<(int, int)>()).ToList();
 
 
 
-            if (listaEntregas.Count == 0 && listaCompras.Count == 0)
+        //        if (listaEntregas.Count == 0 && listaCompras.Count == 0)
 
-                return (false, null, "Debe indicar al menos una entrega o una compra.");
+        //            return (false, null, "Debe indicar al menos una entrega o una compra.");
 
-            if (listaEntregas.Any(x => x.cantidadAprobada < 0))
+        //        if (listaEntregas.Any(x => x.cantidadAprobada < 0))
 
-                return (false, null, "Las cantidades de entrega no pueden ser negativas.");
+        //            return (false, null, "Las cantidades de entrega no pueden ser negativas.");
 
-            if (listaCompras.Any(x => x.cantidadComprar <= 0))
+        //        if (listaCompras.Any(x => x.cantidadComprar <= 0))
 
-                return (false, null, "Las cantidades de compra deben ser mayores a 0.");
+        //            return (false, null, "Las cantidades de compra deben ser mayores a 0.");
 
 
 
-            var comprasSet = new HashSet<int>(listaCompras.Select(c => c.idRequisicionDetalle));
+        //        var comprasSet = new HashSet<int>(listaCompras.Select(c => c.idRequisicionDetalle));
 
 
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        //        await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            try
+        //        try
 
-            {
+        //        {
 
-                var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
+        //            var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
 
 
 
-                if (req == null) return (false, null, "No se encontró la requisición.");
+        //            if (req == null) return (false, null, "No se encontró la requisición.");
 
-                if (req.IdEstatus != ESTATUS_EN_ALMACEN)
+        //            if (req.IdEstatus != ESTATUS_EN_ALMACEN)
 
-                    return (false, null, "La requisición no está en estatus de Almacén. No se puede procesar.");
+        //                return (false, null, "La requisición no está en estatus de Almacén. No se puede procesar.");
 
 
 
-                var detallesById = req.TblRequisicionDetalles.ToDictionary(d => d.IdRequisicionDetalle);
+        //            var detallesById = req.TblRequisicionDetalles.ToDictionary(d => d.IdRequisicionDetalle);
 
 
 
-                var resumenEntregas = new List<string>();
+        //            var resumenEntregas = new List<string>();
 
-                var resumenCompras = new List<string>();
+        //            var resumenCompras = new List<string>();
 
 
 
-                foreach (var (idDetalle, cantAprobada) in listaEntregas)
+        //            foreach (var (idDetalle, cantAprobada) in listaEntregas)
 
-                {
+        //            {
 
-                    if (cantAprobada <= 0) continue;
+        //                if (cantAprobada <= 0) continue;
 
-                    if (!detallesById.TryGetValue(idDetalle, out var d))
+        //                if (!detallesById.TryGetValue(idDetalle, out var d))
 
-                        return (false, null, "Una de las partidas de entrega no pertenece a la requisición.");
+        //                    return (false, null, "Una de las partidas de entrega no pertenece a la requisición.");
 
 
 
-                    var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
+        //                var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
 
-                    if (cantAprobada > cantSolicitada)
+        //                if (cantAprobada > cantSolicitada)
 
-                        return (false, null, $"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
+        //                    return (false, null, $"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
 
 
 
-                    var desc = (d.Descripcion ?? "").Trim();
+        //                var desc = (d.Descripcion ?? "").Trim();
 
-                    var unidad = (d.UnidadMedida ?? "").Trim();
+        //                var unidad = (d.UnidadMedida ?? "").Trim();
 
-                    if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
+        //                if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
 
-                        return (false, null, "Hay partidas sin descripción o unidad de medida.");
+        //                    return (false, null, "Hay partidas sin descripción o unidad de medida.");
 
 
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
+        //                var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
 
-                    if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
+        //                if (inv == null) return (false, null, $"No existe el material en inventario: {desc} ({unidad}).");
 
-                    if (inv.Existencia < cantAprobada)
+        //                if (inv.Existencia < cantAprobada)
 
-                        return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
+        //                    return (false, null, $"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
 
 
 
-                    inv.Existencia -= cantAprobada;
+        //                inv.Existencia -= cantAprobada;
 
-                    await _repoInventario.Editar(inv);
+        //                await _repoInventario.Editar(inv);
 
 
 
-                    await _repoMovimiento.Crear(new TblMovimientoInventario
+        //                await _repoMovimiento.Crear(new TblMovimientoInventario
 
-                    {
+        //                {
 
-                        IdInventario = inv.Id,
+        //                    IdInventario = inv.Id,
 
-                        TipoMovimiento = "E",
+        //                    TipoMovimiento = "E",
 
-                        Cantidad = cantAprobada,
+        //                    Cantidad = cantAprobada,
 
-                        Fecha = DateTime.Now,
+        //                    Fecha = DateTime.Now,
 
-                        Motivo = $"Egreso por procesamiento requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
+        //                    Motivo = $"Egreso por procesamiento requisición {req.NumRequisicion ?? req.IdRequisicion.ToString()}",
 
-                        IdRequisicion = req.IdRequisicion,
+        //                    IdRequisicion = req.IdRequisicion,
 
-                        IdRequisicionDetalle = d.IdRequisicionDetalle,
+        //                    IdRequisicionDetalle = d.IdRequisicionDetalle,
 
-                        IdUsuario = idUsuario,
+        //                    IdUsuario = idUsuario,
 
-                        Anulado = false
+        //                    Anulado = false
 
-                    });
+        //                });
 
 
 
-                    resumenEntregas.Add($"{desc} x{cantAprobada}");
+        //                resumenEntregas.Add($"{desc} x{cantAprobada}");
 
 
 
-                    if (comprasSet.Contains(idDetalle))
+        //                if (comprasSet.Contains(idDetalle))
 
-                        d.IdEstatus = ESTATUS_EN_COMPRA;
+        //                    d.IdEstatus = ESTATUS_EN_COMPRA;
 
-                    else
+        //                else
 
-                        d.IdEstatus = ESTATUS_ENTREGADO;
+        //                    d.IdEstatus = ESTATUS_ENTREGADO;
 
-                }
+        //            }
 
 
 
-                foreach (var (idDetalle, cantComprar) in listaCompras)
+        //            foreach (var (idDetalle, cantComprar) in listaCompras)
 
-                {
+        //            {
 
-                    if (!detallesById.TryGetValue(idDetalle, out var d))
+        //                if (!detallesById.TryGetValue(idDetalle, out var d))
 
-                        return (false, null, "Una de las partidas de compra no pertenece a la requisición.");
+        //                    return (false, null, "Una de las partidas de compra no pertenece a la requisición.");
 
 
 
-                    d.IdEstatus = ESTATUS_EN_COMPRA;
+        //                d.IdEstatus = ESTATUS_EN_COMPRA;
 
-                    resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
+        //                resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
 
-                }
+        //            }
 
 
 
-                req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
+        //            req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
 
-                req.FechaModificacion = DateTime.Now;
+        //            req.FechaModificacion = DateTime.Now;
 
-                await _repositoryRequisicion.Editar(req);
+        //            await _repositoryRequisicion.Editar(req);
 
 
 
-                var obsBuilder = new StringBuilder("Almacén procesó requisición.");
+        //            var obsBuilder = new StringBuilder("Almacén procesó requisición.");
 
-                if (resumenEntregas.Count > 0)
+        //            if (resumenEntregas.Count > 0)
 
-                {
+        //            {
 
-                    obsBuilder.Append(" Entregados: ");
+        //                obsBuilder.Append(" Entregados: ");
 
-                    obsBuilder.Append(string.Join(", ", resumenEntregas));
+        //                obsBuilder.Append(string.Join(", ", resumenEntregas));
 
-                    obsBuilder.Append('.');
+        //                obsBuilder.Append('.');
 
-                }
+        //            }
 
-                if (resumenCompras.Count > 0)
+        //            if (resumenCompras.Count > 0)
 
-                {
+        //            {
 
-                    obsBuilder.Append(" Enviados a compra: ");
+        //                obsBuilder.Append(" Enviados a compra: ");
 
-                    obsBuilder.Append(string.Join(", ", resumenCompras));
+        //                obsBuilder.Append(string.Join(", ", resumenCompras));
 
-                    obsBuilder.Append('.');
+        //                obsBuilder.Append('.');
 
-                }
+        //            }
 
-                var observacion = obsBuilder.ToString();
+        //            var observacion = obsBuilder.ToString();
 
 
 
-                await _repoBitacora.Crear(new TblBitacoraEstatus
+        //            await _repoBitacora.Crear(new TblBitacoraEstatus
 
-                {
+        //            {
 
-                    IdRequisicion = req.IdRequisicion,
+        //                IdRequisicion = req.IdRequisicion,
 
-                    IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN,
+        //                IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN,
 
-                    FechaEstatus = DateTime.Now,
+        //                FechaEstatus = DateTime.Now,
 
-                    Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
+        //                Observacion = observacion.Length > 1000 ? observacion.Substring(0, 1000) : observacion,
 
-                    IdUsuario = idUsuario
+        //                IdUsuario = idUsuario
 
-                });
+        //            });
 
 
 
-                await tx.CommitAsync();
+        //            await tx.CommitAsync();
 
 
 
-                var msg = $"Requisición {req.NumRequisicion} procesada.";
+        //            var msg = $"Requisición {req.NumRequisicion} procesada.";
 
-                if (resumenEntregas.Count > 0) msg += $" Entregados: {resumenEntregas.Count} material(es).";
+        //            if (resumenEntregas.Count > 0) msg += $" Entregados: {resumenEntregas.Count} material(es).";
 
-                if (resumenCompras.Count > 0) msg += $" Enviados a compra: {resumenCompras.Count} material(es).";
+        //            if (resumenCompras.Count > 0) msg += $" Enviados a compra: {resumenCompras.Count} material(es).";
 
 
 
-                return (true, msg, null);
+        //            return (true, msg, null);
 
-            }
+        //        }
 
-            catch (Exception ex)
+        //        catch (Exception ex)
 
-            {
+        //        {
 
-                await tx.RollbackAsync();
+        //            await tx.RollbackAsync();
 
-                return (false, null, "No se pudo procesar la requisición. " + ex.Message);
+        //            return (false, null, "No se pudo procesar la requisición. " + ex.Message);
 
-            }
+        //        }
 
-        }
+        //    }
 
 
 
-        public async Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion)
+        //    public async Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion)
 
-        {
+        //    {
 
-            var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
+        //        var req = await ObtenerRequisicionConDetallesAsync(idRequisicion);
 
 
 
-            if (req == null) return new List<StockPartidasDTO>();
+        //        if (req == null) return new List<StockPartidasDTO>();
 
 
 
-            var resultado = new List<StockPartidasDTO>();
+        //        var resultado = new List<StockPartidasDTO>();
 
 
 
-            foreach (var d in req.TblRequisicionDetalles)
+        //        foreach (var d in req.TblRequisicionDetalles)
 
-            {
+        //        {
 
-                var desc = (d.Descripcion ?? "").Trim();
+        //            var desc = (d.Descripcion ?? "").Trim();
 
-                var unidad = (d.UnidadMedida ?? "").Trim();
+        //            var unidad = (d.UnidadMedida ?? "").Trim();
 
-                var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
+        //            var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
 
 
 
-                var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
+        //            var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad);
 
 
 
-                resultado.Add(new StockPartidasDTO
+        //            resultado.Add(new StockPartidasDTO
 
-                {
+        //            {
 
-                    IdRequisicionDetalle = d.IdRequisicionDetalle,
+        //                IdRequisicionDetalle = d.IdRequisicionDetalle,
 
-                    Descripcion = desc,
+        //                Descripcion = desc,
 
-                    UnidadMedida = unidad,
+        //                UnidadMedida = unidad,
 
-                    CantidadSolicitada = cantSolicitada,
+        //                CantidadSolicitada = cantSolicitada,
 
-                    StockDisponible = inv?.Existencia ?? 0,
+        //                StockDisponible = inv?.Existencia ?? 0,
 
-                    ExisteEnInventario = inv != null
+        //                ExisteEnInventario = inv != null
 
-                });
+        //            });
 
-            }
+        //        }
 
 
 
-            return resultado;
+        //        return resultado;
 
-        }
+        //    }
+
+        //}
 
     }
-
 }
 

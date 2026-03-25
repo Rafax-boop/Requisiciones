@@ -47,9 +47,6 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
         {
-            await _unitOfWork.BeginTransactionAsync();
-            try
-            {
                 var requisicion = new TblRequisicion
                 {
                     FechaEmision = DateOnly.FromDateTime(DateTime.Now),
@@ -140,12 +137,6 @@ namespace Inventario.BLL.Implementacion
                     await _repositoryProgramacion.CrearRango(listaProgramacion);
 
                 return requiCreada;
-            }
-            catch
-            {
-                await _unitOfWork.RollbackAsync();
-                throw;
-            }
         }
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null)
@@ -231,7 +222,7 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
 
             List<string> fotos = new();
-            if (maestra?.TipoServicio == "Imprenta")
+            if (maestra?.TipoServicio == "Servicio Impresion")
             {
                 var queryFotos = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idMaestro);
                 fotos = await queryFotos.Select(f => f.Ruta).ToListAsync();
@@ -310,7 +301,7 @@ namespace Inventario.BLL.Implementacion
             requisicion.UsoEspecifico = modelo.UsoEspecifico;
             requisicion.LugarEntrega = modelo.LugarEntrega;
             requisicion.Justificacion = modelo.Justificacion;
-            requisicion.IdEstatus = 2;
+            requisicion.IdEstatus = 1;
             requisicion.CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario;
             requisicion.Donativo = modelo.UsoMaterial;
             requisicion.FechaModificacion = DateTime.Now;
@@ -388,8 +379,7 @@ namespace Inventario.BLL.Implementacion
         }
 
         public async Task<bool> AtenderRequisicion(
-            int idRequisicion, string observaciones,
-            bool requiereModificacion, int idUsuario,
+            int idRequisicion, string observaciones, int idUsuario,
             int idpp, string FF, string tipoPrograma,
             int claveRegion,
             List<(int IdArticulo, int Cog)> cogsEditados = null
@@ -420,8 +410,7 @@ namespace Inventario.BLL.Implementacion
                         await _repositoryRequisicionDetalle.Editar(detalle);
                 }
 
-                int nuevoEstatus = requiereModificacion ? 3 : 4;
-                requisicion.IdEstatus = nuevoEstatus;
+                requisicion.IdEstatus = 13;
                 requisicion.IdPp = idpp;
                 requisicion.Ff = FF;
                 requisicion.TipoPrograma = tipoPrograma;
@@ -432,7 +421,7 @@ namespace Inventario.BLL.Implementacion
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = requisicion.IdRequisicion,
-                    IdEstatus = nuevoEstatus,
+                    IdEstatus = 13,
                     FechaEstatus = DateTime.Now,
                     Observacion = observaciones,
                     IdUsuario = idUsuario
@@ -443,6 +432,7 @@ namespace Inventario.BLL.Implementacion
             }
             catch { throw; }
         }
+
         public async Task<string?> ObtenerObservacionesModificacion(int idRequisicion)
         {
             var query = await _repositoryBitacora.Consultar(b =>
@@ -526,6 +516,33 @@ namespace Inventario.BLL.Implementacion
             await _repositoryBitacora.Crear(bitacora);
 
             return true;
+        }
+
+        public async Task<bool> EnviarAModificacion(int idRequisicion, int idUsuario, string observaciones)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == idRequisicion);
+                if (requisicion == null) return false;
+
+                requisicion.IdEstatus = 3; // REQUISICION MODIFICACIÓN
+                requisicion.FechaModificacion = DateTime.Now;
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = requisicion.IdRequisicion,
+                    IdEstatus = 3,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = observaciones,
+                    IdUsuario = idUsuario
+                };
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch { throw; }
         }
 
         public async Task<bool> RechazarRequisicion(int idRequisicion, int idUsuario, string motivo)

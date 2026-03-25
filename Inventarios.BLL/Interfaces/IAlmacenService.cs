@@ -13,31 +13,31 @@ namespace Inventario.BLL.Interfaces
         Task<List<InventarioItemDTO>> ObtenerInventario();
         Task<List<string>> ObtenerEstatus();
 
-        Task<(bool ok, string? mensaje, string? error)> RegistrarIngresoInventario(
-            string? clave,
-            string descripcion,
-            string unidadMedida,
-            int cantidad,
-            int idUsuario,
-            string motivo);
+        //Task<(bool ok, string? mensaje, string? error)> RegistrarIngresoInventario(
+        //    string? clave,
+        //    string descripcion,
+        //    string unidadMedida,
+        //    int cantidad,
+        //    int idUsuario,
+        //    string motivo);
 
-        Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario);
+        //Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionCompleta(int idRequisicion, int idUsuario);
 
-        Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionParcial(
-            int idRequisicion,
-            int idUsuario,
-            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas);
+        //Task<(bool ok, string? mensaje, string? error)> AprobarRequisicionParcial(
+        //    int idRequisicion,
+        //    int idUsuario,
+        //    IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas);
 
-        Task<(bool ok, string? mensaje, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
+        //Task<(bool ok, string? mensaje, string? error)> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
 
-        Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion);
+        //Task<(bool ok, string? mensaje, string? error)> AnularMovimientoInventario(int idMovimiento, int idUsuario, string motivoAnulacion);
 
-        Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
+        //Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
 
-        Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
-            int idRequisicion,
-            int idUsuario,
-            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
-            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras);
+        //Task<(bool ok, string? mensaje, string? error)> ProcesarRequisicion(
+        //    int idRequisicion,
+        //    int idUsuario,
+        //    IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
+        //    IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras);
     }
 }

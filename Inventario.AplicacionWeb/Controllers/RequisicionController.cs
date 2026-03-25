@@ -3,6 +3,7 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
+using Inventario.Entity.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -264,15 +265,21 @@ namespace Inventario.AplicacionWeb.Controllers
             });
         }
 
-        public async Task<JsonResult> BuscarArticulos(string term, bool mensual = false)
+        public async Task<JsonResult> BuscarArticulos(string term, string tipo = "normal")
         {
-            var articulos = await _articulosService.BuscarArticulos(term, mensual);
+            TipoBusquedaArticulo tipoBusqueda = tipo switch
+            {
+                "mensual" => TipoBusquedaArticulo.Mensual,
+                _ => TipoBusquedaArticulo.Normal
+            };
+
+            var articulos = await _articulosService.BuscarArticulos(term, tipoBusqueda);
 
             var resultado = articulos.Select(a => new
             {
                 id = a.Id,
                 text = a.Descripcion
-            }).ToList();
+            });
 
             return Json(resultado);
         }
@@ -307,7 +314,6 @@ namespace Inventario.AplicacionWeb.Controllers
             var resultado = await _requisicionService.AtenderRequisicion(
                 modelo.IdRequisicion,
                 modelo.Observaciones,
-                modelo.RequiereModificacion,
                 idUsuario,
                 modelo.IdPP,
                 modelo.FF,
@@ -332,6 +338,25 @@ namespace Inventario.AplicacionWeb.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, mensaje = ex.Message, detalle = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EnviarAModificacion(int idRequi, string observaciones)
+        {
+            try
+            {
+                var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var resultado = await _requisicionService.EnviarAModificacion(idRequi, idUsuario, observaciones);
+
+                if (!resultado)
+                    return Json(new { success = false, mensaje = "No se encontró la requisición." });
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, mensaje = "Error interno.", detalle = ex.Message });
             }
         }
 

@@ -18,6 +18,7 @@
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
     var urlEnviarAlmacen = container ? container.getAttribute("data-url-enviar-almacen") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
+    var urlModificar = container ? container.getAttribute("data-url-modificar") : "";
   var _idRequiAsignar = null;
 
   var fechaSeleccionada = "";
@@ -262,7 +263,7 @@
   }
 
     function ocultarTodosPasos() {
-        ['pasoOpciones', 'pasoAsignar', 'pasoAlmacen', 'pasoRechazar'].forEach(function (id) {
+        ['pasoOpciones', 'pasoAsignar', 'pasoAlmacen', 'pasoRechazar', 'pasoModificar'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
@@ -286,6 +287,11 @@
     window.mostrarPasoRechazar = function () {
         ocultarTodosPasos();
         document.getElementById('pasoRechazar').style.display = 'block';
+    };
+
+    window.mostrarPasoModificar = function () {
+        ocultarTodosPasos();
+        document.getElementById('pasoModificar').style.display = 'block';
     };
 
     // Abrir modal — siempre arranca en paso 1
@@ -393,6 +399,31 @@
         });
     };
 
+    window.confirmarModificacion = function () {
+        var observacion = document.getElementById('txtObservacionModificacion').value.trim();
+        if (!observacion) {
+            Swal.fire({ icon: 'warning', title: 'Escribe las observaciones de modificación', confirmButtonText: 'Ok' });
+            return;
+        }
+
+        $.post(urlModificar, { idRequi: _idRequiAsignar, observaciones: observacion }, function (res) {
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Enviada a modificación',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                }).then(function () { location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo enviar a modificación', text: res.mensaje || '' });
+            }
+        }).fail(function () {
+            Swal.fire({ icon: 'error', title: 'Error al enviar la solicitud' });
+        });
+    };
+
   window.confirmarAsignacion = function () {
     var idUsuario = $("#selectUsuarioAsignar").val();
     if (!idUsuario) {
@@ -428,7 +459,6 @@
 
   window.enviarAtencion = function () {
     const observaciones = document.getElementById("txtObservaciones").value.trim();
-    const requiereModificacion = document.getElementById("chkRequiereModificacion").checked;
 
     //Recoger los nuevos campos
     const idpp = parseInt($("#actividadSeleccionada").val()) || 0;
@@ -478,7 +508,6 @@
       data: JSON.stringify({
         IdRequisicion: requisicionActual,
         Observaciones: observaciones,
-        RequiereModificacion: requiereModificacion,
         CogsEditados: cogsEditados,
         IdPp: idpp,
         FF: ff,
@@ -489,7 +518,6 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
         modal.hide();
         document.getElementById("txtObservaciones").value = "";
-        document.getElementById("chkRequiereModificacion").checked = false;
         location.reload();
       },
       error: function () {

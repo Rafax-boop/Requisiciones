@@ -22,12 +22,15 @@ namespace Inventario.DAL.Implementacion
 
         public async Task<TblRequisicion> CrearConFolio(TblRequisicion requisicion)
         {
-            using var transaction = await _dbContext.Database
-                .BeginTransactionAsync(IsolationLevel.Serializable);
+            // Si ya hay una transacción activa (viene del UnitOfWork), la reutiliza
+            // Si no hay ninguna, crea una propia
+            var transaccionExistente = _dbContext.Database.CurrentTransaction;
+            var transaction = transaccionExistente ??
+                              await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
             try
             {
                 int anio = DateTime.Now.Year;
-
                 var ultimoConsecutivo = await _dbContext.TblRequisicions
                     .Where(r => r.FechaModificacion.HasValue && r.FechaModificacion.Value.Year == anio)
                     .MaxAsync(r => (int?)r.Consecutivo) ?? 0;
@@ -38,12 +41,17 @@ namespace Inventario.DAL.Implementacion
                 _dbContext.TblRequisicions.Add(requisicion);
                 await _dbContext.SaveChangesAsync();
 
-                await transaction.CommitAsync();
+                // Solo hace commit si fue él quien abrió la transacción
+                if (transaccionExistente == null)
+                    await transaction.CommitAsync();
+
                 return requisicion;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                // Solo hace rollback si fue él quien abrió la transacción
+                if (transaccionExistente == null)
+                    await transaction.RollbackAsync();
                 throw;
             }
         }

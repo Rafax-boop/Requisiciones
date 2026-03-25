@@ -73,8 +73,8 @@
                     <label>Lugar de entrega:</label>
                     <select id="tipoServicio" name="LugarEntrega" class="select2" style="width:100%" required>
                         <option value="">-- Seleccionar tipo --</option>
-                        <option value="ALMACEN GENERAL">ALMACEN GENERAL</option>
-                        <option value="CASA DE ASISTENCIA">CASA DE ASISTENCIA</option>
+                        <option value="ALMACEN GENERAL" selected="@(Model.LugarEntrega == "ALMACEN GENERAL")">ALMACEN GENERAL</option>
+                        <option value="CASA DE ASISTENCIA" selected="@(Model.LugarEntrega == "CASA DE ASISTENCIA")">CASA DE ASISTENCIA</option>
                     </select>
                 </div>
                 <div class="formulario-input">
