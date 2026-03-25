@@ -52,7 +52,7 @@
     container &&
     container.querySelectorAll(".almacen-tabs-btn").length > 0 &&
     container.querySelectorAll(".almacen-tab-panel").length > 0;
-  var paginaPorTab = { principal: 1, autorizadas: 1 };
+  var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1 };
 
   function getActiveTableContext() {
     if (!modoTabs || !container) {
@@ -75,7 +75,9 @@
         ? "principal"
         : panel.id === "tab-autorizadas"
           ? "autorizadas"
-          : "principal";
+          : panel.id === "tab-rechazadas"
+            ? "rechazadas"
+            : "principal";
     return {
       tbody: tabla ? tabla.querySelector("tbody") : null,
       paginationContainer: pag,
@@ -363,14 +365,18 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Enviada a almacén',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    timerProgressBar: true
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#fe6291'
                 }).then(function () { location.reload(); });
             } else {
                 Swal.fire({
-                    icon: 'error', title: 'No se pudo enviar a almacén', text: res.mensaje || 'Error desconocido',
-                    footer: res.detalle || '' });
+                    icon: 'error',
+                    title: 'No se pudo enviar a almacén',
+                    text: res.mensaje || 'Error desconocido',
+                    footer: res.detalle || '',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#fe6291'
+                });
             }
         });
     };
@@ -389,9 +395,8 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Requisición rechazada',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    timerProgressBar: true
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#fe6291'
                 }).then(function () { location.reload(); });
             } else {
                 Swal.fire({ icon: 'error', title: 'No se pudo rechazar la requisición' });
