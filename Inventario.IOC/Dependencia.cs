@@ -22,6 +22,7 @@ namespace Inventario.IOC
                 options.UseSqlServer(configuration.GetConnectionString("CadenaSQL")));
 
             services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IRequisicionRepository, RequisicionRepository>();
             services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddScoped<IRequisicionesService, RequisicionService>();

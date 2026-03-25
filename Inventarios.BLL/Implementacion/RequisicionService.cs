@@ -21,6 +21,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
+        private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
             IRequisicionRepository repositoryRequisicion,
@@ -29,7 +30,9 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblDepartamento> repositoryDepartamento,
             IGenericRepository<TblEstatus> repositoryEstatus,
             IGenericRepository<TblRegistroDiseno> repositoryDisenos,
-            IGenericRepository<TblArticulosProgramado> repositoryProgramacion
+            IGenericRepository<TblArticulosProgramado> repositoryProgramacion,
+            IUnitOfWork unitOfWork
+
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -39,100 +42,110 @@ namespace Inventario.BLL.Implementacion
             _repositoryEstatus = repositoryEstatus;
             _repositoryDisenos = repositoryDisenos;
             _repositoryProgramacion = repositoryProgramacion;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
         {
-            var requisicion = new TblRequisicion
+            await _unitOfWork.BeginTransactionAsync();
+            try
             {
-                FechaEmision = DateOnly.FromDateTime(DateTime.Now),
-                IdDepartamento = modelo.IdDepartamento,
-                NomResponsableDepartamento = modelo.NomResponsableDepartamento,
-                NombreDirector = modelo.NomDirector,
-                Correo = modelo.Correo,
-                Telefono = modelo.Telefono,
-                LugarEntrega = modelo.LugarEntrega,
-                UsoEspecifico = !servicio ? modelo.UsoEspecifico.ToUpper() : null,
-                Justificacion = modelo.Justificacion.ToUpper(),
-                CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
-                Donativo = !servicio ? modelo.UsoMaterial : null,
-                IdUsuario = idUsuario,
-                IdEstatus = 1,
-                FechaModificacion = DateTime.Now,
-                Hash = GenerarSelloDigital(),
-                RequiServicio = servicio,
-                TipoServicio = servicio ? modelo.TipoServicio : null,
-                FechaServicio = servicio ? modelo.FechaServicio : null
-            };
-            var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
+                var requisicion = new TblRequisicion
+                {
+                    FechaEmision = DateOnly.FromDateTime(DateTime.Now),
+                    IdDepartamento = modelo.IdDepartamento,
+                    NomResponsableDepartamento = modelo.NomResponsableDepartamento,
+                    NombreDirector = modelo.NomDirector,
+                    Correo = modelo.Correo,
+                    Telefono = modelo.Telefono,
+                    LugarEntrega = modelo.LugarEntrega,
+                    UsoEspecifico = !servicio ? modelo.UsoEspecifico.ToUpper() : null,
+                    Justificacion = modelo.Justificacion.ToUpper(),
+                    CuentaProgramaPresupuestario = modelo.CuentaProgramaPresupuestario,
+                    Donativo = !servicio ? modelo.UsoMaterial : null,
+                    IdUsuario = idUsuario,
+                    IdEstatus = 1,
+                    FechaModificacion = DateTime.Now,
+                    Hash = GenerarSelloDigital(),
+                    RequiServicio = servicio,
+                    TipoServicio = servicio ? modelo.TipoServicio : null,
+                    FechaServicio = servicio ? modelo.FechaServicio : null
+                };
+                var requiCreada = await _repositoryRequisicion.CrearConFolio(requisicion);
 
-            var bitacora = new TblBitacoraEstatus
-            {
-                IdRequisicion = requiCreada.IdRequisicion,
-                IdEstatus = requiCreada.IdEstatus,
-                FechaEstatus = requiCreada.FechaModificacion,
-                Observacion = "FormularioRequisiciones",
-                IdUsuario = idUsuario
-            };
-            var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
-
-            var listaArticulos = new List<TblRequisicionDetalle>();
-
-            foreach (var item in modelo.Articulos)
-            {
-                var detalle = new TblRequisicionDetalle
+                var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = requiCreada.IdRequisicion,
-                    NumPartida = item.Cog,
-                    IdArticulo = item.IdArticulo,
-                    Cantidad = item.Cantidad,
-                    UnidadMedida = item.UnidadMedida,
-                    Descripcion = item.Descripcion,
-                    DescripcionDetallada = item.DescripcionDetallada.ToUpper(),
-                    FechaRegistro = DateTime.Now.Date
+                    IdEstatus = requiCreada.IdEstatus,
+                    FechaEstatus = requiCreada.FechaModificacion,
+                    Observacion = "FormularioRequisiciones",
+                    IdUsuario = idUsuario
                 };
-                listaArticulos.Add(detalle);
-            }
+                var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
 
-            await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
+                var listaArticulos = new List<TblRequisicionDetalle>();
 
-            // Guardar programación si algún artículo la trae
-            var listaProgramacion = new List<TblArticulosProgramado>();
-
-            for (int i = 0; i < modelo.Articulos.Count; i++)
-            {
-                var item = modelo.Articulos[i];
-
-                if (string.IsNullOrEmpty(item.TipoProgramacion)) continue;
-
-                var detalle = listaArticulos[i]; // ← mismo índice, siempre correcto
-
-                var prog = new TblArticulosProgramado
+                foreach (var item in modelo.Articulos)
                 {
-                    IdRequisicion = requiCreada.IdRequisicion,
-                    IdRequisicionDetalle = detalle.IdRequisicionDetalle,
-                    IdArticulo = item.IdArticulo,
-                    TipoProgramacion = item.TipoProgramacion,
-                    Llenado1 = item.Llenado1,
-                    Llenado2 = item.Llenado2,
-                    Llenado3 = item.Llenado3,
-                    Llenado4 = item.Llenado4,
-                    Llenado5 = item.TipoProgramacion == "anual" ? item.Llenado5 : null,
-                    Llenado6 = item.TipoProgramacion == "anual" ? item.Llenado6 : null,
-                    Llenado7 = item.TipoProgramacion == "anual" ? item.Llenado7 : null,
-                    Llenado8 = item.TipoProgramacion == "anual" ? item.Llenado8 : null,
-                    Llenado9 = item.TipoProgramacion == "anual" ? item.Llenado9 : null,
-                    Llenado10 = item.TipoProgramacion == "anual" ? item.Llenado10 : null,
-                    Llenado11 = item.TipoProgramacion == "anual" ? item.Llenado11 : null,
-                    Llenado12 = item.TipoProgramacion == "anual" ? item.Llenado12 : null,
-                };
-                listaProgramacion.Add(prog);
+                    var detalle = new TblRequisicionDetalle
+                    {
+                        IdRequisicion = requiCreada.IdRequisicion,
+                        NumPartida = item.Cog,
+                        IdArticulo = item.IdArticulo,
+                        Cantidad = item.Cantidad,
+                        UnidadMedida = item.UnidadMedida,
+                        Descripcion = item.Descripcion,
+                        DescripcionDetallada = item.DescripcionDetallada.ToUpper(),
+                        FechaRegistro = DateTime.Now.Date
+                    };
+                    listaArticulos.Add(detalle);
+                }
+
+                await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
+
+                // Guardar programación si algún artículo la trae
+                var listaProgramacion = new List<TblArticulosProgramado>();
+
+                for (int i = 0; i < modelo.Articulos.Count; i++)
+                {
+                    var item = modelo.Articulos[i];
+
+                    if (string.IsNullOrEmpty(item.TipoProgramacion)) continue;
+
+                    var detalle = listaArticulos[i]; // ← mismo índice, siempre correcto
+
+                    var prog = new TblArticulosProgramado
+                    {
+                        IdRequisicion = requiCreada.IdRequisicion,
+                        IdRequisicionDetalle = detalle.IdRequisicionDetalle,
+                        IdArticulo = item.IdArticulo,
+                        TipoProgramacion = item.TipoProgramacion,
+                        Llenado1 = item.Llenado1,
+                        Llenado2 = item.Llenado2,
+                        Llenado3 = item.Llenado3,
+                        Llenado4 = item.Llenado4,
+                        Llenado5 = item.TipoProgramacion == "anual" ? item.Llenado5 : null,
+                        Llenado6 = item.TipoProgramacion == "anual" ? item.Llenado6 : null,
+                        Llenado7 = item.TipoProgramacion == "anual" ? item.Llenado7 : null,
+                        Llenado8 = item.TipoProgramacion == "anual" ? item.Llenado8 : null,
+                        Llenado9 = item.TipoProgramacion == "anual" ? item.Llenado9 : null,
+                        Llenado10 = item.TipoProgramacion == "anual" ? item.Llenado10 : null,
+                        Llenado11 = item.TipoProgramacion == "anual" ? item.Llenado11 : null,
+                        Llenado12 = item.TipoProgramacion == "anual" ? item.Llenado12 : null,
+                    };
+                    listaProgramacion.Add(prog);
+                }
+
+                if (listaProgramacion.Any())
+                    await _repositoryProgramacion.CrearRango(listaProgramacion);
+
+                return requiCreada;
             }
-
-            if (listaProgramacion.Any())
-                await _repositoryProgramacion.CrearRango(listaProgramacion);
-
-            return requiCreada;
+            catch
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null)

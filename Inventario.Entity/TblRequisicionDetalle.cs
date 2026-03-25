@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Inventario.Entity;
@@ -25,11 +25,7 @@ public partial class TblRequisicionDetalle
 
     public int? CogEditable { get; set; }
 
-    public int? IdEstatus { get; set; }
-
     public bool? Activo { get; set; }
-
-    public virtual TblEstatus? IdEstatusNavigation { get; set; }
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
 
