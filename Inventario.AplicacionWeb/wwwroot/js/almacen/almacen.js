@@ -257,6 +257,44 @@
     var reqActualId = null;
     var stockData = {};
 
+    /** Lista de partidas desde JSON (camelCase o PascalCase). */
+    function obtenerArticulosDeReq(req) {
+        if (!req) return [];
+        var list = req.articulos != null ? req.articulos : req.Articulos;
+        return Array.isArray(list) ? list : [];
+    }
+
+    /** Id de partida desde un renglón de artículo. */
+    function idDetalleArticulo(a) {
+        if (!a) return 0;
+        var id = a.idRequisicionDetalle != null ? a.idRequisicionDetalle : a.IdRequisicionDetalle;
+        var n = Number(id);
+        return isNaN(n) ? 0 : n;
+    }
+
+    /** Respuesta de ConsultarStock: siempre arreglo; acepta camelCase o PascalCase por fila. */
+    function parsearRespuestaStock(json) {
+        if (json == null) return [];
+        if (Array.isArray(json)) return json;
+        return [];
+    }
+
+    function normalizarFilaStock(s) {
+        var id = s.idRequisicionDetalle != null ? s.idRequisicionDetalle : s.IdRequisicionDetalle;
+        var n = Number(id);
+        if (isNaN(n) || n <= 0) return null;
+        var disp = s.stockDisponible != null ? s.stockDisponible : s.StockDisponible;
+        var existe = s.existeEnInventario != null ? s.existeEnInventario : s.ExisteEnInventario;
+        return {
+            idRequisicionDetalle: n,
+            descripcion: s.descripcion != null ? s.descripcion : (s.Descripcion || ''),
+            unidadMedida: s.unidadMedida != null ? s.unidadMedida : (s.UnidadMedida || ''),
+            cantidadSolicitada: s.cantidadSolicitada != null ? s.cantidadSolicitada : (s.CantidadSolicitada != null ? s.CantidadSolicitada : 0),
+            stockDisponible: disp != null ? Number(disp) : 0,
+            existeEnInventario: !!existe
+        };
+    }
+
     window.verDescDetalleModal = function (el) {
         var panel = document.getElementById('desc-panel-modal');
         var textarea = document.getElementById('desc-textarea-modal');
@@ -296,11 +334,13 @@
     });
 
     function getStockInfo(idDetalle) {
-        return stockData[idDetalle] || null;
+        var n = Number(idDetalle);
+        if (isNaN(n) || n <= 0) return null;
+        return stockData[n] != null ? stockData[n] : (stockData[idDetalle] != null ? stockData[idDetalle] : null);
     }
 
     function buildStockBadge(info, cantSolicitada) {
-        if (!info) return '<span class="stock-badge stock-badge-no-existe"><i class="fa-solid fa-question"></i> Cargando...</span>';
+        if (!info) return '<span class="stock-badge stock-badge-no-existe"><i class="fa-solid fa-triangle-exclamation"></i> Sin datos de inventario</span>';
         if (!info.existeEnInventario) return '<span class="stock-badge stock-badge-no-existe"><i class="fa-solid fa-xmark"></i> No existe</span>';
         if (info.stockDisponible <= 0) return '<span class="stock-badge stock-badge-sin"><i class="fa-solid fa-triangle-exclamation"></i> Sin stock (0)</span>';
         if (info.stockDisponible < cantSolicitada) return '<span class="stock-badge stock-badge-parcial"><i class="fa-solid fa-exclamation"></i> Parcial (' + info.stockDisponible + ')</span>';
@@ -310,11 +350,11 @@
     function actualizarBotonCompleta() {
         var btnCompleta = document.getElementById('btnAprobarCompleta');
         if (!btnCompleta || !reqCompleta) return;
-        var articulos = reqCompleta.articulos || [];
+        var articulos = obtenerArticulosDeReq(reqCompleta);
         var puedeCompleta = articulos.length > 0;
         articulos.forEach(function (a) {
-            var info = getStockInfo(a.idRequisicionDetalle ?? 0);
-            var cantSolicitada = (a.cantidad ?? 0);
+            var info = getStockInfo(idDetalleArticulo(a));
+            var cantSolicitada = (a.cantidad != null ? a.cantidad : a.Cantidad) ?? 0;
             if (!info || !info.existeEnInventario || info.stockDisponible < cantSolicitada) {
                 puedeCompleta = false;
             }
@@ -330,12 +370,12 @@
     function renderModalTab(i) {
         if (!reqCompleta || !modalBody) return;
         if (i === 0) {
-            var articulos = reqCompleta.articulos || [];
+            var articulos = obtenerArticulosDeReq(reqCompleta);
 
             var countOk = 0, countParcial = 0, countSin = 0;
             articulos.forEach(function (a) {
-                var info = getStockInfo(a.idRequisicionDetalle ?? 0);
-                var cantSol = (a.cantidad ?? 0);
+                var info = getStockInfo(idDetalleArticulo(a));
+                var cantSol = (a.cantidad != null ? a.cantidad : a.Cantidad) ?? 0;
                 if (!info || !info.existeEnInventario || info.stockDisponible <= 0) countSin++;
                 else if (info.stockDisponible < cantSol) countParcial++;
                 else countOk++;
@@ -351,12 +391,12 @@
             html += '<div class="table-responsive-container">';
             html += '<table class="tabla-requisiciones"><thead><tr><th>Material</th><th>Solicitado</th><th>Unidad</th><th>Stock</th><th>Entregar</th><th>Comprar</th><th>Cant. Compra</th><th>Detalle</th></tr></thead><tbody>';
             articulos.forEach(function (a) {
-                var textoCompleto = a.descripcionDetallada || '';
+                var textoCompleto = a.descripcionDetallada || a.DescripcionDetallada || '';
                 var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + '…' : (textoCompleto || 'Sin descripción...');
                 var tieneTexto = textoCompleto ? 'tiene-texto' : '';
                 var fullEscapado = (textoCompleto || '').replace(/"/g, '&quot;');
-                var cantSolicitada = (a.cantidad ?? 0);
-                var idDetalle = (a.idRequisicionDetalle ?? 0);
+                var cantSolicitada = (a.cantidad != null ? a.cantidad : a.Cantidad) ?? 0;
+                var idDetalle = idDetalleArticulo(a);
                 var info = getStockInfo(idDetalle);
 
                 var valorInput = cantSolicitada;
@@ -379,9 +419,9 @@
                 var cantCompraDefault = faltante > 0 ? faltante : '';
 
                 html += '<tr>';
-                html += '<td>' + (a.descripcion || '') + '</td>';
+                html += '<td>' + (a.descripcion || a.Descripcion || '') + '</td>';
                 html += '<td style="text-align:center;font-weight:600;">' + cantSolicitada + '</td>';
-                html += '<td>' + (a.unidadMedida || '') + '</td>';
+                html += '<td>' + (a.unidadMedida || a.UnidadMedida || '') + '</td>';
                 html += '<td>' + buildStockBadge(info, cantSolicitada) + '</td>';
                 html += '<td><input type="number" class="' + inputClass + '" min="0" step="1" value="' + valorInput + '" max="' + maxVal + '" data-detalle="' + idDetalle + '" data-stock="' + (info ? info.stockDisponible : 0) + '" style="width:90px; padding:8px 10px;"' + inputDisabled + ' /></td>';
                 html += '<td style="text-align:center"><input type="checkbox" class="almacen-chk-compra" data-detalle="' + idDetalle + '" style="width:18px;height:18px;cursor:pointer;" /></td>';
@@ -436,18 +476,24 @@
         var modal = new bootstrap.Modal(document.getElementById('modalAlmacen'));
         modal.show();
 
-        var urlReq = (urlObtenerRequisicion || '').replace(/\/$/, '') + '?id=' + id;
-        var urlStock = (urlConsultarStock || '').replace(/\/$/, '') + '?id=' + id;
+        var urlReq = (urlObtenerRequisicion || '').replace(/\/$/, '') + '?id=' + encodeURIComponent(id);
+        var urlStock = (urlConsultarStock || '').replace(/\/$/, '') + '?id=' + encodeURIComponent(id);
+
+        var fetchOpts = { credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
 
         Promise.all([
-            fetch(urlReq).then(function (r) { return r.ok ? r.json() : Promise.reject('req'); }),
-            fetch(urlStock).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+            fetch(urlReq, fetchOpts).then(function (r) { return r.ok ? r.json() : Promise.reject('req'); }),
+            fetch(urlStock, fetchOpts).then(function (r) {
+                if (!r.ok) return [];
+                return r.json().then(parsearRespuestaStock).catch(function () { return []; });
+            }).catch(function () { return []; })
         ]).then(function (results) {
             reqCompleta = results[0];
-            var stockArr = results[1] || [];
+            var stockArr = parsearRespuestaStock(results[1]);
             stockData = {};
             stockArr.forEach(function (s) {
-                stockData[s.idRequisicionDetalle] = s;
+                var norm = normalizarFilaStock(s);
+                if (norm) stockData[norm.idRequisicionDetalle] = norm;
             });
             document.querySelectorAll('.almacen-modal-tabs-btn').forEach(function (b) { b.classList.remove('activo'); });
             document.querySelector('.almacen-modal-tabs-btn[data-modal-tab="0"]').classList.add('activo');
