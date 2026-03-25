@@ -170,8 +170,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NombreEstatus)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            // Columna en BD: Actvio (typo histórico)
-            entity.Property(e => e.Actvio).HasColumnName("Actvio");
         });
 
         modelBuilder.Entity<TblInventario>(entity =>
@@ -401,10 +399,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.UnidadMedida)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-
-            entity.HasOne(d => d.IdEstatusNavigation).WithMany(p => p.TblRequisicionDetalles)
-                .HasForeignKey(d => d.IdEstatus)
-                .HasConstraintName("FK_TblRequisicionDetalle_TblEstatus");
 
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalles)
                 .HasForeignKey(d => d.IdRequisicion)

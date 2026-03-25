@@ -11,7 +11,5 @@ public partial class TblEstatus
 
     public bool Actvio { get; set; }
 
-    public virtual ICollection<TblRequisicionDetalle> TblRequisicionDetalles { get; set; } = new List<TblRequisicionDetalle>();
-
     public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 }

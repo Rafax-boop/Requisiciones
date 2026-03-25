@@ -3,6 +3,7 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
+using Inventario.Entity.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
@@ -120,10 +121,10 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var requiCreada = await _requisicionesService.CrearRequisicion(dto, idUsuario, true);
 
-            if (modelo.TipoServicio == "Imprenta" && Fotos != null && Fotos.Any())
+            if (modelo.TipoServicio == "Servicio Impresion" && Fotos != null && Fotos.Any())
                 await _requisicionesService.GuardarFotosRequisicion(requiCreada.IdRequisicion, Fotos, _env.WebRootPath);
 
-            TempData["MensajeExito"] = "Requisici�n guardada correctamente.";
+            TempData["MensajeExito"] = "Requisición guardada correctamente.";
             TempData["FolioCreado"] = requiCreada.NumRequisicion;
             return RedirectToAction("TablaRequisicionServicios", "Servicios");
         }
@@ -205,15 +206,15 @@ namespace Inventario.AplicacionWeb.Controllers
             return View("FormularioRequisicionServicios", modelo);
         }
 
-        public async Task<JsonResult> BuscarArticulos(string term, bool mensual = false)
+        public async Task<JsonResult> BuscarArticulos(string term)
         {
-            var articulos = await _articulosService.BuscarArticulos(term, mensual);
+            var articulos = await _articulosService.BuscarArticulos(term, TipoBusquedaArticulo.Servicio);
 
             var resultado = articulos.Select(a => new
             {
                 id = a.Id,
                 text = a.Descripcion
-            }).ToList();
+            });
 
             return Json(resultado);
         }

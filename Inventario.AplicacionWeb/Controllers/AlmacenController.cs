@@ -64,103 +64,103 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(dto);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> ConsultarStock(int id)
-        {
-            var stock = await _almacenService.ConsultarStockParaRequisicion(id);
-            return Json(stock);
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> ConsultarStock(int id)
+        //{
+        //    var stock = await _almacenService.ConsultarStockParaRequisicion(id);
+        //    return Json(stock);
+        //}
 
-        private int? GetUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(idClaim) && int.TryParse(idClaim, out int id))
-                return id;
-            return null;
-        }
+        //private int? GetUserId()
+        //{
+        //    var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    if (!string.IsNullOrEmpty(idClaim) && int.TryParse(idClaim, out int id))
+        //        return id;
+        //    return null;
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, mensaje, error) = await _almacenService.RegistrarIngresoInventario(
-                request.Clave,
-                request.Descripcion ?? "",
-                request.UnidadMedida ?? "",
-                request.Cantidad,
-                userId.Value,
-                request.Motivo ?? "");
+        //    var (ok, mensaje, error) = await _almacenService.RegistrarIngresoInventario(
+        //        request.Clave,
+        //        request.Descripcion ?? "",
+        //        request.UnidadMedida ?? "",
+        //        request.Cantidad,
+        //        userId.Value,
+        //        request.Motivo ?? "");
 
-            return Json(new { ok, mensaje, error });
-        }
+        //    return Json(new { ok, mensaje, error });
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> AprobarCompleta([FromBody] AprobarRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> AprobarCompleta([FromBody] AprobarRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, mensaje, error) = await _almacenService.AprobarRequisicionCompleta(request.IdRequisicion, userId.Value);
-            return Json(new { ok, mensaje, error });
-        }
+        //    var (ok, mensaje, error) = await _almacenService.AprobarRequisicionCompleta(request.IdRequisicion, userId.Value);
+        //    return Json(new { ok, mensaje, error });
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> AprobarParcial([FromBody] AprobarParcialRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> AprobarParcial([FromBody] AprobarParcialRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var partidas = (request.Partidas ?? new List<AprobarParcialPartidaRequest>())
-                .Select(p => (p.IdRequisicionDetalle, p.CantidadAprobada));
+        //    var partidas = (request.Partidas ?? new List<AprobarParcialPartidaRequest>())
+        //        .Select(p => (p.IdRequisicionDetalle, p.CantidadAprobada));
 
-            var (ok, mensaje, error) = await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, userId.Value, partidas);
-            return Json(new { ok, mensaje, error });
-        }
+        //    var (ok, mensaje, error) = await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, userId.Value, partidas);
+        //    return Json(new { ok, mensaje, error });
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> Rechazar([FromBody] RechazarRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> Rechazar([FromBody] RechazarRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, mensaje, error) = await _almacenService.RechazarRequisicionAlmacen(request.IdRequisicion, userId.Value, request.Motivo ?? "");
-            return Json(new { ok, mensaje, error });
-        }
+        //    var (ok, mensaje, error) = await _almacenService.RechazarRequisicionAlmacen(request.IdRequisicion, userId.Value, request.Motivo ?? "");
+        //    return Json(new { ok, mensaje, error });
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> AnularMovimiento([FromBody] AnularMovimientoRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> AnularMovimiento([FromBody] AnularMovimientoRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var (ok, mensaje, error) = await _almacenService.AnularMovimientoInventario(request.IdMovimiento, userId.Value, request.Motivo ?? "");
-            return Json(new { ok, mensaje, error });
-        }
+        //    var (ok, mensaje, error) = await _almacenService.AnularMovimientoInventario(request.IdMovimiento, userId.Value, request.Motivo ?? "");
+        //    return Json(new { ok, mensaje, error });
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> ProcesarRequisicion([FromBody] ProcesarRequisicionRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
+        //[HttpPost]
+        //public async Task<IActionResult> ProcesarRequisicion([FromBody] ProcesarRequisicionRequest request)
+        //{
+        //    var userId = GetUserId();
+        //    if (userId == null)
+        //        return Unauthorized(new { ok = false, mensaje = (string?)null, error = "No autorizado." });
 
-            var entregas = (request.Entregas ?? new List<PartidaEntrega>())
-                .Select(e => (e.IdRequisicionDetalle, e.CantidadAprobada));
+        //    var entregas = (request.Entregas ?? new List<PartidaEntrega>())
+        //        .Select(e => (e.IdRequisicionDetalle, e.CantidadAprobada));
 
-            var comprasParam = (request.Compras ?? new List<PartidaCompra>())
-                .Select(c => (c.IdRequisicionDetalle, c.CantidadComprar));
+        //    var comprasParam = (request.Compras ?? new List<PartidaCompra>())
+        //        .Select(c => (c.IdRequisicionDetalle, c.CantidadComprar));
 
-            var (ok, mensaje, error) = await _almacenService.ProcesarRequisicion(
-                request.IdRequisicion, userId.Value, entregas, comprasParam);
-            return Json(new { ok, mensaje, error });
-        }
+        //    var (ok, mensaje, error) = await _almacenService.ProcesarRequisicion(
+        //        request.IdRequisicion, userId.Value, entregas, comprasParam);
+        //    return Json(new { ok, mensaje, error });
+        //}
 
         public class IngresoInventarioRequest
         {

@@ -2,8 +2,8 @@
     var container = document.querySelector('[data-url-buscar-articulos]');
     var urlBuscarArticulos = container ? container.getAttribute('data-url-buscar-articulos') : '';
     var urlObtenerInfoArticulo = container ? container.getAttribute('data-url-obtener-info-articulo') : '';
-    var esMensual = container ? container.getAttribute('data-tipo-requisicion') === 'mensual' : false;
-    var esServicio = container ? container.getAttribute('data-tipo-requisicion') === 'servicio' : false;
+    var tipoRequisicion = container ? container.getAttribute('data-tipo-requisicion') : 'normal';
+    var esServicio = tipoRequisicion === 'servicio';
     var flujoContinuar = !!document.getElementById('btnContinuar');
     var urlBuscarCogs = container ? container.getAttribute("data-url-buscar-cogs") : "";
 
@@ -61,7 +61,7 @@
                 const seccionFotos = document.getElementById('seccionFotos');
                 const valor = $(this).val();
 
-                if (valor === 'Imprenta') {
+                if (valor === 'Servicio Impresion') {
                     seccionFotos.style.display = 'block';
                 } else {
                     seccionFotos.style.display = 'none';
@@ -227,7 +227,7 @@
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
-                    return { term: params.term, mensual: esMensual };
+                    return { term: params.term, tipo: tipoRequisicion };
                 },
                 processResults: function (data) {
                     return { results: data };

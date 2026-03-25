@@ -1,6 +1,7 @@
 ﻿using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
+using Inventario.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -24,14 +25,25 @@ namespace Inventario.BLL.Implementacion
             return await _repositoryArticulo.Obtener(a => a.Id == idArticulo);
         }
 
-        public async Task<List<TblArticulo>> BuscarArticulos(string termino, bool mensual)
+        public async Task<List<TblArticulo>> BuscarArticulos(string termino, TipoBusquedaArticulo tipo)
         {
-            IQueryable<TblArticulo> query;
+            IQueryable<TblArticulo> query = await _repositoryArticulo.Consultar();
 
-            if (mensual)
-                query = await _repositoryArticulo.Consultar(a => a.Cog > 1999 && a.Cog < 3000);
-            else
-                query = await _repositoryArticulo.Consultar();
+            switch (tipo)
+            {
+                case TipoBusquedaArticulo.Mensual:
+                    query = query.Where(a => a.Cog >= 2000 && a.Cog < 3000);
+                    break;
+
+                case TipoBusquedaArticulo.Servicio:
+                    query = query.Where(a => a.Cog >= 3000 && a.Cog < 4000);
+                    break;
+
+                case TipoBusquedaArticulo.Normal:
+                default:
+                    query = query.Where(a => !(a.Cog >= 3000 && a.Cog < 4000));
+                    break;
+            }
 
             if (!string.IsNullOrWhiteSpace(termino))
                 query = query.Where(a => a.Descripcion.Contains(termino));
