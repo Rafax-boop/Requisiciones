@@ -30,6 +30,7 @@ namespace Inventario.IOC
             services.AddScoped<IAlmacenService, AlmacenService>();
             services.AddScoped<IMunicipioServie, MunicipioService>();
             services.AddScoped<IProgramaPresupuestarioService, ProgramaPresupuestarioService>();
+            services.AddScoped<IFinancierosService, FinancierosService>();
         }
     }
 }
