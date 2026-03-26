@@ -1,6 +1,5 @@
-﻿using Inventario.BLL.DTO;
+using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
-using Inventario.DAL.Implementacion;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +14,9 @@ namespace Inventario.BLL.Implementacion
     public class FinancierosService : IFinancierosService
     {
         private readonly IRequisicionRepository _repositoryRequisicion;
-        private readonly GenericRepository<TblBitacoraEstatus> _repositoryBitacora;
+        private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
 
-        public FinancierosService(IRequisicionRepository repositoryRequisicion, GenericRepository<TblBitacoraEstatus> repositoryBitacora)
+        public FinancierosService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
