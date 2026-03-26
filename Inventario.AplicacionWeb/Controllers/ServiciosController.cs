@@ -173,7 +173,7 @@ namespace Inventario.AplicacionWeb.Controllers
                     Descripcion = a.Descripcion,
                     DescripcionDetallada = a.DescripcionDetallada
                 }).ToList(),
-                FotosExistentes = dto.TipoServicio == "Imprenta"
+                FotosExistentes = dto.TipoServicio == "Servicio Impresion"
                     ? (await _requisicionesService.ObtenerFotosConIdRequisicion(id))
                         .Select(f => new VMFotoExistente { IdFoto = f.Id, Ruta = f.Ruta })
                         .ToList()
@@ -196,7 +196,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (exito)
             {
-                if (modelo.TipoServicio == "Imprenta" && Fotos != null && Fotos.Any())
+                if (modelo.TipoServicio == "Servicio Impresion" && Fotos != null && Fotos.Any())
                     await _requisicionesService.GuardarFotosRequisicion(modelo.IdRequiMaestra!.Value, Fotos, _env.WebRootPath);
 
                 TempData["MensajeExito"] = "Requisici�n editada correctamente.";

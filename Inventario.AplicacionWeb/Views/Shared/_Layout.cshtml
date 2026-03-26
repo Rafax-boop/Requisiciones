@@ -106,6 +106,13 @@
                             Almacén
                         </a>
                     }
+                    @if (User.IsInRole("8") || User.IsInRole("5") || User.IsInRole("9"))
+                    {
+                        <a href="@Url.Action("TablaFinancieros", "Financieros")"
+                           class="@(ViewData["Title"]?.ToString() == "Presupuesto" ? "active" : "")">
+                            Presupuesto
+                        </a>
+                    }
                 </li>
 
                 <div class="nav-bar-user">

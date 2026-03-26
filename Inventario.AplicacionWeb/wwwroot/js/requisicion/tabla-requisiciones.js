@@ -765,7 +765,7 @@
         var galeriaFotos = document.getElementById('galeriaFotosDetalle');
 
         if (seccionFotos && galeriaFotos) {
-            if (data.tipoServicio === 'Imprenta' && data.fotos && data.fotos.length > 0) {
+            if (data.tipoServicio === 'Servicio Impresion' && data.fotos && data.fotos.length > 0) {
                 galeriaFotos.innerHTML = '';
                 data.fotos.forEach(function (ruta) {
                     var wrapper = document.createElement('div');
