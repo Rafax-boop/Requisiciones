@@ -1,4 +1,5 @@
 @using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.AplicacionWeb.Utilidades
 @model VMTablaRequisiciones
 @{
     ViewData["Title"] = "Requisiciones de Servicios";
@@ -18,7 +19,8 @@
      data-url-atender="@Url.Action("Atender", "Requisicion")"
      data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")"
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
-     data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")">
+     data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")"
+     data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")">
     <!--Se debe de ver el cambio de este respecto a adquisiciones del buscador de cogs-->
     <div class="tabla-requi-header">
         <div>
@@ -177,21 +179,10 @@
                             <td colspan="@numColsReq">
                                 <div class="timeline-container">
                                     @{
-                                        var paso1 = true;
-                                        var paso2 = item.NombreAsignado != null;
-                                        var paso3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
-                                        var paso4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
-                                        var paso5 = item.Estatus == "REQUISICION AUTORIZADA";
-                                        var esMod = item.Estatus == "REQUISICION MODIFICACIÓN";
-
-                                        var progress = 0;
-                                        if (paso5) progress = 100;
-                                        else if (paso4) progress = 75;
-                                        else if (paso3) progress = 50;
-                                        else if (paso2) progress = 25;
+                                        var (fase, esTerminal, esMod, progress) = TimelineHelper.Calcular(item.IdEstatus);
                                     }
                                     <ul class="timeline-track" style="--progress: @(progress)%;">
-                                        <li class="timeline-step @(paso1 ? "completed" : "")">
+                                        <li class="timeline-step completed">
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
@@ -199,40 +190,39 @@
                                                 <span>Emisión @item.FechaEmision</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(paso2 ? "completed" : "")">
-                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
-                                            <div class="step-label">Asignada</div>
+                                        <li class="timeline-step @(fase >= 2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
+                                            <div class="step-label">Cotización</div>
                                             <div class="step-tooltip">
-                                                <strong>@(paso2 ? "Asignada" : "Sin Asignar")</strong>
-                                                <span>@(paso2? item.NombreAsignado: "Pendiente")</span>
+                                                <strong>Cotización / Presupuesto</strong>
+                                                <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(paso3 ? (esMod ? "warning" : "completed") : "")">
+                                        <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "En Proceso")</div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "Trámite")</div>
                                             <div class="step-tooltip">
-                                                <strong>Atención Almacén</strong>
-                                                <span>@(esMod ? "Regresada para cambios" : (paso3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                                <strong>@(esMod ? "Modificación" : "Trámite Operativo")</strong>
+                                                <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(paso4 ? "completed" : "")">
+                                        <li class="timeline-step @(fase >= 4 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
-                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-label">Autorización</div>
                                             <div class="step-tooltip">
-                                                <strong>Firma Pendiente</strong>
-                                                <span>@(paso4 ? "Esperando firmas" : "Pendiente")</span>
+                                                <strong>Autorización Documental</strong>
+                                                <span>@(fase >= 4 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(paso5 ? "completed" : "")">
-                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                        <li class="timeline-step @(fase >= 5 ? "completed" : "")">
                                             <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                                 <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                             </button>
                                             <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
-                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-label">Cierre</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Autorizada</strong>
-                                                <span>@(paso5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                                <strong>Entregado / Finalizado</strong>
+                                                <span>@(fase >= 5 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                     </ul>
@@ -327,21 +317,10 @@
                             <td colspan="@numColsReq">
                                 <div class="timeline-container">
                                     @{
-                                        var p1 = true;
-                                        var p2 = item.NombreAsignado != null;
-                                        var p3 = item.Estatus == "REQUISICION EN PROCESO" || item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA" || item.Estatus == "REQUISICION MODIFICACIÓN";
-                                        var p4 = item.Estatus == "POR AUTORIZAR" || item.Estatus == "REQUISICION AUTORIZADA";
-                                        var p5 = item.Estatus == "REQUISICION AUTORIZADA";
-                                        var eMod = item.Estatus == "REQUISICION MODIFICACIÓN";
-
-                                        var progA = 0;
-                                        if (p5) progA = 100;
-                                        else if (p4) progA = 75;
-                                        else if (p3) progA = 50;
-                                        else if (p2) progA = 25;
+                                        var (faseA, esTerminalA, esModA, progA) = TimelineHelper.Calcular(item.IdEstatus);
                                     }
                                     <ul class="timeline-track" style="--progress: @(progA)%;">
-                                        <li class="timeline-step @(p1 ? "completed" : "")">
+                                        <li class="timeline-step completed">
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
@@ -349,40 +328,39 @@
                                                 <span>Emisión @item.FechaEmision</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(p2 ? "completed" : "")">
-                                            <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
-                                            <div class="step-label">Asignada</div>
+                                        <li class="timeline-step @(faseA >= 2 ? "completed" : "")">
+                                            <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
+                                            <div class="step-label">Cotización</div>
                                             <div class="step-tooltip">
-                                                <strong>@(p2 ? "Asignada" : "Sin Asignar")</strong>
-                                                <span>@(p2? item.NombreAsignado: "Pendiente")</span>
+                                                <strong>Cotización / Presupuesto</strong>
+                                                <span>@(faseA >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(p3 ? (eMod ? "warning" : "completed") : "")">
-                                            <div class="step-icon"><i class="fa-solid @(eMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(eMod ? "A Modificar" : "En Proceso")</div>
+                                        <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
+                                            <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                            <div class="step-label">@(esModA ? "A Modificar" : "Trámite")</div>
                                             <div class="step-tooltip">
-                                                <strong>Atención Almacén</strong>
-                                                <span>@(eMod ? "Regresada para cambios" : (p3 ? "Actualmente en revisión" : "Pendiente"))</span>
+                                                <strong>@(esModA ? "Modificación" : "Trámite Operativo")</strong>
+                                                <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(p4 ? "completed" : "")">
+                                        <li class="timeline-step @(faseA >= 4 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
-                                            <div class="step-label">Por Autorizar</div>
+                                            <div class="step-label">Autorización</div>
                                             <div class="step-tooltip">
-                                                <strong>Firma Pendiente</strong>
-                                                <span>@(p4 ? "Esperando firmas" : "Pendiente")</span>
+                                                <strong>Autorización Documental</strong>
+                                                <span>@(faseA >= 4 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
-                                        <li class="timeline-step @(p5 ? "completed" : "")">
-                                            <!-- Botón historial posicionado absoluto sobre este paso -->
+                                        <li class="timeline-step @(faseA >= 5 ? "completed" : "")">
                                             <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                                 <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                             </button>
                                             <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
-                                            <div class="step-label">Autorizada</div>
+                                            <div class="step-label">Cierre</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Autorizada</strong>
-                                                <span>@(p5 ? "Procesada exitosamente" : "Pendiente")</span>
+                                                <strong>Entregado / Finalizado</strong>
+                                                <span>@(faseA >= 5 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                     </ul>

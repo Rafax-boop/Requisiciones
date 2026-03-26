@@ -452,47 +452,90 @@ namespace Inventario.BLL.Implementacion
                 return new List<ProgresoPasoDTO>();
 
             int idEstatusActual = requisicion.IdEstatus ?? 0;
-            var todosEstatus = await _repositoryEstatus.Consultar(e => e.Actvio);
-            var listaEstatus = await todosEstatus.OrderBy(e => e.IdEstatus).ToListAsync();
 
-            var bitacoras = await _repositoryBitacora.Consultar(b => b.IdRequisicion == idRequisicion);
-            var bitacorasConUsuario = await bitacoras
-                .OrderByDescending(b => b.FechaEstatus)
-                .Select(b => new { b.IdEstatus, b.FechaEstatus, b.Observacion, Usuario = b.IdUsuarioNavigation != null ? b.IdUsuarioNavigation.Usuario : "" })
+            var todosEstatus = await _repositoryEstatus.Consultar();
+            var nombresEstatus = await todosEstatus.ToDictionaryAsync(e => e.IdEstatus, e => e.NombreEstatus);
+
+            var bitacorasQuery = await _repositoryBitacora.Consultar(b => b.IdRequisicion == idRequisicion);
+            var eventos = await bitacorasQuery
+                .OrderBy(b => b.FechaEstatus)
+                .ThenBy(b => b.IdBitacoraEstatus)
+                .Select(b => new
+                {
+                    b.IdBitacoraEstatus,
+                    b.IdEstatus,
+                    b.FechaEstatus,
+                    b.Observacion,
+                    Usuario = b.IdUsuarioNavigation != null ? b.IdUsuarioNavigation.Usuario : ""
+                })
                 .ToListAsync();
 
+            var esMx = System.Globalization.CultureInfo.GetCultureInfo("es-MX");
             var resultado = new List<ProgresoPasoDTO>();
-            foreach (var est in listaEstatus)
-            {
-                string state = "pending";
-                if (est.IdEstatus < idEstatusActual) state = "done";
-                else if (est.IdEstatus == idEstatusActual) state = "active";
 
-                var ultimaBitacora = bitacorasConUsuario.FirstOrDefault(b => b.IdEstatus == est.IdEstatus);
-                string date = "—";
-                string time = "—";
-                string by = "—";
-                string comment = "";
-                if (ultimaBitacora != null && ultimaBitacora.FechaEstatus.HasValue)
+            for (int i = 0; i < eventos.Count; i++)
+            {
+                var ev = eventos[i];
+                int idEst = ev.IdEstatus ?? 0;
+                bool esUltimo = i == eventos.Count - 1;
+
+                string state;
+                if (!esUltimo)
+                    state = "done";
+                else if (EstatusFlow.EsTerminalNegativo(idEst))
+                    state = "cancelled";
+                else if (EstatusFlow.TerminalPositivos.Contains(idEst))
+                    state = "completed";
+                else
+                    state = "active";
+
+                string date = "—", time = "—";
+                if (ev.FechaEstatus.HasValue)
                 {
-                    var dt = ultimaBitacora.FechaEstatus.Value;
-                    date = dt.ToString("dd MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
-                    time = state == "active" && dt.Date == DateTime.Now.Date ? "En curso" : dt.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
-                    by = ultimaBitacora.Usuario ?? "—";
-                    comment = ultimaBitacora.Observacion ?? "";
+                    var dt = ev.FechaEstatus.Value;
+                    date = dt.ToString("dd MMM yyyy", esMx);
+                    time = dt.ToString("hh:mm tt", esMx);
                 }
 
                 resultado.Add(new ProgresoPasoDTO
                 {
-                    Dept = est.NombreEstatus,
+                    Dept = nombresEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}"),
                     Date = date,
                     State = state,
-                    By = by,
+                    By = ev.Usuario ?? "—",
                     Time = time,
-                    Action = comment,
-                    Comment = comment
+                    Action = ev.Observacion ?? "",
+                    Comment = ev.Observacion ?? ""
                 });
             }
+
+            // Paso sintético si la bitácora no refleja el estatus vigente
+            if (idEstatusActual > 0 && (eventos.Count == 0 || eventos.Last().IdEstatus != idEstatusActual))
+            {
+                string synState = EstatusFlow.EsTerminalNegativo(idEstatusActual) ? "cancelled"
+                    : EstatusFlow.TerminalPositivos.Contains(idEstatusActual) ? "completed"
+                    : "active";
+
+                string synDate = "—", synTime = "—";
+                if (requisicion.FechaModificacion.HasValue)
+                {
+                    var dt = requisicion.FechaModificacion.Value;
+                    synDate = dt.ToString("dd MMM yyyy", esMx);
+                    synTime = dt.ToString("hh:mm tt", esMx);
+                }
+
+                resultado.Add(new ProgresoPasoDTO
+                {
+                    Dept = nombresEstatus.GetValueOrDefault(idEstatusActual, $"Estatus {idEstatusActual}"),
+                    Date = synDate,
+                    State = synState,
+                    By = "—",
+                    Time = synTime,
+                    Action = "",
+                    Comment = ""
+                });
+            }
+
             return resultado;
         }
 

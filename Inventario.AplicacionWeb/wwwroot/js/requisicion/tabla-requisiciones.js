@@ -818,61 +818,103 @@
   /* ══════════════════════════════════════════════
      MODAL DE HISTORIAL COMPLETO
   ══════════════════════════════════════════════ */
-  window.verHistorialTimeline = function (idRequi, numRequi) {
-    document.getElementById('historialSubtitle').textContent = numRequi;
+  var urlObtenerProgreso = container ? container.getAttribute("data-url-obtener-progreso") : "";
 
-    // Dummy data simulando historial hasta tener endpoint real
-    const STEPS = [
-      { dept: 'Solicitud creada', date: '20 Feb 2026', state: 'done', by: 'A. Celis', time: '08:50 AM', action: 'Requisición capturada', comment: 'Equipo de cómputo solicitado.' },
-      { dept: 'Jefatura de Área', date: '20 Feb 2026', state: 'done', by: 'Lic. Torres', time: '10:15 AM', action: 'Aprobada sin observaciones', comment: 'Validado por jefe inmediato.' },
-      { dept: 'Rec. Materiales', date: '21 Feb 2026', state: 'done', by: 'Arq. Medina', time: '09:40 AM', action: 'Sin existencias en almacén', comment: 'Se requiere compra a proveedor.' },
-      { dept: 'Subdirección', date: '21 Feb 2026', state: 'done', by: 'Dr. Gutiérrez', time: '03:22 PM', action: 'Presupuesto autorizado', comment: 'Partida 2111 con saldo suficiente.' },
-      { dept: 'Compras y Adquisiciones', date: 'Hoy', state: 'active', by: 'C.P. Flores', time: 'En curso', action: 'Solicitando cotizaciones', comment: '3 proveedores contactados.' },
-      { dept: 'Finanzas', date: '—', state: 'pending', by: '—', time: '—', action: '', comment: '' },
-      { dept: 'Entrega', date: '—', state: 'pending', by: '—', time: '—', action: '', comment: '' },
-    ];
+  function renderHistorialSteps(steps) {
+    var done = 0, active = 0, cancelled = 0, completed = 0;
+    steps.forEach(function (s) {
+      if (s.state === 'done') done++;
+      else if (s.state === 'active') active++;
+      else if (s.state === 'cancelled') cancelled++;
+      else if (s.state === 'completed') completed++;
+    });
 
-    const done = STEPS.filter(s => s.state === 'done').length;
-    const active = STEPS.filter(s => s.state === 'active').length;
-    const pending = STEPS.filter(s => s.state === 'pending').length;
+    var summaryEl = document.getElementById('historialSummary');
+    if (cancelled > 0) {
+      summaryEl.innerHTML =
+        '<div class="summary-item"><div class="summary-num" style="color:#15803d">' + done + '</div><div class="summary-label">Registrados</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#b91c1c">1</div><div class="summary-label">Cancelada</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#64748b">' + (done + cancelled) + '</div><div class="summary-label">Total</div></div>';
+    } else if (completed > 0) {
+      summaryEl.innerHTML =
+        '<div class="summary-item"><div class="summary-num" style="color:#15803d">' + done + '</div><div class="summary-label">Registrados</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#065f46">1</div><div class="summary-label">Finalizada</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#64748b">' + (done + completed) + '</div><div class="summary-label">Total</div></div>';
+    } else {
+      summaryEl.innerHTML =
+        '<div class="summary-item"><div class="summary-num" style="color:#15803d">' + done + '</div><div class="summary-label">Completados</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#b45309">' + active + '</div><div class="summary-label">En proceso</div></div>' +
+        '<div class="summary-item"><div class="summary-num" style="color:#64748b">' + (done + active) + '</div><div class="summary-label">Total</div></div>';
+    }
 
-    document.getElementById('historialSummary').innerHTML = `
-          <div class="summary-item"><div class="summary-num" style="color:#15803d">${done}</div><div class="summary-label">Aprobados</div></div>
-          <div class="summary-item"><div class="summary-num" style="color:#b45309">${active}</div><div class="summary-label">En proceso</div></div>
-          <div class="summary-item"><div class="summary-num" style="color:#be185d">${pending}</div><div class="summary-label">Pendientes</div></div>
-      `;
-
-    const mtl = document.getElementById('historialTl');
+    var mtl = document.getElementById('historialTl');
     mtl.innerHTML = '';
 
-    STEPS.forEach(s => {
-      const bCls = s.state === 'done' ? 'mbadge-done' : s.state === 'active' ? 'mbadge-active' : 'mbadge-pending';
-      const bTxt = s.state === 'done' ? 'Completado' : s.state === 'active' ? 'En curso' : 'Pendiente';
-      const tStr = s.time !== '—' ? ` · ${s.time}` : '';
+    steps.forEach(function (s) {
+      var bCls, bTxt;
+      switch (s.state) {
+        case 'done':      bCls = 'mbadge-done';      bTxt = 'Completado'; break;
+        case 'active':    bCls = 'mbadge-active';     bTxt = 'En curso';   break;
+        case 'completed': bCls = 'mbadge-completed';  bTxt = 'Finalizado'; break;
+        case 'cancelled': bCls = 'mbadge-cancelled';  bTxt = 'Cancelada';  break;
+        default:          bCls = 'mbadge-pending';     bTxt = 'Pendiente';  break;
+      }
+      var tStr = s.time !== '—' ? ' · ' + s.time : '';
 
-      const item = document.createElement('div');
-      item.className = `mtl-item ${s.state}`;
-      item.innerHTML = `
-              <div class="mtl-dot-col"><div class="mtl-dot"></div></div>
-              <div class="mtl-content">
-                  <div class="mtl-dept">${s.dept}</div>
-                  <div class="mtl-meta">
-                      <span class="mtl-badge ${bCls}">${bTxt}</span>
-                      <span class="mtl-time">${s.date}${tStr}</span>
-                  </div>
-                  ${s.comment ? `
-                  <div class="mtl-detail">
-                      <div class="mtl-dr"><span class="dr-lbl">Responsable</span>${s.by}</div>
-                      <div class="mtl-dr"><span class="dr-lbl">Acción</span>${s.action}</div>
-                      <div class="mtl-dr"><span class="dr-lbl">Nota</span>${s.comment}</div>
-                  </div>` : ''}
-              </div>
-          `;
+      var item = document.createElement('div');
+      item.className = 'mtl-item ' + s.state;
+      item.innerHTML =
+        '<div class="mtl-dot-col"><div class="mtl-dot"></div></div>' +
+        '<div class="mtl-content">' +
+          '<div class="mtl-dept">' + s.dept + '</div>' +
+          '<div class="mtl-meta">' +
+            '<span class="mtl-badge ' + bCls + '">' + bTxt + '</span>' +
+            '<span class="mtl-time">' + s.date + tStr + '</span>' +
+          '</div>' +
+          (s.comment ?
+          '<div class="mtl-detail">' +
+            '<div class="mtl-dr"><span class="dr-lbl">Responsable</span>' + s.by + '</div>' +
+            '<div class="mtl-dr"><span class="dr-lbl">Acción</span>' + s.action + '</div>' +
+            '<div class="mtl-dr"><span class="dr-lbl">Nota</span>' + s.comment + '</div>' +
+          '</div>' : '') +
+        '</div>';
       mtl.appendChild(item);
     });
+  }
+
+  window.verHistorialTimeline = function (idRequi, numRequi) {
+    document.getElementById('historialSubtitle').textContent = numRequi;
+    document.getElementById('historialSummary').innerHTML =
+      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial…</div>';
+    document.getElementById('historialTl').innerHTML = '';
 
     var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
     modal.show();
+
+    if (!urlObtenerProgreso) {
+      document.getElementById('historialSummary').innerHTML =
+        '<div style="color:#b91c1c;text-align:center;padding:1rem;">URL de progreso no configurada</div>';
+      return;
+    }
+
+    $.get(urlObtenerProgreso, { idRequisicion: idRequi }, function (data) {
+      var steps = (data || []).map(function (s) {
+        return {
+          dept:    s.dept    || s.Dept    || '',
+          date:    s.date    || s.Date    || '—',
+          state:   s.state   || s.State   || 'pending',
+          by:      s.by      || s.By      || '—',
+          time:    s.time    || s.Time    || '—',
+          action:  s.action  || s.Action  || '',
+          comment: s.comment || s.Comment || ''
+        };
+      });
+      renderHistorialSteps(steps);
+    }).fail(function () {
+      document.getElementById('historialSummary').innerHTML =
+        '<div style="color:#b91c1c;text-align:center;padding:1rem;">' +
+        '<i class="fa-solid fa-triangle-exclamation"></i> Error al cargar el historial</div>';
+    });
   };
 
   /* ══════════════════════════════════════════════
