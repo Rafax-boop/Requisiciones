@@ -30,4 +30,6 @@ public partial class TblArticulo
     public int? Estatus { get; set; }
 
     public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
+
+    public virtual ICollection<TblRequisicionDetalle> TblRequisicionDetalles { get; set; } = new List<TblRequisicionDetalle>();
 }

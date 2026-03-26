@@ -88,35 +88,6 @@
             </div>
         </div>
 
-        <!-- Sección: Tipo de uso (Administrativo / Donativo) -->
-        <div class="pdf-seccion pdf-presupuesto-row">
-            <span class="pdf-campo-label">Tipo de uso del material</span>
-            <div class="pdf-presupuesto-opciones">
-                <span class="pdf-presupuesto-opcion @(Model.UsoMaterial == false ? "activo" : "")">
-                    @if (Model.UsoMaterial == false)
-                    {
-                        <span class="pdf-check">&#10003;</span>
-                    }
-                    else
-                    {
-                        <span class="pdf-check-empty"></span>
-                    }
-                    Administrativo
-                </span>
-                <span class="pdf-presupuesto-opcion @(Model.UsoMaterial == true ? "activo" : "")">
-                    @if (Model.UsoMaterial == true)
-                    {
-                        <span class="pdf-check">&#10003;</span>
-                    }
-                    else
-                    {
-                        <span class="pdf-check-empty"></span>
-                    }
-                    Donativo
-                </span>
-            </div>
-        </div>
-
         <!-- Tabla de artículos -->
         <div class="pdf-seccion">
             <p class="pdf-tabla-titulo">Artículos solicitados</p>

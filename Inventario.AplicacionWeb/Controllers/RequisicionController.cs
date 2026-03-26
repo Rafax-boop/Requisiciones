@@ -207,6 +207,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     IdArticulo = a.IdArticulo,
                     Cog = a.NumPartida,
+                    ClaveMaterial = a.ClaveMaterial,
                     Cantidad = a.Cantidad,
                     UnidadMedida = a.UnidadMedida,
                     Descripcion = a.Descripcion,

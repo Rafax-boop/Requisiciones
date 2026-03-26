@@ -36,6 +36,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public int? Cog { get; set; }
         public int? IdArticulo { get; set; }
+        public int? ClaveMaterial { get; set; }
         public decimal? Cantidad { get; set; }
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }

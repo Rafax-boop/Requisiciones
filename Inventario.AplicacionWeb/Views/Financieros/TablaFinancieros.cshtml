@@ -12,8 +12,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page" data-tipo-tabla="servicios" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
-     data-url-ver-pdf="@Url.Action("VerParaPdf", "Servicios")"
+<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+     data-url-ver-pdf-requi="@Url.Action("VerParaPdf", "Requisicion")"
+     data-url-ver-pdf-servicio="@Url.Action("VerParaPdf", "Servicios")"
      data-url-usuarios-financieros="@Url.Action("ObtenerUsuariosFinancieros", "Financieros")"
      data-url-asignar=" @Url.Action("AsignarRequisicion", "Financieros")"
      data-url-atender="@Url.Action("Atender", "Financieros")"
@@ -66,9 +67,9 @@
 
     @{
         var numColsReq = 8;
-        if (User.IsInRole("6")) numColsReq++;
-        if (User.IsInRole("7") || User.IsInRole("6")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
+        if (User.IsInRole("8")) numColsReq++;
+        if (User.IsInRole("9") || User.IsInRole("8")) numColsReq++;
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
     }
@@ -104,7 +105,7 @@
                     @foreach (var item in requisicionesPrincipal)
                     {
                         idxPrincipal++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
                             <td style="text-align:center">@idxPrincipal</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -257,7 +258,7 @@
                     @foreach (var item in requisicionesAutorizadas)
                     {
                         idxAutorizadas++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
                             <td style="text-align:center">@idxAutorizadas</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -395,7 +396,7 @@
                     @foreach (var item in requisicionesRechazadas)
                     {
                         idxRechazadas++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
                             <td style="text-align:center">@idxRechazadas</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>

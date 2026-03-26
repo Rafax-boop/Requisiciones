@@ -17,7 +17,8 @@ namespace Inventario.AplicacionWeb.Utilidades.AutoMapper
 
             CreateMap<InventarioItemDTO, VMInventarioItem>();
 
-            CreateMap<AtenderRequiDTO, VMAtenderRequisicion>();
+            CreateMap<AtenderRequiDTO, VMAtenderRequisicion>().ReverseMap();
+            CreateMap<Models.ViewModels.CogEditado, BLL.DTO.CogEditado>().ReverseMap();
         }
     }
 }

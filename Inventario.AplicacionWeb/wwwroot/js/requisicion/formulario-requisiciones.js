@@ -153,7 +153,7 @@
         var fila = [
             '<tr data-index="', index, '">',
             '<td class="cog-' + index + '">' + (art.cog || '-') + '</td>',
-            '<td class="clave-' + index + '">-</td>',
+            '<td class="clave-' + index + '">' + (art.claveMaterial || '-') + '</td>',
             '<td>',
             '<select name="Articulos[' + index + '].IdArticulo" class="form-select select-articulo" data-index="' + index + '" style="width: 240px;" required></select>',
             '<input type="hidden" name="Articulos[' + index + '].Descripcion" class="descripcion-hidden-' + index + '" value="' + (art.descripcion || '') + '" />',
@@ -178,7 +178,20 @@
 
         if (art.idArticulo && art.descripcion) {
             var option = new Option(art.descripcion, art.idArticulo, true, true);
-            $select.append(option).trigger('change');
+            $select.append(option);
+
+            // Llenar celdas y hiddens directamente con los datos que ya tienes
+            $('.cog-' + index).text(art.cog || '-');
+            $('.clave-' + index).text(art.claveMaterial || '-');
+            $('.unidad-' + index).text(art.unidadMedida || '-');
+            $('.descripcion-hidden-' + index).val(art.descripcion || '');
+            $('.cog-hidden-' + index).val(art.cog || '');
+            $('.clave-hidden-' + index).val(art.claveMaterial || '');
+            $('.unidad-hidden-' + index).val(art.unidadMedida || '');
+
+            // Trigger SOLO para que Select2 muestre la opción seleccionada visualmente
+            // pero necesitamos evitar que el evento change dispare el AJAX
+            $select.trigger('change.select2'); // ← change.select2 en lugar de change
         }
     }
 
@@ -732,6 +745,22 @@
     }
 
     function bloquearSeccionArticulos() {
+        $('#tablaArticulos .select-articulo').each(function () {
+            var $select = $(this);
+            var name = $select.attr('name'); // "Articulos[0].IdArticulo"
+            var val = $select.val();
+
+            // Solo agregar si no existe ya un hidden de respaldo
+            if (val && !$select.siblings('input[type="hidden"][data-backup="1"]').length) {
+                $('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', name)
+                    .attr('data-backup', '1')
+                    .val(val)
+                    .insertAfter($select);
+            }
+        });
+
         var btnAgregar = document.querySelector('button[onclick="agregarArticulo()"]');
         if (btnAgregar) {
             btnAgregar.disabled = true;

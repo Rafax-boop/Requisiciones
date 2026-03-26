@@ -9,10 +9,10 @@
         public string? FF { get; set; }
         public string? TipoPrograma { get; set; }
         public int ClaveRegion { get; set; }
-        public List<VMCogEditado> CogsEditados { get; set; } = new();
+        public List<CogEditado> CogsEditados { get; set; } = new();
     }
 
-    public class VMCogEditado
+    public class CogEditado
     {
         public int IdArticulo { get; set; }
         public int Cog { get; set; }

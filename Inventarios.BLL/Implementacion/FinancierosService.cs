@@ -35,7 +35,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             var resultado = await query
-                .Where(r => r.IdEstatus == 13 || r.IdEstatus == 14)
+                .Where(r => r.IdUsuarioMatNavigation.IdRol == 9)
                 .Select(r => new RequisicionMaestraDTO
                 {
                     IdRequi = r.IdRequisicion,
@@ -52,7 +52,8 @@ namespace Inventario.BLL.Implementacion
                         .OrderByDescending(b => b.FechaEstatus)
                         .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
                         .FirstOrDefault(),
-                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null
+                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null,
+                    RequiServicio = r.RequiServicio
                 })
                 .ToListAsync();
 
@@ -101,11 +102,7 @@ namespace Inventario.BLL.Implementacion
                     .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
                 if (requisicion == null) return false;
 
-                requisicion.IdEstatus = 13;
-                requisicion.IdPp = modelo.IdPP;
-                requisicion.Ff = modelo.FF;
-                requisicion.TipoPrograma = modelo.TipoPrograma;
-                requisicion.ClaveRegion = modelo.ClaveRegion;
+                requisicion.IdEstatus = 4;
                 requisicion.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 

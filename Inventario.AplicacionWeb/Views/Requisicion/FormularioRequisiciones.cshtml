@@ -222,6 +222,7 @@
             window.articulosIniciales = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Articulos.Select(a => new {
                 idArticulo = a.IdArticulo,
                 cog        = a.Cog,
+                claveMaterial = a.ClaveMaterial,
                 cantidad   = a.Cantidad,
                 unidadMedida = a.UnidadMedida,
                 descripcion  = a.Descripcion,

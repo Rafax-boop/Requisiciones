@@ -400,6 +400,10 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
 
+            entity.HasOne(d => d.IdArticuloNavigation).WithMany(p => p.TblRequisicionDetalles)
+                .HasForeignKey(d => d.IdArticulo)
+                .HasConstraintName("FK_TblRequisicionDetalle_tblArticulos");
+
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalles)
                 .HasForeignKey(d => d.IdRequisicion)
                 .OnDelete(DeleteBehavior.ClientSetNull)

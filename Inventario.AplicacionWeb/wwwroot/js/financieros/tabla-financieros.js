@@ -1,7 +1,8 @@
 ﻿(function () {
     var container = document.querySelector(".tabla-requi-page");
     var obtenerDetallesUrl = container ? container.getAttribute("data-url-obtener-detalles") : "";
-    var verPdfUrl = container ? container.getAttribute("data-url-ver-pdf") : "";
+    var verPdfRequisicionUrl = container ? container.getAttribute("data-url-ver-pdf-requi") : "";
+    var verPdfServicioUrl = container ? container.getAttribute("data-url-ver-pdf-servicio") : "";
     var urlUsuariosFinancieros = container ? container.getAttribute("data-url-usuarios-financieros") : "";
     var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
@@ -464,8 +465,11 @@
 
     // ── PDF ─────────────────────────────────────────────────────────────────
     window.verPdf = function (id) {
-        var url = (verPdfUrl || "").replace(/\/$/, "") + "/" + id;
-        window.open(url, "_blank");
+        var fila = document.querySelector('tr.fila-requi[data-requi-id="' + id + '"]');
+        var esServicio = fila && fila.getAttribute('data-requi-servicio') === 'true';
+
+        var urlBase = esServicio ? verPdfServicioUrl : verPdfRequisicionUrl;
+        window.open(urlBase.replace(/\/$/, "") + "/" + id, "_blank");
     };
 
     // ── Panel descripción detallada ─────────────────────────────────────────
