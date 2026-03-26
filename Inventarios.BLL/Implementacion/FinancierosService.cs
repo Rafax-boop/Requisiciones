@@ -93,5 +93,36 @@ namespace Inventario.BLL.Implementacion
                 throw;
             }
         }
+
+        public async Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
+                if (requisicion == null) return false;
+
+                requisicion.IdEstatus = 13;
+                requisicion.IdPp = modelo.IdPP;
+                requisicion.Ff = modelo.FF;
+                requisicion.TipoPrograma = modelo.TipoPrograma;
+                requisicion.ClaveRegion = modelo.ClaveRegion;
+                requisicion.FechaModificacion = DateTime.Now;
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = requisicion.IdRequisicion,
+                    IdEstatus = 4,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = modelo.Observaciones,
+                    IdUsuario = idUsuario
+                };
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch { throw; }
+        }
     }
 }

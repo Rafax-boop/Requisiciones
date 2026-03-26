@@ -85,5 +85,17 @@ namespace Inventario.AplicacionWeb.Controllers
                 return Json(new { success = false, mensaje = "Error al asignar la requisición" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Atender([FromBody] VMAtenderRequisicion modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var dto = _mapper.Map<AtenderRequiDTO>(modelo);
+
+            var resultado = await _financierosService.AtenderRequisicion(dto, idUsuario);
+
+            if (!resultado) return BadRequest();
+            return Ok();
+        }
     }
 }

@@ -378,29 +378,24 @@ namespace Inventario.BLL.Implementacion
             }
         }
 
-        public async Task<bool> AtenderRequisicion(
-            int idRequisicion, string observaciones, int idUsuario,
-            int idpp, string FF, string tipoPrograma,
-            int claveRegion,
-            List<(int IdArticulo, int Cog)> cogsEditados = null
-        )
+        public async Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario)
         {
             try
             {
                 var requisicion = await _repositoryRequisicion
-                    .Obtener(r => r.IdRequisicion == idRequisicion);
+                    .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
                 if (requisicion == null) return false;
 
                 // Actualizar COGs si vienen
-                if (cogsEditados != null && cogsEditados.Any())
+                if (modelo.CogsEditados != null && modelo.CogsEditados.Any())
                 {
                     var queryDetalles = await _repositoryRequisicionDetalle
-                        .Consultar(d => d.IdRequisicion == idRequisicion);
+                        .Consultar(d => d.IdRequisicion == modelo.IdRequisicion);
                     var detalles = await queryDetalles.ToListAsync();
 
                     foreach (var detalle in detalles)
                     {
-                        var cogEditado = cogsEditados
+                        var cogEditado = modelo.CogsEditados
                             .FirstOrDefault(c => c.IdArticulo == detalle.IdArticulo);
                         if (cogEditado != default && cogEditado.Cog != 0)
                             detalle.CogEditable = cogEditado.Cog;
@@ -411,10 +406,10 @@ namespace Inventario.BLL.Implementacion
                 }
 
                 requisicion.IdEstatus = 13;
-                requisicion.IdPp = idpp;
-                requisicion.Ff = FF;
-                requisicion.TipoPrograma = tipoPrograma;
-                requisicion.ClaveRegion = claveRegion;
+                requisicion.IdPp = modelo.IdPP;
+                requisicion.Ff = modelo.FF;
+                requisicion.TipoPrograma = modelo.TipoPrograma;
+                requisicion.ClaveRegion = modelo.ClaveRegion;
                 requisicion.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 
@@ -423,7 +418,7 @@ namespace Inventario.BLL.Implementacion
                     IdRequisicion = requisicion.IdRequisicion,
                     IdEstatus = 13,
                     FechaEstatus = DateTime.Now,
-                    Observacion = observaciones,
+                    Observacion = modelo.Observaciones,
                     IdUsuario = idUsuario
                 };
                 await _repositoryBitacora.Crear(bitacora);

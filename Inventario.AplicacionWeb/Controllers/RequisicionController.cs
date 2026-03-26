@@ -310,17 +310,9 @@ namespace Inventario.AplicacionWeb.Controllers
         public async Task<IActionResult> Atender([FromBody] VMAtenderRequisicion modelo)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var dto = _mapper.Map<AtenderRequiDTO>(modelo);
 
-            var resultado = await _requisicionService.AtenderRequisicion(
-                modelo.IdRequisicion,
-                modelo.Observaciones,
-                idUsuario,
-                modelo.IdPP,
-                modelo.FF,
-                modelo.TipoPrograma,
-                modelo.ClaveRegion,
-                modelo.CogsEditados.Select(c => (c.IdArticulo, c.Cog)).ToList()
-            );
+            var resultado = await _requisicionService.AtenderRequisicion(dto, idUsuario);
 
             if (!resultado) return BadRequest();
             return Ok();

@@ -16,10 +16,9 @@
      data-url-ver-pdf="@Url.Action("VerParaPdf", "Servicios")"
      data-url-usuarios-financieros="@Url.Action("ObtenerUsuariosFinancieros", "Financieros")"
      data-url-asignar=" @Url.Action("AsignarRequisicion", "Financieros")"
-     data-url-atender="@Url.Action("Atender", "Requisicion")"
+     data-url-atender="@Url.Action("Atender", "Financieros")"
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")">
-    <!--Se debe de ver el cambio de este respecto a adquisiciones del buscador de cogs-->
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -514,7 +513,6 @@
                                 <th>Unidad Medida</th>
                                 <th>Descripción</th>
                                 <th>Descripción Detallada</th>
-                                <th>COG Editable</th>
                             </tr>
                         </thead>
                         <tbody id="tablaDetalle">
