@@ -35,7 +35,9 @@ namespace Inventario.BLL.Implementacion
             }
 
             var resultado = await query
-                .Where(r => r.IdUsuarioMatNavigation.IdRol == 9)
+                .Where(r => (r.IdEstatus == 13 || r.IdEstatus == 14) && r.RequiServicio == false)
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequisicion)
                 .Select(r => new RequisicionMaestraDTO
                 {
                     IdRequi = r.IdRequisicion,

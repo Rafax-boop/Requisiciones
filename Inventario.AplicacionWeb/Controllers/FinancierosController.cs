@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
@@ -49,7 +49,10 @@ namespace Inventario.AplicacionWeb.Controllers
                     .ListarRequisiciones();
             }
 
-            listaDTO = listaDTO.OrderBy(r => r.FechaModificacion).ToList();
+            listaDTO = listaDTO
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequi)
+                .ToList();
 
             var vm = new VMTablaRequisiciones
             {
