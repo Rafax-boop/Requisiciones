@@ -34,8 +34,11 @@ namespace Inventario.BLL.Implementacion
                 query = await _repositoryRequisicion.Consultar();
             }
 
+            // Misma lógica que requisiciones de materiales: solo RequiServicio == false y orden por antigüedad de modificación.
             var resultado = await query
-                .Where(r => r.IdEstatus == 13 || r.IdEstatus == 14)
+                .Where(r => (r.IdEstatus == 13 || r.IdEstatus == 14) && r.RequiServicio == false)
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequisicion)
                 .Select(r => new RequisicionMaestraDTO
                 {
                     IdRequi = r.IdRequisicion,
