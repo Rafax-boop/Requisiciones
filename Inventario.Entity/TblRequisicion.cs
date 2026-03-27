@@ -41,6 +41,8 @@ public partial class TblRequisicion
 
     public int? IdUsuarioMat { get; set; }
 
+    public int? IdUsuarioFinan { get; set; }
+
     public string? Hash { get; set; }
 
     public int? IdPp { get; set; }
@@ -64,6 +66,8 @@ public partial class TblRequisicion
     public virtual TblEstatus? IdEstatusNavigation { get; set; }
 
     public virtual TblProgramaPresupuestario? IdPpNavigation { get; set; }
+
+    public virtual TblUsuario? IdUsuarioFinanNavigation { get; set; }
 
     public virtual TblUsuario? IdUsuarioMatNavigation { get; set; }
 

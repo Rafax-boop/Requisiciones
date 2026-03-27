@@ -224,9 +224,36 @@ namespace Inventario.BLL.Implementacion
             List<string> fotos = new();
             if (maestra?.TipoServicio == "Servicio Impresion")
             {
-                var queryFotos = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idMaestro);
+                var queryFotos = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idMaestro && f.Tipo == "diseno");
                 fotos = await queryFotos.Select(f => f.Ruta).ToListAsync();
             }
+
+            var queryCotizaciones = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "cotizacion");
+            var cotizaciones = await queryCotizaciones
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
+            // Obtener última observación de atención (estatus 13)
+            var queryBitacora = await _repositoryBitacora.Consultar(b =>
+                b.IdRequisicion == idMaestro && b.IdEstatus == 13);
+
+            var observacion = await queryBitacora
+                .OrderByDescending(b => b.FechaEstatus)
+                .Select(b => b.Observacion)
+                .FirstOrDefaultAsync();
+
+            var queryCuadro = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "cuadro_comparativo");
+            var cuadro = await queryCuadro
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
 
             return new DetallesRequiDTO
             {
@@ -237,7 +264,10 @@ namespace Inventario.BLL.Implementacion
                 Ff = maestra?.Ff,
                 TipoPrograma = maestra?.TipoPrograma,
                 ClaveRegion = maestra?.ClaveRegion,
-                Articulos = lista
+                Articulos = lista,
+                Cotizaciones = cotizaciones,
+                CuadroComparativo = cuadro,
+                Observaciones = observacion
             };
         }
 
@@ -625,7 +655,8 @@ namespace Inventario.BLL.Implementacion
                 {
                     IdRequisicion = idRequisicion,
                     Ruta = $"/uploads/diseños/{idRequisicion}/{nombreArchivo}",
-                    FechaSubida = DateTime.Now
+                    FechaSubida = DateTime.Now,
+                    Tipo = "diseno"
                 });
             }
 
@@ -654,8 +685,43 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<TblRegistroDiseno>> ObtenerFotosConIdRequisicion(int idRequisicion)
         {
-            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion);
+            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion &&
+                f.Tipo == "diseno");
             return await query.ToListAsync();
+        }
+
+        public async Task<bool> GuardarArchivosAtencion(
+            int idRequisicion,
+            List<IFormFile> cotizaciones,
+            List<IFormFile> cuadroComparativo,
+            string webRootPath)
+        {
+            async Task Guardar(List<IFormFile> archivos, string carpetaNombre, string tipo)
+            {
+                if (!archivos.Any()) return;
+                var carpeta = Path.Combine(webRootPath, "uploads", carpetaNombre, idRequisicion.ToString());
+                Directory.CreateDirectory(carpeta);
+
+                foreach (var archivo in archivos)
+                {
+                    if (archivo.Length == 0) continue;
+                    var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+                    using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+                        await archivo.CopyToAsync(stream);
+
+                    await _repositoryDisenos.Crear(new TblRegistroDiseno
+                    {
+                        IdRequisicion = idRequisicion,
+                        Ruta = $"/uploads/{carpetaNombre}/{idRequisicion}/{nombre}",
+                        FechaSubida = DateTime.Now,
+                        Tipo = tipo
+                    });
+                }
+            }
+
+            await Guardar(cotizaciones, "cotizaciones", "cotizacion");
+            await Guardar(cuadroComparativo, "cuadro_comparativo", "cuadro_comparativo");
+            return true;
         }
 
         private string GenerarSelloDigital()

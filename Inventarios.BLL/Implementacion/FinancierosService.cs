@@ -27,7 +27,7 @@ namespace Inventario.BLL.Implementacion
 
             if (idUsuarioFinancieros.HasValue)
             {
-                query = await _repositoryRequisicion.Consultar(r => r.IdUsuarioMat == idUsuarioFinancieros.Value);
+                query = await _repositoryRequisicion.Consultar(r => r.IdUsuarioFinan == idUsuarioFinancieros.Value);
             }
             else
             {
@@ -35,7 +35,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             var resultado = await query
-                .Where(r => (r.IdEstatus == 13 || r.IdEstatus == 14) && r.RequiServicio == false)
+                .Where(r => r.IdUsuarioFinan.HasValue || r.IdEstatus == 13)
                 .OrderBy(r => r.FechaModificacion)
                 .ThenBy(r => r.IdRequisicion)
                 .Select(r => new RequisicionMaestraDTO
@@ -54,7 +54,7 @@ namespace Inventario.BLL.Implementacion
                         .OrderByDescending(b => b.FechaEstatus)
                         .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
                         .FirstOrDefault(),
-                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null,
+                    NombreAsignado = r.IdUsuarioFinanNavigation != null ? r.IdUsuarioFinanNavigation.Usuario : null,
                     RequiServicio = r.RequiServicio
                 })
                 .ToListAsync();
@@ -62,7 +62,7 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        public async Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioMat)
+        public async Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace Inventario.BLL.Implementacion
                     return false;
 
 
-                requisicion.IdUsuarioMat = idUsuarioMat;
+                requisicion.IdUsuarioFinan = idUsuarioFinan;
                 requisicion.IdEstatus = 14;
                 requisicion.FechaModificacion = DateTime.Now;
 

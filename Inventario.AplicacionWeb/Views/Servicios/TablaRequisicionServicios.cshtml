@@ -17,11 +17,10 @@
      data-url-usuarios-servicios="@Url.Action("ObtenerUsuariosServicios", "Servicios")"
      data-url-asignar=" @Url.Action("AsignarRequisicion", "Requisicion")"
      data-url-atender="@Url.Action("Atender", "Requisicion")"
-     data-url-buscar-cogs="@Url.Action("BuscarCogs", "Requisicion")"
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")"
-     data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")">
-    <!--Se debe de ver el cambio de este respecto a adquisiciones del buscador de cogs-->
+     data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
+    data-url-subir-archivos-atencion="@Url.Action("SubirArchivosAtencion", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -170,6 +169,13 @@
                                     {
                                         <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
                                             <i class="fa-solid fa-hand-holding"></i>
+                                        </button>
+                                    }
+                                    @if (User.IsInRole("7") && item.IdEstatus != 2)
+                                    {
+                                        <button class="btn-accion btn-ver" title="Ver detalle"
+                                                onclick="verDetalle(@item.IdRequi, 'readonly')">
+                                            <i class="fa-solid fa-eye"></i>
                                         </button>
                                     }
                                 </div>

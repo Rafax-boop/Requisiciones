@@ -305,6 +305,7 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Ruta)
                 .HasMaxLength(500)
                 .IsUnicode(false);
+            entity.Property(e => e.Tipo).HasMaxLength(50);
 
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRegistroDisenos)
                 .HasForeignKey(d => d.IdRequisicion)
@@ -376,6 +377,10 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblRequisicionIdUsuarioNavigations)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK_tblRequisicion_TblUsuario");
+
+            entity.HasOne(d => d.IdUsuarioFinanNavigation).WithMany(p => p.TblRequisicionIdUsuarioFinanNavigations)
+                .HasForeignKey(d => d.IdUsuarioFinan)
+                .HasConstraintName("FK_tblRequisicion_TblUsuario2");
 
             entity.HasOne(d => d.IdUsuarioMatNavigation).WithMany(p => p.TblRequisicionIdUsuarioMatNavigations)
                 .HasForeignKey(d => d.IdUsuarioMat)

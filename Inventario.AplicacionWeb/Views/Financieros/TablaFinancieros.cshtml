@@ -136,27 +136,30 @@
                             }
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    @if (!User.IsInRole("9"))
-                                    {
-                                        <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
-                                            <i class="fa-solid fa-eye"></i>
+                                    <div class="acciones-grupo" style="justify-content:center">
+                                        @if (!User.IsInRole("9"))
+                                        {
+                                            <button class="btn-accion btn-ver" title="Ver detalle"
+                                                    onclick="verDetalle(@item.IdRequi, 'readonly')">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                        }
+                                        <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                            <i class="fa-solid fa-file-pdf"></i>
                                         </button>
-                                    }
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
-                                        <i class="fa-solid fa-file-pdf"></i>
-                                    </button>
-                                    @if (User.IsInRole("8") && item.IdEstatus == 13)
-                                    {
-                                        <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
-                                            <i class="fa-solid fa-clipboard-user"></i>
-                                        </button>
-                                    }
-                                    @if (User.IsInRole("9") && item.IdEstatus == 14)
-                                    {
-                                        <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
-                                            <i class="fa-solid fa-hand-holding"></i>
-                                        </button>
-                                    }
+                                        @if (User.IsInRole("8") && item.IdEstatus == 13)
+                                        {
+                                            <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
+                                                <i class="fa-solid fa-clipboard-user"></i>
+                                            </button>
+                                        }
+                                        @if (User.IsInRole("9") && item.IdEstatus == 14)
+                                        {
+                                            <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
+                                                <i class="fa-solid fa-hand-holding"></i>
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -470,24 +473,36 @@
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
-                    <p class="modal-subtitulo-premium" id="modalDetalleSubtitulo">Detalle de partidas solicitadas</p>
+                    <p class="modal-subtitulo-premium">Detalle de partidas solicitadas</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
+
+            <!-- Sección selects (siempre readonly aquí, se habilitan solo en atender) -->
             <div style="display:none; margin-top:20px;" class="px-4 seccionAtender">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Actividad:</label>
-                            <input type="text" id="txtActividad" class="form-control" readonly />
+                            <select id="actividadSeleccionada" class="form-select select2">
+                                <option value="">-- Selecciona actividad --</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Fuente de Financiamiento:</label>
-                            <input type="text" id="txtFF" class="form-control" readonly />
+                            <select id="ffSelect" class="form-select select2">
+                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
+                                <option value="1">Federal</option>
+                                <option value="2">Estatal</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -495,17 +510,28 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Tipo de Programa:</label>
-                            <input type="text" id="txtTipoPrograma" class="form-control" readonly />
+                            <select id="tipoProgramaSelect" class="form-select select2">
+                                <option value="">-- Selecciona el Tipo de Programa --</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Municipio:</label>
-                            <input type="text" id="txtMunicipio" class="form-control" readonly />
+                            <select id="municipio" class="form-select select2">
+                                <option value="">-- Selecciona municipio --</option>
+                                @foreach (var act in Model.ListaMunicipios)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="modal-body modal-body-premium">
                 <div class="table-responsive-container">
                     <table class="tabla-requisiciones" id="tablaModalDetalle">
@@ -518,9 +544,7 @@
                                 <th>Descripción Detallada</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaDetalle">
-                            <!-- Se carga dinámicamente -->
-                        </tbody>
+                        <tbody id="tablaDetalle"></tbody>
                     </table>
                 </div>
 
@@ -529,24 +553,25 @@
                     <p style="font-weight:600; margin-bottom:8px;">
                         <i class="fa-solid fa-images"></i> Fotos de referencia
                     </p>
-                    <div id="galeriaFotosDetalle"
-                         style="display:flex; flex-wrap:wrap; gap:10px;">
-                    </div>
+                    <div id="galeriaFotosDetalle" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
                 </div>
 
+                <!-- Archivos subidos (readonly) -->
+                <div id="contenedorArchivosReadonly"></div>
+
+                <!-- Sección atender: observaciones + botones (solo rol 9) -->
                 <div class="seccionAtender" style="display:none; margin-top:20px;">
                     <div class="formulario-input">
                         <label>Observaciones</label>
                         <textarea id="txtObservaciones" class="form-control" rows="4"
                                   placeholder="Escriba las observaciones aquí..."></textarea>
                     </div>
-
-                    <div style="margin-top:20px; text-align:right;">
-                        <button type="button" class="btn btn-danger" onclick="rechazarDesdeAtencion()">
+                    <div id="botonesAtender" style="margin-top:20px; text-align:right; display:none;">
+                        <button type="button" class="btn btn-danger me-2" onclick="rechazarDesdeAtencion()">
                             <i class="fa-solid fa-circle-xmark"></i> Rechazar
                         </button>
                         <button type="button" class="btn boton-rosa" onclick="enviarAtencion()">
-                            Enviar
+                            <i class="fa-solid fa-check"></i> Autorizar
                         </button>
                     </div>
                 </div>

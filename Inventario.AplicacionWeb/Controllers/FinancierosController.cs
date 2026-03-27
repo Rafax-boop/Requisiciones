@@ -5,6 +5,7 @@ using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
@@ -14,12 +15,23 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMapper _mapper;
         private readonly IFinancierosService _financierosService;
         private readonly IUsuarioService _usuarioService;
+        private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
+        private readonly IMunicipioServie _municipioService;
+        private readonly IAlmacenService _almacenService;
 
-        public FinancierosController(IMapper mapper, IFinancierosService financierosService, IUsuarioService usuarioService)
+        public FinancierosController(IMapper mapper,
+            IFinancierosService financierosService,
+            IUsuarioService usuarioService,
+            IProgramaPresupuestarioService programaPresupuestarioService,
+            IMunicipioServie municipioService,
+            IAlmacenService almacenService)
         {
             _mapper = mapper;
             _financierosService = financierosService;
             _usuarioService = usuarioService;
+            _programaPresupuestarioService = programaPresupuestarioService;
+            _municipioService = municipioService;
+            _almacenService = almacenService;
         }
 
         [HttpGet]
@@ -54,9 +66,28 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ThenBy(r => r.IdRequi)
                 .ToList();
 
+            var actividades = await _programaPresupuestarioService
+                .ObtenerActividades();
+
+            var municipios = await _municipioService.ObtenerMunicipios();
+            var estatus = await _almacenService.ObtenerEstatus();
+
             var vm = new VMTablaRequisiciones
             {
-                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO)
+                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(listaDTO),
+
+                ListaActividades = actividades.Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = a.DescripcionActividad
+                }).ToList(),
+
+                ListaMunicipios = municipios.Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Municipio
+                }).ToList(),
+                Estatus = estatus
             };
 
             return View(vm);

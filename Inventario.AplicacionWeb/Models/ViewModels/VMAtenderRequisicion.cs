@@ -9,6 +9,8 @@
         public string? FF { get; set; }
         public string? TipoPrograma { get; set; }
         public int ClaveRegion { get; set; }
+        public List<IFormFile>? Cotizaciones { get; set; }
+        public List<IFormFile>? CuadroComparativo { get; set; }
         public List<CogEditado> CogsEditados { get; set; } = new();
     }
 

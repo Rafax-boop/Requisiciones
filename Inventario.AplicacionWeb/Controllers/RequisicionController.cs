@@ -370,5 +370,21 @@ namespace Inventario.AplicacionWeb.Controllers
                 return Json(new { success = false });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirArchivosAtencion(
+            int IdRequisicion,
+            List<IFormFile>? Cotizaciones,
+            List<IFormFile>? CuadroComparativo)
+        {
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            await _requisicionService.GuardarArchivosAtencion(
+                IdRequisicion,
+                Cotizaciones ?? new List<IFormFile>(),
+                CuadroComparativo ?? new List<IFormFile>(),
+                webRootPath
+            );
+            return Ok();
+        }
     }
 }

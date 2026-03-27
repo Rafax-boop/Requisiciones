@@ -10,7 +10,7 @@ namespace Inventario.BLL.Interfaces
     public interface IFinancierosService
     {
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null);
-        Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioMat);
+        Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan);
         Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario);
     }
 }

@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Inventario.Entity\Inventario.Entity.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DBCONTEXT\" />
+  </ItemGroup>
+
 </Project>

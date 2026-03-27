@@ -19,6 +19,9 @@
     var urlEnviarAlmacen = container ? container.getAttribute("data-url-enviar-almacen") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
     var urlModificar = container ? container.getAttribute("data-url-modificar") : "";
+    var urlSubirArchivosAtencion = container
+        ? container.getAttribute("data-url-subir-archivos-atencion")
+        : "";
   var _idRequiAsignar = null;
 
   var fechaSeleccionada = "";
@@ -462,74 +465,124 @@
     );
   };
 
-  window.enviarAtencion = function () {
-    const observaciones = document.getElementById("txtObservaciones").value.trim();
+    window.enviarAtencion = function () {
+        var observaciones = document.getElementById("txtObservaciones").value.trim();
+        var idpp = parseInt($("#actividadSeleccionada").val()) || 0;
+        var ff = $("#ffSelect").find("option:selected").text().trim();
+        var tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
+        var claveRegion = parseInt($("#municipio").val()) || 0;
 
-    //Recoger los nuevos campos
-    const idpp = parseInt($("#actividadSeleccionada").val()) || 0;
-    const ff = $("#ffSelect").find("option:selected").text().trim();
-    const tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
-    const claveRegion = parseInt($("#municipio").val()) || 0;
+        if (!observaciones) { alert("Debe escribir una observación."); return; }
+        if (!idpp) { alert("Debe seleccionar una actividad."); return; }
+        if (!$("#ffSelect").val()) { alert("Debe seleccionar una fuente de financiamiento."); return; }
+        if (!$("#tipoProgramaSelect").val()) { alert("Debe seleccionar un tipo de programa."); return; }
+        if (!claveRegion) { alert("Debe seleccionar un municipio."); return; }
 
-    if (!observaciones) {
-      alert("Debe escribir una observación.");
-      return;
-    }
-
-    //Validar que los campos requeridos tengan valor
-    if (!idpp) {
-      alert("Debe seleccionar una actividad.");
-      return;
-    }
-    if (!$("#ffSelect").val()) {
-      alert("Debe seleccionar una fuente de financiamiento.");
-      return;
-    }
-    if (!$("#tipoProgramaSelect").val()) {
-      alert("Debe seleccionar un tipo de programa.");
-      return;
-    }
-    if (!claveRegion) {
-      alert("Debe seleccionar un municipio.");
-      return;
-    }
-
-    const cogsEditados = [];
-    document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
-      const inputCog = tr.querySelector(".select-cog-editable");
-      const idArticuloTd = tr.querySelectorAll("td")[1];
-      if (inputCog && idArticuloTd) {
-        cogsEditados.push({
-          idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
-          cog: parseInt($(inputCog).val()) || 0
+        var cogsEditados = [];
+        document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
+            var inputCog = tr.querySelector(".select-cog-editable");
+            var idArticuloTd = tr.querySelectorAll("td")[1];
+            if (inputCog && idArticuloTd) {
+                cogsEditados.push({
+                    idArticulo: parseInt(idArticuloTd.textContent.trim()) || 0,
+                    cog: parseInt($(inputCog).val()) || 0
+                });
+            }
         });
-      }
-    });
 
-    $.ajax({
-      url: atenderUrl,
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify({
-        IdRequisicion: requisicionActual,
-        Observaciones: observaciones,
-        CogsEditados: cogsEditados,
-        IdPp: idpp,
-        FF: ff,
-        TipoPrograma: tipoPrograma,
-        ClaveRegion: claveRegion
-      }),
-      success: function () {
-        const modal = bootstrap.Modal.getInstance(document.getElementById("modalDetalle"));
-        modal.hide();
-        document.getElementById("txtObservaciones").value = "";
-        location.reload();
-      },
-      error: function () {
-        alert("Error al atender la requisición.");
-      }
-    });
-  };
+        $.ajax({
+            url: atenderUrl,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                IdRequisicion: requisicionActual,
+                Observaciones: observaciones,
+                CogsEditados: cogsEditados,
+                IdPp: idpp,
+                FF: ff,
+                TipoPrograma: tipoPrograma,
+                ClaveRegion: claveRegion
+            }),
+            success: function () {
+                var inputCot = document.getElementById("inputCotizaciones");
+                var inputCuadro = document.getElementById("inputCuadroComparativo");
+                var tieneCot = inputCot && inputCot.files.length > 0;
+                var tieneCuadro = inputCuadro && inputCuadro.files.length > 0;
+
+                if (!tieneCot && !tieneCuadro) {
+                    // Sin archivos, terminar directo
+                    bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
+                    document.getElementById("txtObservaciones").value = "";
+                    location.reload();
+                    return;
+                }
+
+                var formData = new FormData();
+                formData.append("IdRequisicion", requisicionActual);
+                if (tieneCot) Array.from(inputCot.files).forEach(f => formData.append("Cotizaciones", f));
+                if (tieneCuadro) Array.from(inputCuadro.files).forEach(f => formData.append("CuadroComparativo", f));
+
+                $.ajax({
+                    url: urlSubirArchivosAtencion,
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
+                        document.getElementById("txtObservaciones").value = "";
+                        location.reload();
+                    },
+                    error: function () {
+                        alert("La atención se guardó, pero hubo un error al subir los archivos.");
+                        location.reload();
+                    }
+                });
+            },
+            error: function () {
+                alert("Error al atender la requisición.");
+            }
+        });
+    };
+
+    function renderizarArchivosReadonly(cotizaciones, cuadro) {
+        // Buscar o crear contenedor de archivos dentro de .seccionAtender
+        var contenedor = document.getElementById("contenedorArchivosReadonly");
+        if (!contenedor) {
+            contenedor = document.createElement("div");
+            contenedor.id = "contenedorArchivosReadonly";
+            contenedor.style.cssText = "margin-top:16px;";
+            // Insertarlo antes del div de botón enviar dentro de seccionAtender
+            var seccion = document.querySelector(".modal-body .seccionAtender");
+            if (seccion) seccion.appendChild(contenedor);
+        }
+        contenedor.innerHTML = "";
+
+        function renderGrupo(titulo, archivos) {
+            if (!archivos.length) return "";
+            var html = '<div style="margin-bottom:12px;">';
+            html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">'
+                + titulo + '</label>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+            archivos.forEach(function (a) {
+                var ext = (a.nombreArchivo || "").split(".").pop().toLowerCase();
+                var esPdf = ext === "pdf";
+                html += '<a href="' + a.ruta + '" target="_blank" '
+                    + 'style="display:flex;align-items:center;gap:6px;padding:6px 10px;'
+                    + 'border:1px solid #e5e7eb;border-radius:8px;font-size:12px;'
+                    + 'color:#374151;text-decoration:none;background:#f9fafb;">'
+                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
+                    + (a.nombreArchivo || "Archivo")
+                    + '</a>';
+            });
+            html += "</div></div>";
+            return html;
+        }
+
+        contenedor.innerHTML =
+            renderGrupo("Cotizaciones", cotizaciones) +
+            renderGrupo("Cuadro comparativo", cuadro);
+    }
 
   function mostrarMensajeVacio(totalVisibles, tbodyOptional) {
     var tbody =
@@ -675,145 +728,170 @@
   });
 
     window.verDetalle = function (idMaestro, modo = "ver") {
-     var galeriaFotosDetalle = document.getElementById('galeriaFotosDetalle');
-     var seccionFotosDetalle = document.getElementById('seccionFotosDetalle');
-     if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = '';
-     if (seccionFotosDetalle) seccionFotosDetalle.style.display = 'none';
-    const seccionesAtender = document.querySelectorAll(".seccionAtender");
-    if (seccionesAtender.length > 0) {
-      const isAtender = modo === "atender";
+        // Limpiar contenedores al abrir
+        var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
+        if (archivosReadonly) archivosReadonly.innerHTML = "";
+        var galeriaFotosDetalle = document.getElementById('galeriaFotosDetalle');
+        var seccionFotosDetalle = document.getElementById('seccionFotosDetalle');
+        if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = '';
+        if (seccionFotosDetalle) seccionFotosDetalle.style.display = 'none';
 
-      seccionesAtender.forEach(function (sec) {
-        sec.style.display = isAtender ? "block" : "none";
-      });
+        // Mostrar/ocultar secciones de atender ANTES del $.get (esto no depende de data)
+        const seccionesAtender = document.querySelectorAll(".seccionAtender");
+        const isAtender = modo === "atender";
+        const isReadonly = modo === "readonly";
 
-      if (isAtender) {
-        $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
-          dropdownParent: $("#modalDetalle"),
-          width: "100%",
-          language: "es",
-          placeholder: function () {
-            return $(this).data('placeholder');
-          }
+        seccionesAtender.forEach(function (sec) {
+            sec.style.display = (isAtender || isReadonly) ? "block" : "none";
         });
-      }
-    }
-    if (!obtenerDetallesUrl) return;
 
-    $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
-      var articulos = data.articulos || [];
-      var esDonativo = data.donativo === true;
+        if (!obtenerDetallesUrl) return;
 
-      var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
-      if (thCog) thCog.style.display = esDonativo ? "" : "none";
+        $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+            var articulos = data.articulos || [];
+            var esDonativo = data.donativo === true;
 
-      var contenido = "";
-      if (articulos.length === 0) {
-        contenido = '<tr><td colspan="' + (esDonativo ? 6 : 5) + '" class="text-center">Sin artículos</td></tr>';
-      } else {
-        articulos.forEach(function (item) {
-          var textoCompleto = item.descripcionDetallada || "";
-          var textoCorto = textoCompleto.length > 28
-            ? textoCompleto.substring(0, 28) + "…"
-            : textoCompleto || "Sin descripción...";
-          var tieneTexto = textoCompleto ? "tiene-texto" : "";
-          var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
-          var tdCog = esDonativo
-            ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
-            : "";
-          contenido +=
-            "<tr>" +
-            "<td>" + (item.numPartida || "") + "</td>" +
-            "<td>" + (item.cantidad || "") + "</td>" +
-            "<td>" + (item.unidadMedida || "") + "</td>" +
-            "<td>" + (item.descripcion || "") + "</td>" +
-            '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
-            '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
-            '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
-            tdCog +
-            "</tr>";
-        });
-      }
+            // Tabla de artículos
+            var thCog = document.querySelector("#tablaModalDetalle thead tr th:last-child");
+            if (thCog) thCog.style.display = esDonativo ? "" : "none";
 
-      $("#tablaDetalle").html(contenido);
-
-      if (esDonativo) {
-        $("#tablaDetalle .select-cog-editable").each(function () {
-          $(this).select2({
-            dropdownParent: $("#modalDetalle"),
-            width: "resolve",
-            placeholder: "COG...",
-            minimumInputLength: 1,
-            language: "es",
-            ajax: {
-              url: urlBuscarCogs,
-              dataType: "json",
-              delay: 250,
-              data: function (params) {
-                return { term: params.term };
-              },
-              processResults: function (data) {
-                return { results: data };
-              },
-              cache: true
-            }
-          });
-        });
-      }
-
-        var seccionFotos = document.getElementById('seccionFotosDetalle');
-        var galeriaFotos = document.getElementById('galeriaFotosDetalle');
-
-        if (seccionFotos && galeriaFotos) {
-            if (data.tipoServicio === 'Servicio Impresion' && data.fotos && data.fotos.length > 0) {
-                galeriaFotos.innerHTML = '';
-                data.fotos.forEach(function (ruta) {
-                    var wrapper = document.createElement('div');
-                    wrapper.style.cssText = 'display:inline-block; text-align:center;';
-                    var img = document.createElement('img');
-                    img.src = ruta;
-                    img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
-                    img.title = 'Click para ver en tamaño completo';
-                    img.addEventListener('click', function () { window.open(ruta, '_blank'); });
-                    wrapper.appendChild(img);
-                    galeriaFotos.appendChild(wrapper);
-                });
-                seccionFotos.style.display = 'block';
+            var contenido = "";
+            if (articulos.length === 0) {
+                contenido = '<tr><td colspan="' + (esDonativo ? 6 : 5) + '" class="text-center">Sin artículos</td></tr>';
             } else {
-                seccionFotos.style.display = 'none';
+                articulos.forEach(function (item) {
+                    var textoCompleto = item.descripcionDetallada || "";
+                    var textoCorto = textoCompleto.length > 28
+                        ? textoCompleto.substring(0, 28) + "…"
+                        : textoCompleto || "Sin descripción...";
+                    var tieneTexto = textoCompleto ? "tiene-texto" : "";
+                    var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+                    var tdCog = esDonativo
+                        ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
+                        : "";
+                    contenido +=
+                        "<tr>" +
+                        "<td>" + (item.numPartida || "") + "</td>" +
+                        "<td>" + (item.cantidad || "") + "</td>" +
+                        "<td>" + (item.unidadMedida || "") + "</td>" +
+                        "<td>" + (item.descripcion || "") + "</td>" +
+                        '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+                        '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
+                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        tdCog +
+                        "</tr>";
+                });
             }
-        }
+            $("#tablaDetalle").html(contenido);
 
-      var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
-      if (subtitulo)
-        subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
+            if (esDonativo) {
+                $("#tablaDetalle .select-cog-editable").each(function () {
+                    $(this).select2({
+                        dropdownParent: $("#modalDetalle"),
+                        width: "resolve",
+                        placeholder: "COG...",
+                        minimumInputLength: 1,
+                        language: "es",
+                        ajax: {
+                            url: urlBuscarCogs,
+                            dataType: "json",
+                            delay: 250,
+                            data: function (params) { return { term: params.term }; },
+                            processResults: function (data) { return { results: data }; },
+                            cache: true
+                        }
+                    });
+                });
+            }
 
-      //Precargar selects si la requisición ya tiene datos previos
-      if (modo === "atender") {
-        if (data.idPp) {
-          $("#actividadSeleccionada").val(data.idPp).trigger("change");
-        }
-        if (data.ff) {
-          $("#ffSelect option").filter(function () {
-            return $(this).text().trim() === data.ff;
-          }).prop("selected", true);
-          $("#ffSelect").trigger("change");
-        }
-        if (data.tipoPrograma) {
-          $("#tipoProgramaSelect option").filter(function () {
-            return $(this).text().trim() === data.tipoPrograma;
-          }).prop("selected", true);
-          $("#tipoProgramaSelect").trigger("change");
-        }
-        if (data.claveRegion) {
-          $("#municipio").val(data.claveRegion).trigger("change");
-        }
-      }
+            // Fotos de diseño (Servicio Impresión)
+            var seccionFotos = document.getElementById('seccionFotosDetalle');
+            var galeriaFotos = document.getElementById('galeriaFotosDetalle');
+            if (seccionFotos && galeriaFotos) {
+                if (data.tipoServicio === 'Servicio Impresion' && data.fotos && data.fotos.length > 0) {
+                    galeriaFotos.innerHTML = '';
+                    data.fotos.forEach(function (ruta) {
+                        var wrapper = document.createElement('div');
+                        wrapper.style.cssText = 'display:inline-block; text-align:center;';
+                        var img = document.createElement('img');
+                        img.src = ruta;
+                        img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
+                        img.title = 'Click para ver en tamaño completo';
+                        img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+                        wrapper.appendChild(img);
+                        galeriaFotos.appendChild(wrapper);
+                    });
+                    seccionFotos.style.display = 'block';
+                } else {
+                    seccionFotos.style.display = 'none';
+                }
+            }
 
-      var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
-      modal.show();
-    });
-  };
+            // Subtítulo
+            var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+            if (subtitulo)
+                subtitulo.textContent = "Detalle de partidas solicitadas · Total: " + articulos.length + " partidas";
+
+            // ── Sección atender/readonly: inicializar select2 y precargar valores ──
+            if (isAtender || isReadonly) {
+                // Destruir instancias previas si existen
+                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").each(function () {
+                    if ($(this).data("select2")) $(this).select2("destroy");
+                });
+
+                // Inicializar select2
+                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+                    dropdownParent: $("#modalDetalle"),
+                    width: "100%",
+                    language: "es",
+                });
+
+                // Precargar valores (ahora sí data existe)
+                if (data.idPp) {
+                    $("#actividadSeleccionada").val(data.idPp).trigger("change");
+                }
+                if (data.ff) {
+                    $("#ffSelect option").filter(function () {
+                        return $(this).text().trim() === data.ff;
+                    }).prop("selected", true);
+                    $("#ffSelect").trigger("change");
+                }
+                if (data.tipoPrograma) {
+                    $("#tipoProgramaSelect option").filter(function () {
+                        return $(this).text().trim() === data.tipoPrograma;
+                    }).prop("selected", true);
+                    $("#tipoProgramaSelect").trigger("change");
+                }
+                if (data.claveRegion) {
+                    $("#municipio").val(data.claveRegion).trigger("change");
+                }
+
+                // Si es readonly: deshabilitar todo y mostrar archivos
+                if (isReadonly) {
+                    $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
+                        .prop("disabled", true);
+                    $("#txtObservaciones").prop("readonly", true);
+                    if (data.observaciones) {
+                        $("#txtObservaciones").val(data.observaciones);
+                    }
+                    $("#inputCotizaciones, #inputCuadroComparativo").prop("disabled", true);
+
+                    // Ocultar botón enviar
+                    var btnEnviar = document.querySelector(".seccionAtender div[style*='text-align:right']");
+                    if (btnEnviar) btnEnviar.style.display = "none";
+
+                    var rowArchivos = document.querySelector(".seccionAtender .row.mb-3");
+                    if (rowArchivos) rowArchivos.style.display = "none";
+
+                    // Mostrar archivos subidos
+                    renderizarArchivosReadonly(data.cotizaciones || [], data.cuadroComparativo || []);
+                }
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
+            modal.show();
+        });
+    };
 
   /* ══════════════════════════════════════════════
      MODAL DE HISTORIAL COMPLETO

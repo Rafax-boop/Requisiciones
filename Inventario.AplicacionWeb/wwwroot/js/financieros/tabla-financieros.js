@@ -134,6 +134,45 @@
         renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
     }
 
+    function renderizarArchivosReadonly(cotizaciones, cuadro) {
+        // Buscar o crear contenedor de archivos dentro de .seccionAtender
+        var contenedor = document.getElementById("contenedorArchivosReadonly");
+        if (!contenedor) {
+            contenedor = document.createElement("div");
+            contenedor.id = "contenedorArchivosReadonly";
+            contenedor.style.cssText = "margin-top:16px;";
+            // Insertarlo antes del div de botón enviar dentro de seccionAtender
+            var seccion = document.querySelector(".modal-body .seccionAtender");
+            if (seccion) seccion.appendChild(contenedor);
+        }
+        contenedor.innerHTML = "";
+
+        function renderGrupo(titulo, archivos) {
+            if (!archivos.length) return "";
+            var html = '<div style="margin-bottom:12px;">';
+            html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">'
+                + titulo + '</label>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+            archivos.forEach(function (a) {
+                var ext = (a.nombreArchivo || "").split(".").pop().toLowerCase();
+                var esPdf = ext === "pdf";
+                html += '<a href="' + a.ruta + '" target="_blank" '
+                    + 'style="display:flex;align-items:center;gap:6px;padding:6px 10px;'
+                    + 'border:1px solid #e5e7eb;border-radius:8px;font-size:12px;'
+                    + 'color:#374151;text-decoration:none;background:#f9fafb;">'
+                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
+                    + (a.nombreArchivo || "Archivo")
+                    + '</a>';
+            });
+            html += "</div></div>";
+            return html;
+        }
+
+        contenedor.innerHTML =
+            renderGrupo("Cotizaciones", cotizaciones) +
+            renderGrupo("Cuadro comparativo", cuadro);
+    }
+
     function renderizarControlesPaginacion(total, inicio, fin, totalPaginas) {
         if (!paginacionRequisicionesContainer) return;
         if (total === 0) {
@@ -248,27 +287,41 @@
     window.verDetalle = function (idMaestro, modo) {
         modo = modo || "ver";
 
+        // Limpiar al abrir
+        var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
+        if (archivosReadonly) archivosReadonly.innerHTML = "";
         var galeriaFotosDetalle = document.getElementById('galeriaFotosDetalle');
         var seccionFotosDetalle = document.getElementById('seccionFotosDetalle');
         if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = '';
         if (seccionFotosDetalle) seccionFotosDetalle.style.display = 'none';
 
+        var isAtender = modo === "atender";
+        var isReadonly = modo === "readonly";
+
+        // Mostrar sección selects en ambos casos
         document.querySelectorAll(".seccionAtender").forEach(function (sec) {
-            sec.style.display = modo === "atender" ? "block" : "none";
+            sec.style.display = (isAtender || isReadonly) ? "block" : "none";
         });
+
+        // Botones solo visibles en modo atender
+        var botonesAtender = document.getElementById("botonesAtender");
+        if (botonesAtender) botonesAtender.style.display = isAtender ? "flex" : "none";
 
         if (!obtenerDetallesUrl) return;
 
         $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
             var articulos = data.articulos || [];
 
+            // Tabla artículos
             var contenido = "";
             if (articulos.length === 0) {
                 contenido = '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
             } else {
                 articulos.forEach(function (item) {
                     var textoCompleto = item.descripcionDetallada || "";
-                    var textoCorto = textoCompleto.length > 28 ? textoCompleto.substring(0, 28) + "…" : textoCompleto || "Sin descripción...";
+                    var textoCorto = textoCompleto.length > 28
+                        ? textoCompleto.substring(0, 28) + "…"
+                        : textoCompleto || "Sin descripción...";
                     var tieneTexto = textoCompleto ? "tiene-texto" : "";
                     var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
                     contenido +=
@@ -285,15 +338,7 @@
             }
             $("#tablaDetalle").html(contenido);
 
-            // Llenar campos readonly con datos de la BD
-            if (modo === "atender") {
-                document.getElementById('txtActividad').value = data.actividad || data.idPp || '—';
-                document.getElementById('txtFF').value = data.ff || '—';
-                document.getElementById('txtTipoPrograma').value = data.tipoPrograma || '—';
-                document.getElementById('txtMunicipio').value = data.municipio || data.claveRegion || '—';
-            }
-
-            // Fotos
+            // Fotos diseño
             var seccionFotos = document.getElementById('seccionFotosDetalle');
             var galeriaFotos = document.getElementById('galeriaFotosDetalle');
             if (seccionFotos && galeriaFotos) {
@@ -302,7 +347,7 @@
                     data.fotos.forEach(function (ruta) {
                         var img = document.createElement('img');
                         img.src = ruta;
-                        img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
+                        img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;';
                         img.addEventListener('click', function () { window.open(ruta, '_blank'); });
                         galeriaFotos.appendChild(img);
                     });
@@ -312,9 +357,56 @@
                 }
             }
 
+            // Subtítulo
             var subtitulo = document.querySelector("#modalDetalle .modal-subtitulo-premium");
             if (subtitulo)
                 subtitulo.textContent = "Detalle de partidas · Total: " + articulos.length + " partidas";
+
+            // Inicializar select2 y precargar valores
+            if (isAtender || isReadonly) {
+                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").each(function () {
+                    if ($(this).data("select2")) $(this).select2("destroy");
+                });
+
+                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+                    dropdownParent: $("#modalDetalle"),
+                    width: "100%",
+                    language: "es"
+                });
+
+                // Precargar valores desde la data (PP, FF, Programa, Municipio)
+                if (data.idPp) $("#actividadSeleccionada").val(data.idPp).trigger("change");
+                if (data.ff) {
+                    $("#ffSelect option").filter(function () { return $(this).text().trim() === data.ff; }).prop("selected", true);
+                    $("#ffSelect").trigger("change");
+                }
+                if (data.tipoPrograma) {
+                    $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
+                    $("#tipoProgramaSelect").trigger("change");
+                }
+                if (data.claveRegion) $("#municipio").val(data.claveRegion).trigger("change");
+
+                // --- CAMBIO AQUÍ: Deshabilitar campos y cargar archivos para AMBOS modos ---
+                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
+                    .prop("disabled", true);
+
+                renderizarArchivosReadonly(
+                    data.cotizaciones || [],
+                    data.cuadroComparativo || []
+                );
+
+                // Diferenciar solo la parte de observaciones y botones
+                if (isReadonly) {
+                    $("#txtObservaciones")
+                        .prop("readonly", true)
+                        .val(data.observaciones || "");
+                } else {
+                    // En modo "Atender" las observaciones quedan habilitadas para escribir la respuesta
+                    $("#txtObservaciones")
+                        .prop("readonly", false)
+                        .val("");
+                }
+            }
 
             new bootstrap.Modal(document.getElementById("modalDetalle")).show();
         });

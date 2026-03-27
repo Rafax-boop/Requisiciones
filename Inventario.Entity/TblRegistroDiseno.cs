@@ -13,5 +13,7 @@ public partial class TblRegistroDiseno
 
     public DateTime? FechaSubida { get; set; }
 
+    public string? Tipo { get; set; }
+
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
 }

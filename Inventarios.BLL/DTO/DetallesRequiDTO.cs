@@ -14,8 +14,11 @@ namespace Inventario.BLL.DTO
         public string? Ff { get; set; }
         public string? TipoPrograma { get; set; }
         public int? ClaveRegion { get; set; }
+        public string? Observaciones { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; }
         public List<string> Fotos { get; set; } = new();
+        public List<ArchivoAtencionDTO> Cotizaciones { get; set; } = new();
+        public List<ArchivoAtencionDTO> CuadroComparativo { get; set; } = new();
     }
 
     public class DetalleArticuloDTO
@@ -28,5 +31,11 @@ namespace Inventario.BLL.DTO
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }
         public string? DescripcionDetallada { get; set; }
+    }
+
+    public class ArchivoAtencionDTO
+    {
+        public string Ruta { get; set; }
+        public string NombreArchivo { get; set; }
     }
 }
