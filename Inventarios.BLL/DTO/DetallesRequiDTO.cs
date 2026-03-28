@@ -27,5 +27,19 @@ namespace Inventario.BLL.DTO
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }
         public string? DescripcionDetallada { get; set; }
+
+        public string? TipoProgramacion { get; set; }
+        public int? Llenado1 { get; set; }
+        public int? Llenado2 { get; set; }
+        public int? Llenado3 { get; set; }
+        public int? Llenado4 { get; set; }
+        public int? Llenado5 { get; set; }
+        public int? Llenado6 { get; set; }
+        public int? Llenado7 { get; set; }
+        public int? Llenado8 { get; set; }
+        public int? Llenado9 { get; set; }
+        public int? Llenado10 { get; set; }
+        public int? Llenado11 { get; set; }
+        public int? Llenado12 { get; set; }
     }
 }

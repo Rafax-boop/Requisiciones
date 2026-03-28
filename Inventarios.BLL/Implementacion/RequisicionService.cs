@@ -267,6 +267,27 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
+            var queryProgramacion = await _repositoryProgramacion.Consultar(p => p.IdRequisicion == idRequisicion);
+            var filasProgramacion = await queryProgramacion.ToListAsync();
+            foreach (var art in articulos)
+            {
+                var prog = filasProgramacion.FirstOrDefault(p => p.IdRequisicionDetalle == art.IdRequisicionDetalle);
+                if (prog == null) continue;
+                art.TipoProgramacion = prog.TipoProgramacion;
+                art.Llenado1 = prog.Llenado1;
+                art.Llenado2 = prog.Llenado2;
+                art.Llenado3 = prog.Llenado3;
+                art.Llenado4 = prog.Llenado4;
+                art.Llenado5 = prog.Llenado5;
+                art.Llenado6 = prog.Llenado6;
+                art.Llenado7 = prog.Llenado7;
+                art.Llenado8 = prog.Llenado8;
+                art.Llenado9 = prog.Llenado9;
+                art.Llenado10 = prog.Llenado10;
+                art.Llenado11 = prog.Llenado11;
+                art.Llenado12 = prog.Llenado12;
+            }
+
             return new RequisicionCompletaDTO
             {
                 NumRequisicion = requisicion.NumRequisicion,
