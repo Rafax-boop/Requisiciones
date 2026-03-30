@@ -264,7 +264,20 @@ namespace Inventario.AplicacionWeb.Controllers
                     Cantidad = a.Cantidad,
                     UnidadMedida = a.UnidadMedida,
                     Descripcion = a.Descripcion,
-                    DescripcionDetallada = a.DescripcionDetallada
+                    DescripcionDetallada = a.DescripcionDetallada,
+                    TipoProgramacion = a.TipoProgramacion,
+                    Llenado1 = a.Llenado1,
+                    Llenado2 = a.Llenado2,
+                    Llenado3 = a.Llenado3,
+                    Llenado4 = a.Llenado4,
+                    Llenado5 = a.Llenado5,
+                    Llenado6 = a.Llenado6,
+                    Llenado7 = a.Llenado7,
+                    Llenado8 = a.Llenado8,
+                    Llenado9 = a.Llenado9,
+                    Llenado10 = a.Llenado10,
+                    Llenado11 = a.Llenado11,
+                    Llenado12 = a.Llenado12
                 }).ToList()
             };
 

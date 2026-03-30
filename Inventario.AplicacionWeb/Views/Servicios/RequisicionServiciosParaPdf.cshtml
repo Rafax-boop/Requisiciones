@@ -1,4 +1,6 @@
 @model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@using System.Linq
+@using Inventario.AplicacionWeb.Models.ViewModels
 @{
     Layout = null;
     var fechaTexto = Model.FechaEmision.HasValue ? Model.FechaEmision.Value.Day.ToString("D2") + "-" +
@@ -7,6 +9,18 @@
         ? Model.FechaServicio.Value.Day.ToString("D2") + "-" + Model.FechaServicio.Value.Month.ToString("D2") + "-" + Model.FechaServicio.Value.Year
         : "—";
     var numRequi = Model.NumRequisicion ?? "—";
+    var conProgramacion = Model.Articulos?
+        .Where(a => !string.IsNullOrWhiteSpace(a.TipoProgramacion))
+        .ToList() ?? new List<ItemRequiVM>();
+    var mensualesProg = conProgramacion
+        .Where(a => string.Equals(a.TipoProgramacion, "mensual", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+    var anualesProg = conProgramacion
+        .Where(a => string.Equals(a.TipoProgramacion, "anual", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+@functions {
+    private static string PdfQty(int? v) => v.HasValue ? v.Value.ToString() : "—";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -25,6 +39,8 @@
 
 <body>
     <div class="pdf-wrapper">
+
+        <div class="pdf-hoja-1">
 
         <!-- Encabezado institucional -->
         <div class="pdf-encabezado">
@@ -149,6 +165,154 @@
                 ||@(Model.IdRequiMaestra)|@(Model.NumRequisicion)|@(Model.FechaEmision.HasValue ?
                     Model.FechaEmision.Value.Day.ToString("D2") + "-" + Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Year : "—")|@(Model.Hash ?? "—")||
             </span>
+        </div>
+
+        </div>
+
+        <div class="pdf-hoja-programacion">
+            <div class="pdf-encabezado pdf-encabezado--hoja2">
+                <div class="pdf-encabezado-logo">
+                    <img src="~/img/familias-dif-rosa.png" alt="Logo DIF" />
+                </div>
+                <div class="pdf-encabezado-texto">
+                    <p>Sistema para el Desarrollo Integral de la Familia</p>
+                    <p>del Estado de Puebla</p>
+                    <p>Ave. Reforma No. 1305 Colonia Centro &nbsp;|&nbsp; Puebla, Pue., C.P. 72000</p>
+                    <p>Dirección de Administración y Finanzas</p>
+                    <p>Depto. de Recursos Materiales y Servicios Generales</p>
+                    <p>Sección de Bienes y Servicios</p>
+                    <p class="pdf-encabezado-titulo">Requisición de Servicios — Programación</p>
+                </div>
+                <div class="pdf-encabezado-cuadro">
+                    <span class="pdf-requi-label">Requisición</span>
+                    <span class="pdf-requi-num">@numRequi</span>
+                    <span class="pdf-fecha-label">Fecha de emisión</span>
+                    <span class="pdf-fecha-valor">@fechaTexto</span>
+                </div>
+            </div>
+
+            <div class="pdf-seccion">
+                <p class="pdf-tabla-titulo">Artículos programados</p>
+                @if (!mensualesProg.Any() && !anualesProg.Any())
+                {
+                    <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
+                        <thead>
+                            <tr>
+                                <th style="width:6%">No.</th>
+                                <th style="width:34%">Descripción detallada</th>
+                                <th style="width:12%">Unidad de medida</th>
+                                <th style="width:12%">Sem 1</th>
+                                <th style="width:12%">Sem 2</th>
+                                <th style="width:12%">Sem 3</th>
+                                <th style="width:12%">Sem 4</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Sin artículos con programación</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    @if (mensualesProg.Any())
+                    {
+                        <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Distribución mensual (semanas del mes)</p>
+                        <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
+                            <thead>
+                                <tr>
+                                    <th style="width:6%">No.</th>
+                                    <th style="width:34%">Descripción detallada</th>
+                                    <th style="width:12%">Unidad de medida</th>
+                                    <th style="width:12%">Sem 1</th>
+                                    <th style="width:12%">Sem 2</th>
+                                    <th style="width:12%">Sem 3</th>
+                                    <th style="width:12%">Sem 4</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var n = 0; }
+                                @foreach (var a in mensualesProg)
+                                {
+                                    n++;
+                                    <tr>
+                                        <td>@n</td>
+                                        <td>@(a.DescripcionDetallada ?? "—")</td>
+                                        <td>@(a.UnidadMedida ?? "—")</td>
+                                        <td>@PdfQty(a.Llenado1)</td>
+                                        <td>@PdfQty(a.Llenado2)</td>
+                                        <td>@PdfQty(a.Llenado3)</td>
+                                        <td>@PdfQty(a.Llenado4)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    @if (anualesProg.Any())
+                    {
+                        <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Distribución anual</p>
+                        <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--anual">
+                            <thead>
+                                <tr>
+                                    <th style="width:4%">No.</th>
+                                    <th style="width:18%">Descripción detallada</th>
+                                    <th style="width:6%">U. med.</th>
+                                    <th style="width:5%">Ene</th>
+                                    <th style="width:5%">Feb</th>
+                                    <th style="width:5%">Mar</th>
+                                    <th style="width:5%">Abr</th>
+                                    <th style="width:5%">May</th>
+                                    <th style="width:5%">Jun</th>
+                                    <th style="width:5%">Jul</th>
+                                    <th style="width:5%">Ago</th>
+                                    <th style="width:5%">Sep</th>
+                                    <th style="width:5%">Oct</th>
+                                    <th style="width:5%">Nov</th>
+                                    <th style="width:5%">Dic</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var na = 0; }
+                                @foreach (var a in anualesProg)
+                                {
+                                    na++;
+                                    <tr>
+                                        <td>@na</td>
+                                        <td>@(a.DescripcionDetallada ?? "—")</td>
+                                        <td>@(a.UnidadMedida ?? "—")</td>
+                                        <td>@PdfQty(a.Llenado1)</td>
+                                        <td>@PdfQty(a.Llenado2)</td>
+                                        <td>@PdfQty(a.Llenado3)</td>
+                                        <td>@PdfQty(a.Llenado4)</td>
+                                        <td>@PdfQty(a.Llenado5)</td>
+                                        <td>@PdfQty(a.Llenado6)</td>
+                                        <td>@PdfQty(a.Llenado7)</td>
+                                        <td>@PdfQty(a.Llenado8)</td>
+                                        <td>@PdfQty(a.Llenado9)</td>
+                                        <td>@PdfQty(a.Llenado10)</td>
+                                        <td>@PdfQty(a.Llenado11)</td>
+                                        <td>@PdfQty(a.Llenado12)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                }
+            </div>
+
+            <div class="pdf-seccion pdf-firmas pdf-firmas--hoja2">
+                <div class="pdf-firma-item">
+                    <div class="pdf-firma-linea" aria-hidden="true"></div>
+                    <span class="pdf-firma-nombre">@(Model.NomResponsableDepartamento ?? "—")</span>
+                    <span class="pdf-firma-rol">@(Model.CargoResponsableDepartamento ?? "Jefe del departamento")</span>
+                </div>
+                <div class="pdf-firma-item">
+                    <div class="pdf-firma-linea" aria-hidden="true"></div>
+                    <span class="pdf-firma-nombre">@(Model.NomDirector ?? "—")</span>
+                    <span class="pdf-firma-rol">@(Model.CargoDirector ?? "Director del Area")</span>
+                </div>
+            </div>
         </div>
 
         <!-- Botón imprimir (solo en pantalla) -->

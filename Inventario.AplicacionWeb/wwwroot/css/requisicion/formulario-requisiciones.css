@@ -574,6 +574,49 @@
   background: #f5f5f5;
 }
 
+/* Hoja 1 del PDF (retrato) y hoja 2 (programación, horizontal al imprimir) */
+.pdf-hoja-1 {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.pdf-hoja-programacion {
+  display: flex;
+  flex-direction: column;
+  min-height: min(100vh, 900px);
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.pdf-tabla-subtitulo {
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+
+/* Descripción detallada: salto de línea en tablas de programación */
+.pdf-hoja-programacion .pdf-tabla-programacion th:nth-child(2),
+.pdf-hoja-programacion .pdf-tabla-programacion td:nth-child(2) {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.pdf-hoja-programacion .pdf-tabla-programacion--anual th,
+.pdf-hoja-programacion .pdf-tabla-programacion--anual td {
+  padding: 5px 4px;
+  font-size: 10px;
+}
+
+.pdf-hoja-programacion .pdf-tabla-programacion--anual th {
+  font-size: 7.5px;
+  letter-spacing: 0;
+  padding: 4px 2px;
+}
+
 /* ── Encabezado institucional ── */
 .pdf-encabezado {
   display: flex;
@@ -1071,11 +1114,17 @@
 /* ══════════════════════════════════════════════
    REGLAS DE IMPRESIÓN
 ══════════════════════════════════════════════ */
-@media print {
-  @page {
-    margin: 0;
-  }
+@page pdfPortrait {
+  size: portrait;
+  margin: 0;
+}
 
+@page pdfLandscape {
+  size: landscape;
+  margin: 0;
+}
+
+@media print {
   .no-print {
     display: none !important;
   }
@@ -1088,10 +1137,28 @@
   .pdf-wrapper {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 0;
     background: white;
-    padding: 10mm 12mm;
+    padding: 0;
     max-width: 100%;
+  }
+
+  .pdf-hoja-1 {
+    page: pdfPortrait;
+    min-height: 0;
+    padding: 10mm 12mm;
+    box-sizing: border-box;
+  }
+
+  .pdf-hoja-programacion {
+    page: pdfLandscape;
+    page-break-before: always;
+    break-before: page;
+    min-height: 0;
+    margin-top: 0;
+    padding: 8mm 10mm;
+    border-top: none;
+    box-sizing: border-box;
   }
 
   .pdf-encabezado {
@@ -1108,10 +1175,16 @@
     break-inside: avoid;
   }
 
-  .pdf-firmas {
+  .pdf-hoja-1 .pdf-firmas {
     break-inside: avoid;
     margin-top: auto;
     padding-top: 20px;
+  }
+
+  .pdf-firmas--hoja2 {
+    break-inside: avoid;
+    margin-top: auto;
+    padding-top: 16px;
   }
 
   .pdf-firma-linea {
@@ -1126,6 +1199,16 @@
 
   .pdf-tabla th {
     font-size: 9px;
+  }
+
+  .pdf-hoja-programacion .pdf-tabla-programacion--anual th,
+  .pdf-hoja-programacion .pdf-tabla-programacion--anual td {
+    padding: 3px 2px;
+    font-size: 8px;
+  }
+
+  .pdf-hoja-programacion .pdf-tabla-programacion--anual th {
+    font-size: 7px;
   }
 
   .pdf-hash-container {
