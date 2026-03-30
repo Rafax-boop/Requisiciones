@@ -18,9 +18,19 @@
     var anualesProg = conProgramacion
         .Where(a => string.Equals(a.TipoProgramacion, "anual", StringComparison.OrdinalIgnoreCase))
         .ToList();
+    var hayMensualProg = mensualesProg.Any();
+    var hayAnualProg = anualesProg.Any();
 }
 @functions {
     private static string PdfQty(int? v) => v.HasValue ? v.Value.ToString() : "—";
+
+    private static int PdfTotalSemanas(ItemRequiVM a) =>
+        (a.Llenado1 ?? 0) + (a.Llenado2 ?? 0) + (a.Llenado3 ?? 0) + (a.Llenado4 ?? 0);
+
+    private static int PdfTotalMeses(ItemRequiVM a) =>
+        (a.Llenado1 ?? 0) + (a.Llenado2 ?? 0) + (a.Llenado3 ?? 0) + (a.Llenado4 ?? 0) +
+        (a.Llenado5 ?? 0) + (a.Llenado6 ?? 0) + (a.Llenado7 ?? 0) + (a.Llenado8 ?? 0) +
+        (a.Llenado9 ?? 0) + (a.Llenado10 ?? 0) + (a.Llenado11 ?? 0) + (a.Llenado12 ?? 0);
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -37,7 +47,7 @@
     <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
 </head>
 
-<body>
+<body class="pdf-documento">
     <div class="pdf-wrapper">
 
         <div class="pdf-hoja-1">
@@ -193,42 +203,44 @@
 
             <div class="pdf-seccion">
                 <p class="pdf-tabla-titulo">Artículos programados</p>
-                @if (!mensualesProg.Any() && !anualesProg.Any())
+                @if (!hayMensualProg && !hayAnualProg)
                 {
                     <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
                         <thead>
                             <tr>
                                 <th style="width:6%">No.</th>
-                                <th style="width:34%">Descripción detallada</th>
-                                <th style="width:12%">Unidad de medida</th>
-                                <th style="width:12%">Sem 1</th>
-                                <th style="width:12%">Sem 2</th>
-                                <th style="width:12%">Sem 3</th>
-                                <th style="width:12%">Sem 4</th>
+                                <th style="width:28%">Descripción detallada</th>
+                                <th style="width:10%">Unidad de medida</th>
+                                <th style="width:9%">Sem 1</th>
+                                <th style="width:9%">Sem 2</th>
+                                <th style="width:9%">Sem 3</th>
+                                <th style="width:9%">Sem 4</th>
+                                <th style="width:10%" class="pdf-tabla-col-total">Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="7" class="text-center text-muted">Sin artículos con programación</td>
+                                <td colspan="8" class="text-center text-muted">Sin artículos con programación</td>
                             </tr>
                         </tbody>
                     </table>
                 }
                 else
                 {
-                    @if (mensualesProg.Any())
+                    @if (hayMensualProg)
                     {
                         <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Distribución mensual (semanas del mes)</p>
                         <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
                             <thead>
                                 <tr>
                                     <th style="width:6%">No.</th>
-                                    <th style="width:34%">Descripción detallada</th>
-                                    <th style="width:12%">Unidad de medida</th>
-                                    <th style="width:12%">Sem 1</th>
-                                    <th style="width:12%">Sem 2</th>
-                                    <th style="width:12%">Sem 3</th>
-                                    <th style="width:12%">Sem 4</th>
+                                    <th style="width:28%">Descripción detallada</th>
+                                    <th style="width:10%">Unidad de medida</th>
+                                    <th style="width:9%">Sem 1</th>
+                                    <th style="width:9%">Sem 2</th>
+                                    <th style="width:9%">Sem 3</th>
+                                    <th style="width:9%">Sem 4</th>
+                                    <th style="width:10%" class="pdf-tabla-col-total">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -244,32 +256,34 @@
                                         <td>@PdfQty(a.Llenado2)</td>
                                         <td>@PdfQty(a.Llenado3)</td>
                                         <td>@PdfQty(a.Llenado4)</td>
+                                        <td class="pdf-tabla-col-total">@PdfTotalSemanas(a)</td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
                     }
-                    @if (anualesProg.Any())
+                    @if (hayAnualProg)
                     {
                         <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Distribución anual</p>
                         <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--anual">
                             <thead>
                                 <tr>
-                                    <th style="width:4%">No.</th>
-                                    <th style="width:18%">Descripción detallada</th>
-                                    <th style="width:6%">U. med.</th>
-                                    <th style="width:5%">Ene</th>
-                                    <th style="width:5%">Feb</th>
-                                    <th style="width:5%">Mar</th>
-                                    <th style="width:5%">Abr</th>
-                                    <th style="width:5%">May</th>
-                                    <th style="width:5%">Jun</th>
-                                    <th style="width:5%">Jul</th>
-                                    <th style="width:5%">Ago</th>
-                                    <th style="width:5%">Sep</th>
-                                    <th style="width:5%">Oct</th>
-                                    <th style="width:5%">Nov</th>
-                                    <th style="width:5%">Dic</th>
+                                    <th style="width:3.5%">No.</th>
+                                    <th style="width:14%">Descripción detallada</th>
+                                    <th style="width:4.5%">U. med.</th>
+                                    <th style="width:4.2%">Ene</th>
+                                    <th style="width:4.2%">Feb</th>
+                                    <th style="width:4.2%">Mar</th>
+                                    <th style="width:4.2%">Abr</th>
+                                    <th style="width:4.2%">May</th>
+                                    <th style="width:4.2%">Jun</th>
+                                    <th style="width:4.2%">Jul</th>
+                                    <th style="width:4.2%">Ago</th>
+                                    <th style="width:4.2%">Sep</th>
+                                    <th style="width:4.2%">Oct</th>
+                                    <th style="width:4.2%">Nov</th>
+                                    <th style="width:4.2%">Dic</th>
+                                    <th style="width:6%" class="pdf-tabla-col-total">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -293,6 +307,7 @@
                                         <td>@PdfQty(a.Llenado10)</td>
                                         <td>@PdfQty(a.Llenado11)</td>
                                         <td>@PdfQty(a.Llenado12)</td>
+                                        <td class="pdf-tabla-col-total">@PdfTotalMeses(a)</td>
                                     </tr>
                                 }
                             </tbody>
