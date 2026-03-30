@@ -15,9 +15,9 @@
      data-url-aprobar-parcial="@Url.Action("AprobarParcial", "Almacen")"
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
      data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
-     data-url-anular-movimiento="@Url.Action("AnularMovimiento", "Almacen")"
      data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
      data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")">
+
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Departamento de Almacén</h1>
@@ -31,11 +31,11 @@
         <button type="button" class="almacen-tabs-btn" data-tab="reportes">Reportes</button>
     </nav>
 
-    <!-- Pestaña Requisiciones Recibidas -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Pestaña: Requisiciones                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="tab-requisiciones" class="almacen-tab-panel activo">
         @{
-            // TblEstatus: 9 = REQUISICION EN PROCESO - ALMACEN, 11 = EN PROCESO - COMPRA, 12 = ENTREGADO,
-            // 4 = REQUISICION AUTORIZADA, 10 = REQUISICION AUTORIZADA PARCIAL (mismo criterio que AlmacenService)
             var enBandejaAlmacen = Model.Requisiciones.Count(r => r.IdEstatus == 9);
             var enCompraOEntrega = Model.Requisiciones.Count(r => r.IdEstatus == 11 || r.IdEstatus == 12);
             var autorizadas = Model.Requisiciones.Count(r => r.IdEstatus == 4 || r.IdEstatus == 10);
@@ -54,8 +54,9 @@
                 <div class="stat-label">Autorizadas</div>
             </div>
         </div>
+
         <div class="container-formulario filtros-container">
-            <div class="filtro-grupo" style="flex: 2;">
+            <div class="filtro-grupo" style="flex:2;">
                 <label>Buscar</label>
                 <input type="text" id="filtroBuscar" placeholder="Buscar por folio, departamento o responsable..." />
             </div>
@@ -70,6 +71,7 @@
                 </select>
             </div>
         </div>
+
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisiciones">
                 <thead>
@@ -91,7 +93,9 @@
                     @foreach (var r in Model.Requisiciones.OrderBy(x => x.FechaEmision))
                     {
                         idx++;
-                        <tr data-id="@r.IdRequi" data-folio="@r.NumRequi" data-depto="@(r.Departamento ?? "")"
+                        <tr data-id="@r.IdRequi"
+                            data-folio="@r.NumRequi"
+                            data-depto="@(r.Departamento ?? "")"
                             data-estatus="@(r.Estatus ?? "")">
                             <td style="text-align:center">@idx</td>
                             <td><span class="folio-badge">@r.NumRequi</span></td>
@@ -102,9 +106,12 @@
                             <td>@r.Estatus</td>
                             <td>
                                 <div class="acciones-grupo">
-                                    <button type="button" class="btn-accion btn-ver" title="Analizar" data-id="@r.IdRequi"
-                                            data-folio="@(r.NumRequi ?? "")" data-depto="@(r.Departamento ?? "")"
-                                            data-estatus="@(r.Estatus ?? "")" data-almacen-analizar>
+                                    <button type="button" class="btn-accion btn-ver" title="Analizar"
+                                            data-id="@r.IdRequi"
+                                            data-folio="@(r.NumRequi ?? "")"
+                                            data-depto="@(r.Departamento ?? "")"
+                                            data-estatus="@(r.Estatus ?? "")"
+                                            data-almacen-analizar>
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -123,39 +130,44 @@
         </div>
     </div>
 
-    <!-- Pestaña Inventario -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Pestaña: Inventario                                         -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="tab-inventario" class="almacen-tab-panel">
         <div class="container-formulario" style="margin-bottom:16px;">
-            <h4 style="margin:0 0 10px 0; font-family: var(--font-display); color: var(--slate-700);">Ingreso de material</h4>
+            <h4 style="margin:0 0 10px 0; font-family:var(--font-display); color:var(--slate-700);">Ingreso de material</h4>
             <div class="filtros-container">
-                <div class="filtro-grupo" style="flex:1; min-width: 180px;">
+                <div class="filtro-grupo" style="flex:1; min-width:180px;">
                     <label>Clave (solo si es nuevo)</label>
                     <input type="text" id="ingresoClave" class="input-app" placeholder="Clave" />
                 </div>
-                <div class="filtro-grupo" style="flex:2; min-width: 260px;">
+                <div class="filtro-grupo" style="flex:2; min-width:260px;">
                     <label>Descripción</label>
                     <input type="text" id="ingresoDescripcion" class="input-app" placeholder="Descripción del material" />
                 </div>
-                <div class="filtro-grupo" style="flex:1; min-width: 160px;">
+                <div class="filtro-grupo" style="flex:1; min-width:160px;">
                     <label>Unidad de medida</label>
                     <input type="text" id="ingresoUnidad" class="input-app" placeholder="PZA, CAJA, etc." />
                 </div>
-                <div class="filtro-grupo" style="flex:1; min-width: 140px;">
+                <div class="filtro-grupo" style="flex:1; min-width:140px;">
                     <label>Cantidad</label>
                     <input type="number" id="ingresoCantidad" class="input-app" min="1" step="1" placeholder="0" />
                 </div>
-                <div class="filtro-grupo" style="flex:2; min-width: 260px;">
+                <div class="filtro-grupo" style="flex:2; min-width:260px;">
                     <label>Motivo</label>
                     <input type="text" id="ingresoMotivo" class="input-app" placeholder="Compra, donación, ajuste..." />
                 </div>
-                <div class="filtro-grupo" style="min-width: 160px;">
+                <div class="filtro-grupo" style="min-width:160px;">
                     <label>&nbsp;</label>
-                    <button type="button" id="btnRegistrarIngreso" class="boton-rosa" style="width:100%;">Registrar ingreso</button>
+                    <button type="button" id="btnRegistrarIngreso" class="boton-rosa" style="width:100%;">
+                        Registrar ingreso
+                    </button>
                 </div>
             </div>
         </div>
+
         <div class="container-formulario filtros-container">
-            <div class="filtro-grupo" style="flex: 2;">
+            <div class="filtro-grupo" style="flex:2;">
                 <label>Buscar artículo</label>
                 <input type="text" id="filtroBuscarInventario" placeholder="Buscar por descripción de material..." />
             </div>
@@ -170,6 +182,7 @@
                 </select>
             </div>
         </div>
+
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaInventario">
                 <thead>
@@ -184,7 +197,9 @@
                 <tbody>
                     @foreach (var i in Model.Inventario)
                     {
-                        var claseSituacion = i.Situacion == "Sin stock" ? "almacen-estado-sin-stock" : i.Situacion == "Stock bajo" ? "almacen-estado-bajo" : "almacen-estado-ok";
+                        var claseSituacion = i.Situacion == "Sin stock" ? "almacen-estado-sin-stock"
+                        : i.Situacion == "Stock bajo" ? "almacen-estado-bajo"
+                        : "almacen-estado-ok";
                         <tr data-unidad="@(i.UnidadMedida ?? "")">
                             <td>@i.Descripcion</td>
                             <td>@i.UnidadMedida</td>
@@ -193,7 +208,7 @@
                             <td class="@claseSituacion">@i.Situacion</td>
                         </tr>
                     }
-                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display: none;">
+                    <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display:none;">
                         <td colspan="5" class="text-center">No hay registros de inventario</td>
                     </tr>
                 </tbody>
@@ -202,22 +217,22 @@
         </div>
     </div>
 
-    <!-- Pestaña Reportes -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Pestaña: Reportes                                           -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="tab-reportes" class="almacen-tab-panel">
         @{
             var totalReq = Model.Requisiciones.Count;
-            var porEstado = Model.Requisiciones.GroupBy(r => r.Estatus ?? "").Where(g =>
-        !string.IsNullOrEmpty(g.Key)).ToList();
+            var porEstado = Model.Requisiciones
+            .GroupBy(r => r.Estatus ?? "")
+            .Where(g => !string.IsNullOrEmpty(g.Key))
+            .ToList();
         }
-        <h4 class="mb-3" style="font-family: var(--font-display); color: var(--slate-700);">Distribución por Estado</h4>
-        <div class="container-formulario tabla-container" style="max-width: 500px;">
+        <h4 class="mb-3" style="font-family:var(--font-display); color:var(--slate-700);">Distribución por Estado</h4>
+        <div class="container-formulario tabla-container" style="max-width:500px;">
             <table class="tabla-requisiciones">
                 <thead>
-                    <tr>
-                        <th>Estado</th>
-                        <th>Cantidad</th>
-                        <th>%</th>
-                    </tr>
+                    <tr><th>Estado</th><th>Cantidad</th><th>%</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var g in porEstado)
@@ -232,22 +247,14 @@
                 </tbody>
             </table>
         </div>
-        <h4 class="mb-3 mt-4" style="font-family: var(--font-display); color: var(--slate-700);">Resumen General</h4>
-        <div class="container-formulario tabla-container" style="max-width: 500px;">
+
+        <h4 class="mb-3 mt-4" style="font-family:var(--font-display); color:var(--slate-700);">Resumen General</h4>
+        <div class="container-formulario tabla-container" style="max-width:500px;">
             <table class="tabla-requisiciones">
                 <tbody>
-                    <tr>
-                        <td>Total requisiciones</td>
-                        <td><strong>@totalReq</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Items solicitados en total</td>
-                        <td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Materiales en catálogo</td>
-                        <td><strong>@Model.Inventario.Count</strong></td>
-                    </tr>
+                    <tr><td>Total requisiciones</td><td><strong>@totalReq</strong></td></tr>
+                    <tr><td>Items solicitados en total</td><td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td></tr>
+                    <tr><td>Materiales en catálogo</td><td><strong>@Model.Inventario.Count</strong></td></tr>
                     <tr>
                         <td>Materiales sin stock</td>
                         <td><strong class="almacen-estado-sin-stock">@Model.Inventario.Count(i => i.Situacion == "Sin stock")</strong></td>
@@ -262,7 +269,9 @@
     </div>
 </div>
 
-<!-- Modal análisis (Bootstrap + modal-premium) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Modal análisis                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="modal" id="modalAlmacen" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
@@ -275,38 +284,48 @@
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
+
             <div class="almacen-modal-tabs">
-                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de
-                    Inventario</button>
-                    <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
-                    <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
-                </div>
-                <div class="modal-body modal-body-premium" id="modalAlmacenBody">
-                    <p class="text-muted">Cargando...</p>
-                </div>
-                <div class="almacen-modal-footer">
-                    <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> Cerrar</button>
-                    <button type="button" class="almacen-btn almacen-btn-rechazar btn-almacen-rechazar"><i class="fa-solid fa-ban"></i> Rechazar</button>
-                    <button type="button" class="almacen-btn almacen-btn-parcial btn-almacen-parcial"><i class="fa-solid fa-list-check"></i> Aprobar Parcial</button>
-                    <button type="button" class="almacen-btn almacen-btn-completa btn-almacen-aprobar" id="btnAprobarCompleta"><i class="fa-solid fa-circle-check"></i> Aprobar Completa</button>
-                </div>
+                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de Inventario</button>
+                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
+                <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
+            </div>
+
+            <div class="modal-body modal-body-premium" id="modalAlmacenBody">
+                <p class="text-muted">Cargando...</p>
+            </div>
+
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cerrar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-rechazar btn-almacen-rechazar">
+                    <i class="fa-solid fa-ban"></i> Rechazar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-parcial btn-almacen-parcial">
+                    <i class="fa-solid fa-list-check"></i> Procesar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-completa btn-almacen-aprobar" id="btnAprobarCompleta">
+                    <i class="fa-solid fa-circle-check"></i> Aprobar Completa
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Panel descripción detallada (ver completa, igual que Requisición y Servicios) -->
-    <div id="desc-panel-modal" style="display:none;">
-        <div class="desc-panel-modal-header">
-            <span class="desc-panel-modal-titulo">Descripción detallada</span>
-            <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
+<!-- Panel descripción detallada -->
+<div id="desc-panel-modal" style="display:none;">
+    <div class="desc-panel-modal-header">
+        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
     </div>
+    <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
+</div>
 
-    @section Scripts {
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
-        <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
-    }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
+}

@@ -32,4 +32,6 @@ public partial class TblRequisicionDetalle
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
 
     public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
+
+    public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();
 }

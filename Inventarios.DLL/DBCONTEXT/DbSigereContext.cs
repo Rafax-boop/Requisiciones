@@ -46,6 +46,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblRequisicionDetalle> TblRequisicionDetalles { get; set; }
 
+    public virtual DbSet<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; }
+
     public virtual DbSet<TblRol> TblRols { get; set; }
 
     public virtual DbSet<TblUnidadMedidum> TblUnidadMedida { get; set; }
@@ -64,6 +66,9 @@ public partial class DbSigereContext : DbContext
 
             entity.HasIndex(e => e.Descripcion, "IX_TblArticulo_Descripcion");
 
+            entity.Property(e => e.Clave)
+                .HasMaxLength(20)
+                .IsUnicode(false);
             entity.Property(e => e.Cog).HasColumnName("COG");
             entity.Property(e => e.Descripcion).HasMaxLength(500);
             entity.Property(e => e.Marca).HasMaxLength(30);
@@ -413,6 +418,35 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdRequisicion)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblRequisicionDetalle_tblRequisicion");
+        });
+
+        modelBuilder.Entity<TblRequisicionDetalleMovimiento>(entity =>
+        {
+            entity.HasKey(e => e.IdMovimiento).HasName("PK__TblRequi__881A6AE081B2055F");
+
+            entity.ToTable("TblRequisicionDetalleMovimiento");
+
+            entity.Property(e => e.CantidadMovimiento).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CantidadOriginal).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.FechaMovimiento)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Observacion)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.TipoMovimiento)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalleMovimientos)
+                .HasForeignKey(d => d.IdRequisicion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Movimiento_Requisicion");
+
+            entity.HasOne(d => d.IdRequisicionDetalleNavigation).WithMany(p => p.TblRequisicionDetalleMovimientos)
+                .HasForeignKey(d => d.IdRequisicionDetalle)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Movimiento_Detalle");
         });
 
         modelBuilder.Entity<TblRol>(entity =>

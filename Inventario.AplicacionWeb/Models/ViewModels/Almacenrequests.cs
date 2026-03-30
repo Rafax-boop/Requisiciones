@@ -41,4 +41,31 @@
         public int IdRequisicionDetalle { get; set; }
         public int CantidadComprar { get; set; }
     }
+
+    public class AnularMovimientoRequest
+    {
+        public int IdMovimiento { get; set; }
+        public string? Motivo { get; set; }
+    }
+
+    public class IngresoInventarioRequest
+    {
+        public string? Clave { get; set; }
+        public string? Descripcion { get; set; }
+        public string? UnidadMedida { get; set; }
+        public int Cantidad { get; set; }
+        public string? Motivo { get; set; }
+    }
+
+    public class PartidaEntrega
+    {
+        public int IdRequisicionDetalle { get; set; }
+        public int CantidadAprobada { get; set; }
+    }
+
+    public class PartidaCompra
+    {
+        public int IdRequisicionDetalle { get; set; }
+        public int CantidadComprar { get; set; }
+    }
 }

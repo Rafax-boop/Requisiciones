@@ -111,7 +111,7 @@ namespace Inventario.BLL.Implementacion
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = requisicion.IdRequisicion,
-                    IdEstatus = 4,
+                    IdEstatus = 15,
                     FechaEstatus = DateTime.Now,
                     Observacion = modelo.Observaciones,
                     IdUsuario = idUsuario
