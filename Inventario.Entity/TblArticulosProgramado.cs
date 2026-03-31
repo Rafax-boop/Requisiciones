@@ -39,6 +39,8 @@ public partial class TblArticulosProgramado
 
     public int? Llenado12 { get; set; }
 
+    public int? Mes { get; set; }
+
     public virtual TblArticulo? IdArticuloNavigation { get; set; }
 
     public virtual TblRequisicionDetalle? IdRequisicionDetalleNavigation { get; set; }

@@ -46,7 +46,10 @@ namespace Inventario.BLL.Implementacion
         private async Task<TblRequisicion> ObtenerRequisicionConDetallesAsync(int idRequisicion)
         {
             var query = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idRequisicion);
-            var req = await query.Include(r => r.TblRequisicionDetalles).FirstOrDefaultAsync();
+            var req = await query
+                .Include(r => r.TblRequisicionDetalles)
+                    .ThenInclude(d => d.IdArticuloNavigation)
+                .FirstOrDefaultAsync();
 
             if (req == null)
                 throw new Exception($"No se encontró la requisición con ID {idRequisicion}.");
