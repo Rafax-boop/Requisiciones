@@ -202,8 +202,11 @@
     window.ModalAdjuntos = {
         esImagen: esImagen,
         renderizarArchivosReadonly: renderizarArchivosReadonly,
-        descargarArchivo: descargarArchivo
+        descargarArchivo: descargarArchivo,
+        renderGrupoHtml: renderGrupoHtml,
+        enlazarEventosContenedor: enlazarEventosContenedor
     };
 
     initVisorListenersOnce();
 })(window, document);
+

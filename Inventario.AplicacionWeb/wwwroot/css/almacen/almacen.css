@@ -16,6 +16,7 @@
 }
 
 .almacen-tabs-btn {
+    position: relative;
     padding: 12px 24px;
     border: none;
     border-bottom: 3px solid transparent;
@@ -36,6 +37,34 @@
     border-bottom-color: var(--rosa-500);
     color: var(--rosa-500);
     background: transparent;
+}
+
+/* Badge para notificaciones en el tab */
+.badge-almacen-tab {
+    position: absolute;
+    top: 0px;
+    right: 4px;
+    background: var(--rosa-500);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(255, 64, 129, 0.3);
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    line-height: 1;
+    z-index: 5;
+    animation: bounceInTab 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bounceInTab {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 /* ──────────────────────────────────────────

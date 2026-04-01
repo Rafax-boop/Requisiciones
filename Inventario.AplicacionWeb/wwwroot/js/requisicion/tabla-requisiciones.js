@@ -586,6 +586,21 @@
     tabBtns.forEach(function (btn) {
       btn.addEventListener("click", function () {
         var tab = this.getAttribute("data-tab");
+        
+        // Al salir de un tab activo (antes de cambiarlo), limpiamos sus filas nuevas
+        var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
+        if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
+            var filasVistas = panelActivoAnterior.querySelectorAll("tr.fila-nueva");
+            filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
+        }
+        
+        // Reiniciamos el badge del tab destino
+        var badgeDestino = this.querySelector(".badge-almacen-tab");
+        if (badgeDestino) {
+            badgeDestino.textContent = "0";
+            badgeDestino.style.display = "none";
+        }
+
         tabBtns.forEach(function (b) {
           b.classList.remove("activo");
         });
@@ -598,6 +613,37 @@
       });
     });
   }
+
+  // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
+  window.recibirNotificacionRequi = function (idRequi, tabDestino) {
+      // 1. Encontrar la fila y aplicarle la clase
+      var fila = document.querySelector('tr.fila-requi[data-requi-id="' + idRequi + '"]');
+      if (fila) {
+          fila.classList.add("fila-nueva");
+      }
+
+      // 2. Comprobar si NO estamos en ese tab actualmente para subir el contador
+      var panelDestino = document.getElementById("tab-" + tabDestino);
+      if (panelDestino && !panelDestino.classList.contains("activo")) {
+          var btnTab = document.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
+          if (btnTab) {
+              var badge = btnTab.querySelector(".badge-almacen-tab");
+              if (badge) {
+                  var conteoActual = parseInt(badge.textContent || "0", 10);
+                  badge.textContent = conteoActual + 1;
+                  badge.style.display = "flex";
+                  
+                  // Reiniciar animación re-insertando elemento u usando clase
+                  badge.style.animation = 'none';
+                  badge.offsetHeight; /* trigger reflow */
+                  badge.style.animation = null; 
+              }
+          }
+      } else if (panelDestino && panelDestino.classList.contains("activo")) {
+          // Si estamos viendo el tab activo cuando llega, actualizamos la vista
+          aplicarPaginacionRequisiciones();
+      }
+  };
 
   // Inicializar paginación al cargar el script
   aplicarPaginacionRequisiciones();
@@ -771,31 +817,22 @@
                 });
             }
 
-            // Fotos de diseño (Servicio Impresión)
+            // Fotos de diseño / Archivos adjuntos
             var seccionFotos = document.getElementById('seccionFotosDetalle');
             var galeriaFotos = document.getElementById('galeriaFotosDetalle');
             if (seccionFotos && galeriaFotos) {
-                if (data.tipoServicio === 'Servicio Impresion' && data.fotos && data.fotos.length > 0) {
-                    galeriaFotos.innerHTML = '';
-                    data.fotos.forEach(function (ruta) {
-                        var wrapper = document.createElement('div');
-                        wrapper.style.cssText = 'display:inline-block; text-align:center;';
-                        var img = document.createElement('img');
-                        img.src = ruta;
-                        img.classList.add('modal-galeria-foto-thumb');
-                        img.alt = '';
-                        img.title = 'Ver imagen';
-                        img.addEventListener('click', function () {
-                            if (typeof window.abrirVisorImagenTabla === 'function') {
-                                window.abrirVisorImagenTabla(ruta);
-                            }
-                        });
-                        wrapper.appendChild(img);
-                        galeriaFotos.appendChild(wrapper);
-                    });
+                // Se muestran si hay fotos, sin restringir a Servicio Impresión para que funcione igual al enviar adjuntos comunes
+                if (data.fotos && data.fotos.length > 0) {
+                    var objsFotos = data.fotos.map(function(r) { return { ruta: r, nombreArchivo: r.split('/').pop() || 'archivo' }; });
+                    
+                    if (window.ModalAdjuntos && typeof window.ModalAdjuntos.renderGrupoHtml === 'function') {
+                        galeriaFotos.innerHTML = window.ModalAdjuntos.renderGrupoHtml('', objsFotos);
+                        window.ModalAdjuntos.enlazarEventosContenedor(galeriaFotos);
+                    }
                     seccionFotos.style.display = 'block';
                 } else {
                     seccionFotos.style.display = 'none';
+                    galeriaFotos.innerHTML = '';
                 }
             }
 
