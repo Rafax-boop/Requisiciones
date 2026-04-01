@@ -277,7 +277,8 @@ namespace Inventario.AplicacionWeb.Controllers
                     Llenado9 = a.Llenado9,
                     Llenado10 = a.Llenado10,
                     Llenado11 = a.Llenado11,
-                    Llenado12 = a.Llenado12
+                    Llenado12 = a.Llenado12,
+                    Mes = a.Mes
                 }).ToList()
             };
 

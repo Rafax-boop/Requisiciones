@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     var container = document.querySelector(".tabla-requi-page");
     var obtenerDetallesUrl = container ? container.getAttribute("data-url-obtener-detalles") : "";
     var verPdfRequisicionUrl = container ? container.getAttribute("data-url-ver-pdf-requi") : "";
@@ -134,6 +134,36 @@
         renderizarControlesPaginacion(total, inicio, fin, totalPaginas);
     }
 
+    function abrirVisorImagen(ruta) {
+        var overlay = document.getElementById('visor-imagenes-tabla');
+        var img = document.getElementById('visor-imagenes-tabla-img');
+        if (!overlay || !img) return;
+        img.src = ruta;
+        overlay.classList.add('activo');
+    }
+
+    // Cerrar visor al hacer clic fuera de la imagen
+    (function () {
+        var overlay = document.getElementById('visor-imagenes-tabla');
+        if (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) {
+                    overlay.classList.remove('activo');
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && overlay.classList.contains('activo')) {
+                    overlay.classList.remove('activo');
+                }
+            });
+        }
+    })();
+
+    function esImagen(nombreArchivo) {
+        var ext = (nombreArchivo || '').split('.').pop().toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].indexOf(ext) !== -1;
+    }
+
     function renderizarArchivosReadonly(cotizaciones, cuadro) {
         // Buscar o crear contenedor de archivos dentro de .seccionAtender
         var contenedor = document.getElementById("contenedorArchivosReadonly");
@@ -156,13 +186,31 @@
             archivos.forEach(function (a) {
                 var ext = (a.nombreArchivo || "").split(".").pop().toLowerCase();
                 var esPdf = ext === "pdf";
-                html += '<a href="' + a.ruta + '" target="_blank" '
-                    + 'style="display:flex;align-items:center;gap:6px;padding:6px 10px;'
-                    + 'border:1px solid #e5e7eb;border-radius:8px;font-size:12px;'
-                    + 'color:#374151;text-decoration:none;background:#f9fafb;">'
-                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                    + (a.nombreArchivo || "Archivo")
-                    + '</a>';
+                var esExcel = ['xls', 'xlsx', 'xlsm'].indexOf(ext) !== -1;
+                var esImg = esImagen(a.nombreArchivo);
+
+                if (esImg) {
+                    // Imágenes: mostrar thumbnail y abrir en visor lightbox
+                    html += '<div style="cursor:pointer;" class="archivo-thumb-visor" data-ruta="' + a.ruta + '">'
+                        + '<img src="' + a.ruta + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" />'
+                        + '<div style="font-size:10px;color:#555;text-align:center;margin-top:2px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (a.nombreArchivo || 'Imagen') + '</div>'
+                        + '</div>';
+                } else {
+                    // PDF / Excel / otros: descargar directamente
+                    var icono, color;
+                    if (esPdf) { icono = 'fa-file-pdf'; color = '#e74c3c'; }
+                    else if (esExcel) { icono = 'fa-file-excel'; color = '#27ae60'; }
+                    else { icono = 'fa-file'; color = '#6b7280'; }
+
+                    html += '<a href="' + a.ruta + '" download="' + (a.nombreArchivo || 'archivo') + '" '
+                        + 'style="display:flex;align-items:center;gap:6px;padding:6px 10px;'
+                        + 'border:1px solid #e5e7eb;border-radius:8px;font-size:12px;'
+                        + 'color:#374151;text-decoration:none;background:#f9fafb;cursor:pointer;">'
+                        + '<i class="fa-solid ' + icono + '" style="color:' + color + ';"></i>'
+                        + '<span>' + (a.nombreArchivo || 'Archivo') + '</span>'
+                        + '<i class="fa-solid fa-download" style="color:#9ca3af;font-size:11px;margin-left:4px;"></i>'
+                        + '</a>';
+                }
             });
             html += "</div></div>";
             return html;
@@ -171,6 +219,13 @@
         contenedor.innerHTML =
             renderGrupo("Cotizaciones", cotizaciones) +
             renderGrupo("Cuadro comparativo", cuadro);
+
+        // Bind thumbnail click → abrir visor
+        contenedor.querySelectorAll('.archivo-thumb-visor').forEach(function (el) {
+            el.addEventListener('click', function () {
+                abrirVisorImagen(el.getAttribute('data-ruta'));
+            });
+        });
     }
 
     function renderizarControlesPaginacion(total, inicio, fin, totalPaginas) {
@@ -347,8 +402,10 @@
                     data.fotos.forEach(function (ruta) {
                         var img = document.createElement('img');
                         img.src = ruta;
-                        img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;';
-                        img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+                        img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;transition:transform .15s ease;';
+                        img.addEventListener('mouseenter', function () { img.style.transform = 'scale(1.08)'; });
+                        img.addEventListener('mouseleave', function () { img.style.transform = 'scale(1)'; });
+                        img.addEventListener('click', function () { abrirVisorImagen(ruta); });
                         galeriaFotos.appendChild(img);
                     });
                     seccionFotos.style.display = 'block';

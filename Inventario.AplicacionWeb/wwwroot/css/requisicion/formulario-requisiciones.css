@@ -1076,6 +1076,38 @@
   font-family: var(--font-body);
 }
 
+/* Selector de mes (wizard mensual) */
+.wizard-mes-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.wizard-mes-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-600);
+  flex-shrink: 0;
+}
+
+.wizard-mes-select-wrap {
+  flex: 1;
+  min-width: 220px;
+  max-width: 400px;
+}
+
+.wizard-mes-container .select2-container {
+  width: 100% !important;
+}
+
+/* Select2 del mes: mismo aspecto global; dropdown por encima del contenido del modal */
+.swal2-container .select2-dropdown {
+  z-index: 10050 !important;
+}
+
 /* ══════════════════════════════════════════════
    VISOR DE IMÁGENES (LIGHTBOX)
 ══════════════════════════════════════════════ */

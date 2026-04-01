@@ -541,6 +541,15 @@
                     Swal.showValidationMessage('Debe seleccionar Mensual o Anual');
                     return false;
                 }
+                var mesVal = null;
+                if (tipoSel.value === 'mensual') {
+                    var selectMes = document.getElementById('wizardMesSelect');
+                    if (!selectMes || !selectMes.value) {
+                        Swal.showValidationMessage('Debe seleccionar el mes');
+                        return false;
+                    }
+                    mesVal = parseInt(selectMes.value);
+                }
                 var total = calcularTotalPaso();
                 if (Math.abs(total - art.cantidad) > 0.01) {
                     Swal.showValidationMessage(
@@ -548,23 +557,25 @@
                     );
                     return false;
                 }
-                return { tipo: tipoSel.value };
+                return { tipo: tipoSel.value, mes: mesVal };
             }
         }).then(function (result) {
             if (result.isConfirmed) {
                 var chosen = result.value.tipo;
+                var chosenMes = result.value.mes;
 
                 var $row = $('#tablaArticulos tbody tr').eq(state.currentIndex);
                 var idArticulo = $row.find('.select-articulo').val();
 
-                // ← NUEVO: guardar distribución de este artículo
+                // ← guardar distribución de este artículo
                 var valores = [];
                 document.querySelectorAll('.wizard-periodo-input').forEach(function (inp) {
                     valores.push(parseInt(inp.value) || 0);
                 });
                 programacionWizard[idArticulo] = {
                     tipo: chosen,
-                    llenos: valores
+                    llenos: valores,
+                    mes: chosenMes
                 };
                 state.lastWasChanged = preseleccionado !== null && chosen !== preseleccionado;
                 state.lastTipo = chosen;
@@ -597,6 +608,20 @@
         h += '<input type="radio" name="wizardTipo" value="anual"' + (preseleccionado === 'anual' ? ' checked' : '') + '>';
         h += '<span>Anual</span></label>';
         h += '</div>';
+
+        // Selector de mes (solo visible para mensual)
+        var mostrarMes = preseleccionado === 'mensual' ? '' : ' style="display:none"';
+        h += '<div id="wizardMesContainer" class="wizard-mes-container"' + mostrarMes + '>';
+        h += '<label class="wizard-mes-label">Mes de distribución:</label>';
+        h += '<div class="wizard-mes-select-wrap">';
+        h += '<select id="wizardMesSelect" class="form-select wizard-mes-select" style="width:100%">';
+        h += '<option value="">— Seleccione —</option>';
+        var nombresMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        for (var m = 0; m < 12; m++) {
+            h += '<option value="' + (m + 1) + '">' + (m + 1) + ' - ' + nombresMes[m] + '</option>';
+        }
+        h += '</select>';
+        h += '</div></div>';
 
         h += '<div class="wizard-info-cantidad">Cantidad requerida: <strong>' + art.cantidad + '</strong></div>';
 
@@ -650,6 +675,35 @@
         return d.innerHTML;
     }
 
+    function destruirWizardMesSelect2() {
+        var $sel = $('#wizardMesSelect');
+        if ($sel.length && $sel.data('select2')) {
+            $sel.select2('destroy');
+        }
+    }
+
+    function inicializarWizardMesSelect2() {
+        if (typeof $.fn.select2 === 'undefined') return;
+        var $sel = $('#wizardMesSelect');
+        if (!$sel.length || !$('#wizardMesContainer').is(':visible')) return;
+
+        destruirWizardMesSelect2();
+
+        var $parent = $('.swal2-container').last();
+        if (!$parent.length) {
+            $parent = $(document.body);
+        }
+
+        $sel.select2({
+            width: '100%',
+            placeholder: '— Seleccione —',
+            allowClear: true,
+            language: 'es',
+            minimumResultsForSearch: Infinity,
+            dropdownParent: $parent
+        });
+    }
+
     function configurarEventosPaso(art) {
         document.querySelectorAll('input[name="wizardTipo"]').forEach(function (radio) {
             radio.addEventListener('change', function () {
@@ -657,6 +711,16 @@
                     btn.classList.remove('activo');
                 });
                 this.closest('.wizard-tipo-btn').classList.add('activo');
+                var mesContainer = document.getElementById('wizardMesContainer');
+                if (mesContainer) {
+                    if (this.value === 'mensual') {
+                        mesContainer.style.display = '';
+                        inicializarWizardMesSelect2();
+                    } else {
+                        destruirWizardMesSelect2();
+                        mesContainer.style.display = 'none';
+                    }
+                }
                 actualizarTablaPaso(art, this.value);
             });
         });
@@ -664,6 +728,10 @@
             input.addEventListener('input', calcularYMostrarTotal);
             enlazarSeleccionPorTab(input);
         });
+
+        if ($('#wizardMesContainer').is(':visible')) {
+            inicializarWizardMesSelect2();
+        }
     }
 
     function actualizarTablaPaso(art, tipo) {
@@ -738,6 +806,9 @@
             }
 
             addHidden('Articulos[' + i + '].TipoProgramacion', prog.tipo);
+            if (prog.mes) {
+                addHidden('Articulos[' + i + '].Mes', prog.mes);
+            }
             for (var j = 0; j < prog.llenos.length; j++) {
                 addHidden('Articulos[' + i + '].Llenado' + (j + 1), prog.llenos[j]);
             }

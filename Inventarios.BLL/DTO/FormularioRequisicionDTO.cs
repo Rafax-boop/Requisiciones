@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -55,5 +55,6 @@ namespace Inventario.BLL.DTO
         public int? Llenado10 { get; set; }
         public int? Llenado11 { get; set; }
         public int? Llenado12 { get; set; }
+        public int? Mes { get; set; }
     }
 }

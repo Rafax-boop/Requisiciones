@@ -28,7 +28,6 @@
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="requisiciones">Requisiciones Recibidas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="reportes">Reportes</button>
     </nav>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -217,56 +216,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Reportes                                           -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="tab-reportes" class="almacen-tab-panel">
-        @{
-            var totalReq = Model.Requisiciones.Count;
-            var porEstado = Model.Requisiciones
-            .GroupBy(r => r.Estatus ?? "")
-            .Where(g => !string.IsNullOrEmpty(g.Key))
-            .ToList();
-        }
-        <h4 class="mb-3" style="font-family:var(--font-display); color:var(--slate-700);">Distribución por Estado</h4>
-        <div class="container-formulario tabla-container" style="max-width:500px;">
-            <table class="tabla-requisiciones">
-                <thead>
-                    <tr><th>Estado</th><th>Cantidad</th><th>%</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var g in porEstado)
-                    {
-                        var pct = totalReq > 0 ? ((double)g.Count() / totalReq * 100).ToString("F0") : "0";
-                        <tr>
-                            <td>@g.Key</td>
-                            <td>@g.Count()</td>
-                            <td>@pct%</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
 
-        <h4 class="mb-3 mt-4" style="font-family:var(--font-display); color:var(--slate-700);">Resumen General</h4>
-        <div class="container-formulario tabla-container" style="max-width:500px;">
-            <table class="tabla-requisiciones">
-                <tbody>
-                    <tr><td>Total requisiciones</td><td><strong>@totalReq</strong></td></tr>
-                    <tr><td>Items solicitados en total</td><td><strong>@Model.Requisiciones.Sum(r => r.CantidadPartidas)</strong></td></tr>
-                    <tr><td>Materiales en catálogo</td><td><strong>@Model.Inventario.Count</strong></td></tr>
-                    <tr>
-                        <td>Materiales sin stock</td>
-                        <td><strong class="almacen-estado-sin-stock">@Model.Inventario.Count(i => i.Situacion == "Sin stock")</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Materiales con stock bajo</td>
-                        <td><strong class="almacen-estado-bajo">@Model.Inventario.Count(i => i.Situacion == "Stock bajo")</strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->

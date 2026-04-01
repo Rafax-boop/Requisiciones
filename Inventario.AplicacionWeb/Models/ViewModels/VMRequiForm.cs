@@ -1,4 +1,4 @@
-﻿using Inventario.BLL.DTO;
+using Inventario.BLL.DTO;
 
 namespace Inventario.AplicacionWeb.Models.ViewModels
 {
@@ -56,6 +56,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int? Llenado10 { get; set; }
         public int? Llenado11 { get; set; }
         public int? Llenado12 { get; set; }
+        public int? Mes { get; set; }
     }
 
     public class VMFotoExistente
