@@ -183,6 +183,9 @@
                 var href = link.getAttribute('href');
                 if (!href || href === '#' || href.startsWith('javascript') || href.startsWith('mailto')) return;
                 if (link.dataset.bsToggle || link.dataset.bsDismiss) return;
+                if (link.hasAttribute('download')) return;
+                if (link.getAttribute('target') === '_blank') return;
+                if (link.closest('.modal')) return;
                 if (loader) loader.classList.remove('oculto');
             });
 

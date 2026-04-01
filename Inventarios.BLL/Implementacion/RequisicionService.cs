@@ -129,6 +129,7 @@ namespace Inventario.BLL.Implementacion
                     Llenado10 = item.TipoProgramacion == "anual" ? item.Llenado10 : null,
                     Llenado11 = item.TipoProgramacion == "anual" ? item.Llenado11 : null,
                     Llenado12 = item.TipoProgramacion == "anual" ? item.Llenado12 : null,
+                    Mes = item.TipoProgramacion == "mensual" ? item.Mes : null,
                 };
                 listaProgramacion.Add(prog);
             }
@@ -317,6 +318,7 @@ namespace Inventario.BLL.Implementacion
                 art.Llenado10 = prog.Llenado10;
                 art.Llenado11 = prog.Llenado11;
                 art.Llenado12 = prog.Llenado12;
+                art.Mes = prog.Mes;
             }
 
             return new RequisicionCompletaDTO

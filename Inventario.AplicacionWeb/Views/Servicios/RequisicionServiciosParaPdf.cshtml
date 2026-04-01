@@ -31,6 +31,14 @@
         (a.Llenado1 ?? 0) + (a.Llenado2 ?? 0) + (a.Llenado3 ?? 0) + (a.Llenado4 ?? 0) +
         (a.Llenado5 ?? 0) + (a.Llenado6 ?? 0) + (a.Llenado7 ?? 0) + (a.Llenado8 ?? 0) +
         (a.Llenado9 ?? 0) + (a.Llenado10 ?? 0) + (a.Llenado11 ?? 0) + (a.Llenado12 ?? 0);
+
+    private static string NombreMes(int? mes) => mes switch
+    {
+        1 => "Enero", 2 => "Febrero", 3 => "Marzo", 4 => "Abril",
+        5 => "Mayo", 6 => "Junio", 7 => "Julio", 8 => "Agosto",
+        9 => "Septiembre", 10 => "Octubre", 11 => "Noviembre", 12 => "Diciembre",
+        _ => "—"
+    };
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -179,6 +187,8 @@
 
         </div>
 
+        @if (hayMensualProg || hayAnualProg)
+        {
         <div class="pdf-hoja-programacion">
             <div class="pdf-encabezado pdf-encabezado--hoja2">
                 <div class="pdf-encabezado-logo">
@@ -203,39 +213,16 @@
 
             <div class="pdf-seccion">
                 <p class="pdf-tabla-titulo">Artículos programados</p>
-                @if (!hayMensualProg && !hayAnualProg)
-                {
-                    <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
-                        <thead>
-                            <tr>
-                                <th style="width:6%">No.</th>
-                                <th style="width:28%">Descripción detallada</th>
-                                <th style="width:10%">Unidad de medida</th>
-                                <th style="width:9%">Sem 1</th>
-                                <th style="width:9%">Sem 2</th>
-                                <th style="width:9%">Sem 3</th>
-                                <th style="width:9%">Sem 4</th>
-                                <th style="width:10%" class="pdf-tabla-col-total">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="8" class="text-center text-muted">Sin artículos con programación</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                }
-                else
-                {
                     @if (hayMensualProg)
                     {
                         <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Distribución mensual (semanas del mes)</p>
                         <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
                             <thead>
                                 <tr>
-                                    <th style="width:6%">No.</th>
-                                    <th style="width:28%">Descripción detallada</th>
-                                    <th style="width:10%">Unidad de medida</th>
+                                    <th style="width:5%">No.</th>
+                                    <th style="width:24%">Descripción detallada</th>
+                                    <th style="width:9%">Unidad de medida</th>
+                                    <th style="width:12%">Mes</th>
                                     <th style="width:9%">Sem 1</th>
                                     <th style="width:9%">Sem 2</th>
                                     <th style="width:9%">Sem 3</th>
@@ -252,6 +239,7 @@
                                         <td>@n</td>
                                         <td>@(a.DescripcionDetallada ?? "—")</td>
                                         <td>@(a.UnidadMedida ?? "—")</td>
+                                        <td>@(a.Mes.HasValue ? a.Mes.Value + " - " + NombreMes(a.Mes) : "—")</td>
                                         <td>@PdfQty(a.Llenado1)</td>
                                         <td>@PdfQty(a.Llenado2)</td>
                                         <td>@PdfQty(a.Llenado3)</td>
@@ -313,7 +301,6 @@
                             </tbody>
                         </table>
                     }
-                }
             </div>
 
             <div class="pdf-seccion pdf-firmas pdf-firmas--hoja2">
@@ -329,6 +316,7 @@
                 </div>
             </div>
         </div>
+        }
 
         <!-- Botón imprimir (solo en pantalla) -->
         <div class="pdf-imprimir no-print">
