@@ -22,7 +22,8 @@
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
-     data-url-subir-archivos-atencion="@Url.Action("SubirArchivosAtencion", "Requisicion")">
+     data-url-subir-archivos-atencion="@Url.Action("SubirArchivosAtencion", "Requisicion")"
+     data-url-aceptar-expediente="@Url.Action("AceptarExpediente", "Servicios")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -81,6 +82,7 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
     </nav>
 
     @{
@@ -90,6 +92,7 @@
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -484,6 +487,179 @@
                 </tbody>
             </table>
             <div id="paginacionRechazadas" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
+    <!-- Pestaña Requisiciones verificadas -->
+    <div id="tab-verificadas" class="almacen-tab-panel">
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaRequisicionesVerificadas">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha de emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th style="text-align:center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var idxVerificadas = 0;
+                    }
+                    @foreach (var item in requisicionesVerificadas)
+                    {
+                        idxVerificadas++;
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi">
+                            <td style="text-align:center">@idxVerificadas</td>
+                            <td>@item.NumRequi</td>
+                            <td>@item.FechaEmision</td>
+                            <td>@item.Departamento</td>
+                            <td>@item.Responsable</td>
+                            <td style="text-align:center">@item.CantidadPartidas</td>
+                            <td>@item.Estatus</td>
+                            <td>
+                                <div class="acciones-grupo" style="justify-content:center">
+                                    <button class="btn-accion btn-ver" title="Ver expediente completo"
+                                            onclick="verExpediente(@item.IdRequi)">
+                                        <i class="fa-solid fa-folder-open"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!requisicionesVerificadas.Any())
+                    {
+                        <tr class="fila-vacia">
+                            <td colspan="8" class="text-center">No hay requisiciones verificadas</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div id="paginacionVerificadas" class="almacen-paginacion"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal expediente completo (solo tab verificadas) -->
+<div class="modal" id="modalExpediente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Expediente de Requisición</h5>
+                    <p class="modal-subtitulo-premium" id="expedienteSubtitulo">Cargando...</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+
+                <!-- PP / FF / Programa / Municipio readonly -->
+                <div class="row mb-3" id="expSelects">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Actividad:</label>
+                            <select id="expActividad" class="form-select select2" disabled>
+                                <option value="">--</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Fuente de Financiamiento:</label>
+                            <select id="expFf" class="form-select select2" disabled>
+                                <option value="">--</option>
+                                <option value="1">Federal</option>
+                                <option value="2">Estatal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Tipo de Programa:</label>
+                            <select id="expTipoPrograma" class="form-select select2" disabled>
+                                <option value="">--</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Municipio:</label>
+                            <select id="expMunicipio" class="form-select select2" disabled>
+                                <option value="">--</option>
+                                @foreach (var m in Model.ListaMunicipios)
+                                {
+                                    <option value="@m.Value">@m.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla artículos -->
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaExpedienteDetalle">
+                        <thead>
+                            <tr>
+                                <th>Nº Partida</th>
+                                <th>Cantidad</th>
+                                <th>Unidad Medida</th>
+                                <th>Descripción</th>
+                                <th>Descripción Detallada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaExpedienteBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Fotos de referencia -->
+                <div id="expSeccionFotos" style="display:none; margin-top:16px;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:8px;">
+                        <i class="fa-solid fa-images"></i> Fotos de referencia
+                    </p>
+                    <div id="expGaleriaFotos" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+                </div>
+
+                <!-- Cotizaciones y cuadro comparativo -->
+                <div id="expArchivosBase" style="margin-top:16px;"></div>
+
+                <!-- Observaciones de financieros -->
+                <div style="margin-top:16px;">
+                    <div class="formulario-input">
+                        <label>Observaciones de financieros</label>
+                        <textarea id="expObservaciones" class="form-control" rows="3"
+                                  readonly placeholder="Sin observaciones..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Documentos financieros: SIAF, TablaApi, Nº API -->
+                <div id="expArchivosFinancieros" style="display:none; margin-top:16px;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:10px;">
+                        <i class="fa-solid fa-folder-open"></i> Documentos financieros
+                    </p>
+                    <div id="expGrupoSiaf" style="margin-bottom:12px;"></div>
+                    <div id="expGrupoTablaApi" style="margin-bottom:12px;"></div>
+                    <div id="expGrupoNumeroApi"></div>
+                </div>
+                <div style="margin-top:20px; text-align:right;">
+                    <button type="button" class="btn boton-rosa" onclick="aceptarExpediente()">
+                        <i class="fa-solid fa-circle-check"></i> Aceptar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -503,6 +503,36 @@ namespace Inventario.BLL.Implementacion
             catch { throw; }
         }
 
+        public async Task<bool> AceptarExpediente(int idRequisicion, int idUsuario)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == idRequisicion);
+
+                if (requisicion == null) return false;
+
+                requisicion.IdEstatus = 17;
+                requisicion.FechaModificacion = DateTime.Now;
+
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = idRequisicion,
+                    IdEstatus = 17,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = "Enviado a proceso de pago",
+                    IdUsuario = idUsuario
+                };
+
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch { throw; }
+        }
+
         public async Task<string?> ObtenerObservacionesModificacion(int idRequisicion)
         {
             var query = await _repositoryBitacora.Consultar(b =>

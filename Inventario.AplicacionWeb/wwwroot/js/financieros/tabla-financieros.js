@@ -7,6 +7,10 @@
     var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
     var urlObtenerProgreso = container ? container.getAttribute("data-url-obtener-progreso") : "";
+    var expedienteFinActual = null;
+    var urlFinalizarExpediente = container
+        ? container.getAttribute("data-url-finalizar-expediente")
+        : "";
     const contenedor = document.querySelector(".tabla-requi-page");
     const atenderUrl = contenedor ? contenedor.dataset.urlAtender : "";
 
@@ -43,7 +47,7 @@
         container &&
         container.querySelectorAll(".almacen-tabs-btn").length > 0 &&
         container.querySelectorAll(".almacen-tab-panel").length > 0;
-    var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1 };
+    var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1, procesopago: 1 };
 
     function getActiveTableContext() {
         if (!modoTabs || !container) {
@@ -62,7 +66,8 @@
         var tabKey =
             panel.id === "tab-principal" ? "principal" :
                 panel.id === "tab-autorizadas" ? "autorizadas" :
-                    panel.id === "tab-rechazadas" ? "rechazadas" : "principal";
+                    panel.id === "tab-rechazadas" ? "rechazadas" :
+                        panel.id === "tab-procesopago" ? "procesopago" : "principal";
         return {
             tbody: tabla ? tabla.querySelector("tbody") : null,
             paginationContainer: pag,
@@ -466,6 +471,177 @@
             }
 
             new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+        });
+    };
+
+    window.verExpedienteFinancieros = function (idRequi) {
+        expedienteFinActual = idRequi;
+
+        // Limpiar
+        document.getElementById("expFinObservaciones").value = "";
+        document.getElementById("expFinArchivosBase").innerHTML = "";
+        document.getElementById("expFinGrupoSiaf").innerHTML = "";
+        document.getElementById("expFinGrupoTablaApi").innerHTML = "";
+        document.getElementById("expFinGrupoNumeroApi").innerHTML = "";
+        document.getElementById("expFinArchivosFinancieros").style.display = "none";
+        document.getElementById("expFinGaleriaFotos").innerHTML = "";
+        document.getElementById("expFinSeccionFotos").style.display = "none";
+        document.getElementById("expFinTablaBody").innerHTML = "";
+        document.getElementById("expFinSubtitulo").textContent = "Cargando...";
+
+        $.get(obtenerDetallesUrl, { idMaestro: idRequi }, function (data) {
+            var articulos = data.articulos || [];
+            document.getElementById("expFinSubtitulo").textContent =
+                "Expediente completo · " + articulos.length + " partidas";
+
+            // Tabla artículos
+            var contenido = !articulos.length
+                ? '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>'
+                : "";
+            articulos.forEach(function (item) {
+                var textoCompleto = item.descripcionDetallada || "";
+                var textoCorto = textoCompleto.length > 28
+                    ? textoCompleto.substring(0, 28) + "…"
+                    : textoCompleto || "Sin descripción...";
+                var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+                contenido +=
+                    "<tr>" +
+                    "<td>" + (item.numPartida || "") + "</td>" +
+                    "<td>" + (item.cantidad || "") + "</td>" +
+                    "<td>" + (item.unidadMedida || "") + "</td>" +
+                    "<td>" + (item.descripcion || "") + "</td>" +
+                    '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+                    '<span class="desc-texto-preview' + (textoCompleto ? " tiene-texto" : "") + '">' + textoCorto + '</span>' +
+                    '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                    "</tr>";
+            });
+            document.getElementById("expFinTablaBody").innerHTML = contenido;
+
+            // Fotos
+            if (data.tipoServicio === "Servicio Impresion" && data.fotos && data.fotos.length) {
+                var galeria = document.getElementById("expFinGaleriaFotos");
+                data.fotos.forEach(function (ruta) {
+                    var img = document.createElement("img");
+                    img.src = ruta;
+                    img.style.cssText = "width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;";
+                    img.addEventListener("click", function () { window.open(ruta, "_blank"); });
+                    galeria.appendChild(img);
+                });
+                document.getElementById("expFinSeccionFotos").style.display = "block";
+            }
+
+            // Selects
+            ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
+                var el = $("#" + id);
+                if (el.data("select2")) el.select2("destroy");
+            });
+            $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").select2({
+                dropdownParent: $("#modalExpedienteFinancieros"),
+                width: "100%",
+                language: "es"
+            }).prop("disabled", true);
+
+            if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
+            if (data.ff) {
+                $("#expFinFf option").filter(function () {
+                    return $(this).text().trim() === data.ff;
+                }).prop("selected", true);
+                $("#expFinFf").trigger("change");
+            }
+            if (data.tipoPrograma) {
+                $("#expFinTipoPrograma option").filter(function () {
+                    return $(this).text().trim() === data.tipoPrograma;
+                }).prop("selected", true);
+                $("#expFinTipoPrograma").trigger("change");
+            }
+            if (data.claveRegion) $("#expFinMunicipio").val(data.claveRegion).trigger("change");
+
+            // Cotizaciones / cuadro
+            (function () {
+                var c = document.getElementById("expFinArchivosBase");
+                function rg(titulo, archivos) {
+                    if (!archivos.length) return "";
+                    var h = '<div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label><div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    archivos.forEach(function (a) {
+                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
+                        h += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;"><i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>' + (a.nombreArchivo || "Archivo") + '</a>';
+                    });
+                    h += "</div></div>";
+                    return h;
+                }
+                c.innerHTML = rg("Cotizaciones", data.cotizaciones || []) + rg("Cuadro comparativo", data.cuadroComparativo || []);
+            })();
+
+            // Observaciones
+            document.getElementById("expFinObservaciones").value = data.observaciones || "";
+
+            // Documentos financieros
+            (function () {
+                var siaf = data.archivosSiaf || [];
+                var tablaApi = data.archivosTablaApi || [];
+                var numApi = data.numeroApi || null;
+                if (!siaf.length && !tablaApi.length && !numApi) return;
+
+                document.getElementById("expFinArchivosFinancieros").style.display = "block";
+
+                function rgf(elId, titulo, archivos) {
+                    var el = document.getElementById(elId);
+                    if (!archivos.length) { el.innerHTML = ""; return; }
+                    var h = '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label><div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    archivos.forEach(function (a) {
+                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
+                        h += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;"><i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>' + (a.nombreArchivo || "Archivo") + '</a>';
+                    });
+                    h += '</div>';
+                    el.innerHTML = h;
+                }
+                rgf("expFinGrupoSiaf", "Documento SIAF", siaf);
+                rgf("expFinGrupoTablaApi", "Tabla de API", tablaApi);
+
+                if (numApi) {
+                    document.getElementById("expFinGrupoNumeroApi").innerHTML =
+                        '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>'
+                        + '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">'
+                        + '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + '</span>';
+                }
+            })();
+
+            new bootstrap.Modal(document.getElementById("modalExpedienteFinancieros")).show();
+        });
+    };
+
+    window.finalizarExpediente = function () {
+        Swal.fire({
+            title: "¿Finalizar requisición?",
+            text: "Se marcará como finalizada y enviada a proceso de pago.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#fe6291",
+            cancelButtonColor: "var(--slate-500)",
+            confirmButtonText: "Sí, finalizar",
+            cancelButtonText: "Cancelar"
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+            $.ajax({
+                url: urlFinalizarExpediente,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ IdRequisicion: expedienteFinActual }),
+                success: function () {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalExpedienteFinancieros")
+                    ).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Requisición finalizada",
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(function () { location.reload(); });
+                },
+                error: function () {
+                    Swal.fire({ icon: "error", title: "Error al finalizar la requisición." });
+                }
+            });
         });
     };
 

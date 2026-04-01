@@ -134,6 +134,36 @@ namespace Inventario.BLL.Implementacion
             catch { throw; }
         }
 
+        public async Task<bool> FinalizarRequisicion(int idRequisicion, int idUsuario)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == idRequisicion);
+
+                if (requisicion == null) return false;
+
+                requisicion.IdEstatus = 7;
+                requisicion.FechaModificacion = DateTime.Now;
+
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = idRequisicion,
+                    IdEstatus = 7,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = "Pago finalizado",
+                    IdUsuario = idUsuario
+                };
+
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch { throw; }
+        }
+
         private async Task GuardarArchivos(
             List<IFormFile>? archivos,
             int idRequisicion,

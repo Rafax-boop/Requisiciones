@@ -12,5 +12,6 @@ namespace Inventario.BLL.Interfaces
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null);
         Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan);
         Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario);
+        Task<bool> FinalizarRequisicion(int idRequisicion, int idUsuario);
     }
 }

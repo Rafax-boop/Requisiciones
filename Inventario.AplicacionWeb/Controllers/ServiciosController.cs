@@ -299,5 +299,14 @@ namespace Inventario.AplicacionWeb.Controllers
             bool exito = await _requisicionesService.EliminarFotoRequisicion(idFoto);
             return Json(new { success = exito });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> AceptarExpediente([FromBody] VMRevisarRequisicion modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var resultado = await _requisicionesService.AceptarExpediente(modelo.IdRequisicion, idUsuario);
+            if (!resultado) return BadRequest();
+            return Ok();
+        }
     }
 }

@@ -131,5 +131,14 @@ namespace Inventario.AplicacionWeb.Controllers
             if (!resultado) return BadRequest();
             return Ok();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> FinalizarRequisicion([FromBody] VMRevisarRequisicion modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, idUsuario);
+            if (!resultado) return BadRequest();
+            return Ok();
+        }
     }
 }

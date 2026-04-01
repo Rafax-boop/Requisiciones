@@ -22,7 +22,11 @@
     var urlSubirArchivosAtencion = container
         ? container.getAttribute("data-url-subir-archivos-atencion")
         : "";
-  var _idRequiAsignar = null;
+    var _idRequiAsignar = null;
+    var expedienteActual = null;
+    var urlAceptarExpediente = container
+        ? container.getAttribute("data-url-aceptar-expediente")
+        : "";
 
   var fechaSeleccionada = "";
 
@@ -55,7 +59,7 @@
     container &&
     container.querySelectorAll(".almacen-tabs-btn").length > 0 &&
     container.querySelectorAll(".almacen-tab-panel").length > 0;
-  var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1 };
+    var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1, verificadas: 1 };
 
   function getActiveTableContext() {
     if (!modoTabs || !container) {
@@ -73,14 +77,11 @@
     if (!panel) return null;
     var tabla = panel.querySelector(".tabla-requisiciones");
     var pag = panel.querySelector(".almacen-paginacion");
-    var tabKey =
-      panel.id === "tab-principal"
-        ? "principal"
-        : panel.id === "tab-autorizadas"
-          ? "autorizadas"
-          : panel.id === "tab-rechazadas"
-            ? "rechazadas"
-            : "principal";
+      var tabKey =
+          panel.id === "tab-principal" ? "principal" :
+              panel.id === "tab-autorizadas" ? "autorizadas" :
+                  panel.id === "tab-rechazadas" ? "rechazadas" :
+                      panel.id === "tab-verificadas" ? "verificadas" : "principal";
     return {
       tbody: tabla ? tabla.querySelector("tbody") : null,
       paginationContainer: pag,
@@ -890,6 +891,193 @@
 
             var modal = new bootstrap.Modal(document.getElementById("modalDetalle"));
             modal.show();
+        });
+    };
+
+    window.verExpediente = function (idRequi) {
+        expedienteActual = idRequi;
+        // Limpiar
+        document.getElementById("expObservaciones").value = "";
+        document.getElementById("expArchivosBase").innerHTML = "";
+        document.getElementById("expGrupoSiaf").innerHTML = "";
+        document.getElementById("expGrupoTablaApi").innerHTML = "";
+        document.getElementById("expGrupoNumeroApi").innerHTML = "";
+        document.getElementById("expArchivosFinancieros").style.display = "none";
+        document.getElementById("expGaleriaFotos").innerHTML = "";
+        document.getElementById("expSeccionFotos").style.display = "none";
+        document.getElementById("tablaExpedienteBody").innerHTML = "";
+        document.getElementById("expedienteSubtitulo").textContent = "Cargando...";
+
+        $.get(obtenerDetallesUrl, { idMaestro: idRequi }, function (data) {
+
+            // Subtítulo
+            var articulos = data.articulos || [];
+            document.getElementById("expedienteSubtitulo").textContent =
+                "Expediente completo · " + articulos.length + " partidas";
+
+            // Tabla artículos
+            var contenido = "";
+            if (!articulos.length) {
+                contenido = '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+            } else {
+                articulos.forEach(function (item) {
+                    var textoCompleto = item.descripcionDetallada || "";
+                    var textoCorto = textoCompleto.length > 28
+                        ? textoCompleto.substring(0, 28) + "…"
+                        : textoCompleto || "Sin descripción...";
+                    var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+                    contenido +=
+                        "<tr>" +
+                        "<td>" + (item.numPartida || "") + "</td>" +
+                        "<td>" + (item.cantidad || "") + "</td>" +
+                        "<td>" + (item.unidadMedida || "") + "</td>" +
+                        "<td>" + (item.descripcion || "") + "</td>" +
+                        '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
+                        '<span class="desc-texto-preview' + (textoCompleto ? " tiene-texto" : "") + '">' + textoCorto + '</span>' +
+                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        "</tr>";
+                });
+            }
+            document.getElementById("tablaExpedienteBody").innerHTML = contenido;
+
+            // Fotos
+            if (data.tipoServicio === "Servicio Impresion" && data.fotos && data.fotos.length) {
+                var galeria = document.getElementById("expGaleriaFotos");
+                data.fotos.forEach(function (ruta) {
+                    var img = document.createElement("img");
+                    img.src = ruta;
+                    img.style.cssText = "width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;";
+                    img.addEventListener("click", function () { window.open(ruta, "_blank"); });
+                    galeria.appendChild(img);
+                });
+                document.getElementById("expSeccionFotos").style.display = "block";
+            }
+
+            // Selects PP / FF / Programa / Municipio
+            ["expActividad", "expFf", "expTipoPrograma", "expMunicipio"].forEach(function (id) {
+                var el = $("#" + id);
+                if (el.data("select2")) el.select2("destroy");
+            });
+            $("#expActividad, #expFf, #expTipoPrograma, #expMunicipio").select2({
+                dropdownParent: $("#modalExpediente"),
+                width: "100%",
+                language: "es"
+            }).prop("disabled", true);
+
+            if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
+            if (data.ff) {
+                $("#expFf option").filter(function () {
+                    return $(this).text().trim() === data.ff;
+                }).prop("selected", true);
+                $("#expFf").trigger("change");
+            }
+            if (data.tipoPrograma) {
+                $("#expTipoPrograma option").filter(function () {
+                    return $(this).text().trim() === data.tipoPrograma;
+                }).prop("selected", true);
+                $("#expTipoPrograma").trigger("change");
+            }
+            if (data.claveRegion) $("#expMunicipio").val(data.claveRegion).trigger("change");
+
+            // Cotizaciones / cuadro
+            (function () {
+                var contenedor = document.getElementById("expArchivosBase");
+                function renderGrupo(titulo, archivos) {
+                    if (!archivos.length) return "";
+                    var html = '<div style="margin-bottom:12px;">';
+                    html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
+                    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    archivos.forEach(function (a) {
+                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
+                        html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
+                            + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
+                            + (a.nombreArchivo || "Archivo") + '</a>';
+                    });
+                    html += "</div></div>";
+                    return html;
+                }
+                contenedor.innerHTML =
+                    renderGrupo("Cotizaciones", data.cotizaciones || []) +
+                    renderGrupo("Cuadro comparativo", data.cuadroComparativo || []);
+            })();
+
+            // Observaciones financieros
+            document.getElementById("expObservaciones").value = data.observaciones || "";
+
+            // Documentos financieros
+            (function () {
+                var siaf = data.archivosSiaf || [];
+                var tablaApi = data.archivosTablaApi || [];
+                var numApi = data.numeroApi || null;
+                var hayContenido = siaf.length || tablaApi.length || numApi;
+                if (!hayContenido) return;
+
+                document.getElementById("expArchivosFinancieros").style.display = "block";
+
+                function renderGrupoFin(elId, titulo, archivos) {
+                    var el = document.getElementById(elId);
+                    if (!archivos.length) { el.innerHTML = ""; return; }
+                    var html = '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
+                    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    archivos.forEach(function (a) {
+                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
+                        html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
+                            + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
+                            + (a.nombreArchivo || "Archivo") + '</a>';
+                    });
+                    html += '</div>';
+                    el.innerHTML = html;
+                }
+
+                renderGrupoFin("expGrupoSiaf", "Documento SIAF", siaf);
+                renderGrupoFin("expGrupoTablaApi", "Tabla de API", tablaApi);
+
+                if (numApi) {
+                    document.getElementById("expGrupoNumeroApi").innerHTML =
+                        '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>'
+                        + '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">'
+                        + '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + '</span>';
+                }
+            })();
+
+            new bootstrap.Modal(document.getElementById("modalExpediente")).show();
+        });
+    };
+
+    window.aceptarExpediente = function () {
+        Swal.fire({
+            title: "¿Aceptar requisición?",
+            text: "Se enviará a proceso de pago.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#fe6291",
+            cancelButtonColor: "var(--slate-500)",
+            confirmButtonText: "Sí, aceptar",
+            cancelButtonText: "Cancelar"
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            // necesitas guardar el id actual al abrir el modal
+            $.ajax({
+                url: urlAceptarExpediente,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ IdRequisicion: expedienteActual }),
+                success: function () {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalExpediente")
+                    ).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Enviado a proceso de pago",
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(function () { location.reload(); });
+                },
+                error: function () {
+                    Swal.fire({ icon: "error", title: "Error al procesar la requisición." });
+                }
+            });
         });
     };
 
