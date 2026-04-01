@@ -1149,6 +1149,21 @@
   transform: scale(1);
 }
 
+/* Miniaturas de fotos (formulario ↔ mismo criterio que modales de tablas) */
+.modal-galeria-foto-thumb {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--slate-200, #ddd);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.modal-galeria-foto-thumb:hover {
+  transform: scale(1.06);
+}
+
 /* ══════════════════════════════════════════════
    REGLAS DE IMPRESIÓN
 ══════════════════════════════════════════════ */

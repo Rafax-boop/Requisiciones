@@ -111,9 +111,15 @@
 
                 const img = document.createElement('img');
                 img.src = e.target.result;
-                img.style.cssText = 'width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;';
-                img.onclick = function() {
-                    if (window.abrirVisorImagen) window.abrirVisorImagen(e.target.result);
+                img.classList.add('modal-galeria-foto-thumb');
+                img.style.width = '80px';
+                img.style.height = '80px';
+                img.onclick = function () {
+                    if (typeof window.abrirVisorImagenTabla === 'function') {
+                        window.abrirVisorImagenTabla(e.target.result);
+                    } else if (window.abrirVisorImagen) {
+                        window.abrirVisorImagen(e.target.result);
+                    }
                 };
 
                 // Nombre del archivo debajo
@@ -907,27 +913,16 @@
         });
     };
 
-    // --- Lógica del Lightbox de Imágenes ---
+    // --- Lightbox: mismo comportamiento que modales de tablas (modal-adjuntos.js) ---
     window.abrirVisorImagen = function (src) {
-        var overlay = document.getElementById('visor-imagenes-global');
-        var img = document.getElementById('visor-imagenes-img');
-        if (overlay && img) {
-            img.src = src;
-            overlay.classList.add('activo');
+        if (typeof window.abrirVisorImagenTabla === 'function') {
+            window.abrirVisorImagenTabla(src);
         }
     };
 
     window.cerrarVisorImagen = function () {
-        var overlay = document.getElementById('visor-imagenes-global');
-        if (overlay) {
-            overlay.classList.remove('activo');
-            setTimeout(function () {
-                var img = document.getElementById('visor-imagenes-img');
-                // vaciar el src solo si no se volvió a abrir
-                if (img && !overlay.classList.contains('activo')) {
-                    img.src = '';
-                }
-            }, 300); // 300ms debe coincidir con la transición css
+        if (typeof window.cerrarVisorImagenTabla === 'function') {
+            window.cerrarVisorImagenTabla();
         }
     };
 })();

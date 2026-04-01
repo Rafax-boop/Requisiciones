@@ -121,9 +121,10 @@
                                          class="foto-existente-wrapper" 
                                          id="foto-wrapper-@foto.IdFoto">
                                         <img src="@foto.Ruta"
-                                             style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;"
+                                             class="modal-galeria-foto-thumb"
+                                             style="width:80px; height:80px;"
                                              onclick="abrirVisorImagen('@foto.Ruta')"
-                                             title="Click para ver completa" />
+                                             title="Ver imagen" alt="" />
                                         <span onclick="eliminarFotoExistente(@foto.IdFoto)"
                                               style="position:absolute; top:-5px; right:-5px;
                                                      background:red; color:white; border-radius:50%;
@@ -195,15 +196,16 @@
               placeholder="Escribe la descripción detallada aquí..."></textarea>
 </div>
 
-<!-- Lightbox para imágenes -->
-<div id="visor-imagenes-global" class="visor-imagenes-overlay" onclick="if(event.target===this) cerrarVisorImagen()">
-    <img id="visor-imagenes-img" class="visor-imagenes-img" src="" alt="Vista previa" />
+<!-- Mismo lightbox que Presupuesto / tablas / expediente -->
+<div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
+    <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>
 
     @if (modoEdicion && Model.Articulos != null && Model.Articulos.Any())
