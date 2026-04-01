@@ -461,7 +461,10 @@ namespace Inventario.BLL.Implementacion
                     resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
                 }
 
-                req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
+                // ── Determinar estatus final ──
+                int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_APROBADA_ALMACEN;
+
+                req.IdEstatus = estatusFinal;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
@@ -469,7 +472,7 @@ namespace Inventario.BLL.Implementacion
                 if (resumenEntregas.Count > 0) obs.Append($" Entregados: {string.Join(", ", resumenEntregas)}.");
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 
-                await RegistrarBitacoraAsync(req.IdRequisicion, ESTATUS_APROBADA_PARCIAL_ALMACEN, idUsuario, obs.ToString());
+                await RegistrarBitacoraAsync(req.IdRequisicion, estatusFinal, idUsuario, obs.ToString());
 
                 await _uow.CommitAsync();
                 return true;

@@ -303,6 +303,7 @@
     // Abrir modal — siempre arranca en paso 1
     window.abrirModalAsignar = function (idRequi) {
         _idRequiAsignar = idRequi;
+        var esDeCompra = idEstatus === 11;
 
         if (esTablaServicios) {
             // Servicios: Asignar + Rechazar (sin Enviar a almacén)
@@ -337,7 +338,10 @@
 
             //Asegurar que el botón de almacén esté visible
             var btnAlmacen = document.getElementById('btnOpcionAlmacen');
-            if (btnAlmacen) btnAlmacen.style.display = '';
+            if (btnAlmacen) btnAlmacen.style.display = esDeCompra ? 'none' : '';
+
+            var btnModificar = document.querySelector('#pasoOpciones button[onclick="mostrarPasoModificar()"]');
+            if (btnModificar) btnModificar.style.display = esDeCompra ? 'none' : '';
 
             var $select = $("#selectUsuarioAsignar");
             if ($select.data("select2")) $select.select2("destroy");

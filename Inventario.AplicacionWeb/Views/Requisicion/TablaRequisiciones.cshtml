@@ -170,7 +170,7 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
-                                    @if (User.IsInRole("4") && item.IdEstatus == 1)
+                                    @if (User.IsInRole("4") && (item.IdEstatus == 1 || item.IdEstatus == 11))
                                     {
                                         <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
                                             <i class="fa-solid fa-clipboard-user"></i>

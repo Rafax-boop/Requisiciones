@@ -21,6 +21,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
@@ -31,8 +32,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblEstatus> repositoryEstatus,
             IGenericRepository<TblRegistroDiseno> repositoryDisenos,
             IGenericRepository<TblArticulosProgramado> repositoryProgramacion,
-            IUnitOfWork unitOfWork
-
+            IUnitOfWork unitOfWork,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -43,6 +44,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryDisenos = repositoryDisenos;
             _repositoryProgramacion = repositoryProgramacion;
             _unitOfWork = unitOfWork;
+            _repoMovimiento = repoMovimiento;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -208,7 +210,16 @@ namespace Inventario.BLL.Implementacion
             var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idMaestro);
             var maestra = await queryMaestra.FirstOrDefaultAsync();
 
+            var queryMovimientos = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idMaestro && m.TipoMovimiento == "COMPRA");
+            var idsParaCompra = await queryMovimientos
+                .Select(m => m.IdRequisicionDetalle)
+                .Distinct()
+                .ToListAsync();
+
             var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
+            if (idsParaCompra.Any())
+                query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
             var lista = await query
                 .Select(r => new DetalleArticuloDTO
                 {
