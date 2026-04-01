@@ -113,6 +113,13 @@
                             Presupuesto
                         </a>
                     }
+                    @if (User.IsInRole("10"))
+                    {
+                        <a href="@Url.Action("TablaDAF", "DAF")"
+                           class="@(ViewData["Title"]?.ToString() == "DAF" ? "active" : "")">
+                            DAF
+                        </a>
+                    }
                 </li>
 
                 <div class="nav-bar-user">
