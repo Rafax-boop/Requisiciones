@@ -551,42 +551,9 @@
     };
 
     function renderizarArchivosReadonly(cotizaciones, cuadro) {
-        // Buscar o crear contenedor de archivos dentro de .seccionAtender
-        var contenedor = document.getElementById("contenedorArchivosReadonly");
-        if (!contenedor) {
-            contenedor = document.createElement("div");
-            contenedor.id = "contenedorArchivosReadonly";
-            contenedor.style.cssText = "margin-top:16px;";
-            // Insertarlo antes del div de botón enviar dentro de seccionAtender
-            var seccion = document.querySelector(".modal-body .seccionAtender");
-            if (seccion) seccion.appendChild(contenedor);
+        if (window.ModalAdjuntos && typeof window.ModalAdjuntos.renderizarArchivosReadonly === "function") {
+            window.ModalAdjuntos.renderizarArchivosReadonly(cotizaciones, cuadro);
         }
-        contenedor.innerHTML = "";
-
-        function renderGrupo(titulo, archivos) {
-            if (!archivos.length) return "";
-            var html = '<div style="margin-bottom:12px;">';
-            html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">'
-                + titulo + '</label>';
-            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-            archivos.forEach(function (a) {
-                var ext = (a.nombreArchivo || "").split(".").pop().toLowerCase();
-                var esPdf = ext === "pdf";
-                html += '<a href="' + a.ruta + '" target="_blank" '
-                    + 'style="display:flex;align-items:center;gap:6px;padding:6px 10px;'
-                    + 'border:1px solid #e5e7eb;border-radius:8px;font-size:12px;'
-                    + 'color:#374151;text-decoration:none;background:#f9fafb;">'
-                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                    + (a.nombreArchivo || "Archivo")
-                    + '</a>';
-            });
-            html += "</div></div>";
-            return html;
-        }
-
-        contenedor.innerHTML =
-            renderGrupo("Cotizaciones", cotizaciones) +
-            renderGrupo("Cuadro comparativo", cuadro);
     }
 
   function mostrarMensajeVacio(totalVisibles, tbodyOptional) {
@@ -820,9 +787,14 @@
                         wrapper.style.cssText = 'display:inline-block; text-align:center;';
                         var img = document.createElement('img');
                         img.src = ruta;
-                        img.style.cssText = 'width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #ddd; cursor:pointer;';
-                        img.title = 'Click para ver en tamaño completo';
-                        img.addEventListener('click', function () { window.open(ruta, '_blank'); });
+                        img.classList.add('modal-galeria-foto-thumb');
+                        img.alt = '';
+                        img.title = 'Ver imagen';
+                        img.addEventListener('click', function () {
+                            if (typeof window.abrirVisorImagenTabla === 'function') {
+                                window.abrirVisorImagenTabla(ruta);
+                            }
+                        });
                         wrapper.appendChild(img);
                         galeriaFotos.appendChild(wrapper);
                     });
@@ -1186,38 +1158,5 @@
         '<i class="fa-solid fa-triangle-exclamation"></i> Error al cargar el historial</div>';
     });
   };
-
-  /* ══════════════════════════════════════════════
-     VISOR DE IMÁGENES (LIGHTBOX) para la tabla
-  ══════════════════════════════════════════════ */
-  function abrirVisorImagenTabla(src) {
-    var overlay = document.getElementById('visor-imagenes-tabla');
-    var img = document.getElementById('visor-imagenes-tabla-img');
-    if (overlay && img) {
-      img.src = src;
-      overlay.classList.add('activo');
-    }
-  }
-
-  function cerrarVisorImagenTabla() {
-    var overlay = document.getElementById('visor-imagenes-tabla');
-    if (overlay) {
-      overlay.classList.remove('activo');
-      setTimeout(function () {
-        var img = document.getElementById('visor-imagenes-tabla-img');
-        if (img && !overlay.classList.contains('activo')) {
-          img.src = '';
-        }
-      }, 300);
-    }
-  }
-
-  // Cierre al hacer clic FUERA de la imagen (en el fondo oscuro)
-  var visorTabla = document.getElementById('visor-imagenes-tabla');
-  if (visorTabla) {
-    visorTabla.addEventListener('click', function (e) {
-      if (e.target === visorTabla) cerrarVisorImagenTabla();
-    });
-  }
 
 })();
