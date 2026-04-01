@@ -416,25 +416,49 @@
     window.enviarAtencion = function () {
         var observaciones = document.getElementById("txtObservaciones").value.trim();
         if (!observaciones) {
-            alert("Debe escribir una observación.");
+            Swal.fire({ icon: "warning", title: "Debe escribir una observación.", confirmButtonText: "Ok" });
             return;
+        }
+
+        var formData = new FormData();
+        formData.append("IdRequisicion", requisicionActual);
+        formData.append("Observaciones", observaciones);
+
+        // Número de API
+        var numeroApi = document.getElementById("inputNumeroApi").value.trim();
+        if (numeroApi) formData.append("NumeroApi", numeroApi);
+
+        // Archivos SIAF
+        var archivosSiaf = document.getElementById("inputSiaf").files;
+        for (var i = 0; i < archivosSiaf.length; i++) {
+            formData.append("DocSiaf", archivosSiaf[i]);
+        }
+
+        // Archivos Tabla API
+        var archivosTablaApi = document.getElementById("inputTablaApi").files;
+        for (var i = 0; i < archivosTablaApi.length; i++) {
+            formData.append("TablaApi", archivosTablaApi[i]);
         }
 
         $.ajax({
             url: atenderUrl,
             type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-                IdRequisicion: requisicionActual,
-                Observaciones: observaciones
-            }),
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function () {
                 bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                 document.getElementById("txtObservaciones").value = "";
-                location.reload();
+                document.getElementById("inputSiaf").value = "";
+                document.getElementById("inputTablaApi").value = "";
+                document.getElementById("inputNumeroApi").value = "";
+                Swal.fire({
+                    icon: "success", title: "Requisición atendida",
+                    timer: 2000, showConfirmButton: false
+                }).then(function () { location.reload(); });
             },
             error: function () {
-                alert("Error al atender la requisición.");
+                Swal.fire({ icon: "error", title: "Error al atender la requisición." });
             }
         });
     };

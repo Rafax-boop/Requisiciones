@@ -70,7 +70,7 @@
         if (User.IsInRole("8")) numColsReq++;
         if (User.IsInRole("9") || User.IsInRole("8")) numColsReq++;
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).ToList();
-        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 15).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
     }
 
@@ -565,6 +565,28 @@
                         <label>Observaciones</label>
                         <textarea id="txtObservaciones" class="form-control" rows="4"
                                   placeholder="Escriba las observaciones aquí..."></textarea>
+
+                        <div class="row mb-3 mt-3">
+                            <div class="col-md-5">
+                                <div class="formulario-input">
+                                    <label>Subir Documento SIAF</label>
+                                    <input type="file" id="inputSiaf" name="DocSiaf" multiple class="input-file-rosa" />
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="formulario-input">
+                                    <label>Tabla de API</label>
+                                    <input type="file" id="inputTablaApi" name="TablaApi" multiple class="input-file-rosa" />
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="formulario-input">
+                                    <label>Nº API</label>
+                                    <input type="text" id="inputNumeroApi" class="form-control"
+                                           placeholder="API-000" maxlength="20" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div id="botonesAtender" style="margin-top:20px; text-align:right; display:none;">
                         <button type="button" class="btn btn-danger me-2" onclick="rechazarDesdeAtencion()">

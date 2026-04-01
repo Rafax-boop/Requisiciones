@@ -1,41 +1,32 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
-using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Net.NetworkInformation;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
-    public class FinancierosController : Controller
+    public class DAFController : Controller
     {
         private readonly IMapper _mapper;
-        private readonly IFinancierosService _financierosService;
-        private readonly IUsuarioService _usuarioService;
+        private readonly IDAFService _dafService;
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
         private readonly IMunicipioServie _municipioService;
         private readonly IAlmacenService _almacenService;
 
-        public FinancierosController(IMapper mapper,
-            IFinancierosService financierosService,
-            IUsuarioService usuarioService,
-            IProgramaPresupuestarioService programaPresupuestarioService,
-            IMunicipioServie municipioService,
-            IAlmacenService almacenService)
+        public DAFController(IMapper mapper, IProgramaPresupuestarioService programaPresupuestarioService, IMunicipioServie municipioService, IAlmacenService almacenService, IDAFService dafService)
         {
             _mapper = mapper;
-            _financierosService = financierosService;
-            _usuarioService = usuarioService;
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
             _almacenService = almacenService;
+            _dafService = dafService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> TablaFinancieros()
+        public async Task<IActionResult> TablaDAF()
         {
             ViewData["Title"] = "TablaFinancieros";
             var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
@@ -50,16 +41,8 @@ namespace Inventario.AplicacionWeb.Controllers
 
             List<RequisicionMaestraDTO> listaDTO;
 
-            if (User.IsInRole("9"))
-            {
-                listaDTO = await _financierosService
-                    .ListarRequisiciones(idUsuario);
-            }
-            else
-            {
-                listaDTO = await _financierosService
-                    .ListarRequisiciones();
-            }
+            listaDTO = await _dafService
+                .ListarRequisiciones();
 
             listaDTO = listaDTO
                 .OrderBy(r => r.FechaModificacion)
@@ -93,40 +76,12 @@ namespace Inventario.AplicacionWeb.Controllers
             return View(vm);
         }
 
-        [HttpGet]
-        public async Task<JsonResult> ObtenerUsuariosFinancieros()
-        {
-            var usuarios = await _usuarioService.ListaUsuariosAsignar(9);
-            var resultado = usuarios.Select(u => new
-            {
-                id = u.IdUsuario,
-                nombre = u.Usuario
-            }).ToList();
-            return Json(resultado);
-        }
-
         [HttpPost]
-        public async Task<JsonResult> AsignarRequisicion(int idRequi, int idUsuario)
-        {
-            int idUsuarioLog = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            try
-            {
-                var resultado = await _financierosService.AsignarRequisicion(idRequi, idUsuarioLog, idUsuario);
-                return Json(new { success = resultado });
-            }
-            catch
-            {
-                return Json(new { success = false, mensaje = "Error al asignar la requisición" });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Atender([FromForm] VMAtenderRequisicion modelo)
+        public async Task<IActionResult> Revisar([FromBody] int idRequisicion)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var dto = _mapper.Map<AtenderRequiDTO>(modelo);
 
-            var resultado = await _financierosService.AtenderRequisicion(dto, idUsuario);
+            var resultado = await _dafService.RevisarRequisicion(idRequisicion, idUsuario);
 
             if (!resultado) return BadRequest();
             return Ok();

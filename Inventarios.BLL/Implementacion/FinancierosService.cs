@@ -2,6 +2,7 @@ using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,13 @@ namespace Inventario.BLL.Implementacion
     {
         private readonly IRequisicionRepository _repositoryRequisicion;
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
+        private readonly IGenericRepository<TblRegistroDiseno> _repositoryDiseno;
 
-        public FinancierosService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblBitacoraEstatus> repositoryBitacora)
+        public FinancierosService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblRegistroDiseno> repositoryDiseno)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
+            _repositoryDiseno = repositoryDiseno;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -104,10 +107,14 @@ namespace Inventario.BLL.Implementacion
                     .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
                 if (requisicion == null) return false;
 
-                requisicion.IdEstatus = 4;
+                // Actualizar estatus y número de API
+                requisicion.IdEstatus = 15;
                 requisicion.FechaModificacion = DateTime.Now;
+                requisicion.NumApi = modelo.NumeroApi;
+
                 await _repositoryRequisicion.Editar(requisicion);
 
+                // Bitácora
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = requisicion.IdRequisicion,
@@ -118,9 +125,53 @@ namespace Inventario.BLL.Implementacion
                 };
                 await _repositoryBitacora.Crear(bitacora);
 
+                // Guardar archivos
+                await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
+                await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
+
                 return true;
             }
             catch { throw; }
+        }
+
+        private async Task GuardarArchivos(
+            List<IFormFile>? archivos,
+            int idRequisicion,
+            string tipo,
+            string carpeta)
+        {
+            if (archivos == null || !archivos.Any()) return;
+
+            // Ruta: wwwroot/uploads/DocumentoSIAF/{idRequisicion}/ o TablaApi/{idRequisicion}/
+            var rutaBase = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot", "uploads", carpeta, idRequisicion.ToString());
+
+            Directory.CreateDirectory(rutaBase);
+
+            foreach (var archivo in archivos)
+            {
+                if (archivo.Length == 0) continue;
+
+                var nombreArchivo = $"{Guid.NewGuid()}_{Path.GetFileName(archivo.FileName)}";
+                var rutaFisica = Path.Combine(rutaBase, nombreArchivo);
+
+                using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                    await archivo.CopyToAsync(stream);
+
+                // Ruta relativa para guardar en BD
+                var rutaBd = $"/uploads/{carpeta}/{idRequisicion}/{nombreArchivo}";
+
+                var registro = new TblRegistroDiseno
+                {
+                    IdRequisicion = idRequisicion,
+                    Ruta = rutaBd,
+                    FechaSubida = DateTime.Now,
+                    Tipo = tipo   // "SIAF" o "TablaApi"
+                };
+
+                await _repositoryDiseno.Crear(registro); // necesitas inyectar este repositorio
+            }
         }
     }
 }

@@ -255,6 +255,24 @@ namespace Inventario.BLL.Implementacion
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
+            var querySIAF = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "SIAF");
+            var archivosSiaf = await querySIAF  // ← querySIAF, no queryCuadro
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
+            var queryTablaApi = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "TablaApi");
+            var archivosTablaApi = await queryTablaApi
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
             return new DetallesRequiDTO
             {
                 Donativo = maestra?.Donativo ?? false,
@@ -267,7 +285,10 @@ namespace Inventario.BLL.Implementacion
                 Articulos = lista,
                 Cotizaciones = cotizaciones,
                 CuadroComparativo = cuadro,
-                Observaciones = observacion
+                Observaciones = observacion,
+                ArchivosSiaf = archivosSiaf,
+                ArchivosTablaApi = archivosTablaApi,
+                NumeroApi = maestra?.NumApi
             };
         }
 

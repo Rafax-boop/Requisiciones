@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,9 @@ namespace Inventario.BLL.DTO
         public string? FF { get; set; }
         public string? TipoPrograma { get; set; }
         public int ClaveRegion { get; set; }
+        public int? NumeroApi { get; set; }
+        public List<IFormFile>? DocSiaf { get; set; }
+        public List<IFormFile>? TablaApi { get; set; }
         public List<CogEditado> CogsEditados { get; set; } = new();
     }
 
