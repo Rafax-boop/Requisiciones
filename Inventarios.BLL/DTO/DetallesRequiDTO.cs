@@ -15,6 +15,7 @@ namespace Inventario.BLL.DTO
         public string? TipoPrograma { get; set; }
         public int? ClaveRegion { get; set; }
         public string? Observaciones { get; set; }
+        public int IdEstatus { get; set; }
         public List<ArchivoAtencionDTO> ArchivosSiaf { get; set; } = new();
         public List<ArchivoAtencionDTO> ArchivosTablaApi { get; set; } = new();
         public int? NumeroApi { get; set; }

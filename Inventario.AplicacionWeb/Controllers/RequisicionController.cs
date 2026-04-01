@@ -5,6 +5,7 @@ using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Inventario.Entity.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMunicipioServie _municipioService;
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
         private readonly IAlmacenService _almacenService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
         public RequisicionController(
             IRequisicionesService requisicionesService,
@@ -29,7 +31,8 @@ namespace Inventario.AplicacionWeb.Controllers
             IUsuarioService usuarioService,
             IMunicipioServie municipioService,
             IProgramaPresupuestarioService programaPresupuestarioService,
-            IAlmacenService almacenService
+            IAlmacenService almacenService,
+            IWebHostEnvironment webHostEnvironment
         )
         {
             _requisicionService = requisicionesService;
@@ -39,6 +42,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
             _almacenService = almacenService;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [HttpGet]
@@ -399,6 +403,46 @@ namespace Inventario.AplicacionWeb.Controllers
                 webRootPath
             );
             return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirDocumentoProveedor(
+    [FromForm] int idRequisicion,
+    [FromForm] string tipoDocumento,
+    IFormFile archivo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _requisicionService.SubirDocumentoProveedor(
+                idRequisicion, tipoDocumento, archivo,
+                _webHostEnvironment.WebRootPath, idUsuario);
+
+            return ok ? Ok(new { success = true })
+                      : BadRequest(new { success = false });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerDocumentosProveedor(int idRequisicion)
+        {
+            var docs = await _requisicionService.ObtenerDocumentosProveedor(idRequisicion);
+            return Ok(docs);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EnviarAFinancierosConDocs([FromForm] int idRequisicion)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _requisicionService.EnviarAFinancierosConDocs(idRequisicion, idUsuario);
+            return Ok(new { success = ok });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RebotarDocumentos([FromBody] RebotarDocumentosDTO modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _requisicionService.RebotarDocumentos(
+                modelo.IdRequisicion, modelo.Observaciones,
+                modelo.DocumentosObservados, idUsuario);
+            return Ok(new { success = ok });
         }
     }
 }

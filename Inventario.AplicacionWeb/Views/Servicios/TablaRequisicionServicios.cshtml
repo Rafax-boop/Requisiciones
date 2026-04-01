@@ -21,7 +21,11 @@
      data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
     data-url-subir-archivos-atencion="@Url.Action("SubirArchivosAtencion", "Requisicion")"
-     data-url-aceptar-expediente="@Url.Action("AceptarExpediente", "Servicios")">
+     data-url-aceptar-expediente="@Url.Action("AceptarExpediente", "Servicios")"
+     data-url-subir-doc-proveedor="@Url.Action("SubirDocumentoProveedor", "Requisicion")"
+     data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
+     data-url-enviar-financieros-docs="@Url.Action("EnviarAFinancierosConDocs", "Requisicion")"
+     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -81,7 +85,7 @@
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -162,9 +166,9 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
-                                    @if (User.IsInRole("6") && item.IdEstatus == 1)
+                                    @if (User.IsInRole("6") && (item.IdEstatus == 1 || item.IdEstatus == 11))
                                     {
-                                        <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
+                                        <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi, @item.IdEstatus)">
                                             <i class="fa-solid fa-clipboard-user"></i>
                                         </button>
                                     }
@@ -650,10 +654,20 @@
                     <div id="expGrupoTablaApi" style="margin-bottom:12px;"></div>
                     <div id="expGrupoNumeroApi"></div>
                 </div>
-                <div style="margin-top:20px; text-align:right;">
-                    <button type="button" class="btn boton-rosa" onclick="aceptarExpediente()">
-                        <i class="fa-solid fa-circle-check"></i> Aceptar
-                    </button>
+                <div id="expDocumentosProveedor" style="margin-top:20px;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:4px;">
+                        <i class="fa-solid fa-file-contract"></i> Documentos del proveedor
+                    </p>
+                    <p id="expNotaObservacion" style="display:none; padding:10px 14px;
+                        background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+                        color:#b91c1c; font-size:13px; margin-bottom:12px;"></p>
+                    <div id="expChecklistDocs" style="display:flex; flex-direction:column; gap:8px;"></div>
+                    <div id="expAccionesProveedor" style="margin-top:16px; text-align:right; display:none;">
+                        <button type="button" class="btn boton-rosa" onclick="enviarDocumentosAFinancieros()">
+                            <i class="fa-solid fa-paper-plane"></i> Enviar a financieros
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

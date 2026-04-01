@@ -113,7 +113,7 @@
                             Presupuesto
                         </a>
                     }
-                    @if (User.IsInRole("10"))
+                    @if (User.IsInRole("10") || User.IsInRole("5"))
                     {
                         <a href="@Url.Action("TablaDAF", "DAF")"
                            class="@(ViewData["Title"]?.ToString() == "DAF" ? "active" : "")">

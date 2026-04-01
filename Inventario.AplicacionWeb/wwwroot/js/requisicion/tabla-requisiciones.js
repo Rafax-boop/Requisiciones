@@ -24,9 +24,36 @@
         : "";
     var _idRequiAsignar = null;
     var expedienteActual = null;
+    var expedienteEstatusActual = 0;
+    var expedienteNotaActual = "";
     var urlAceptarExpediente = container
         ? container.getAttribute("data-url-aceptar-expediente")
         : "";
+
+    var urlSubirDocProveedor = container
+        ? container.getAttribute("data-url-subir-doc-proveedor") : "";
+    var urlObtenerDocsProveedor = container
+        ? container.getAttribute("data-url-obtener-docs-proveedor") : "";
+    var urlEnviarFinancierosDocs = container
+        ? container.getAttribute("data-url-enviar-financieros-docs") : "";
+    var urlRebotarDocumentos = container
+        ? container.getAttribute("data-url-rebotar-documentos") : "";
+
+    var DOCUMENTOS_PROVEEDOR = [
+        { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
+        { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
+        { clave: "ConstFiscal", label: "Constancia de Situación Fiscal" },
+        { clave: "OpinionSAT", label: "Opinión de Cumplimiento SAT" },
+        { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
+        { clave: "Padron", label: "Alta en Padrón de Proveedores" },
+        { clave: "CedulaRFC", label: "Cédula de Identificación Fiscal" },
+        { clave: "IdOficial", label: "Identificación Oficial (INE/Pasaporte)" },
+        { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
+        { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
+        { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
+        { clave: "ActaConst", label: "Acta Constitutiva" },
+        { clave: "CompDomicilio", label: "Comprobante de Domicilio" }
+    ];
 
   var fechaSeleccionada = "";
 
@@ -275,6 +302,132 @@
         });
     }
 
+    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion) {
+        var notaEl = document.getElementById("expNotaObservacion");
+        if (notaObservacion && idEstatus === 18) {
+            notaEl.textContent = "Financieros observaron: " + notaObservacion;
+            notaEl.style.display = "block";
+        } else {
+            notaEl.style.display = "none";
+        }
+
+        var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
+        var checklist = document.getElementById("expChecklistDocs");
+        checklist.innerHTML = "";
+
+        var todosSubidos = true;
+
+        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+            if (!subido) todosSubidos = false;
+
+            var archivo = docsSubidos.find(function (d) { return d.nombreArchivo === doc.clave; });
+            var esObservado = idEstatus === 18 &&
+                notaObservacion && notaObservacion.indexOf(doc.label) !== -1;
+
+            var fila = document.createElement("div");
+            fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                "border-radius:8px; border:1px solid " +
+                (esObservado ? "#fecaca" : (subido ? "#bbf7d0" : "var(--color-border-tertiary)")) + ";" +
+                "background:" + (esObservado ? "#fef2f2" : (subido ? "#f0fdf4" : "var(--color-background-secondary)")) + ";";
+
+            var icono = subido
+                ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>';
+
+            if (esObservado) {
+                icono = '<i class="fa-solid fa-circle-exclamation" style="color:#dc2626;font-size:16px;flex-shrink:0;"></i>';
+            }
+
+            var linkArchivo = subido && archivo
+                ? '<a href="' + archivo.ruta + '" target="_blank" ' +
+                'style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;text-decoration:none;">' +
+                '<i class="fa-solid fa-eye"></i> Ver</a>'
+                : '';
+
+            // Botón subir solo si estatus permite (16 o 18)
+            var btnSubir = "";
+            if (idEstatus === 16 || idEstatus === 18) {
+                btnSubir = '<label style="margin-left:auto;cursor:pointer;">' +
+                    '<input type="file" style="display:none;" ' +
+                    'onchange="subirDocProveedor(' + idRequi + ', \'' + doc.clave + '\', this)">' +
+                    '<span style="font-size:11px;color:var(--color-text-secondary);' +
+                    'padding:3px 8px;border:1px solid var(--color-border-secondary);' +
+                    'border-radius:6px;white-space:nowrap;">' +
+                    (subido ? '<i class="fa-solid fa-arrow-rotate-right"></i> Reemplazar'
+                        : '<i class="fa-solid fa-upload"></i> Subir') +
+                    '</span></label>';
+            }
+
+            fila.innerHTML = icono +
+                '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                linkArchivo + btnSubir;
+
+            checklist.appendChild(fila);
+        });
+
+        var acciones = document.getElementById("expAccionesProveedor");
+        if (idEstatus === 16 || idEstatus === 18) {
+            acciones.style.display = todosSubidos ? "block" : "none";
+        } else {
+            acciones.style.display = "none";
+        }
+    }
+
+    window.subirDocProveedor = function (idRequi, clave, inputEl) {
+        var archivo = inputEl.files[0];
+        if (!archivo) return;
+
+        var formData = new FormData();
+        formData.append("idRequisicion", idRequi);
+        formData.append("tipoDocumento", clave);
+        formData.append("archivo", archivo);
+
+        $.ajax({
+            url: urlSubirDocProveedor,
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function () {
+                $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+                    var idEstatus = expedienteActual ? parseInt(
+                        document.querySelector('[data-requi-id="' + idRequi + '"].fila-requi')
+                            ?.querySelector("td:nth-child(7)")?.textContent || "0"
+                    ) : 0;
+                    renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual);
+                });
+            },
+            error: function () {
+                Swal.fire({ icon: "error", title: "Error al subir el archivo" });
+            }
+        });
+    };
+
+    window.enviarDocumentosAFinancieros = function () {
+        Swal.fire({
+            title: "¿Enviar a financieros?",
+            text: "Se enviarán todos los documentos para revisión.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#fe6291",
+            confirmButtonText: "Sí, enviar",
+            cancelButtonText: "Cancelar"
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+            $.post(urlEnviarFinancierosDocs, { idRequisicion: expedienteActual }, function (res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalExpediente")).hide();
+                    Swal.fire({
+                        icon: "success", title: "Enviado a financieros",
+                        timer: 2000, showConfirmButton: false
+                    }).then(function () { location.reload(); });
+                }
+            });
+        });
+    };
+
     window.volverOpciones = function () {
         ocultarTodosPasos();
         document.getElementById('pasoOpciones').style.display = 'block';
@@ -301,7 +454,7 @@
     };
 
     // Abrir modal — siempre arranca en paso 1
-    window.abrirModalAsignar = function (idRequi) {
+    window.abrirModalAsignar = function (idRequi, idEstatus) {
         _idRequiAsignar = idRequi;
         var esDeCompra = idEstatus === 11;
 
@@ -872,6 +1025,7 @@
 
     window.verExpediente = function (idRequi) {
         expedienteActual = idRequi;
+        
         // Limpiar
         document.getElementById("expObservaciones").value = "";
         document.getElementById("expArchivosBase").innerHTML = "";
@@ -1015,6 +1169,21 @@
                         + '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + '</span>';
                 }
             })();
+
+            expedienteEstatusActual = data.idEstatus || 0;
+
+            expedienteNotaActual = "";
+            if (data.idEstatus === 18 && data.observaciones) {
+                expedienteNotaActual = data.observaciones;
+            }
+
+            expedienteEstatusActual = data.idEstatus || 0;
+            expedienteNotaActual = (data.idEstatus === 18 && data.observaciones)
+                ? data.observaciones : "";
+
+            $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+                renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual);
+            });
 
             new bootstrap.Modal(document.getElementById("modalExpediente")).show();
         });

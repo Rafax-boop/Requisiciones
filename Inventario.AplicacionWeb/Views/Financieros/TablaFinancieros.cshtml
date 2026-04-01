@@ -20,7 +20,9 @@
      data-url-atender="@Url.Action("Atender", "Financieros")"
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
-     data-url-finalizar-expediente="@Url.Action("FinalizarRequisicion", "Financieros")">
+     data-url-finalizar-expediente="@Url.Action("FinalizarRequisicion", "Financieros")"
+     data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
+     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -632,8 +634,20 @@
                     <div id="expFinGrupoNumeroApi"></div>
                 </div>
 
-                <!-- Botón finalizar -->
-                <div style="margin-top:20px; text-align:right;">
+                <!-- Documentos del proveedor -->
+                <div id="expFinDocumentosProveedor" style="margin-top:20px; display:none;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:12px;">
+                        <i class="fa-solid fa-file-contract"></i> Documentos del proveedor
+                    </p>
+                    <div id="expFinChecklistDocs" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+
+                <!-- Botones -->
+                <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" class="btn btn-danger" onclick="rebotarDocumentos()">
+                        <i class="fa-solid fa-rotate-left"></i> Rebotar documentos
+                    </button>
                     <button type="button" class="btn boton-rosa" onclick="finalizarExpediente()">
                         <i class="fa-solid fa-circle-check"></i> Finalizar
                     </button>
@@ -803,6 +817,40 @@
                     <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn boton-rosa" onclick="confirmarAsignacion()">
                         Confirmar asignación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalRebotar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Rebotar documentos</h5>
+                    <p class="modal-subtitulo-premium">Marca los documentos con anomalías</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div id="checklistRebotar"
+                     style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+                </div>
+                <div class="formulario-input">
+                    <label>Nota general para el analista:</label>
+                    <textarea id="txtNotaRebotar" class="form-control" rows="3"
+                              placeholder="Describe la anomalía o qué debe corregir..."></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1rem;">
+                    <button type="button" class="btn boton-gris" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarRebotar()">
+                        <i class="fa-solid fa-rotate-left"></i> Confirmar rebotar
                     </button>
                 </div>
             </div>

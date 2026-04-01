@@ -11,6 +11,28 @@
     var urlFinalizarExpediente = container
         ? container.getAttribute("data-url-finalizar-expediente")
         : "";
+
+    // Variables al inicio del módulo
+    var urlObtenerDocsProveedor = container
+        ? container.getAttribute("data-url-obtener-docs-proveedor") : "";
+    var urlRebotarDocumentos = container
+        ? container.getAttribute("data-url-rebotar-documentos") : "";
+
+    var DOCUMENTOS_PROVEEDOR = [
+        { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
+        { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
+        { clave: "ConstFiscal", label: "Constancia de Situación Fiscal" },
+        { clave: "OpinionSAT", label: "Opinión de Cumplimiento SAT" },
+        { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
+        { clave: "Padron", label: "Alta en Padrón de Proveedores" },
+        { clave: "CedulaRFC", label: "Cédula de Identificación Fiscal" },
+        { clave: "IdOficial", label: "Identificación Oficial (INE/Pasaporte)" },
+        { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
+        { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
+        { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
+        { clave: "ActaConst", label: "Acta Constitutiva" },
+        { clave: "CompDomicilio", label: "Comprobante de Domicilio" }
+    ];
     const contenedor = document.querySelector(".tabla-requi-page");
     const atenderUrl = contenedor ? contenedor.dataset.urlAtender : "";
 
@@ -513,6 +535,49 @@
                 }
             })();
 
+            $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+                var seccion = document.getElementById("expFinDocumentosProveedor");
+                var checklist = document.getElementById("expFinChecklistDocs");
+                checklist.innerHTML = "";
+
+                if (!docs.length) {
+                    seccion.style.display = "none";
+                    return;
+                }
+
+                seccion.style.display = "block";
+                var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
+
+                DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+                    var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+                    var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
+
+                    var fila = document.createElement("div");
+                    fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                        "border-radius:8px; border:1px solid " +
+                        (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                        "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+
+                    var icono = subido
+                        ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                        : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>';
+
+                    var linkVer = subido && archivo
+                        ? '<a href="' + archivo.ruta + '" target="_blank" ' +
+                        'style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;' +
+                        'text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);' +
+                        'border-radius:6px;">' +
+                        '<i class="fa-solid fa-eye"></i> Ver</a>'
+                        : '<span style="font-size:11px;color:#9ca3af;margin-left:auto;">No subido</span>';
+
+                    fila.innerHTML = icono +
+                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                        linkVer;
+
+                    checklist.appendChild(fila);
+                });
+            });
+
             new bootstrap.Modal(document.getElementById("modalExpedienteFinancieros")).show();
         });
     };
@@ -549,6 +614,78 @@
                     Swal.fire({ icon: "error", title: "Error al finalizar la requisición." });
                 }
             });
+        });
+    };
+
+    // Función para abrir el modal de rebotar
+    window.rebotarDocumentos = function () {
+        var checklist = document.getElementById("checklistRebotar");
+        checklist.innerHTML = "";
+        document.getElementById("txtNotaRebotar").value = "";
+
+        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            var fila = document.createElement("label");
+            fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                "border-radius:8px; border:1px solid var(--color-border-tertiary);" +
+                "background:var(--color-background-secondary); cursor:pointer;";
+            fila.innerHTML =
+                '<input type="checkbox" value="' + doc.label + '" ' +
+                'style="width:16px;height:16px;flex-shrink:0;">' +
+                '<span style="font-size:13px;">' + doc.label + '</span>';
+            checklist.appendChild(fila);
+        });
+
+        new bootstrap.Modal(document.getElementById("modalRebotar")).show();
+    };
+
+    window.confirmarRebotar = function () {
+        var checkboxes = document.querySelectorAll("#checklistRebotar input[type=checkbox]:checked");
+        var docsObservados = Array.from(checkboxes).map(function (cb) { return cb.value; });
+        var nota = document.getElementById("txtNotaRebotar").value.trim();
+
+        if (!docsObservados.length) {
+            Swal.fire({
+                icon: "warning",
+                title: "Selecciona al menos un documento con anomalía",
+                confirmButtonText: "Ok"
+            });
+            return;
+        }
+        if (!nota) {
+            Swal.fire({
+                icon: "warning",
+                title: "Escribe una nota para el analista",
+                confirmButtonText: "Ok"
+            });
+            return;
+        }
+
+        $.ajax({
+            url: urlRebotarDocumentos,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                IdRequisicion: expedienteFinActual,
+                Observaciones: nota,
+                DocumentosObservados: docsObservados
+            }),
+            success: function (res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalRebotar")).hide();
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalExpedienteFinancieros")).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Documentos regresados al analista",
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(function () { location.reload(); });
+                }
+            },
+            error: function () {
+                Swal.fire({ icon: "error", title: "Error al rebotar los documentos." });
+            }
         });
     };
 

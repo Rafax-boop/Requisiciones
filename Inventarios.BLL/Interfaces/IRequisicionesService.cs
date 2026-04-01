@@ -38,5 +38,16 @@ namespace Inventario.BLL.Interfaces
             List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
             string webRootPath);
+
+        //metodos de archivos proveedor
+        Task<bool> SubirDocumentoProveedor(int idRequisicion, string tipoDocumento,
+            IFormFile archivo, string webRootPath, int idUsuario);
+
+        Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion);
+
+        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario);
+
+        Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
+            List<string> docsObservados, int idUsuario);
     }
 }
