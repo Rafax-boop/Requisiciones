@@ -67,7 +67,6 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">En proceso de pago</button>
     </nav>
 
     @{
@@ -111,7 +110,7 @@
                     @foreach (var item in requisicionesPrincipal)
                     {
                         idxPrincipal++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxPrincipal</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -267,7 +266,7 @@
                     @foreach (var item in requisicionesAutorizadas)
                     {
                         idxAutorizadas++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxAutorizadas</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>
@@ -405,7 +404,7 @@
                     @foreach (var item in requisicionesRechazadas)
                     {
                         idxRechazadas++;
-                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@item.RequiServicio.ToString().ToLower()">
+                        <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxRechazadas</td>
                             <td>@item.NumRequi</td>
                             <td>@item.FechaEmision</td>

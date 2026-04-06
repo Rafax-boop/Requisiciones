@@ -787,8 +787,7 @@
                     if (res.success) {
                         bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                         Swal.fire({
-                            icon: 'success', title: 'Requisición rechazada',
-                            timer: 2000, showConfirmButton: false
+                            icon: 'success', title: 'Requisición rechazada'
                         }).then(function () { location.reload(); });
                     } else {
                         Swal.fire({ icon: 'error', title: 'No se pudo rechazar' });
@@ -822,6 +821,21 @@
         tabBtns.forEach(function (btn) {
             btn.addEventListener("click", function () {
                 var tab = this.getAttribute("data-tab");
+                
+                // Al salir de un tab activo (antes de cambiarlo), limpiamos sus filas nuevas
+                var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
+                if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
+                    var filasVistas = panelActivoAnterior.querySelectorAll("tr.fila-nueva");
+                    filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
+                }
+                
+                // Reiniciamos el badge del tab destino
+                var badgeDestino = this.querySelector(".badge-almacen-tab");
+                if (badgeDestino) {
+                    badgeDestino.textContent = "0";
+                    badgeDestino.style.display = "none";
+                }
+
                 tabBtns.forEach(function (b) { b.classList.remove("activo"); });
                 tabPanels.forEach(function (p) {
                     p.classList.remove("activo");
@@ -832,6 +846,36 @@
             });
         });
     }
+
+    // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
+    window.recibirNotificacionRequi = function (idRequi, tabDestino) {
+        // 1. Encontrar la fila y aplicarle la clase
+        var fila = document.querySelector('tr.fila-requi[data-requi-id="' + idRequi + '"]');
+        if (fila) {
+            fila.classList.add("fila-nueva");
+        }
+
+        // 2. Comprobar si NO estamos en ese tab actualmente para subir el contador
+        var panelDestino = document.getElementById("tab-" + tabDestino);
+        if (panelDestino && !panelDestino.classList.contains("activo")) {
+            var btnTab = document.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
+            if (btnTab) {
+                var badge = btnTab.querySelector(".badge-almacen-tab");
+                if (badge) {
+                    var conteoActual = parseInt(badge.textContent || "0", 10);
+                    badge.textContent = conteoActual + 1;
+                    badge.style.display = "flex";
+                    
+                    // Reiniciar animación
+                    badge.style.animation = 'none';
+                    badge.offsetHeight; /* trigger reflow */
+                    badge.style.animation = null; 
+                }
+            }
+        } else if (panelDestino && panelDestino.classList.contains("activo")) {
+            aplicarPaginacionRequisiciones();
+        }
+    };
 
     aplicarPaginacionRequisiciones();
 

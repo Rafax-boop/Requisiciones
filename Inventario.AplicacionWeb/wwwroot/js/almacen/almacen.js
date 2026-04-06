@@ -58,6 +58,21 @@
     tabBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             var tab = this.getAttribute('data-tab');
+            
+            // Al salir de un tab activo (antes de cambiarlo), limpiamos sus filas nuevas
+            var panelActivoAnterior = document.querySelector(".almacen-tab-panel.activo");
+            if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
+                var filasVistas = panelActivoAnterior.querySelectorAll("tr.fila-nueva");
+                filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
+            }
+            
+            // Reiniciamos el badge del tab destino
+            var badgeDestino = this.querySelector(".badge-almacen-tab");
+            if (badgeDestino) {
+                badgeDestino.textContent = "0";
+                badgeDestino.style.display = "none";
+            }
+
             tabBtns.forEach(function (b) { b.classList.remove('activo'); });
             tabPanels.forEach(function (p) {
                 p.classList.remove('activo');
@@ -66,6 +81,32 @@
             this.classList.add('activo');
         });
     });
+
+    // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
+    window.recibirNotificacionRequi = function (idRequi, tabDestino) {
+        // En almacén la fila es tr[data-id]
+        var fila = document.querySelector('tr[data-id="' + idRequi + '"]');
+        if (fila) {
+            fila.classList.add("fila-nueva");
+        }
+
+        var panelDestino = document.getElementById("tab-" + tabDestino);
+        if (panelDestino && !panelDestino.classList.contains("activo")) {
+            var btnTab = document.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
+            if (btnTab) {
+                var badge = btnTab.querySelector(".badge-almacen-tab");
+                if (badge) {
+                    var conteoActual = parseInt(badge.textContent || "0", 10);
+                    badge.textContent = conteoActual + 1;
+                    badge.style.display = "flex";
+                    
+                    badge.style.animation = 'none';
+                    badge.offsetHeight; /* trigger reflow */
+                    badge.style.animation = null; 
+                }
+            }
+        }
+    };
 
     /* ========== FILTROS + PAGINACIÓN REQUISICIONES ========== */
 

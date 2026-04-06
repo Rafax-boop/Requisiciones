@@ -901,9 +901,7 @@
 
                         Swal.fire({
                             icon: 'success',
-                            title: 'Foto eliminada',
-                            timer: 1500,
-                            showConfirmButton: false
+                            title: 'Foto eliminada'
                         });
                     } else {
                         Swal.fire({ icon: 'error', title: 'No se pudo eliminar la foto' });

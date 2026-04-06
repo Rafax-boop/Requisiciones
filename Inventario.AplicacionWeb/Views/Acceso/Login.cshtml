@@ -20,6 +20,14 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link href="~/css/vendor/sweetAlert.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        if (window.Swal) {
+            window.Swal = window.Swal.mixin({
+                confirmButtonText: 'Aceptar',
+                confirmButtonColor: '#d63384'
+            });
+        }
+    </script>
 </head>
 
 <body class="login-body">

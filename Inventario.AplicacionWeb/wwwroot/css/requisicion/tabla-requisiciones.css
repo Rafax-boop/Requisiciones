@@ -200,6 +200,16 @@
   background: var(--rosa-50);
 }
 
+/* Fila nueva (notificación de llegada) */
+.tabla-requisiciones tbody tr.fila-nueva td {
+  background-color: #fffde7 !important; /* Amarillo pastel claro */
+  transition: background-color 0.8s ease-out;
+}
+
+.tabla-requisiciones tbody tr.fila-nueva:hover td {
+  background-color: #fff9c4 !important; /* Un poco más oscuro en hover */
+}
+
 /* Fila detalle: expandible al clic; animación de despliegue/cierre */
 .tabla-requisiciones .fila-detalle td {
   padding: 0;
