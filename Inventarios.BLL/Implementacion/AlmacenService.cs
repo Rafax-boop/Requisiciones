@@ -220,14 +220,15 @@ namespace Inventario.BLL.Implementacion
                     var cant = (int)Math.Ceiling(d.Cantidad ?? 0m);
                     if (cant <= 0) continue;
 
+                    var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
                     var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
                         throw new Exception("Hay partidas sin descripción o unidad de medida.");
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad)
-                              ?? throw new Exception($"No existe el material en inventario: {desc} ({unidad}).");
+                    var inv = await _repoInventario.Obtener(i => i.Clave == clave)
+                        ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
 
                     if (inv.Existencia < cant)
                         throw new Exception($"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, requerido: {cant}.");
@@ -288,14 +289,15 @@ namespace Inventario.BLL.Implementacion
                     if (cantAprobada > cantSolicitada)
                         throw new Exception($"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
 
+                    var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
                     var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
                         throw new Exception("Hay partidas sin descripción o unidad de medida.");
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad)
-                              ?? throw new Exception($"No existe el material en inventario: {desc} ({unidad}).");
+                    var inv = await _repoInventario.Obtener(i => i.Clave == clave)
+          ??            throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
 
                     if (inv.Existencia < cantAprobada)
                         throw new Exception($"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
@@ -408,17 +410,18 @@ namespace Inventario.BLL.Implementacion
                     if (cantAprobada > cantSolicitada)
                         throw new Exception($"La cantidad aprobada ({cantAprobada}) no puede exceder la solicitada ({cantSolicitada}).");
 
+                    var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
                     var unidad = (d.UnidadMedida ?? "").Trim();
 
-                    if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
-                        throw new Exception("Hay partidas sin descripción o unidad de medida.");
+                    if (string.IsNullOrWhiteSpace(clave))
+                        throw new Exception($"El artículo '{desc}' no tiene clave registrada.");
 
-                    var inv = await _repoInventario.Obtener(i => i.Descripcion == desc && i.UnidadMedida == unidad)
-                              ?? throw new Exception($"No existe el material en inventario: {desc} ({unidad}).");
+                    var inv = await _repoInventario.Obtener(i => i.Clave == clave)
+                              ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
 
                     if (inv.Existencia < cantAprobada)
-                        throw new Exception($"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
+                        throw new Exception($"Stock insuficiente para: {desc}. Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
 
                     // Descontar stock
                     inv.Existencia -= cantAprobada;
@@ -461,7 +464,10 @@ namespace Inventario.BLL.Implementacion
                     resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
                 }
 
-                req.IdEstatus = ESTATUS_APROBADA_PARCIAL_ALMACEN;
+                // ── Determinar estatus final ──
+                int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_APROBADA_ALMACEN;
+
+                req.IdEstatus = estatusFinal;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
@@ -469,7 +475,7 @@ namespace Inventario.BLL.Implementacion
                 if (resumenEntregas.Count > 0) obs.Append($" Entregados: {string.Join(", ", resumenEntregas)}.");
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 
-                await RegistrarBitacoraAsync(req.IdRequisicion, ESTATUS_APROBADA_PARCIAL_ALMACEN, idUsuario, obs.ToString());
+                await RegistrarBitacoraAsync(req.IdRequisicion, estatusFinal, idUsuario, obs.ToString());
 
                 await _uow.CommitAsync();
                 return true;

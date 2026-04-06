@@ -21,6 +21,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblEstatus> _repositoryEstatus;
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
@@ -31,8 +32,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblEstatus> repositoryEstatus,
             IGenericRepository<TblRegistroDiseno> repositoryDisenos,
             IGenericRepository<TblArticulosProgramado> repositoryProgramacion,
-            IUnitOfWork unitOfWork
-
+            IUnitOfWork unitOfWork,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -43,6 +44,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryDisenos = repositoryDisenos;
             _repositoryProgramacion = repositoryProgramacion;
             _unitOfWork = unitOfWork;
+            _repoMovimiento = repoMovimiento;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -208,7 +210,16 @@ namespace Inventario.BLL.Implementacion
             var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idMaestro);
             var maestra = await queryMaestra.FirstOrDefaultAsync();
 
+            var queryMovimientos = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idMaestro && m.TipoMovimiento == "COMPRA");
+            var idsParaCompra = await queryMovimientos
+                .Select(m => m.IdRequisicionDetalle)
+                .Distinct()
+                .ToListAsync();
+
             var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
+            if (idsParaCompra.Any())
+                query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
             var lista = await query
                 .Select(r => new DetalleArticuloDTO
                 {
@@ -238,11 +249,8 @@ namespace Inventario.BLL.Implementacion
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
-            // Obtener última observación de atención (estatus 13)
-            var queryBitacora = await _repositoryBitacora.Consultar(b =>
-                b.IdRequisicion == idMaestro && b.IdEstatus == 13);
-
-            var observacion = await queryBitacora
+            var observacion = await (await _repositoryBitacora.Consultar(b =>
+                b.IdRequisicion == idMaestro && b.IdEstatus == maestra.IdEstatus))
                 .OrderByDescending(b => b.FechaEstatus)
                 .Select(b => b.Observacion)
                 .FirstOrDefaultAsync();
@@ -250,6 +258,24 @@ namespace Inventario.BLL.Implementacion
             var queryCuadro = await _repositoryDisenos.Consultar(
                 f => f.IdRequisicion == idMaestro && f.Tipo == "cuadro_comparativo");
             var cuadro = await queryCuadro
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
+            var querySIAF = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "SIAF");
+            var archivosSiaf = await querySIAF  // ← querySIAF, no queryCuadro
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
+            var queryTablaApi = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "TablaApi");
+            var archivosTablaApi = await queryTablaApi
                 .Select(f => new ArchivoAtencionDTO
                 {
                     Ruta = f.Ruta,
@@ -268,7 +294,11 @@ namespace Inventario.BLL.Implementacion
                 Articulos = lista,
                 Cotizaciones = cotizaciones,
                 CuadroComparativo = cuadro,
-                Observaciones = observacion
+                Observaciones = observacion,
+                ArchivosSiaf = archivosSiaf,
+                ArchivosTablaApi = archivosTablaApi,
+                IdEstatus = maestra?.IdEstatus ?? 0,
+                NumeroApi = maestra?.NumApi
             };
         }
 
@@ -475,6 +505,36 @@ namespace Inventario.BLL.Implementacion
                     Observacion = modelo.Observaciones,
                     IdUsuario = idUsuario
                 };
+                await _repositoryBitacora.Crear(bitacora);
+
+                return true;
+            }
+            catch { throw; }
+        }
+
+        public async Task<bool> AceptarExpediente(int idRequisicion, int idUsuario)
+        {
+            try
+            {
+                var requisicion = await _repositoryRequisicion
+                    .Obtener(r => r.IdRequisicion == idRequisicion);
+
+                if (requisicion == null) return false;
+
+                requisicion.IdEstatus = 17;
+                requisicion.FechaModificacion = DateTime.Now;
+
+                await _repositoryRequisicion.Editar(requisicion);
+
+                var bitacora = new TblBitacoraEstatus
+                {
+                    IdRequisicion = idRequisicion,
+                    IdEstatus = 17,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = "Enviado a proceso de pago",
+                    IdUsuario = idUsuario
+                };
+
                 await _repositoryBitacora.Crear(bitacora);
 
                 return true;
@@ -744,6 +804,94 @@ namespace Inventario.BLL.Implementacion
 
             await Guardar(cotizaciones, "cotizaciones", "cotizacion");
             await Guardar(cuadroComparativo, "cuadro_comparativo", "cuadro_comparativo");
+            return true;
+        }
+
+        public async Task<bool> SubirDocumentoProveedor(int idRequisicion, string tipoDocumento,
+    IFormFile archivo, string webRootPath, int idUsuario)
+        {
+            if (archivo == null || archivo.Length == 0) return false;
+
+            var carpeta = Path.Combine(webRootPath, "uploads", "Proveedor", idRequisicion.ToString());
+            Directory.CreateDirectory(carpeta);
+
+            var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+            using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+                await archivo.CopyToAsync(stream);
+
+            // Eliminar versión anterior del mismo tipo si existe
+            var queryPrev = await _repositoryDisenos.Consultar(f =>
+                f.IdRequisicion == idRequisicion && f.Tipo == $"proveedor_{tipoDocumento}");
+            var previos = await queryPrev.ToListAsync();
+            foreach (var p in previos)
+                await _repositoryDisenos.Eliminar(p);
+
+            await _repositoryDisenos.Crear(new TblRegistroDiseno
+            {
+                IdRequisicion = idRequisicion,
+                Ruta = $"/uploads/Proveedor/{idRequisicion}/{nombre}",
+                FechaSubida = DateTime.Now,
+                Tipo = $"proveedor_{tipoDocumento}"
+            });
+
+            return true;
+        }
+
+        public async Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion)
+        {
+            var query = await _repositoryDisenos.Consultar(f =>
+                f.IdRequisicion == idRequisicion && f.Tipo.StartsWith("proveedor_"));
+
+            return await query.Select(f => new ArchivoAtencionDTO
+            {
+                Ruta = f.Ruta,
+                NombreArchivo = f.Tipo.Replace("proveedor_", "")
+            }).ToListAsync();
+        }
+
+        public async Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.IdEstatus = 17;
+            requisicion.FechaModificacion = DateTime.Now;
+            await _repositoryRequisicion.Editar(requisicion);
+
+            await _repositoryBitacora.Crear(new TblBitacoraEstatus
+            {
+                IdRequisicion = idRequisicion,
+                IdEstatus = 17,
+                FechaEstatus = DateTime.Now,
+                Observacion = "Documentos del proveedor enviados a revisión",
+                IdUsuario = idUsuario
+            });
+
+            return true;
+        }
+
+        public async Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
+            List<string> docsObservados, int idUsuario)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.IdEstatus = 18;
+            requisicion.FechaModificacion = DateTime.Now;
+            await _repositoryRequisicion.Editar(requisicion);
+
+            var notaCompleta = $"DOCUMENTOS OBSERVADOS: {string.Join(", ", docsObservados)}. " +
+                               $"NOTA: {observaciones}";
+
+            await _repositoryBitacora.Crear(new TblBitacoraEstatus
+            {
+                IdRequisicion = idRequisicion,
+                IdEstatus = 18,
+                FechaEstatus = DateTime.Now,
+                Observacion = notaCompleta,
+                IdUsuario = idUsuario
+            });
+
             return true;
         }
 

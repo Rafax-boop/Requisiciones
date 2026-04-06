@@ -59,6 +59,8 @@ public partial class TblRequisicion
 
     public bool? RequiServicio { get; set; }
 
+    public int? NumApi { get; set; }
+
     public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }

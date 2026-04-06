@@ -24,6 +24,7 @@ namespace Inventario.BLL.Interfaces
         Task<bool> EnviarAAlmacen(int idRequisicion, int idUsuario);
         Task<bool> EnviarAModificacion(int idRequisicion, int idUsuario, string observaciones);
         Task<bool> RechazarRequisicion(int idRequisicion, int idUsuario, string motivo);
+        Task<bool> AceptarExpediente(int idRequisicion, int idUsuario);
 
         //metodos para las iamgenes de los diseños
         Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
@@ -37,5 +38,16 @@ namespace Inventario.BLL.Interfaces
             List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
             string webRootPath);
+
+        //metodos de archivos proveedor
+        Task<bool> SubirDocumentoProveedor(int idRequisicion, string tipoDocumento,
+            IFormFile archivo, string webRootPath, int idUsuario);
+
+        Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion);
+
+        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario);
+
+        Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
+            List<string> docsObservados, int idUsuario);
     }
 }
