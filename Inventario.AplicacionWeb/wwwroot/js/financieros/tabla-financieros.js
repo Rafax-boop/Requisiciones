@@ -11,6 +11,9 @@
     var urlFinalizarExpediente = container
         ? container.getAttribute("data-url-finalizar-expediente")
         : "";
+    var urlDescargarTablaApi = container
+        ? container.getAttribute("data-url-descargar-tabla-api")
+        : "";
 
     // Variables al inicio del módulo
     var urlObtenerDocsProveedor = container
@@ -264,6 +267,27 @@
                 Swal.fire({ icon: "error", title: "No se pudo asignar", text: res.mensaje || "" });
             }
         });
+    };
+
+    window.descargarTablaApi = function () {
+        if (!requisicionActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin requisición",
+                text: "No se pudo identificar la requisición actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        // Construir la URL con el parámetro y abrir en nueva pestaña
+        // El endpoint devuelve el PDF con Content-Disposition: attachment
+        // así que el navegador lo descargará directamente.
+        var url = (urlDescargarTablaApi || "").replace(/\/$/, "")
+            + "?idRequisicion=" + requisicionActual;
+
+        window.open(url, "_blank");
     };
 
     // ── Ver detalle / atender ───────────────────────────────────────────────

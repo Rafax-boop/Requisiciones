@@ -13,5 +13,8 @@ namespace Inventario.BLL.Interfaces
         Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan);
         Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario);
         Task<bool> FinalizarRequisicion(int idRequisicion, int idUsuario);
+
+        //tabla api
+        Task<byte[]> GenerarTablaApiAsync(int idRequisicion);
     }
 }

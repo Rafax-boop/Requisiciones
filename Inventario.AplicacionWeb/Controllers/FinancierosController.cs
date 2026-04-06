@@ -18,13 +18,16 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
         private readonly IMunicipioServie _municipioService;
         private readonly IAlmacenService _almacenService;
+        private readonly ILogger<FinancierosController> _logger;
+
 
         public FinancierosController(IMapper mapper,
             IFinancierosService financierosService,
             IUsuarioService usuarioService,
             IProgramaPresupuestarioService programaPresupuestarioService,
             IMunicipioServie municipioService,
-            IAlmacenService almacenService)
+            IAlmacenService almacenService,
+            ILogger<FinancierosController> logger)
         {
             _mapper = mapper;
             _financierosService = financierosService;
@@ -32,6 +35,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
             _almacenService = almacenService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -139,6 +143,29 @@ namespace Inventario.AplicacionWeb.Controllers
             var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarTablaApi(int idRequisicion)
+        {
+            try
+            {
+                var bytes = await _financierosService.GenerarTablaApiAsync(idRequisicion);
+
+                var nombreArchivo = $"TablaAPI_{idRequisicion}_{DateTime.Now:yyyyMMdd}.pdf";
+
+                // FileResult con inline para abrir en el navegador,
+                // o usar "attachment" para forzar descarga directa.
+                return File(bytes, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                // Esto imprime el error REAL en la consola / logs de tu servidor ASP.NET
+                _logger?.LogError(ex, "Error generando Tabla API para requisición {Id}", idRequisicion);
+
+                // Respuesta legible si el usuario abre la URL directamente
+                return StatusCode(500, $"Error al generar el PDF: {ex.Message}\n\n{ex.StackTrace}");
+            }
         }
     }
 }

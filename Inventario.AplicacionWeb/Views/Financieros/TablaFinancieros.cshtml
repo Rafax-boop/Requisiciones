@@ -22,7 +22,8 @@
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
      data-url-finalizar-expediente="@Url.Action("FinalizarRequisicion", "Financieros")"
      data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
-     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")">
+     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
+     data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -768,7 +769,26 @@
                             <div class="col-md-5">
                                 <div class="formulario-input">
                                     <label>Tabla de API</label>
-                                    <input type="file" id="inputTablaApi" name="TablaApi" multiple class="input-file-rosa" />
+
+                                    <!-- Botón para descargar la Tabla API pre-llenada desde el sistema -->
+                                    <button type="button"
+                                            class="btn boton-rosa mb-2 w-100"
+                                            id="btnDescargarTablaApi"
+                                            onclick="descargarTablaApi()"
+                                            title="Genera el formato pre-llenado con los datos de la requisición">
+                                        <i class="fa-solid fa-file-arrow-down"></i>
+                                        Descargar Tabla API
+                                    </button>
+
+                                    <!-- Input para subir la Tabla API ya firmada (flujo original) -->
+                                    <input type="file"
+                                           id="inputTablaApi"
+                                           name="TablaApi"
+                                           multiple
+                                           class="input-file-rosa" />
+                                    <small class="text-muted" style="font-size:11px;">
+                                        Descarga, firma y luego sube el archivo aquí
+                                    </small>
                                 </div>
                             </div>
                             <div class="col-md-2">
