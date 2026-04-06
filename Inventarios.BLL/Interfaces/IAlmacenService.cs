@@ -26,6 +26,6 @@ namespace Inventario.BLL.Interfaces
 
         //ENTREGAS
         Task<List<EntregaPendienteDTO>> ListarEntregasPendientes();
-        Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario);
+        Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string? formatoSalidaFirmadoRuta);
     }
 }

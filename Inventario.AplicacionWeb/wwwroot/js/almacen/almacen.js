@@ -1,6 +1,7 @@
 (function () {
     var container = document.querySelector('.tabla-requi-page');
     var urlObtenerRequisicion = container ? container.getAttribute('data-url-obtener-requisicion') : '';
+    var urlVerPdfSalida = container ? container.getAttribute('data-url-ver-pdf') : '';
     var urlAprobarCompleta = container ? container.getAttribute('data-url-aprobar-completa') : '';
     var urlAprobarParcial = container ? container.getAttribute('data-url-aprobar-parcial') : '';
     var urlRechazar = container ? container.getAttribute('data-url-rechazar') : '';
@@ -52,6 +53,65 @@
 
     /* ========== TABS PRINCIPALES ========== */
 
+    function obtenerNotificacionRoot() {
+        return container && container.nodeType === 1 ? container : document;
+    }
+
+    function prepararBadgeNotificacionVisible(badge) {
+        if (!badge) return;
+        badge.classList.remove("badge-almacen-tab--oculto");
+        badge.removeAttribute("hidden");
+        badge.style.removeProperty("display");
+        badge.style.removeProperty("visibility");
+    }
+
+    function obtenerBadgeNotificacionTab(btn) {
+        if (!btn) return null;
+        var badge = btn.querySelector(".badge-almacen-tab");
+        if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "badge-almacen-tab badge-almacen-tab--oculto";
+            badge.setAttribute("aria-hidden", "true");
+            badge.textContent = "0";
+            btn.appendChild(badge);
+        }
+        return badge;
+    }
+
+    function limpiarBadgeNotificacionTab(btn) {
+        if (!btn) return;
+        btn.querySelectorAll(".badge-almacen-tab").forEach(function (badge) {
+            badge.textContent = "0";
+            badge.classList.add("badge-almacen-tab--oculto");
+            badge.setAttribute("hidden", "");
+            badge.style.setProperty("display", "none", "important");
+            badge.style.setProperty("visibility", "hidden", "important");
+        });
+    }
+
+    var PARPADEO_FILA_NUEVA_MS = 2000;
+
+    function iniciarParpadeoFilasNuevasEnPanel(panel) {
+        if (!panel) return;
+        var filas = panel.querySelectorAll("tr.fila-nueva");
+        if (!filas.length) return;
+        filas.forEach(function (tr, i) {
+            tr.classList.add("fila-nueva-parpadeo");
+            if (i === 0) {
+                try {
+                    tr.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                } catch (e) {
+                    tr.scrollIntoView();
+                }
+            }
+        });
+        window.setTimeout(function () {
+            filas.forEach(function (tr) {
+                tr.classList.remove("fila-nueva", "fila-nueva-parpadeo");
+            });
+        }, PARPADEO_FILA_NUEVA_MS);
+    }
+
     var tabPanels = document.querySelectorAll('.almacen-tab-panel');
     var tabBtns = document.querySelectorAll('.almacen-tabs-btn');
 
@@ -66,12 +126,8 @@
                 filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
             }
             
-            // Reiniciamos el badge del tab destino
-            var badgeDestino = this.querySelector(".badge-almacen-tab");
-            if (badgeDestino) {
-                badgeDestino.textContent = "0";
-                badgeDestino.style.display = "none";
-            }
+            limpiarBadgeNotificacionTab(this);
+            var panelDestinoClick = document.getElementById("tab-" + tab);
 
             tabBtns.forEach(function (b) { b.classList.remove('activo'); });
             tabPanels.forEach(function (p) {
@@ -79,26 +135,33 @@
                 if (p.id === 'tab-' + tab) p.classList.add('activo');
             });
             this.classList.add('activo');
+
+            window.requestAnimationFrame(function () {
+                iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+            });
         });
     });
 
     // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
     window.recibirNotificacionRequi = function (idRequi, tabDestino) {
+        var root = obtenerNotificacionRoot();
         // En almacén la fila es tr[data-id]
-        var fila = document.querySelector('tr[data-id="' + idRequi + '"]');
+        var fila = document.querySelector('tr[data-id="' + idRequi + '"]')
+            || document.querySelector('tr[data-requi="' + idRequi + '"]');
         if (fila) {
             fila.classList.add("fila-nueva");
         }
 
-        var panelDestino = document.getElementById("tab-" + tabDestino);
+        var panelDestino = root.querySelector("#tab-" + tabDestino);
         if (panelDestino && !panelDestino.classList.contains("activo")) {
-            var btnTab = document.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
+            var btnTab = root.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
             if (btnTab) {
-                var badge = btnTab.querySelector(".badge-almacen-tab");
+                var badge = obtenerBadgeNotificacionTab(btnTab);
                 if (badge) {
                     var conteoActual = parseInt(badge.textContent || "0", 10);
+                    prepararBadgeNotificacionVisible(badge);
                     badge.textContent = conteoActual + 1;
-                    badge.style.display = "flex";
+                    badge.style.setProperty("display", "flex", "important");
                     
                     badge.style.animation = 'none';
                     badge.offsetHeight; /* trigger reflow */
@@ -596,9 +659,62 @@
 
     var entregaActualId = null;     // IdRequisicion en el modal de entrega
     var entregaArticulos = [];      // Artículos (movimientos) del modal de entrega
+    var inputFormatoFirmado = document.getElementById('inputFormatoSalidaFirmado');
+    var estadoFormatoFirmado = document.getElementById('formatoSalidaFirmadoEstado');
+    var btnConfirmarEntrega = document.getElementById('btnConfirmarEntrega');
+
+    function setEstadoFormatoFirmado(tipo, mensaje) {
+        if (!estadoFormatoFirmado) return;
+        estadoFormatoFirmado.textContent = mensaje || '';
+        if (tipo === 'ok') estadoFormatoFirmado.style.color = '#15803d';
+        else if (tipo === 'error') estadoFormatoFirmado.style.color = '#b91c1c';
+        else estadoFormatoFirmado.style.color = '#64748b';
+    }
+
+    function validarFormatoFirmado() {
+        if (!inputFormatoFirmado || !btnConfirmarEntrega) return false;
+        var archivo = inputFormatoFirmado.files && inputFormatoFirmado.files[0] ? inputFormatoFirmado.files[0] : null;
+        if (!archivo) {
+            btnConfirmarEntrega.disabled = true;
+            setEstadoFormatoFirmado('info', 'Sube el formato firmado para habilitar la confirmación de entrega.');
+            return false;
+        }
+        var nombre = (archivo.name || '').toLowerCase();
+        if (!nombre.endsWith('.pdf')) {
+            btnConfirmarEntrega.disabled = true;
+            setEstadoFormatoFirmado('error', 'El archivo debe estar en formato PDF.');
+            return false;
+        }
+        btnConfirmarEntrega.disabled = false;
+        setEstadoFormatoFirmado('ok', 'Archivo cargado: ' + archivo.name);
+        return true;
+    }
+
+    if (inputFormatoFirmado) {
+        inputFormatoFirmado.addEventListener('change', validarFormatoFirmado);
+    }
 
     // Abrir modal de entrega al hacer clic en el botón del tab "A Entregar"
     document.body.addEventListener('click', function (e) {
+        var btnPdf = e.target.closest('[data-ver-pdf-salida]');
+        if (btnPdf) {
+            e.preventDefault();
+            if (!urlVerPdfSalida) {
+                swalError('URL de PDF no configurada.');
+                return;
+            }
+
+            var idRequisicion = parseInt(btnPdf.getAttribute('data-entrega-id'), 10);
+            if (!idRequisicion || idRequisicion <= 0) {
+                swalWarning('No se pudo identificar la requisición para generar el formato.');
+                return;
+            }
+
+            var urlPdf = (urlVerPdfSalida || '').replace(/\/$/, '') + '?id=' + encodeURIComponent(idRequisicion);
+            window.open(urlPdf, '_blank');
+            return;
+        }
+
         var btn = e.target.closest('[data-abrir-entrega]');
         if (!btn) return;
         e.preventDefault();
@@ -611,6 +727,9 @@
         document.getElementById('modalEntregaSubtitulo').textContent = 'Confirma los artículos que se entregarán físicamente';
         document.getElementById('tablaEntregaBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>';
         document.getElementById('chkEntregaTodos').checked = false;
+        if (inputFormatoFirmado) inputFormatoFirmado.value = '';
+        if (btnConfirmarEntrega) btnConfirmarEntrega.disabled = true;
+        setEstadoFormatoFirmado('info', 'Sube el formato firmado para habilitar la confirmación de entrega.');
 
         // Buscar los artículos de esta requisición del modelo ya cargado en el tab
         // (los datos vienen del servidor en el HTML, los leemos de las filas del tab)
@@ -680,6 +799,9 @@
     // Confirmar entrega física
     document.getElementById('btnConfirmarEntrega').addEventListener('click', function () {
         if (!entregaActualId) { swalError('No se identificó la requisición.'); return; }
+        if (!validarFormatoFirmado()) { swalWarning('Debes subir el formato de salida firmado en PDF.'); return; }
+        var archivoFirmado = inputFormatoFirmado && inputFormatoFirmado.files ? inputFormatoFirmado.files[0] : null;
+        if (!archivoFirmado) { swalWarning('Debes subir el formato de salida firmado.'); return; }
 
         var seleccionados = [];
         document.querySelectorAll('.chk-entrega-articulo:checked').forEach(function (chk) {
@@ -701,10 +823,20 @@
                 if (!result.isConfirmed) return;
                 Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
 
-                postJson(urlConfirmarEntrega, {
-                    idRequisicion: entregaActualId,
-                    idsMovimientos: seleccionados
-                }).then(function (r) {
+                var form = new FormData();
+                form.append('IdRequisicion', String(entregaActualId));
+                seleccionados.forEach(function (idMov) { form.append('IdsMovimientos', String(idMov)); });
+                form.append('FormatoSalidaFirmado', archivoFirmado);
+
+                fetch(urlConfirmarEntrega, {
+                    method: 'POST',
+                    body: form,
+                    credentials: 'same-origin'
+                }).then(async function (resp) {
+                    var r = await resp.json().catch(function () { return {}; });
+                    if (!resp.ok) {
+                        throw (r && r.error ? r.error : 'No se pudo confirmar la entrega.');
+                    }
                     if (r.ok) {
                         var modalEl = document.getElementById('modalEntrega');
                         bootstrap.Modal.getInstance(modalEl).hide();

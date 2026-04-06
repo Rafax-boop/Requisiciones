@@ -82,6 +82,13 @@
     100% { transform: scale(1); opacity: 1; }
 }
 
+/* Ocultar contador de notificación (tiene prioridad sobre display:flex del badge) */
+.badge-almacen-tab.badge-almacen-tab--oculto {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 /* ──────────────────────────────────────────
    CONTENIDO POR PESTAÑA (mostrar/ocultar)
 ────────────────────────────────────────── */

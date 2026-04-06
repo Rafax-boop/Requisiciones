@@ -814,6 +814,65 @@
         }
     }
 
+    function obtenerNotificacionRoot() {
+        return container && container.nodeType === 1 ? container : document;
+    }
+
+    function prepararBadgeNotificacionVisible(badge) {
+        if (!badge) return;
+        badge.classList.remove("badge-almacen-tab--oculto");
+        badge.removeAttribute("hidden");
+        badge.style.removeProperty("display");
+        badge.style.removeProperty("visibility");
+    }
+
+    function obtenerBadgeNotificacionTab(btn) {
+        if (!btn) return null;
+        var badge = btn.querySelector(".badge-almacen-tab");
+        if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "badge-almacen-tab badge-almacen-tab--oculto";
+            badge.setAttribute("aria-hidden", "true");
+            badge.textContent = "0";
+            btn.appendChild(badge);
+        }
+        return badge;
+    }
+
+    function limpiarBadgeNotificacionTab(btn) {
+        if (!btn) return;
+        btn.querySelectorAll(".badge-almacen-tab").forEach(function (badge) {
+            badge.textContent = "0";
+            badge.classList.add("badge-almacen-tab--oculto");
+            badge.setAttribute("hidden", "");
+            badge.style.setProperty("display", "none", "important");
+            badge.style.setProperty("visibility", "hidden", "important");
+        });
+    }
+
+    var PARPADEO_FILA_NUEVA_MS = 2000;
+
+    function iniciarParpadeoFilasNuevasEnPanel(panel) {
+        if (!panel) return;
+        var filas = panel.querySelectorAll("tr.fila-nueva");
+        if (!filas.length) return;
+        filas.forEach(function (tr, i) {
+            tr.classList.add("fila-nueva-parpadeo");
+            if (i === 0) {
+                try {
+                    tr.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                } catch (e) {
+                    tr.scrollIntoView();
+                }
+            }
+        });
+        window.setTimeout(function () {
+            filas.forEach(function (tr) {
+                tr.classList.remove("fila-nueva", "fila-nueva-parpadeo");
+            });
+        }, PARPADEO_FILA_NUEVA_MS);
+    }
+
     // ── Tabs ────────────────────────────────────────────────────────────────
     if (modoTabs && container) {
         var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
@@ -829,12 +888,8 @@
                     filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
                 }
                 
-                // Reiniciamos el badge del tab destino
-                var badgeDestino = this.querySelector(".badge-almacen-tab");
-                if (badgeDestino) {
-                    badgeDestino.textContent = "0";
-                    badgeDestino.style.display = "none";
-                }
+                limpiarBadgeNotificacionTab(this);
+                var panelDestinoClick = document.getElementById("tab-" + tab);
 
                 tabBtns.forEach(function (b) { b.classList.remove("activo"); });
                 tabPanels.forEach(function (p) {
@@ -843,12 +898,16 @@
                 });
                 this.classList.add("activo");
                 aplicarPaginacionRequisiciones();
+                window.requestAnimationFrame(function () {
+                    iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+                });
             });
         });
     }
 
     // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
     window.recibirNotificacionRequi = function (idRequi, tabDestino) {
+        var root = obtenerNotificacionRoot();
         // 1. Encontrar la fila y aplicarle la clase
         var fila = document.querySelector('tr.fila-requi[data-requi-id="' + idRequi + '"]');
         if (fila) {
@@ -856,15 +915,16 @@
         }
 
         // 2. Comprobar si NO estamos en ese tab actualmente para subir el contador
-        var panelDestino = document.getElementById("tab-" + tabDestino);
+        var panelDestino = root.querySelector("#tab-" + tabDestino);
         if (panelDestino && !panelDestino.classList.contains("activo")) {
-            var btnTab = document.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
+            var btnTab = root.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
             if (btnTab) {
-                var badge = btnTab.querySelector(".badge-almacen-tab");
+                var badge = obtenerBadgeNotificacionTab(btnTab);
                 if (badge) {
                     var conteoActual = parseInt(badge.textContent || "0", 10);
+                    prepararBadgeNotificacionVisible(badge);
                     badge.textContent = conteoActual + 1;
-                    badge.style.display = "flex";
+                    badge.style.setProperty("display", "flex", "important");
                     
                     // Reiniciar animación
                     badge.style.animation = 'none';

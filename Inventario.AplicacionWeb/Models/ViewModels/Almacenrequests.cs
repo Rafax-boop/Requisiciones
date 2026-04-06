@@ -1,4 +1,6 @@
-﻿namespace Inventario.AplicacionWeb.Models.ViewModels
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Inventario.AplicacionWeb.Models.ViewModels
 {
     public class AprobarRequest
     {
@@ -73,5 +75,6 @@
     {
         public int IdRequisicion { get; set; }
         public List<int> IdsMovimientos { get; set; } = new();
+        public IFormFile? FormatoSalidaFirmado { get; set; }
     }
 }

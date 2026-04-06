@@ -148,7 +148,7 @@ namespace Inventario.BLL.Implementacion
         /// Marca cada movimiento como Confirmado = true.
         /// Si todos los movimientos de la requisición quedan confirmados, cambia el estatus a ENTREGADO (12).
         /// </summary>
-        public async Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario)
+        public async Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string? formatoSalidaFirmadoRuta)
         {
             if (idsMovimientos == null || idsMovimientos.Count == 0)
                 throw new Exception("Debe seleccionar al menos un artículo para confirmar.");
@@ -165,6 +165,7 @@ namespace Inventario.BLL.Implementacion
                     mov.Confirmado = true;
                     mov.FechaConfirmacion = DateTime.Now;
                     mov.IdUsuarioConfirmacion = idUsuario;
+                    mov.FormatoSalidaFirmado = formatoSalidaFirmadoRuta;
                     await _repoMovimiento.Editar(mov);
                 }
 

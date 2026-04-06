@@ -1,0 +1,317 @@
+@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@using System.Globalization
+@{
+    Layout = null;
+    var fechaTexto = Model.FechaEmision?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
+    var requisicion = Model.NumRequisicion ?? string.Empty;
+    var solicitante = Model.NomResponsableDepartamento ?? string.Empty;
+    var esDonativo = Model.UsoMaterial == true;
+    var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
+    const string folioEstatico = "1000";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salida de materiales @requisicion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --borde: #222;
+            --texto: #111;
+            --gris-suave: #f8fafc;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+            color: var(--texto);
+            background: #f3f4f6;
+        }
+
+        .hoja {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            padding: 10mm 10mm 12mm;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contenido-principal {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .encabezado-top {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .encabezado-logo {
+            max-height: 42px;
+            width: auto;
+        }
+
+        .folio-box {
+            border: 2px solid var(--borde);
+            border-radius: 6px;
+            width: 90px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .folio-box .label {
+            border-bottom: 2px solid var(--borde);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 0 2px;
+        }
+
+        .folio-box .value {
+            color: #b91c1c;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 4px 0;
+            line-height: 1;
+        }
+
+        .titulo {
+            margin-top: 6px;
+            border-top: 2px solid var(--borde);
+            border-bottom: 2px solid var(--borde);
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 4px 0;
+            letter-spacing: 0.7px;
+            font-family: 'Outfit', Arial, Helvetica, sans-serif;
+        }
+
+        .meta {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 18px;
+            row-gap: 8px;
+            font-size: 12px;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, var(--gris-suave) 100%);
+        }
+
+        .meta-col .linea {
+            min-height: 18px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .linea strong { margin-right: 6px; }
+
+        .tabla {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            border: 2px solid var(--borde);
+            table-layout: fixed;
+        }
+
+        .tabla th, .tabla td {
+            border: 1px solid var(--borde);
+            font-size: 11px;
+            padding: 4px 5px;
+            vertical-align: top;
+        }
+
+        .tabla th {
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 0.4px;
+            background: #f3f4f6;
+        }
+
+        .col-clave { width: 14%; }
+        .col-cantidad { width: 12%; text-align: center; }
+        .col-unidad { width: 12%; text-align: center; }
+        .col-descripcion { width: 62%; }
+
+        .tabla tbody tr td {
+            height: 28px;
+        }
+
+        .firmas {
+            margin-top: auto;
+            padding-top: 34px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            text-align: center;
+        }
+
+        .firma-titulo {
+            font-size: 22px;
+            letter-spacing: 2px;
+            margin-bottom: 66px;
+        }
+
+        .firma-linea {
+            border-top: 2px solid var(--borde);
+            margin: 0 auto;
+            width: 88%;
+        }
+
+        .firma-sub {
+            margin-top: 12px;
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+
+        .leyenda {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
+        .no-print {
+            width: 210mm;
+            margin: 12px auto 0;
+            text-align: right;
+        }
+
+        .no-print button {
+            background: #111827;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        @@media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+
+            .hoja {
+                border: none;
+                width: auto;
+                min-height: 270mm;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            @@page {
+                size: letter portrait;
+                margin: 12mm;
+            }
+        }
+    </style>
+</head>
+<body class="pdf-documento">
+    <div class="hoja">
+        <div class="encabezado-top">
+            <img class="encabezado-logo" src="~/img/familias-dif-rosa.png" alt="Encabezado institucional" />
+            <div class="folio-box">
+                <div class="label">FOLIO</div>
+                <div class="value">@folioEstatico</div>
+            </div>
+        </div>
+
+        <div class="titulo">SALIDAS DE MATERIALES</div>
+
+        <div class="contenido-principal">
+            <div class="meta">
+                <div class="meta-col">
+                    <div class="linea"><strong>RECIBO DE DONATIVOS:</strong> @(esDonativo ? "SI" : "NO")</div>
+                    <div class="linea"><strong>SOLICITANTE:</strong> @solicitante</div>
+                </div>
+                <div class="meta-col">
+                    <div class="linea"><strong>FECHA:</strong> @fechaTexto</div>
+                    <div class="linea"><strong>PEDIDO:</strong> </div>
+                    <div class="linea"><strong>ENTRADA:</strong> </div>
+                    <div class="linea"><strong>REQUISICIÓN:</strong> @requisicion</div>
+                </div>
+            </div>
+
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th class="col-clave">CLAVE</th>
+                        <th class="col-cantidad">CANTIDAD</th>
+                        <th class="col-unidad">UNIDAD</th>
+                        <th class="col-descripcion">DESCRIPCIÓN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (articulos.Any())
+                    {
+                        @foreach (var item in articulos)
+                        {
+                            var clave = item.ClaveMaterial?.ToString() ?? item.Cog?.ToString() ?? string.Empty;
+                            var cantidad = item.Cantidad.HasValue
+                                ? decimal.Truncate(item.Cantidad.Value) == item.Cantidad.Value
+                                    ? ((int)item.Cantidad.Value).ToString()
+                                    : item.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
+                                : string.Empty;
+                            <tr>
+                                <td>@clave</td>
+                                <td class="col-cantidad">@cantidad</td>
+                                <td class="col-unidad">@(item.UnidadMedida ?? string.Empty)</td>
+                                <td>@(item.Descripcion ?? item.DescripcionDetallada ?? string.Empty)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" style="text-align:center;color:#6b7280;">Sin artículos pendientes de entrega</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="firmas">
+                <div>
+                    <div class="firma-titulo">AUTORIZO</div>
+                    <div class="firma-linea"></div>
+                    <div class="firma-sub">NOMBRE Y FIRMA</div>
+                </div>
+                <div>
+                    <div class="firma-titulo">ENTREGO</div>
+                    <div class="firma-linea"></div>
+                    <div class="firma-sub">NOMBRE Y FIRMA</div>
+                </div>
+                <div>
+                    <div class="firma-titulo">RECIBIÓ</div>
+                    <div class="firma-linea"></div>
+                    <div class="firma-sub">NOMBRE Y FIRMA</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="leyenda">SECCIÓN DE ALMACÉN E INVENTARIOS</div>
+    </div>
+
+    <div class="no-print">
+        <button type="button" onclick="window.print();">Imprimir / Guardar como PDF</button>
+    </div>
+</body>
+</html>

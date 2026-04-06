@@ -6,11 +6,13 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page"
      data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")"
+     data-url-ver-pdf="@Url.Action("VerSalidaParaPdf", "Almacen")"
      data-url-aprobar-completa="@Url.Action("AprobarCompleta", "Almacen")"
      data-url-aprobar-parcial="@Url.Action("AprobarParcial", "Almacen")"
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
@@ -28,13 +30,7 @@
 
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="requisiciones">Requisiciones Recibidas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="entregas">
-            A Entregar
-            @if (Model.EntregasPendientes.Any())
-            {
-                <span class="badge-tab-count">@Model.EntregasPendientes.Count</span>
-            }
-        </button>
+        <button type="button" class="almacen-tabs-btn" data-tab="entregas">A Entregar</button>
         <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
     </nav>
 
@@ -184,6 +180,11 @@
                             <td style="text-align:center">@e.Articulos.Count</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
+                                    <button type="button" class="btn-accion btn-ver" title="Formato de salida (PDF)"
+                                            data-entrega-id="@e.IdRequisicion"
+                                            data-ver-pdf-salida>
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </button>
                                     <button type="button" class="btn-accion btn-ver" title="Ver artículos a entregar"
                                             data-entrega-id="@e.IdRequisicion"
                                             data-entrega-folio="@e.NumRequi"
@@ -360,6 +361,16 @@
                 <p style="font-size:13px; color:var(--color-text-secondary,#888); margin-bottom:12px;">
                     Marca los artículos que estás entregando físicamente al departamento solicitante.
                 </p>
+                <div class="formulario-input" style="margin-bottom:12px;">
+                    <label for="inputFormatoSalidaFirmado">Subir formato de salida firmado (PDF)</label>
+                    <input type="file"
+                           id="inputFormatoSalidaFirmado"
+                           accept=".pdf,application/pdf"
+                           class="input-file-rosa" />
+                    <small id="formatoSalidaFirmadoEstado" class="text-muted" style="font-size:11px;">
+                        Sube el formato firmado para habilitar la confirmación de entrega.
+                    </small>
+                </div>
                 <div class="table-responsive-container">
                     <table class="tabla-requisiciones" id="tablaModalEntrega">
                         <thead>
@@ -386,7 +397,7 @@
                 <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i> Cancelar
                 </button>
-                <button type="button" class="almacen-btn almacen-btn-completa" id="btnConfirmarEntrega">
+                <button type="button" class="almacen-btn almacen-btn-completa" id="btnConfirmarEntrega" disabled>
                     <i class="fa-solid fa-truck-ramp-box"></i> Confirmar Entrega
                 </button>
             </div>
