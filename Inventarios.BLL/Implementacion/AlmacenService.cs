@@ -97,6 +97,125 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Lista las requisiciones que tienen artículos pendientes de entrega física
+        /// (movimientos tipo ENTREGA registrados al procesar, aún no confirmados).
+        /// </summary>
+        public async Task<List<EntregaPendienteDTO>> ListarEntregasPendientes()
+        {
+            // Movimientos de tipo ENTREGA que aún no han sido confirmados
+            var movQuery = await _repoMovimiento.Consultar(
+                m => m.TipoMovimiento == "ENTREGA" && m.Confirmado != true);
+
+            var movimientos = await movQuery
+                .Include(m => m.IdRequisicionNavigation)
+                    .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                .ToListAsync();
+
+            // Agrupar por requisición
+            var grupos = movimientos
+                .GroupBy(m => m.IdRequisicion)
+                .Select(g =>
+                {
+                    var req = g.First().IdRequisicionNavigation;
+                    return new EntregaPendienteDTO
+                    {
+                        IdRequisicion = g.Key,
+                        NumRequi = req?.NumRequisicion ?? "",
+                        FechaEmision = req?.FechaEmision,
+                        Departamento = req?.IdDepartamentoNavigation?.NombreDepartamento ?? "",
+                        Responsable = req?.NomResponsableDepartamento ?? "",
+                        Articulos = g.Select(m => new ArticuloEntregaDTO
+                        {
+                            IdMovimiento = m.IdMovimiento,
+                            IdRequisicionDetalle = m.IdRequisicionDetalle,
+                            Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
+                            UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
+                            CantidadOriginal = m.CantidadOriginal,
+                            CantidadMovimiento = m.CantidadMovimiento,
+                            Confirmado = m.Confirmado ?? false
+                        }).ToList()
+                    };
+                })
+                .ToList();
+
+            return grupos;
+        }
+
+        /// <summary>
+        /// Confirma la entrega física de uno o varios movimientos de entrega.
+        /// Marca cada movimiento como Confirmado = true.
+        /// Si todos los movimientos de la requisición quedan confirmados, cambia el estatus a ENTREGADO (12).
+        /// </summary>
+        public async Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario)
+        {
+            if (idsMovimientos == null || idsMovimientos.Count == 0)
+                throw new Exception("Debe seleccionar al menos un artículo para confirmar.");
+
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                // Marcar los movimientos seleccionados como confirmados
+                foreach (var idMov in idsMovimientos)
+                {
+                    var mov = await _repoMovimiento.Obtener(m => m.IdMovimiento == idMov && m.IdRequisicion == idRequisicion)
+                              ?? throw new Exception($"No se encontró el movimiento con ID {idMov}.");
+
+                    mov.Confirmado = true;
+                    mov.FechaConfirmacion = DateTime.Now;
+                    mov.IdUsuarioConfirmacion = idUsuario;
+                    await _repoMovimiento.Editar(mov);
+                }
+
+                // Verificar si TODOS los movimientos de entrega de esta requisición ya están confirmados
+                var todosMovQuery = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
+                var todosMovs = await todosMovQuery.ToListAsync();
+
+                bool todoConfirmado = todosMovs.Any() && todosMovs.All(m => m.Confirmado == true);
+
+                if (todoConfirmado)
+                {
+                    var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
+                              ?? throw new Exception("No se encontró la requisición.");
+
+                    // Solo cambiar estatus si no tiene compras pendientes (estatus 11)
+                    // Si tiene compras, el estatus 11 lo maneja materiales; cuando confirmen
+                    // las entregas, la requisición pasa a ENTREGADO solo si ya no hay nada en compra
+                    if (req.IdEstatus != ESTATUS_EN_COMPRA)
+                    {
+                        req.IdEstatus = ESTATUS_ENTREGADO;
+                        req.FechaModificacion = DateTime.Now;
+                        await _repositoryRequisicion.Editar(req);
+
+                        await RegistrarBitacoraAsync(idRequisicion, ESTATUS_ENTREGADO, idUsuario,
+                            "Almacén confirmó entrega física de todos los artículos.");
+                    }
+                    else
+                    {
+                        await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 0, idUsuario,
+                            "Almacén confirmó entrega física de artículos (pendiente proceso de compra).");
+                    }
+                }
+                else
+                {
+                    await RegistrarBitacoraAsync(idRequisicion,
+                        (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion))?.IdEstatus ?? 0,
+                        idUsuario,
+                        $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).");
+                }
+
+                await _uow.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<List<string>> ObtenerEstatus()
         {
             var query = await _repoEstatus.Consultar();
@@ -128,7 +247,7 @@ namespace Inventario.BLL.Implementacion
 
             foreach (var d in req.TblRequisicionDetalles)
             {
-                var clave = (d.IdArticuloNavigation.Clave ?? "").Trim();
+                var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                 var desc = (d.Descripcion ?? "").Trim();
                 var unidad = (d.UnidadMedida ?? "").Trim();
                 var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
@@ -297,7 +416,7 @@ namespace Inventario.BLL.Implementacion
                         throw new Exception("Hay partidas sin descripción o unidad de medida.");
 
                     var inv = await _repoInventario.Obtener(i => i.Clave == clave)
-          ??            throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
+                        ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
 
                     if (inv.Existencia < cantAprobada)
                         throw new Exception($"Stock insuficiente para: {desc} ({unidad}). Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
@@ -398,7 +517,7 @@ namespace Inventario.BLL.Implementacion
                 var resumenEntregas = new List<string>();
                 var resumenCompras = new List<string>();
 
-                // ── Entregas: descontar stock y registrar movimiento ──
+                // ── Entregas: descontar stock y registrar movimiento (pendiente de confirmar) ──
                 foreach (var (idDetalle, cantAprobada) in listaEntregas)
                 {
                     if (cantAprobada <= 0) continue;
@@ -427,7 +546,8 @@ namespace Inventario.BLL.Implementacion
                     inv.Existencia -= cantAprobada;
                     await _repoInventario.Editar(inv);
 
-                    // Registrar movimiento de entrega
+                    // Registrar movimiento de entrega — Confirmado = false hasta que almacén
+                    // haga la entrega física en el tab "A Entregar"
                     await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
                     {
                         IdRequisicion = idRequisicion,
@@ -436,7 +556,8 @@ namespace Inventario.BLL.Implementacion
                         CantidadOriginal = cantSolicitada,
                         CantidadMovimiento = cantAprobada,
                         FechaMovimiento = DateTime.Now,
-                        IdUsuario = idUsuario
+                        IdUsuario = idUsuario,
+                        Confirmado = false
                     });
 
                     resumenEntregas.Add($"{desc} x{cantAprobada}");
@@ -458,21 +579,26 @@ namespace Inventario.BLL.Implementacion
                         CantidadOriginal = cantSolicitada,
                         CantidadMovimiento = cantComprar,
                         FechaMovimiento = DateTime.Now,
-                        IdUsuario = idUsuario
+                        IdUsuario = idUsuario,
+                        Confirmado = false
                     });
 
                     resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
                 }
 
                 // ── Determinar estatus final ──
-                int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_APROBADA_ALMACEN;
+                // Con compras → estatus 11 (regresa a materiales para gestionar la compra)
+                // Solo entregas → la requisición queda en espera de confirmación de entrega física
+                //                 se usa estatus 9 temporalmente — el tab "A Entregar" la mostrará
+                //                 y al confirmar pasará a 12 (ENTREGADO)
+                int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_EN_ALMACEN;
 
                 req.IdEstatus = estatusFinal;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
                 var obs = new StringBuilder("Almacén procesó requisición.");
-                if (resumenEntregas.Count > 0) obs.Append($" Entregados: {string.Join(", ", resumenEntregas)}.");
+                if (resumenEntregas.Count > 0) obs.Append($" Preparados para entrega: {string.Join(", ", resumenEntregas)}.");
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, estatusFinal, idUsuario, obs.ToString());

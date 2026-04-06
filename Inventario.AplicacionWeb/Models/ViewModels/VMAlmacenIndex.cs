@@ -1,3 +1,5 @@
+using Inventario.BLL.DTO;
+
 namespace Inventario.AplicacionWeb.Models.ViewModels
 {
     /// <summary>
@@ -15,5 +17,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         /// Unidades de medida distintas para el filtro de la pestaña Inventario (desde TblInventario.UnidadMedida).
         /// </summary>
         public List<string> UnidadesMedida { get; set; } = new();
+
+        public List<EntregaPendienteDTO> EntregasPendientes { get; set; } = new();
     }
 }

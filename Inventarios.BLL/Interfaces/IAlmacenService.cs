@@ -23,5 +23,9 @@ namespace Inventario.BLL.Interfaces
             int idUsuario,
             IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
             IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras);
+
+        //ENTREGAS
+        Task<List<EntregaPendienteDTO>> ListarEntregasPendientes();
+        Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario);
     }
 }

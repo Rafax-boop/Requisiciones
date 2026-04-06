@@ -68,4 +68,10 @@
         public int IdRequisicionDetalle { get; set; }
         public int CantidadComprar { get; set; }
     }
+
+    public class ConfirmarEntregaRequest
+    {
+        public int IdRequisicion { get; set; }
+        public List<int> IdsMovimientos { get; set; } = new();
+    }
 }

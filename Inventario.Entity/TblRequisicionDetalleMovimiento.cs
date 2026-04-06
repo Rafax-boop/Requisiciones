@@ -23,6 +23,14 @@ public partial class TblRequisicionDetalleMovimiento
 
     public string? Observacion { get; set; }
 
+    public bool? Confirmado { get; set; }
+
+    public DateTime? FechaConfirmacion { get; set; }
+
+    public int? IdUsuarioConfirmacion { get; set; }
+
+    public string? FormatoSalidaFirmado { get; set; }
+
     public virtual TblRequisicionDetalle IdRequisicionDetalleNavigation { get; set; } = null!;
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;

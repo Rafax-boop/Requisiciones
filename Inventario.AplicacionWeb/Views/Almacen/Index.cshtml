@@ -16,7 +16,8 @@
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
      data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
      data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
-     data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")">
+     data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")"
+     data-url-confirmar-entrega="@Url.Action("ConfirmarEntrega", "Almacen")">
 
     <div class="tabla-requi-header">
         <div>
@@ -27,11 +28,18 @@
 
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="requisiciones">Requisiciones Recibidas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="entregas">
+            A Entregar
+            @if (Model.EntregasPendientes.Any())
+            {
+                <span class="badge-tab-count">@Model.EntregasPendientes.Count</span>
+            }
+        </button>
         <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
     </nav>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Requisiciones                                      -->
+    <!-- Pestaña: Requisiciones Recibidas                            -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="tab-requisiciones" class="almacen-tab-panel activo">
         @{
@@ -43,6 +51,10 @@
             <div class="stat-card">
                 <div class="stat-numero">@enBandejaAlmacen</div>
                 <div class="stat-label">En almacén (por analizar)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-numero">@Model.EntregasPendientes.Count</div>
+                <div class="stat-label">Pendientes de entrega</div>
             </div>
             <div class="stat-card">
                 <div class="stat-numero">@enCompraOEntrega</div>
@@ -126,6 +138,72 @@
                 </tbody>
             </table>
             <div id="paginacionRequisiciones" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Pestaña: A Entregar                                         -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-entregas" class="almacen-tab-panel">
+
+        <div class="container-formulario filtros-container">
+            <div class="filtro-grupo" style="flex:2;">
+                <label>Buscar</label>
+                <input type="text" id="filtroBuscarEntregas" placeholder="Buscar por folio o departamento..." />
+            </div>
+        </div>
+
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaEntregas">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha Emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th style="text-align:center">Artículos</th>
+                        <th style="text-align:center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var idxE = 0;
+                    }
+                    @foreach (var e in Model.EntregasPendientes)
+                    {
+                        idxE++;
+                        <tr data-requi="@e.IdRequisicion"
+                            data-folio="@e.NumRequi"
+                            data-depto="@(e.Departamento ?? "")">
+                            <td style="text-align:center">@idxE</td>
+                            <td><span class="folio-badge">@e.NumRequi</span></td>
+                            <td>@e.FechaEmision?.ToString("dd/MM/yyyy")</td>
+                            <td>@e.Departamento</td>
+                            <td>@e.Responsable</td>
+                            <td style="text-align:center">@e.Articulos.Count</td>
+                            <td style="text-align:center">
+                                <div class="acciones-grupo" style="justify-content:center">
+                                    <button type="button" class="btn-accion btn-ver" title="Ver artículos a entregar"
+                                            data-entrega-id="@e.IdRequisicion"
+                                            data-entrega-folio="@e.NumRequi"
+                                            data-entrega-depto="@e.Departamento"
+                                            data-abrir-entrega>
+                                        <i class="fa-solid fa-truck-ramp-box"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.EntregasPendientes.Any())
+                    {
+                        <tr class="fila-vacia">
+                            <td colspan="7" class="text-center">No hay artículos pendientes de entrega</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div id="paginacionEntregas" class="almacen-paginacion"></div>
         </div>
     </div>
 
@@ -216,11 +294,10 @@
         </div>
     </div>
 
-
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- Modal análisis                                                  -->
+<!-- Modal análisis (Requisiciones Recibidas)                        -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="modal" id="modalAlmacen" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -257,6 +334,60 @@
                 </button>
                 <button type="button" class="almacen-btn almacen-btn-completa btn-almacen-aprobar" id="btnAprobarCompleta">
                     <i class="fa-solid fa-circle-check"></i> Aprobar Completa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Modal entrega física                                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modalEntrega" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalEntregaTitulo">Entrega de Materiales</h5>
+                    <p class="modal-subtitulo-premium" id="modalEntregaSubtitulo">Confirma los artículos entregados</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body modal-body-premium">
+                <p style="font-size:13px; color:var(--color-text-secondary,#888); margin-bottom:12px;">
+                    Marca los artículos que estás entregando físicamente al departamento solicitante.
+                </p>
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaModalEntrega">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">
+                                    <input type="checkbox" id="chkEntregaTodos" title="Seleccionar todos"
+                                           style="width:16px;height:16px;cursor:pointer;" />
+                                </th>
+                                <th>Material</th>
+                                <th style="text-align:center">Cantidad</th>
+                                <th>Unidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEntregaBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-completa" id="btnConfirmarEntrega">
+                    <i class="fa-solid fa-truck-ramp-box"></i> Confirmar Entrega
                 </button>
             </div>
         </div>

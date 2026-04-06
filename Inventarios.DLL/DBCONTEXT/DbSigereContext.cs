@@ -428,9 +428,13 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.CantidadMovimiento).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CantidadOriginal).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.FechaConfirmacion).HasColumnType("datetime");
             entity.Property(e => e.FechaMovimiento)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.FormatoSalidaFirmado)
+                .HasMaxLength(500)
+                .IsUnicode(false);
             entity.Property(e => e.Observacion)
                 .HasMaxLength(500)
                 .IsUnicode(false);

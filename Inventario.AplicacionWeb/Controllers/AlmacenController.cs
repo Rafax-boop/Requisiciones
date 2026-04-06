@@ -46,12 +46,15 @@ namespace Inventario.AplicacionWeb.Controllers
                 .OrderBy(u => u)
                 .ToList();
 
+            var entregasPendientes = await _almacenService.ListarEntregasPendientes();
+
             var vm = new VMAlmacenIndex
             {
                 Requisiciones = requisiciones,
                 Inventario = inventario,
                 Estatus = estatus,
-                UnidadesMedida = unidadesMedida
+                UnidadesMedida = unidadesMedida,
+                EntregasPendientes = entregasPendientes
             };
 
             return View(vm);
@@ -71,6 +74,41 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var stock = await _almacenService.ConsultarStockParaRequisicion(id);
             return Json(stock);
+        }
+
+        /// <summary>
+        /// Devuelve los artículos pendientes de entrega física para una requisición.
+        /// Usado por el tab "A Entregar" al abrir el modal de detalle.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ObtenerEntregasPendientes()
+        {
+            var data = await _almacenService.ListarEntregasPendientes();
+            return Json(data);
+        }
+
+        /// <summary>
+        /// Confirma la entrega física de los artículos seleccionados.
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ConfirmarEntrega([FromBody] ConfirmarEntregaRequest request)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            if (request == null || request.IdsMovimientos == null || request.IdsMovimientos.Count == 0)
+                return BadRequest(new { ok = false, error = "Debe seleccionar al menos un artículo." });
+
+            try
+            {
+                await _almacenService.ConfirmarEntrega(request.IdRequisicion, request.IdsMovimientos, userId.Value);
+                return Json(new { ok = true, mensaje = "Entrega confirmada correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, error = ex.Message });
+            }
         }
 
         private int? GetUserId()

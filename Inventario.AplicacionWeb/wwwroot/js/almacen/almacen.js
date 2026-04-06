@@ -7,6 +7,7 @@
     var urlRegistrarIngreso = container ? container.getAttribute('data-url-registrar-ingreso') : '';
     var urlConsultarStock = container ? container.getAttribute('data-url-consultar-stock') : '';
     var urlProcesarRequisicion = container ? container.getAttribute('data-url-procesar-requisicion') : '';
+    var urlConfirmarEntrega = container ? container.getAttribute('data-url-confirmar-entrega') : '';
 
     /* ========== HELPERS ========== */
 
@@ -49,7 +50,7 @@
         });
     }
 
-    /* ========== TABS ========== */
+    /* ========== TABS PRINCIPALES ========== */
 
     var tabPanels = document.querySelectorAll('.almacen-tab-panel');
     var tabBtns = document.querySelectorAll('.almacen-tabs-btn');
@@ -121,42 +122,8 @@
             trVacio.style.display = 'none';
         }
 
-        if (paginacionRequisiciones) {
-            if (total === 0) { paginacionRequisiciones.innerHTML = ''; return; }
-            var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' requisiciones';
-            var html = '<div class="almacen-paginacion-info">' + info + '</div>';
-            html += '<div class="almacen-paginacion-btns">';
-            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaRequisicionActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
-            html += ' <span class="almacen-paginacion-nums">';
-            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas, actual = paginaRequisicionActual;
-            var set = {};
-            for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
-            if (actual > 0 && actual <= totalPag) { set[actual] = true; if (actual - 1 >= 1) set[actual - 1] = true; if (actual + 1 <= totalPag) set[actual + 1] = true; }
-            for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
-            var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
-            var prev = 0;
-            for (var n = 0; n < nums.length; n++) {
-                var p = nums[n];
-                if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
-                html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaRequisicionActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
-                prev = p;
-            }
-            html += '</span> ';
-            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaRequisicionActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
-            html += '</div>';
-            paginacionRequisiciones.innerHTML = html;
-
-            paginacionRequisiciones.querySelectorAll('.almacen-paginacion-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    if (this.disabled) return;
-                    var pg = this.getAttribute('data-pagina');
-                    if (pg === 'prev') paginaRequisicionActual = Math.max(1, paginaRequisicionActual - 1);
-                    else if (pg === 'next') paginaRequisicionActual = Math.min(totalPaginas, paginaRequisicionActual + 1);
-                    else paginaRequisicionActual = parseInt(pg, 10);
-                    aplicarPaginacionRequisiciones();
-                });
-            });
-        }
+        renderPaginacion(paginacionRequisiciones, total, inicio, fin, totalPaginas, paginaRequisicionActual,
+            function (p) { paginaRequisicionActual = p; aplicarPaginacionRequisiciones(); }, 'requisiciones');
     }
 
     function filtrarTabla() {
@@ -165,6 +132,52 @@
     }
 
     aplicarPaginacionRequisiciones();
+
+    /* ========== FILTROS + PAGINACIÓN ENTREGAS ========== */
+
+    var filtroBuscarEntregas = document.getElementById('filtroBuscarEntregas');
+    var tbodyEntregas = document.querySelector('#tablaEntregas tbody');
+    var paginacionEntregas = document.getElementById('paginacionEntregas');
+    var TAMANO_PAGINA_ENTREGAS = 7;
+    var paginaEntregasActual = 1;
+
+    if (filtroBuscarEntregas) filtroBuscarEntregas.addEventListener('input', filtrarTablaEntregas);
+
+    function getFilasEntregasVisibles() {
+        var texto = (filtroBuscarEntregas ? filtroBuscarEntregas.value : '').toLowerCase().trim();
+        var filas = tbodyEntregas ? [].slice.call(tbodyEntregas.querySelectorAll('tr[data-requi]')) : [];
+        return filas.filter(function (tr) {
+            var folio = (tr.getAttribute('data-folio') || '').toLowerCase();
+            var depto = (tr.getAttribute('data-depto') || '').toLowerCase();
+            return !texto || folio.includes(texto) || depto.includes(texto);
+        });
+    }
+
+    function aplicarPaginacionEntregas() {
+        var visibles = getFilasEntregasVisibles();
+        var total = visibles.length;
+        var totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_ENTREGAS));
+        if (paginaEntregasActual > totalPaginas) paginaEntregasActual = totalPaginas;
+        var inicio = (paginaEntregasActual - 1) * TAMANO_PAGINA_ENTREGAS;
+        var fin = inicio + TAMANO_PAGINA_ENTREGAS;
+
+        if (tbodyEntregas) {
+            tbodyEntregas.querySelectorAll('tr[data-requi]').forEach(function (tr) { tr.style.display = 'none'; });
+            visibles.forEach(function (tr, i) {
+                tr.style.display = (i >= inicio && i < fin) ? '' : 'none';
+            });
+        }
+
+        renderPaginacion(paginacionEntregas, total, inicio, fin, totalPaginas, paginaEntregasActual,
+            function (p) { paginaEntregasActual = p; aplicarPaginacionEntregas(); }, 'artículos');
+    }
+
+    function filtrarTablaEntregas() {
+        paginaEntregasActual = 1;
+        aplicarPaginacionEntregas();
+    }
+
+    aplicarPaginacionEntregas();
 
     /* ========== FILTROS + PAGINACIÓN INVENTARIO ========== */
 
@@ -202,42 +215,8 @@
         }
         if (filaInventarioVacio) filaInventarioVacio.style.display = total === 0 ? '' : 'none';
 
-        if (paginacionInventario) {
-            if (total === 0) { paginacionInventario.innerHTML = ''; return; }
-            var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' materiales';
-            var html = '<div class="almacen-paginacion-info">' + info + '</div>';
-            html += '<div class="almacen-paginacion-btns">';
-            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (paginaInventarioActual <= 1 ? 'disabled' : '') + '>Anterior</button>';
-            html += ' <span class="almacen-paginacion-nums">';
-            var PRIMEROS = 3, ULTIMOS = 3, totalPag = totalPaginas, actual = paginaInventarioActual;
-            var set = {};
-            for (var i = 1; i <= Math.min(PRIMEROS, totalPag); i++) set[i] = true;
-            if (actual > 0 && actual <= totalPag) { set[actual] = true; if (actual - 1 >= 1) set[actual - 1] = true; if (actual + 1 <= totalPag) set[actual + 1] = true; }
-            for (var j = Math.max(1, totalPag - ULTIMOS + 1); j <= totalPag; j++) set[j] = true;
-            var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
-            var prev = 0;
-            for (var n = 0; n < nums.length; n++) {
-                var p = nums[n];
-                if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
-                html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === paginaInventarioActual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
-                prev = p;
-            }
-            html += '</span> ';
-            html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (paginaInventarioActual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
-            html += '</div>';
-            paginacionInventario.innerHTML = html;
-
-            paginacionInventario.querySelectorAll('.almacen-paginacion-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    if (this.disabled) return;
-                    var pg = this.getAttribute('data-pagina');
-                    if (pg === 'prev') paginaInventarioActual = Math.max(1, paginaInventarioActual - 1);
-                    else if (pg === 'next') paginaInventarioActual = Math.min(totalPaginas, paginaInventarioActual + 1);
-                    else paginaInventarioActual = parseInt(pg, 10);
-                    aplicarPaginacionInventario();
-                });
-            });
-        }
+        renderPaginacion(paginacionInventario, total, inicio, fin, totalPaginas, paginaInventarioActual,
+            function (p) { paginaInventarioActual = p; aplicarPaginacionInventario(); }, 'materiales');
     }
 
     function filtrarTablaInventario() {
@@ -247,7 +226,55 @@
 
     aplicarPaginacionInventario();
 
-    /* ========== MODAL: TABS INTERNOS + DESCRIPCIÓN ========== */
+    /* ========== HELPER PAGINACIÓN REUTILIZABLE ========== */
+
+    function renderPaginacion(contenedor, total, inicio, fin, totalPaginas, actual, onCambio, etiqueta) {
+        if (!contenedor) return;
+        if (total === 0) { contenedor.innerHTML = ''; return; }
+
+        var info = 'Mostrando ' + (inicio + 1) + '-' + Math.min(fin, total) + ' de ' + total + ' ' + etiqueta;
+        var html = '<div class="almacen-paginacion-info">' + info + '</div>';
+        html += '<div class="almacen-paginacion-btns">';
+        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="prev" ' + (actual <= 1 ? 'disabled' : '') + '>Anterior</button>';
+        html += ' <span class="almacen-paginacion-nums">';
+
+        var PRIMEROS = 3, ULTIMOS = 3;
+        var set = {};
+        for (var i = 1; i <= Math.min(PRIMEROS, totalPaginas); i++) set[i] = true;
+        if (actual > 0 && actual <= totalPaginas) {
+            set[actual] = true;
+            if (actual - 1 >= 1) set[actual - 1] = true;
+            if (actual + 1 <= totalPaginas) set[actual + 1] = true;
+        }
+        for (var j = Math.max(1, totalPaginas - ULTIMOS + 1); j <= totalPaginas; j++) set[j] = true;
+        var nums = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+        var prev = 0;
+        for (var n = 0; n < nums.length; n++) {
+            var p = nums[n];
+            if (prev !== 0 && p > prev + 1) html += '<span class="almacen-paginacion-ellipsis">…</span>';
+            html += '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' + (p === actual ? 'activo' : '') + '" data-pagina="' + p + '">' + p + '</button>';
+            prev = p;
+        }
+
+        html += '</span> ';
+        html += '<button type="button" class="almacen-paginacion-btn" data-pagina="next" ' + (actual >= totalPaginas ? 'disabled' : '') + '>Siguiente</button>';
+        html += '</div>';
+        contenedor.innerHTML = html;
+
+        contenedor.querySelectorAll('.almacen-paginacion-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (this.disabled) return;
+                var pg = this.getAttribute('data-pagina');
+                var nueva = actual;
+                if (pg === 'prev') nueva = Math.max(1, actual - 1);
+                else if (pg === 'next') nueva = Math.min(totalPaginas, actual + 1);
+                else nueva = parseInt(pg, 10);
+                onCambio(nueva);
+            });
+        });
+    }
+
+    /* ========== MODAL ANÁLISIS: TABS INTERNOS + DESCRIPCIÓN ========== */
 
     var modalTabsBtns = document.querySelectorAll('.almacen-modal-tabs-btn');
     var modalBody = document.getElementById('modalAlmacenBody');
@@ -320,12 +347,11 @@
         btnCompleta.title = !puedeCompleta ? 'No hay stock suficiente para todos los materiales.' : '';
     }
 
-    /* ========== RENDER MODAL TABS ========== */
+    /* ========== RENDER MODAL TABS ANÁLISIS ========== */
 
     function renderModalTab(i) {
         if (!reqCompleta || !modalBody) return;
 
-        // ── Tab 0: Verificación de inventario ──
         if (i === 0) {
             var articulos = obtenerArticulosDeReq(reqCompleta);
             var countOk = 0, countParcial = 0, countSin = 0;
@@ -393,7 +419,6 @@
             html += '</tbody></table></div>';
             modalBody.innerHTML = html;
 
-            // Habilitar/deshabilitar input de cantidad compra según checkbox
             modalBody.querySelectorAll('.almacen-chk-compra').forEach(function (chk) {
                 chk.addEventListener('change', function () {
                     var detId = this.getAttribute('data-detalle');
@@ -407,7 +432,6 @@
 
             actualizarBotonCompleta();
 
-            // ── Tab 1: Detalles del solicitante ──
         } else if (i === 1) {
             var r = reqCompleta;
             var html = '<div class="almacen-grid2">';
@@ -424,7 +448,6 @@
             html += '</div></div>';
             modalBody.innerHTML = html;
 
-            // ── Tab 2: Observaciones para rechazo ──
         } else {
             modalBody.innerHTML = '<div class="almacen-alerta">Las observaciones son obligatorias para rechazar una requisición.</div>' +
                 '<div class="almacen-campo"><label>Observaciones del Almacén</label>' +
@@ -462,7 +485,7 @@
         }
     });
 
-    /* ========== TABS INTERNOS DEL MODAL ========== */
+    /* ========== TABS INTERNOS DEL MODAL ANÁLISIS ========== */
 
     modalTabsBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -473,7 +496,7 @@
         });
     });
 
-    /* ========== ABRIR MODAL ========== */
+    /* ========== ABRIR MODAL ANÁLISIS ========== */
 
     window.abrirModal = function (id, folio, departamento, estatus) {
         reqActualId = id;
@@ -528,7 +551,134 @@
         }
     });
 
-    /* ========== ACCIONES DEL MODAL ========== */
+    /* ========== MODAL ENTREGA FÍSICA ========== */
+
+    var entregaActualId = null;     // IdRequisicion en el modal de entrega
+    var entregaArticulos = [];      // Artículos (movimientos) del modal de entrega
+
+    // Abrir modal de entrega al hacer clic en el botón del tab "A Entregar"
+    document.body.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-abrir-entrega]');
+        if (!btn) return;
+        e.preventDefault();
+
+        entregaActualId = parseInt(btn.getAttribute('data-entrega-id'), 10);
+        var folio = btn.getAttribute('data-entrega-folio') || '';
+        var depto = btn.getAttribute('data-entrega-depto') || '';
+
+        document.getElementById('modalEntregaTitulo').textContent = folio + ' — ' + depto;
+        document.getElementById('modalEntregaSubtitulo').textContent = 'Confirma los artículos que se entregarán físicamente';
+        document.getElementById('tablaEntregaBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>';
+        document.getElementById('chkEntregaTodos').checked = false;
+
+        // Buscar los artículos de esta requisición del modelo ya cargado en el tab
+        // (los datos vienen del servidor en el HTML, los leemos de las filas del tab)
+        // Para mayor frescura, usamos el endpoint que ya tenemos
+        var fetchOpts = { credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+        fetch('/Almacen/ObtenerEntregasPendientes', fetchOpts)
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (data) {
+                // Buscar la requisición actual
+                var grupo = (data || []).find(function (g) {
+                    return (g.idRequisicion || g.IdRequisicion) === entregaActualId;
+                });
+
+                if (!grupo) {
+                    document.getElementById('tablaEntregaBody').innerHTML =
+                        '<tr><td colspan="4" class="text-center text-muted">Sin artículos pendientes</td></tr>';
+                    return;
+                }
+
+                entregaArticulos = (grupo.articulos || grupo.Articulos || []);
+                renderTablaEntrega(entregaArticulos);
+            })
+            .catch(function () {
+                document.getElementById('tablaEntregaBody').innerHTML =
+                    '<tr><td colspan="4" class="text-danger text-center">Error al cargar los artículos</td></tr>';
+            });
+
+        new bootstrap.Modal(document.getElementById('modalEntrega')).show();
+    });
+
+    function renderTablaEntrega(articulos) {
+        if (!articulos.length) {
+            document.getElementById('tablaEntregaBody').innerHTML =
+                '<tr><td colspan="4" class="text-center text-muted">Sin artículos pendientes</td></tr>';
+            return;
+        }
+
+        var html = '';
+        articulos.forEach(function (a) {
+            var idMov = a.idMovimiento || a.IdMovimiento;
+            var desc = a.descripcion || a.Descripcion || '';
+            var cant = a.cantidadMovimiento || a.CantidadMovimiento || 0;
+            var unidad = a.unidadMedida || a.UnidadMedida || '';
+
+            html += '<tr data-id-mov="' + idMov + '">';
+            html += '<td style="text-align:center;">';
+            html += '<input type="checkbox" class="chk-entrega-articulo" data-id-mov="' + idMov + '" style="width:16px;height:16px;cursor:pointer;" checked />';
+            html += '</td>';
+            html += '<td>' + desc + '</td>';
+            html += '<td style="text-align:center;font-weight:600;">' + cant + '</td>';
+            html += '<td>' + unidad + '</td>';
+            html += '</tr>';
+        });
+
+        document.getElementById('tablaEntregaBody').innerHTML = html;
+
+        // Checkbox "seleccionar todos"
+        var chkTodos = document.getElementById('chkEntregaTodos');
+        chkTodos.checked = true;
+        chkTodos.addEventListener('change', function () {
+            document.querySelectorAll('.chk-entrega-articulo').forEach(function (chk) {
+                chk.checked = chkTodos.checked;
+            });
+        });
+    }
+
+    // Confirmar entrega física
+    document.getElementById('btnConfirmarEntrega').addEventListener('click', function () {
+        if (!entregaActualId) { swalError('No se identificó la requisición.'); return; }
+
+        var seleccionados = [];
+        document.querySelectorAll('.chk-entrega-articulo:checked').forEach(function (chk) {
+            seleccionados.push(parseInt(chk.getAttribute('data-id-mov'), 10));
+        });
+
+        if (seleccionados.length === 0) {
+            swalWarning('Selecciona al menos un artículo para confirmar la entrega.');
+            return;
+        }
+
+        var totalArticulos = entregaArticulos.length;
+        var texto = seleccionados.length === totalArticulos
+            ? 'Se confirmarán todos los artículos como entregados al departamento solicitante.'
+            : 'Se confirmarán ' + seleccionados.length + ' de ' + totalArticulos + ' artículos como entregados.';
+
+        swalConfirmar('Confirmar entrega', texto, 'Sí, confirmar')
+            .then(function (result) {
+                if (!result.isConfirmed) return;
+                Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+                postJson(urlConfirmarEntrega, {
+                    idRequisicion: entregaActualId,
+                    idsMovimientos: seleccionados
+                }).then(function (r) {
+                    if (r.ok) {
+                        var modalEl = document.getElementById('modalEntrega');
+                        bootstrap.Modal.getInstance(modalEl).hide();
+                        swalExito(r.mensaje || 'Entrega confirmada correctamente.')
+                            .then(function () { location.reload(); });
+                    } else {
+                        swalError(r.error || 'No se pudo confirmar la entrega.');
+                    }
+                }).catch(function (err) {
+                    swalError(typeof err === 'string' ? err : 'No se pudo confirmar la entrega.');
+                });
+            });
+    });
+
+    /* ========== ACCIONES DEL MODAL ANÁLISIS ========== */
 
     function cerrarModalAlmacen() {
         var modalEl = document.getElementById('modalAlmacen');
@@ -600,7 +750,7 @@
             }
 
             var textoConfirm = '';
-            if (entregas.length > 0) textoConfirm += entregas.length + ' material(es) se entregarán del stock. ';
+            if (entregas.length > 0) textoConfirm += entregas.length + ' material(es) se prepararán para entrega física. ';
             if (compras.length > 0) textoConfirm += compras.length + ' material(es) se enviarán a compra. ';
             textoConfirm += '¿Desea continuar?';
 
