@@ -426,8 +426,7 @@
                     if (res.success) {
                         bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                         Swal.fire({
-                            icon: 'success', title: 'Requisición rechazada',
-                            timer: 2000, showConfirmButton: false
+                            icon: 'success', title: 'Requisición rechazada'
                         }).then(function () { location.reload(); });
                     } else {
                         Swal.fire({ icon: 'error', title: 'No se pudo rechazar' });

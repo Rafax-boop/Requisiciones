@@ -419,10 +419,7 @@
                 bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
                 Swal.fire({
                     icon: 'success',
-                    title: 'Enviada a modificación',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    timerProgressBar: true
+                    title: 'Enviada a modificación'
                 }).then(function () { location.reload(); });
             } else {
                 Swal.fire({ icon: 'error', title: 'No se pudo enviar a modificación', text: res.mensaje || '' });
