@@ -6,6 +6,7 @@ using Inventario.BLL.Interfaces;
 using Inventario.Entity.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
@@ -307,6 +308,46 @@ namespace Inventario.AplicacionWeb.Controllers
             var resultado = await _requisicionesService.AceptarExpediente(modelo.IdRequisicion, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
+        [HttpGet]
+        public async Task<IActionResult> SnapshotIdsPorTab()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) ||
+                !int.TryParse(idDeptoClaim, out int idDepartamento))
+                return Unauthorized();
+
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) ||
+                !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Unauthorized();
+
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("7"))
+            {
+                listaDTO = await _requisicionesService
+                    .ListarRequisiciones(idDepartamento, true, idUsuario);
+            }
+            else
+            {
+                listaDTO = await _requisicionesService
+                    .ListarRequisiciones(idDepartamento, true);
+            }
+
+            listaDTO = listaDTO
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequi)
+                .ToList();
+
+            var principal = listaDTO.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).Select(r => r.IdRequi).ToList();
+            var autorizadas = listaDTO.Where(r => r.IdEstatus == 4).Select(r => r.IdRequi).ToList();
+            var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
+            var verificadas = listaDTO.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).Select(r => r.IdRequi).ToList();
+
+            return Json(new { principal, autorizadas, rechazadas, verificadas });
         }
     }
 }

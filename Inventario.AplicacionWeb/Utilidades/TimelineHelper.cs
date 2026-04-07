@@ -14,19 +14,24 @@ public static class TimelineHelper
         [1]  = 1,
         [2]  = 2,
         [13] = 2,
+        [14] = 2,
         [3]  = 3,
         [9]  = 3,
         [11] = 3,
+        [18] = 3,
         [4]  = 4,
         [10] = 4,
+        [15] = 4,
+        [16] = 4,
         [12] = 5,
         [7]  = 5,
+        [17] = 5,
     };
 
     public static (int fase, bool esTerminal, bool esMod, int progress) Calcular(int idEstatus)
     {
         bool esTerminal = EstatusFlow.EsTerminal(idEstatus);
-        bool esMod = idEstatus == 3;
+        bool esMod = idEstatus == 3 || idEstatus == 18;
         int fase = esTerminal ? 1 : FaseMap.GetValueOrDefault(idEstatus, 1);
 
         int progress = fase switch

@@ -53,80 +53,22 @@
 
     /* ========== TABS PRINCIPALES ========== */
 
-    function obtenerNotificacionRoot() {
-        return container && container.nodeType === 1 ? container : document;
-    }
-
-    function prepararBadgeNotificacionVisible(badge) {
-        if (!badge) return;
-        badge.classList.remove("badge-almacen-tab--oculto");
-        badge.removeAttribute("hidden");
-        badge.style.removeProperty("display");
-        badge.style.removeProperty("visibility");
-    }
-
-    function obtenerBadgeNotificacionTab(btn) {
-        if (!btn) return null;
-        var badge = btn.querySelector(".badge-almacen-tab");
-        if (!badge) {
-            badge = document.createElement("span");
-            badge.className = "badge-almacen-tab badge-almacen-tab--oculto";
-            badge.setAttribute("aria-hidden", "true");
-            badge.textContent = "0";
-            btn.appendChild(badge);
-        }
-        return badge;
-    }
-
-    function limpiarBadgeNotificacionTab(btn) {
-        if (!btn) return;
-        btn.querySelectorAll(".badge-almacen-tab").forEach(function (badge) {
-            badge.textContent = "0";
-            badge.classList.add("badge-almacen-tab--oculto");
-            badge.setAttribute("hidden", "");
-            badge.style.setProperty("display", "none", "important");
-            badge.style.setProperty("visibility", "hidden", "important");
-        });
-    }
-
-    var PARPADEO_FILA_NUEVA_MS = 2000;
-
-    function iniciarParpadeoFilasNuevasEnPanel(panel) {
-        if (!panel) return;
-        var filas = panel.querySelectorAll("tr.fila-nueva");
-        if (!filas.length) return;
-        filas.forEach(function (tr, i) {
-            tr.classList.add("fila-nueva-parpadeo");
-            if (i === 0) {
-                try {
-                    tr.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                } catch (e) {
-                    tr.scrollIntoView();
-                }
-            }
-        });
-        window.setTimeout(function () {
-            filas.forEach(function (tr) {
-                tr.classList.remove("fila-nueva", "fila-nueva-parpadeo");
-            });
-        }, PARPADEO_FILA_NUEVA_MS);
-    }
-
     var tabPanels = document.querySelectorAll('.almacen-tab-panel');
     var tabBtns = document.querySelectorAll('.almacen-tabs-btn');
 
     tabBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             var tab = this.getAttribute('data-tab');
-            
-            // Al salir de un tab activo (antes de cambiarlo), limpiamos sus filas nuevas
+
             var panelActivoAnterior = document.querySelector(".almacen-tab-panel.activo");
             if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
                 var filasVistas = panelActivoAnterior.querySelectorAll("tr.fila-nueva");
                 filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
             }
-            
-            limpiarBadgeNotificacionTab(this);
+
+            if (window.TabsNotificacionesRequi) {
+                window.TabsNotificacionesRequi.limpiarBadgeNotificacionTab(this);
+            }
             var panelDestinoClick = document.getElementById("tab-" + tab);
 
             tabBtns.forEach(function (b) { b.classList.remove('activo'); });
@@ -137,39 +79,12 @@
             this.classList.add('activo');
 
             window.requestAnimationFrame(function () {
-                iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+                if (window.TabsNotificacionesRequi) {
+                    window.TabsNotificacionesRequi.iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+                }
             });
         });
     });
-
-    // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
-    window.recibirNotificacionRequi = function (idRequi, tabDestino) {
-        var root = obtenerNotificacionRoot();
-        // En almacén la fila es tr[data-id]
-        var fila = document.querySelector('tr[data-id="' + idRequi + '"]')
-            || document.querySelector('tr[data-requi="' + idRequi + '"]');
-        if (fila) {
-            fila.classList.add("fila-nueva");
-        }
-
-        var panelDestino = root.querySelector("#tab-" + tabDestino);
-        if (panelDestino && !panelDestino.classList.contains("activo")) {
-            var btnTab = root.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
-            if (btnTab) {
-                var badge = obtenerBadgeNotificacionTab(btnTab);
-                if (badge) {
-                    var conteoActual = parseInt(badge.textContent || "0", 10);
-                    prepararBadgeNotificacionVisible(badge);
-                    badge.textContent = conteoActual + 1;
-                    badge.style.setProperty("display", "flex", "important");
-                    
-                    badge.style.animation = 'none';
-                    badge.offsetHeight; /* trigger reflow */
-                    badge.style.animation = null; 
-                }
-            }
-        }
-    };
 
     /* ========== FILTROS + PAGINACIÓN REQUISICIONES ========== */
 
@@ -1023,5 +938,9 @@
         $('#filtroUnidadMedida').select2({ width: '100%', language: 'es', minimumResultsForSearch: 10, placeholder: 'Todas las unidades', allowClear: true });
         $('#filtroUnidadMedida').on('change select2:select', function () { filtrarTablaInventario(); });
     });
+
+    if (container && window.TabsNotificacionesRequi) {
+        window.TabsNotificacionesRequi.mount({ container: container });
+    }
 
 })();

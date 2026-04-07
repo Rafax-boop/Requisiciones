@@ -936,6 +936,88 @@
   opacity: .88;
 }
 
+/* ── PDF Salida de materiales (Almacén) ── */
+.pdf-salida-cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.pdf-salida-tabla-wrap {
+  flex: 1 1 auto;
+}
+
+.pdf-folio-valor {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #b91c1c !important;
+  border-bottom: none !important;
+  letter-spacing: 1px;
+  line-height: 1.1;
+}
+
+.pdf-firmas--salida {
+  flex-wrap: wrap;
+  gap: 24px 28px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.pdf-firmas--salida .pdf-firma-item {
+  flex: 1 1 150px;
+  max-width: 240px;
+}
+
+.pdf-firma-titulo-salida {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  margin-bottom: 40px;
+}
+
+.pdf-tabla-salida th:nth-child(2),
+.pdf-tabla-salida td:nth-child(2),
+.pdf-tabla-salida th:nth-child(3),
+.pdf-tabla-salida td:nth-child(3) {
+  text-align: center;
+}
+
+.pdf-tabla-salida th:nth-child(1),
+.pdf-tabla-salida td:nth-child(1) {
+  width: 14%;
+}
+
+.pdf-tabla-salida th:nth-child(2),
+.pdf-tabla-salida td:nth-child(2) {
+  width: 12%;
+}
+
+.pdf-tabla-salida th:nth-child(3),
+.pdf-tabla-salida td:nth-child(3) {
+  width: 12%;
+}
+
+.pdf-salida-leyenda {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #374151;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.pdf-tabla-salida .pdf-salida-vacio {
+  text-align: center;
+  color: #64748b;
+  font-size: 11px;
+}
+
 /* ══════════════════════════════════════════════
    WIZARD DE PROGRAMACIÓN
 ══════════════════════════════════════════════ */

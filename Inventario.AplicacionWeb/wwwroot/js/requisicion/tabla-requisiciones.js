@@ -735,80 +735,22 @@
     verDetalle(idMaestro, "atender");
   };
 
-  function obtenerNotificacionRoot() {
-    return container && container.nodeType === 1 ? container : document;
-  }
-
-  function prepararBadgeNotificacionVisible(badge) {
-    if (!badge) return;
-    badge.classList.remove("badge-almacen-tab--oculto");
-    badge.removeAttribute("hidden");
-    badge.style.removeProperty("display");
-    badge.style.removeProperty("visibility");
-  }
-
-  function obtenerBadgeNotificacionTab(btn) {
-    if (!btn) return null;
-    var badge = btn.querySelector(".badge-almacen-tab");
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.className = "badge-almacen-tab badge-almacen-tab--oculto";
-      badge.setAttribute("aria-hidden", "true");
-      badge.textContent = "0";
-      btn.appendChild(badge);
-    }
-    return badge;
-  }
-
-  function limpiarBadgeNotificacionTab(btn) {
-    if (!btn) return;
-    btn.querySelectorAll(".badge-almacen-tab").forEach(function (badge) {
-      badge.textContent = "0";
-      badge.classList.add("badge-almacen-tab--oculto");
-      badge.setAttribute("hidden", "");
-      badge.style.setProperty("display", "none", "important");
-      badge.style.setProperty("visibility", "hidden", "important");
-    });
-  }
-
-  var PARPADEO_FILA_NUEVA_MS = 2000;
-
-  function iniciarParpadeoFilasNuevasEnPanel(panel) {
-    if (!panel) return;
-    var filas = panel.querySelectorAll("tr.fila-nueva");
-    if (!filas.length) return;
-    filas.forEach(function (tr, i) {
-      tr.classList.add("fila-nueva-parpadeo");
-      if (i === 0) {
-        try {
-          tr.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        } catch (e) {
-          tr.scrollIntoView();
-        }
-      }
-    });
-    window.setTimeout(function () {
-      filas.forEach(function (tr) {
-        tr.classList.remove("fila-nueva", "fila-nueva-parpadeo");
-      });
-    }, PARPADEO_FILA_NUEVA_MS);
-  }
-
   if (modoTabs && container) {
     var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
     var tabPanels = container.querySelectorAll(".almacen-tab-panel");
     tabBtns.forEach(function (btn) {
       btn.addEventListener("click", function () {
         var tab = this.getAttribute("data-tab");
-        
-        // Al salir de un tab activo (antes de cambiarlo), limpiamos sus filas nuevas
+
         var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
         if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
             var filasVistas = panelActivoAnterior.querySelectorAll("tr.fila-nueva");
             filasVistas.forEach(function(f) { f.classList.remove("fila-nueva"); });
         }
-        
-        limpiarBadgeNotificacionTab(this);
+
+        if (window.TabsNotificacionesRequi) {
+          window.TabsNotificacionesRequi.limpiarBadgeNotificacionTab(this);
+        }
         var panelDestinoClick = document.getElementById("tab-" + tab);
 
         tabBtns.forEach(function (b) {
@@ -821,47 +763,25 @@
         this.classList.add("activo");
         aplicarPaginacionRequisiciones();
         window.requestAnimationFrame(function () {
-          iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+          if (window.TabsNotificacionesRequi) {
+            window.TabsNotificacionesRequi.iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+          }
         });
       });
     });
   }
 
-  // --- LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
-  window.recibirNotificacionRequi = function (idRequi, tabDestino) {
-      var root = obtenerNotificacionRoot();
-      // 1. Encontrar la fila y aplicarle la clase
-      var fila = document.querySelector('tr.fila-requi[data-requi-id="' + idRequi + '"]');
-      if (fila) {
-          fila.classList.add("fila-nueva");
-      }
-
-      // 2. Comprobar si NO estamos en ese tab actualmente para subir el contador
-      var panelDestino = root.querySelector("#tab-" + tabDestino);
-      if (panelDestino && !panelDestino.classList.contains("activo")) {
-          var btnTab = root.querySelector('.almacen-tabs-btn[data-tab="' + tabDestino + '"]');
-          if (btnTab) {
-              var badge = obtenerBadgeNotificacionTab(btnTab);
-              if (badge) {
-                  var conteoActual = parseInt(badge.textContent || "0", 10);
-                  prepararBadgeNotificacionVisible(badge);
-                  badge.textContent = conteoActual + 1;
-                  badge.style.setProperty("display", "flex", "important");
-                  
-                  // Reiniciar animación re-insertando elemento u usando clase
-                  badge.style.animation = 'none';
-                  badge.offsetHeight; /* trigger reflow */
-                  badge.style.animation = null; 
-              }
-          }
-      } else if (panelDestino && panelDestino.classList.contains("activo")) {
-          // Si estamos viendo el tab activo cuando llega, actualizamos la vista
-          aplicarPaginacionRequisiciones();
-      }
-  };
-
   // Inicializar paginación al cargar el script
   aplicarPaginacionRequisiciones();
+
+  if (container && window.TabsNotificacionesRequi && modoTabs) {
+    window.TabsNotificacionesRequi.mount({
+      container: container,
+      onNovedadEnTabActivo: function () {
+        aplicarPaginacionRequisiciones();
+      }
+    });
+  }
 
   /* Expandir/colapsar fila detalle al hacer clic en la fila de requisición */
   function getTablaFromRow(tr) {
@@ -1167,11 +1087,18 @@
             // Fotos
             if (data.tipoServicio === "Servicio Impresion" && data.fotos && data.fotos.length) {
                 var galeria = document.getElementById("expGaleriaFotos");
+                galeria.innerHTML = "";
                 data.fotos.forEach(function (ruta) {
                     var img = document.createElement("img");
                     img.src = ruta;
-                    img.style.cssText = "width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;";
-                    img.addEventListener("click", function () { window.open(ruta, "_blank"); });
+                    img.className = "modal-galeria-foto-thumb";
+                    img.addEventListener("click", function () { 
+                        if (window.abrirVisorImagenTabla) {
+                            window.abrirVisorImagenTabla(ruta);
+                        } else {
+                            window.open(ruta, "_blank");
+                        }
+                    });
                     galeria.appendChild(img);
                 });
                 document.getElementById("expSeccionFotos").style.display = "block";
@@ -1206,23 +1133,14 @@
             // Cotizaciones / cuadro
             (function () {
                 var contenedor = document.getElementById("expArchivosBase");
-                function renderGrupo(titulo, archivos) {
-                    if (!archivos.length) return "";
-                    var html = '<div style="margin-bottom:12px;">';
-                    html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
-                    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-                    archivos.forEach(function (a) {
-                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
-                        html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
-                            + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                            + (a.nombreArchivo || "Archivo") + '</a>';
-                    });
-                    html += "</div></div>";
-                    return html;
+                if (window.ModalAdjuntos) {
+                    contenedor.innerHTML = 
+                        window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones || []) +
+                        window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo || []);
+                    window.ModalAdjuntos.enlazarEventosContenedor(contenedor);
+                } else {
+                    contenedor.innerHTML = "";
                 }
-                contenedor.innerHTML =
-                    renderGrupo("Cotizaciones", data.cotizaciones || []) +
-                    renderGrupo("Cuadro comparativo", data.cuadroComparativo || []);
             })();
 
             // Observaciones financieros
@@ -1241,16 +1159,13 @@
                 function renderGrupoFin(elId, titulo, archivos) {
                     var el = document.getElementById(elId);
                     if (!archivos.length) { el.innerHTML = ""; return; }
-                    var html = '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
-                    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-                    archivos.forEach(function (a) {
-                        var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
-                        html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
-                            + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                            + (a.nombreArchivo || "Archivo") + '</a>';
-                    });
-                    html += '</div>';
-                    el.innerHTML = html;
+                    
+                    if (window.ModalAdjuntos) {
+                        el.innerHTML = window.ModalAdjuntos.renderGrupoHtml(titulo, archivos);
+                        window.ModalAdjuntos.enlazarEventosContenedor(el);
+                    } else {
+                        el.innerHTML = "";
+                    }
                 }
 
                 renderGrupoFin("expGrupoSiaf", "Documento SIAF", siaf);

@@ -358,6 +358,28 @@ namespace Inventario.BLL.Implementacion
                     resumenEgresos.Add($"{desc} x{cant}");
                 }
 
+                // Mismo criterio que ProcesarRequisicion: el tab "A Entregar" lista movimientos
+                // TipoMovimiento ENTREGA con Confirmado = false. Sin este registro, la aprobación
+                // completa solo cambia estatus y stock pero no aparece pendiente de entrega física.
+                foreach (var d in detalles)
+                {
+                    var cant = (int)Math.Ceiling(d.Cantidad ?? 0m);
+                    if (cant <= 0) continue;
+
+                    var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
+                    await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                    {
+                        IdRequisicion = idRequisicion,
+                        IdRequisicionDetalle = d.IdRequisicionDetalle,
+                        TipoMovimiento = "ENTREGA",
+                        CantidadOriginal = cantSolicitada,
+                        CantidadMovimiento = cant,
+                        FechaMovimiento = DateTime.Now,
+                        IdUsuario = idUsuario,
+                        Confirmado = false
+                    });
+                }
+
                 req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);

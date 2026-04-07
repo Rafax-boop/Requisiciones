@@ -1,4 +1,4 @@
-﻿@using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.AplicacionWeb.Models.ViewModels
 @using Inventario.AplicacionWeb.Utilidades
 @model VMTablaRequisiciones
 @{
@@ -13,6 +13,7 @@
 }
 
 <div class="tabla-requi-page"
+     data-url-notif-snapshot="@Url.Action("SnapshotIdsPorTab", "DAF")"
      data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
      data-url-ver-pdf-requi="@Url.Action("VerParaPdf", "Requisicion")"
      data-url-ver-pdf-servicio="@Url.Action("VerParaPdf", "Servicios")"
@@ -62,6 +63,10 @@
         var numColsReq = 7; // #, Folio, Fecha, Depto, Responsable, Items, Estado, Acciones
     }
 
+    <nav class="almacen-tabs">
+        <button type="button" class="almacen-tabs-btn activo" data-tab="principal">Bandeja de revisión</button>
+    </nav>
+
     <div id="tab-principal" class="almacen-tab-panel activo">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesPrincipal">
@@ -92,7 +97,7 @@
                             <td>@item.Departamento</td>
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <button class="btn-accion btn-ver" title="Ver detalle / Revisar"
@@ -346,5 +351,6 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/daf/tabla-daf.js" asp-append-version="true"></script>
 }
