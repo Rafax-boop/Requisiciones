@@ -138,7 +138,7 @@
                                 <td>
                                     @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
                                     {
-                                        var claseColorP = item.DiasAsignado <= 5 ? "badge-semaforo-verde" : (item.DiasAsignado <= 8 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                                        var claseColorP = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorP">
                                             <i class="fa-solid fa-circle"></i>
                                             <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
@@ -305,7 +305,7 @@
                                 <td>
                                     @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
                                     {
-                                        var claseColorA = item.DiasAsignado <= 5 ? "badge-semaforo-verde" : (item.DiasAsignado <= 8 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                                        var claseColorA = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorA">
                                             <i class="fa-solid fa-circle"></i>
                                             <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
@@ -443,7 +443,7 @@
                                 <td>
                                     @if (item.DiasAsignado > 0 || item.NombreAsignado != null)
                                     {
-                                        var claseColorR = item.DiasAsignado <= 5 ? "badge-semaforo-verde" : (item.DiasAsignado <= 8 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                                        var claseColorR = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorR">
                                             <i class="fa-solid fa-circle"></i>
                                             <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
