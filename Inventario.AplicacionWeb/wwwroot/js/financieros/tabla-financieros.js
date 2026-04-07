@@ -306,6 +306,13 @@
         var seccionFotosDetalle = document.getElementById('seccionFotosDetalle');
         if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = '';
         if (seccionFotosDetalle) seccionFotosDetalle.style.display = 'none';
+        // Donde limpias los inputs al abrir el modal
+        var inputSiaf = document.getElementById("inputSiaf");
+        var inputTablaApi = document.getElementById("inputTablaApi");
+        var inputNumeroApi = document.getElementById("inputNumeroApi");
+        if (inputSiaf) inputSiaf.value = "";
+        if (inputTablaApi) inputTablaApi.value = "";
+        if (inputNumeroApi) inputNumeroApi.value = "";
 
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
@@ -725,20 +732,22 @@
         formData.append("IdRequisicion", requisicionActual);
         formData.append("Observaciones", observaciones);
 
-        // Número de API
-        var numeroApi = document.getElementById("inputNumeroApi").value.trim();
-        if (numeroApi) formData.append("NumeroApi", numeroApi);
+        // Solo intentar leer archivos si los inputs existen (rol 9)
+        var inputNumeroApi = document.getElementById("inputNumeroApi");
+        var inputSiaf = document.getElementById("inputSiaf");
+        var inputTablaApi = document.getElementById("inputTablaApi");
 
-        // Archivos SIAF
-        var archivosSiaf = document.getElementById("inputSiaf").files;
-        for (var i = 0; i < archivosSiaf.length; i++) {
-            formData.append("DocSiaf", archivosSiaf[i]);
+        if (inputNumeroApi && inputNumeroApi.value.trim())
+            formData.append("NumeroApi", inputNumeroApi.value.trim());
+
+        if (inputSiaf) {
+            for (var i = 0; i < inputSiaf.files.length; i++)
+                formData.append("DocSiaf", inputSiaf.files[i]);
         }
 
-        // Archivos Tabla API
-        var archivosTablaApi = document.getElementById("inputTablaApi").files;
-        for (var i = 0; i < archivosTablaApi.length; i++) {
-            formData.append("TablaApi", archivosTablaApi[i]);
+        if (inputTablaApi) {
+            for (var i = 0; i < inputTablaApi.files.length; i++)
+                formData.append("TablaApi", inputTablaApi.files[i]);
         }
 
         $.ajax({
@@ -749,10 +758,10 @@
             contentType: false,
             success: function () {
                 bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
+                if (inputSiaf) inputSiaf.value = "";
+                if (inputTablaApi) inputTablaApi.value = "";
+                if (inputNumeroApi) inputNumeroApi.value = "";
                 document.getElementById("txtObservaciones").value = "";
-                document.getElementById("inputSiaf").value = "";
-                document.getElementById("inputTablaApi").value = "";
-                document.getElementById("inputNumeroApi").value = "";
                 Swal.fire({
                     icon: "success", title: "Requisición atendida",
                     timer: 2000, showConfirmButton: false
