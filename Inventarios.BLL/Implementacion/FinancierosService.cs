@@ -123,7 +123,7 @@ namespace Inventario.BLL.Implementacion
                 // Actualizar estatus y número de API
                 requisicion.IdEstatus = 15;
                 requisicion.FechaModificacion = DateTime.Now;
-                requisicion.NumApi = modelo.NumeroApi;
+                requisicion.NumApi = await GenerarNumeroApiAsync();
 
                 await _repositoryRequisicion.Editar(requisicion);
 
@@ -531,13 +531,11 @@ namespace Inventario.BLL.Implementacion
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 8 — FIRMAS
             // ════════════════════════════════════════════════════════════════
-            var tblFirmas = new Table(UnitValue.CreatePointArray(new float[] { 130f, 130f, 130f, 130f }))
+            var tblFirmas = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f }))
                 .UseAllAvailableWidth();
 
             var firmantes = new (string Titulo, string Nombre)[]
             {
-                ("SOLICITANTE",
-                 "C. MARÍA GABRIELA OLIVARES ROBLES\nJEFA DEL DEPARTAMENTO DE RECURSOS\nMATERIALES Y SERVICIOS GENERALES"),
                 ("ASIGNACIÓN PRESUPUESTAL",
                  "JOEL MARTÍNEZ PÉREZ\nJEFE DEL DEPARTAMENTO DE RECURSOS\nFINANCIEROS"),
                 ("Vo.Bo.",
@@ -576,5 +574,48 @@ namespace Inventario.BLL.Implementacion
 
         // Helper: convierte null → string vacío
         private static string S(string? valor) => valor ?? "";
+
+        private async Task<string> GenerarNumeroApiAsync()
+        {
+            int anioActual = DateTime.Now.Year;
+            // Los dos últimos dígitos del año: 2026 → "26"
+            string sufAno = (anioActual % 100).ToString("D2");
+
+            // Prefijo que tienen todos los números API de este año
+            // Formato guardado en BD: "API-0001/26"
+            string prefijo = $"API-";
+            string terminacion = $"/{sufAno}";
+
+            // Obtener todos los NumApi del año en curso que tengan el formato esperado
+            var query = await _repositoryRequisicion.Consultar(r =>
+                r.NumApi != null &&
+                r.NumApi.StartsWith(prefijo) &&
+                r.NumApi.EndsWith(terminacion));
+
+            var registros = await query.Select(r => r.NumApi).ToListAsync();
+
+            // Extraer el número consecutivo más alto
+            // Ejemplo: "API-0042/26" → 42
+            int maxConsecutivo = 0;
+            foreach (var numApi in registros)
+            {
+                // numApi tiene forma "API-XXXX/YY"
+                // Extraemos lo que está entre "API-" y "/YY"
+                var inicio = prefijo.Length;                      // posición después de "API-"
+                var fin = numApi.Length - terminacion.Length;  // posición antes de "/26"
+
+                if (fin > inicio)
+                {
+                    var parteNumerica = numApi.Substring(inicio, fin - inicio);
+                    if (int.TryParse(parteNumerica, out int num) && num > maxConsecutivo)
+                        maxConsecutivo = num;
+                }
+            }
+
+            int siguiente = maxConsecutivo + 1;
+
+            // Formato final: API-0001/26  (4 dígitos con ceros)
+            return $"API-{siguiente:D4}/{sufAno}";
+        }
     }
 }

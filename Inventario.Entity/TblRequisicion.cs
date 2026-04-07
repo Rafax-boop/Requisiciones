@@ -59,7 +59,7 @@ public partial class TblRequisicion
 
     public bool? RequiServicio { get; set; }
 
-    public int? NumApi { get; set; }
+    public string? NumApi { get; set; }
 
     public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
 

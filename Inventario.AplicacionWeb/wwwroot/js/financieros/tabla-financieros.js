@@ -749,12 +749,8 @@
         formData.append("Observaciones", observaciones);
 
         // Solo intentar leer archivos si los inputs existen (rol 9)
-        var inputNumeroApi = document.getElementById("inputNumeroApi");
         var inputSiaf = document.getElementById("inputSiaf");
         var inputTablaApi = document.getElementById("inputTablaApi");
-
-        if (inputNumeroApi && inputNumeroApi.value.trim())
-            formData.append("NumeroApi", inputNumeroApi.value.trim());
 
         if (inputSiaf) {
             for (var i = 0; i < inputSiaf.files.length; i++)
@@ -776,7 +772,6 @@
                 bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                 if (inputSiaf) inputSiaf.value = "";
                 if (inputTablaApi) inputTablaApi.value = "";
-                if (inputNumeroApi) inputNumeroApi.value = "";
                 document.getElementById("txtObservaciones").value = "";
                 Swal.fire({
                     icon: "success", title: "Requisición atendida",

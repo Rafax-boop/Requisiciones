@@ -98,7 +98,7 @@
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
     }
 
     <!-- Pestaña En seguimiento -->

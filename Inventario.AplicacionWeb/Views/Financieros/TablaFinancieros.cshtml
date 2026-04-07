@@ -815,8 +815,19 @@
                                 <div class="col-md-2">
                                     <div class="formulario-input">
                                         <label>Nº API</label>
-                                        <input type="text" id="inputNumeroApi" class="form-control"
-                                               placeholder="API-000" maxlength="20" />
+                                        <!-- El número se genera automáticamente al guardar.
+                                             Se muestra aquí solo para referencia visual. -->
+                                        <input type="text"
+                                               id="inputNumeroApi"
+                                               class="form-control"
+                                               placeholder="Se generará al autorizar"
+                                               readonly
+                                               style="background:#f0fdf4; border-color:#bbf7d0;
+                                                    color:#166534; font-weight:600; cursor:default;" />
+                                        <small class="text-muted" style="font-size:10px;">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            Asignado automáticamente
+                                        </small>
                                     </div>
                                 </div>
                             </div>
