@@ -444,5 +444,45 @@ namespace Inventario.AplicacionWeb.Controllers
                 modelo.DocumentosObservados, idUsuario);
             return Ok(new { success = ok });
         }
+
+        /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
+        [HttpGet]
+        public async Task<IActionResult> SnapshotIdsPorTab()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) ||
+                !int.TryParse(idDeptoClaim, out int idDepartamento))
+                return Unauthorized();
+
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) ||
+                !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Unauthorized();
+
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("3"))
+            {
+                listaDTO = await _requisicionService
+                    .ListarRequisiciones(idDepartamento, false, idUsuario);
+            }
+            else
+            {
+                listaDTO = await _requisicionService
+                    .ListarRequisiciones(idDepartamento, false);
+            }
+
+            listaDTO = listaDTO
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequi)
+                .ToList();
+
+            var principal = listaDTO.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).Select(r => r.IdRequi).ToList();
+            var autorizadas = listaDTO.Where(r => r.IdEstatus == 4).Select(r => r.IdRequi).ToList();
+            var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
+            var verificadas = listaDTO.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).Select(r => r.IdRequi).ToList();
+
+            return Json(new { principal, autorizadas, rechazadas, verificadas });
+        }
     }
 }

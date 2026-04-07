@@ -12,7 +12,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="tabla-requi-page" data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+<div class="tabla-requi-page"
+     data-url-notif-snapshot="@Url.Action("SnapshotIdsPorTab", "Financieros")"
+     data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
      data-url-ver-pdf-requi="@Url.Action("VerParaPdf", "Requisicion")"
      data-url-ver-pdf-servicio="@Url.Action("VerParaPdf", "Servicios")"
      data-url-usuarios-financieros="@Url.Action("ObtenerUsuariosFinancieros", "Financieros")"
@@ -67,6 +69,7 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">Proceso de pago</button>
     </nav>
 
     @{
@@ -117,7 +120,7 @@
                             <td>@item.Departamento</td>
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
                                 <td>@(item.NombreAsignado ?? "Sin asignar")</td>
@@ -273,7 +276,7 @@
                             <td>@item.Departamento</td>
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
                                 <td>@(item.NombreAsignado ?? "Sin asignar")</td>
@@ -411,7 +414,7 @@
                             <td>@item.Departamento</td>
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
                                 <td>@(item.NombreAsignado ?? "Sin asignar")</td>
@@ -501,7 +504,7 @@
                             <td>@item.Departamento</td>
                             <td>@item.Responsable</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <button class="btn-accion btn-ver" title="Ver expediente"
@@ -925,6 +928,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/financieros/tabla-financieros.js" asp-append-version="true"></script>
 
 }

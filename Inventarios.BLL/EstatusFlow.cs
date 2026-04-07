@@ -7,7 +7,7 @@ namespace Inventario.BLL;
 public static class EstatusFlow
 {
     public static readonly HashSet<int> TerminalNegativos = new() { 5, 6 };
-    public static readonly HashSet<int> TerminalPositivos = new() { 7, 12 };
+    public static readonly HashSet<int> TerminalPositivos = new() { 7, 12, 17 };
 
     public static bool EsTerminal(int idEstatus)
         => TerminalNegativos.Contains(idEstatus) || TerminalPositivos.Contains(idEstatus);

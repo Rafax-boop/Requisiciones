@@ -5,6 +5,7 @@ using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 
@@ -166,6 +167,44 @@ namespace Inventario.AplicacionWeb.Controllers
                 // Respuesta legible si el usuario abre la URL directamente
                 return StatusCode(500, $"Error al generar el PDF: {ex.Message}\n\n{ex.StackTrace}");
             }
+        }
+
+        /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
+        [HttpGet]
+        public async Task<IActionResult> SnapshotIdsPorTab()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) ||
+                !int.TryParse(idDeptoClaim, out _))
+                return Unauthorized();
+
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) ||
+                !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Unauthorized();
+
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("9"))
+            {
+                listaDTO = await _financierosService.ListarRequisiciones(idUsuario);
+            }
+            else
+            {
+                listaDTO = await _financierosService.ListarRequisiciones();
+            }
+
+            listaDTO = listaDTO
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequi)
+                .ToList();
+
+            var principal = listaDTO.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).Select(r => r.IdRequi).ToList();
+            var autorizadas = listaDTO.Where(r => r.IdEstatus == 15).Select(r => r.IdRequi).ToList();
+            var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
+            var procesopago = listaDTO.Where(r => r.IdEstatus == 17).Select(r => r.IdRequi).ToList();
+
+            return Json(new { principal, autorizadas, rechazadas, procesopago });
         }
     }
 }

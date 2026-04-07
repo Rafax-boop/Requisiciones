@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     var container = document.querySelector(".tabla-requi-page");
     var obtenerDetallesUrl = container ? container.getAttribute("data-url-obtener-detalles") : "";
     var verPdfRequisicionUrl = container ? container.getAttribute("data-url-ver-pdf-requi") : "";
@@ -207,8 +207,14 @@
                 data.fotos.forEach(function (ruta) {
                     var img = document.createElement("img");
                     img.src = ruta;
-                    img.style.cssText = "width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;";
-                    img.addEventListener("click", function () { window.open(ruta, "_blank"); });
+                    img.className = "modal-galeria-foto-thumb";
+                    img.addEventListener("click", function () { 
+                        if (window.abrirVisorImagenTabla) {
+                            window.abrirVisorImagenTabla(ruta);
+                        } else {
+                            window.open(ruta, "_blank");
+                        }
+                    });
                     galeria.appendChild(img);
                 });
                 document.getElementById("seccionFotosDetalle").style.display = "block";
@@ -254,25 +260,12 @@
 
     // ── Render archivos cotizaciones / cuadro ────────────────────────────────
     function renderizarArchivosReadonly(cotizaciones, cuadro) {
-        var contenedor = document.getElementById("contenedorArchivosReadonly");
-        contenedor.innerHTML = "";
-
-        function renderGrupo(titulo, archivos) {
-            if (!archivos.length) return "";
-            var html = '<div style="margin-bottom:12px;">';
-            html += '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
-            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-            archivos.forEach(function (a) {
-                var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
-                html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
-                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                    + (a.nombreArchivo || "Archivo") + '</a>';
-            });
-            html += "</div></div>";
-            return html;
+        if (window.ModalAdjuntos) {
+            window.ModalAdjuntos.renderizarArchivosReadonly(cotizaciones, cuadro);
+        } else {
+            var contenedor = document.getElementById("contenedorArchivosReadonly");
+            contenedor.innerHTML = "";
         }
-
-        contenedor.innerHTML = renderGrupo("Cotizaciones", cotizaciones) + renderGrupo("Cuadro comparativo", cuadro);
     }
 
     // ── Render archivos financieros (SIAF, TablaApi, Nº API) ─────────────────
@@ -286,16 +279,14 @@
         function renderGrupoFinanciero(containerId, titulo, archivos) {
             var el = document.getElementById(containerId);
             if (!archivos.length) { el.innerHTML = ""; return; }
-            var html = '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;">' + titulo + '</label>';
-            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-            archivos.forEach(function (a) {
-                var esPdf = (a.nombreArchivo || "").split(".").pop().toLowerCase() === "pdf";
-                html += '<a href="' + a.ruta + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#374151;text-decoration:none;background:#f9fafb;">'
-                    + '<i class="fa-solid ' + (esPdf ? 'fa-file-pdf" style="color:#e74c3c;"' : 'fa-file" style="color:#6b7280;"') + '></i>'
-                    + (a.nombreArchivo || "Archivo") + '</a>';
-            });
-            html += '</div>';
-            el.innerHTML = html;
+            
+            if (window.ModalAdjuntos) {
+                el.innerHTML = window.ModalAdjuntos.renderGrupoHtml(titulo, archivos);
+                window.ModalAdjuntos.enlazarEventosContenedor(el);
+            } else {
+                // ... fallback ...
+                el.innerHTML = "";
+            }
         }
 
         renderGrupoFinanciero("grupoArchivosSiaf", "Documento SIAF", siaf);
@@ -518,5 +509,43 @@
                 '<div style="color:#b91c1c;text-align:center;padding:1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Error al cargar el historial</div>';
         });
     };
+
+    if (container && window.TabsNotificacionesRequi) {
+        window.TabsNotificacionesRequi.mount({
+            container: container,
+            onNovedadEnTabActivo: function () {
+                aplicarPaginacion();
+            }
+        });
+    }
+
+    var tabsNavDaf = container ? container.querySelector(".almacen-tabs") : null;
+    if (tabsNavDaf && container) {
+        tabsNavDaf.addEventListener("click", function (e) {
+            var btn = e.target.closest(".almacen-tabs-btn");
+            if (!btn || !tabsNavDaf.contains(btn)) return;
+            var tab = btn.getAttribute("data-tab");
+            if (window.TabsNotificacionesRequi) {
+                window.TabsNotificacionesRequi.limpiarBadgeNotificacionTab(btn);
+            }
+            tabsNavDaf.querySelectorAll(".almacen-tabs-btn").forEach(function (b) {
+                b.classList.remove("activo");
+            });
+            btn.classList.add("activo");
+            container.querySelectorAll(".almacen-tab-panel").forEach(function (p) {
+                p.classList.remove("activo");
+            });
+            var panelDestinoClick = document.getElementById("tab-" + tab);
+            if (panelDestinoClick) {
+                panelDestinoClick.classList.add("activo");
+            }
+            aplicarPaginacion();
+            window.requestAnimationFrame(function () {
+                if (window.TabsNotificacionesRequi) {
+                    window.TabsNotificacionesRequi.iniciarParpadeoFilasNuevasEnPanel(panelDestinoClick);
+                }
+            });
+        });
+    }
 
 })();

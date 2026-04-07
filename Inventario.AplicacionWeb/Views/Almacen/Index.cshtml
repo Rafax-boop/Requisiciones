@@ -11,6 +11,7 @@
 }
 
 <div class="tabla-requi-page"
+     data-url-notif-snapshot="@Url.Action("SnapshotIdsPorTab", "Almacen")"
      data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")"
      data-url-ver-pdf="@Url.Action("VerSalidaParaPdf", "Almacen")"
      data-url-aprobar-completa="@Url.Action("AprobarCompleta", "Almacen")"
@@ -419,5 +420,6 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
 }

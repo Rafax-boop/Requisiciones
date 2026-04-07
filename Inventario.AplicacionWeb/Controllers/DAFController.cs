@@ -4,6 +4,7 @@ using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
@@ -85,6 +86,27 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        /// <summary>IDs en bandeja DAF para notificaciones (sondeo en cliente).</summary>
+        [HttpGet]
+        public async Task<IActionResult> SnapshotIdsPorTab()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) ||
+                !int.TryParse(idDeptoClaim, out _))
+                return Unauthorized();
+
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) ||
+                !int.TryParse(idUsuarioClaim, out _))
+                return Unauthorized();
+
+            var listaDTO = await _dafService.ListarRequisiciones();
+            listaDTO = listaDTO.OrderBy(r => r.FechaModificacion).ThenBy(r => r.IdRequi).ToList();
+            var principal = listaDTO.Select(r => r.IdRequi).ToList();
+
+            return Json(new { principal });
         }
     }
 }
