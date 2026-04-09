@@ -572,6 +572,282 @@ namespace Inventario.BLL.Implementacion
             return ms.ToArray();
         }
 
+        public async Task<TablaApiEditableDTO> ObtenerTablaApiEditableAsync(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
+                ?? throw new Exception($"No se encontró la requisición {idRequisicion}.");
+
+            string nombreDepartamento = "";
+            if (requisicion.IdDepartamento.HasValue)
+            {
+                var depto = await _repoDepartamento.Obtener(d => d.IdDepartamento == requisicion.IdDepartamento.Value);
+                nombreDepartamento = depto?.NombreDepartamento ?? "";
+            }
+
+            var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+            var detalles = await queryDet.ToListAsync();
+
+            var fecha = requisicion.FechaEmision.HasValue
+                ? requisicion.FechaEmision.Value.ToDateTime(TimeOnly.MinValue)
+                : DateTime.Now;
+
+            var modelo = new TablaApiEditableDTO
+            {
+                IdRequisicion = idRequisicion,
+                FechaElaboracion = fecha.ToString("dddd, d 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX")),
+                Ejercicio = DateTime.Now.Year.ToString(),
+                AreaSolicitanteClave = S(requisicion.IdDepartamento?.ToString()),
+                AreaSolicitanteNombre = nombreDepartamento,
+                DescripcionBienServicio = S(requisicion.UsoEspecifico),
+                Justificacion = S(requisicion.Justificacion),
+                NumeroRequisicion = S(requisicion.NumRequisicion),
+                OficioSuficiencia = "",
+                ContratoAsociado = "",
+                Comentarios = "",
+                TotalSolicitado = "$",
+                TotalAutorizado = "$"
+            };
+
+            foreach (var d in detalles)
+            {
+                modelo.Partidas.Add(new TablaApiPartidaEditableDTO
+                {
+                    Numero = (modelo.Partidas.Count + 1).ToString(),
+                    Ua = S(requisicion.IdDepartamento?.ToString()),
+                    ClaveMunicipio = S(requisicion.ClaveRegion?.ToString()),
+                    ImporteSolicitado = "",
+                    FuenteFinanciamiento = S(requisicion.Ff),
+                    Pp = S(requisicion.IdPp?.ToString()),
+                    Componente = "",
+                    Actividad = "",
+                    ObjetoGasto = S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString()),
+                    ImporteAutorizado = ""
+                });
+            }
+
+            return modelo;
+        }
+
+        public async Task<byte[]> GenerarTablaApiAsync(TablaApiEditableDTO modelo)
+        {
+            // Reusar datos base para completar campos faltantes y mantener consistencia.
+            var baseModelo = await ObtenerTablaApiEditableAsync(modelo.IdRequisicion);
+            var finalModel = CombinarModeloTablaApi(baseModelo, modelo);
+
+            var ms = new MemoryStream();
+            var pdfWriter = new PdfWriter(ms);
+            var pdfDoc = new PdfDocument(pdfWriter);
+            var doc = new Document(pdfDoc, PageSize.LETTER);
+            doc.SetMargins(10f, 10f, 10f, 10f);
+
+            var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD,
+                              iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+            var regular = PdfFontFactory.CreateFont(StandardFonts.HELVETICA,
+                              iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+
+            var gris = new DeviceGray(0.82f);
+
+            Cell CeldaGris(string texto, int colspan = 1, int rowspan = 1, float size = 6f,
+                           TextAlignment align = TextAlignment.CENTER)
+            {
+                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size);
+                return new Cell(rowspan, colspan)
+                    .SetBackgroundColor(gris)
+                    .SetTextAlignment(align)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .SetPadding(2f)
+                    .Add(p);
+            }
+
+            Cell CeldaBlanca(string texto, float size = 6f, bool negrita = false,
+                             TextAlignment align = TextAlignment.CENTER)
+            {
+                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size);
+                return new Cell()
+                    .SetTextAlignment(align)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .SetPadding(2f)
+                    .Add(p);
+            }
+
+            Cell CeldaVacia(float height = 14f) =>
+                new Cell().SetHeight(height).SetPadding(0f);
+
+            var tblEnc = new Table(UnitValue.CreatePointArray(new float[] { 90f, 320f, 110f }))
+                .UseAllAvailableWidth();
+            tblEnc.AddCell(new Cell(5, 1)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f)
+                .Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(11))
+                .Add(new Paragraph("Gobierno del Estado").SetFont(regular).SetFontSize(6))
+                .Add(new Paragraph("2 0 2 4 - 2 0 3 0").SetFont(regular).SetFontSize(5)));
+            tblEnc.AddCell(new Cell()
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetPadding(3f)
+                .Add(new Paragraph("Autorización Presupuestal Interna").SetFont(bold).SetFontSize(11))
+                .Add(new Paragraph("Dirección de Administración y Finanzas").SetFont(regular).SetFontSize(8))
+                .Add(new Paragraph("Departamento de Recursos Materiales y Servicios Generales").SetFont(regular).SetFontSize(7))
+                .Add(new Paragraph("Departamento de Recursos Financieros").SetFont(bold).SetFontSize(7))
+                .Add(new Paragraph($"EJERCICIO {S(finalModel.Ejercicio)}").SetFont(bold).SetFontSize(8)));
+            tblEnc.AddCell(new Cell(5, 1)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f)
+                .Add(new Paragraph("Familias").SetFont(bold).SetFontSize(12))
+                .Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(7))
+                .Add(new Paragraph(" ").SetFontSize(4f))
+                .Add(new Paragraph("Fecha de elaboración:").SetFont(bold).SetFontSize(6))
+                .Add(new Paragraph(S(finalModel.FechaElaboracion)).SetFont(regular).SetFontSize(5.5f)));
+            for (int i = 0; i < 4; i++) tblEnc.AddCell(new Cell().SetHeight(10f).SetPadding(0f));
+            doc.Add(tblEnc);
+            doc.Add(new Paragraph("").SetMarginBottom(1f));
+
+            var tblArea = new Table(UnitValue.CreatePointArray(new float[] { 85f, 38f, 397f })).UseAllAvailableWidth();
+            tblArea.AddCell(CeldaGris("ÁREA SOLICITANTE:", align: TextAlignment.LEFT));
+            tblArea.AddCell(CeldaBlanca(finalModel.AreaSolicitanteClave, negrita: true));
+            tblArea.AddCell(CeldaBlanca(finalModel.AreaSolicitanteNombre, align: TextAlignment.LEFT));
+            foreach (var lbl in new[] { "ADECUACIÓN:", "AUTORIZACIÓN:", "SOLICITUD DE PAGO:" })
+            {
+                tblArea.AddCell(CeldaGris(lbl, align: TextAlignment.LEFT));
+                tblArea.AddCell(new Cell(1, 2).SetHeight(10f).SetPadding(0f));
+            }
+            doc.Add(tblArea);
+            doc.Add(new Paragraph("").SetMarginBottom(1f));
+
+            var tblBien = new Table(UnitValue.CreatePointArray(new float[] { 105f, 415f })).UseAllAvailableWidth();
+            tblBien.AddCell(new Cell(1, 2).SetBackgroundColor(gris).SetFont(bold).SetFontSize(6.5f)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
+                .Add(new Paragraph("INFORMACIÓN DEL BIEN O SERVICIO POR ADQUIRIR")));
+            tblBien.AddCell(CeldaGris("DESCRIPCIÓN DETALLADA\nDEL BIEN O SERVICIO:").SetHeight(28f));
+            tblBien.AddCell(new Cell().SetFont(regular).SetFontSize(7f).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(3f)
+                .Add(new Paragraph(S(finalModel.DescripcionBienServicio))));
+            tblBien.AddCell(CeldaGris("JUSTIFICACIÓN:").SetHeight(28f));
+            tblBien.AddCell(new Cell().SetFont(regular).SetFontSize(6.5f).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(3f)
+                .Add(new Paragraph(S(finalModel.Justificacion))));
+            doc.Add(tblBien);
+            doc.Add(new Paragraph("").SetMarginBottom(1f));
+
+            var colWidths = new float[] { 20f, 26f, 36f, 52f, 50f, 30f, 42f, 36f, 40f, 50f };
+            var tblPart = new Table(UnitValue.CreatePointArray(colWidths)).UseAllAvailableWidth();
+            tblPart.AddHeaderCell(new Cell(1, 4).SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f).SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
+                .Add(new Paragraph("SOLICITUD DE SUFICIENCIA")));
+            tblPart.AddHeaderCell(new Cell(1, 6).SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f).SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
+                .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")));
+            var colTitles = new[] { "No.", "UA", "CLAVE\nMUNICIPIO", "IMPORTE\nSOLICITADO", "FUENTE DE\nFINANCIAMIENTO", "PP", "COMPONENTE", "ACTIVIDAD", "OBJETO\nDEL GASTO", "IMPORTE\nAUTORIZADO" };
+            foreach (var h in colTitles) tblPart.AddHeaderCell(CeldaGris(h, size: 5f).SetHeight(18f));
+
+            int numFilas = Math.Max(15, finalModel.Partidas.Count + 3);
+            for (int i = 0; i < numFilas; i++)
+            {
+                if (i < finalModel.Partidas.Count)
+                {
+                    var d = finalModel.Partidas[i];
+                    tblPart.AddCell(CeldaBlanca(d.Numero));
+                    tblPart.AddCell(CeldaBlanca(d.Ua));
+                    tblPart.AddCell(CeldaBlanca(d.ClaveMunicipio));
+                    tblPart.AddCell(CeldaBlanca(d.ImporteSolicitado));
+                    tblPart.AddCell(CeldaBlanca(d.FuenteFinanciamiento));
+                    tblPart.AddCell(CeldaBlanca(d.Pp));
+                    tblPart.AddCell(CeldaBlanca(d.Componente));
+                    tblPart.AddCell(CeldaBlanca(d.Actividad));
+                    tblPart.AddCell(CeldaBlanca(d.ObjetoGasto));
+                    tblPart.AddCell(CeldaBlanca(d.ImporteAutorizado));
+                }
+                else
+                {
+                    for (int c = 0; c < 10; c++) tblPart.AddCell(CeldaVacia(13f));
+                }
+            }
+            doc.Add(tblPart);
+
+            var tblTot = new Table(UnitValue.CreatePointArray(new float[] { 100f, 120f, 142f, 100f, 58f })).UseAllAvailableWidth();
+            tblTot.AddCell(CeldaGris("Total Solicitado:", size: 7f, align: TextAlignment.LEFT).SetPaddingLeft(4f));
+            tblTot.AddCell(CeldaBlanca(S(finalModel.TotalSolicitado), align: TextAlignment.LEFT));
+            tblTot.AddCell(new Cell().SetBorder(Border.NO_BORDER));
+            tblTot.AddCell(CeldaGris("Total Autorizado:", size: 7f, align: TextAlignment.LEFT).SetPaddingLeft(4f));
+            tblTot.AddCell(CeldaBlanca(S(finalModel.TotalAutorizado), align: TextAlignment.LEFT));
+            doc.Add(tblTot);
+
+            var tblNumReq = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f })).UseAllAvailableWidth();
+            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .Add(new Paragraph("No. Requisición:  ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.NumeroRequisicion)).SetFont(regular))));
+            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .Add(new Paragraph("Oficio Suficiencia / Autorización: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.OficioSuficiencia)).SetFont(regular))));
+            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .Add(new Paragraph("Contrato Asociado: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.ContratoAsociado)).SetFont(regular))));
+            doc.Add(tblNumReq);
+
+            var tblCom = new Table(UnitValue.CreatePointArray(new float[] { 520f })).UseAllAvailableWidth();
+            tblCom.AddCell(new Cell().SetBackgroundColor(gris).SetHeight(20f).SetPaddingLeft(4f).SetPaddingTop(3f)
+                .Add(new Paragraph("COMENTARIOS: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.Comentarios)).SetFont(regular))));
+            doc.Add(tblCom);
+
+            var tblFirmas = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f })).UseAllAvailableWidth();
+            var firmantes = new (string Titulo, string Nombre)[]
+            {
+                ("ASIGNACIÓN PRESUPUESTAL", "JOEL MARTÍNEZ PÉREZ\nJEFE DEL DEPARTAMENTO DE RECURSOS\nFINANCIEROS"),
+                ("Vo.Bo.", "C. MARCOS MATAMOROS MORENO\nDIRECTOR DE ADMINISTRACIÓN Y FINANZAS"),
+                ("AUTORIZÓ", "C. CIRO MIGUEL JUÁREZ PALACIOS\nTITULAR DE LA UNIDAD DE PLANEACIÓN,\nADMINISTRACIÓN Y FINANZAS"),
+            };
+            foreach (var (titulo, nombre) in firmantes)
+            {
+                tblFirmas.AddCell(new Cell().SetHeight(65f).SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.TOP).SetPadding(3f)
+                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(5.5f).SetMarginBottom(2f))
+                    .Add(new Paragraph(" ").SetFontSize(18f))
+                    .Add(new Paragraph("_____________________________").SetFont(regular).SetFontSize(5f).SetMarginBottom(2f))
+                    .Add(new Paragraph(nombre.Replace("\n", " ")).SetFont(regular).SetFontSize(4.8f).SetTextAlignment(TextAlignment.CENTER)));
+            }
+            doc.Add(tblFirmas);
+
+            doc.Close();
+            return ms.ToArray();
+        }
+
+        private static TablaApiEditableDTO CombinarModeloTablaApi(TablaApiEditableDTO baseModelo, TablaApiEditableDTO entrada)
+        {
+            var salida = new TablaApiEditableDTO
+            {
+                IdRequisicion = baseModelo.IdRequisicion,
+                FechaElaboracion = string.IsNullOrWhiteSpace(entrada.FechaElaboracion) ? baseModelo.FechaElaboracion : entrada.FechaElaboracion,
+                Ejercicio = string.IsNullOrWhiteSpace(entrada.Ejercicio) ? baseModelo.Ejercicio : entrada.Ejercicio,
+                AreaSolicitanteClave = string.IsNullOrWhiteSpace(entrada.AreaSolicitanteClave) ? baseModelo.AreaSolicitanteClave : entrada.AreaSolicitanteClave,
+                AreaSolicitanteNombre = string.IsNullOrWhiteSpace(entrada.AreaSolicitanteNombre) ? baseModelo.AreaSolicitanteNombre : entrada.AreaSolicitanteNombre,
+                DescripcionBienServicio = string.IsNullOrWhiteSpace(entrada.DescripcionBienServicio) ? baseModelo.DescripcionBienServicio : entrada.DescripcionBienServicio,
+                Justificacion = string.IsNullOrWhiteSpace(entrada.Justificacion) ? baseModelo.Justificacion : entrada.Justificacion,
+                NumeroRequisicion = string.IsNullOrWhiteSpace(entrada.NumeroRequisicion) ? baseModelo.NumeroRequisicion : entrada.NumeroRequisicion,
+                OficioSuficiencia = entrada.OficioSuficiencia ?? "",
+                ContratoAsociado = entrada.ContratoAsociado ?? "",
+                Comentarios = entrada.Comentarios ?? "",
+                TotalSolicitado = string.IsNullOrWhiteSpace(entrada.TotalSolicitado) ? baseModelo.TotalSolicitado : entrada.TotalSolicitado,
+                TotalAutorizado = string.IsNullOrWhiteSpace(entrada.TotalAutorizado) ? baseModelo.TotalAutorizado : entrada.TotalAutorizado,
+                Partidas = new List<TablaApiPartidaEditableDTO>()
+            };
+
+            var origen = (entrada.Partidas != null && entrada.Partidas.Any()) ? entrada.Partidas : baseModelo.Partidas;
+            for (int i = 0; i < origen.Count; i++)
+            {
+                var basePartida = i < baseModelo.Partidas.Count ? baseModelo.Partidas[i] : new TablaApiPartidaEditableDTO();
+                var inPartida = origen[i] ?? new TablaApiPartidaEditableDTO();
+                salida.Partidas.Add(new TablaApiPartidaEditableDTO
+                {
+                    Numero = string.IsNullOrWhiteSpace(inPartida.Numero) ? basePartida.Numero : inPartida.Numero,
+                    Ua = string.IsNullOrWhiteSpace(inPartida.Ua) ? basePartida.Ua : inPartida.Ua,
+                    ClaveMunicipio = string.IsNullOrWhiteSpace(inPartida.ClaveMunicipio) ? basePartida.ClaveMunicipio : inPartida.ClaveMunicipio,
+                    ImporteSolicitado = inPartida.ImporteSolicitado ?? "",
+                    FuenteFinanciamiento = string.IsNullOrWhiteSpace(inPartida.FuenteFinanciamiento) ? basePartida.FuenteFinanciamiento : inPartida.FuenteFinanciamiento,
+                    Pp = string.IsNullOrWhiteSpace(inPartida.Pp) ? basePartida.Pp : inPartida.Pp,
+                    Componente = inPartida.Componente ?? "",
+                    Actividad = inPartida.Actividad ?? "",
+                    ObjetoGasto = string.IsNullOrWhiteSpace(inPartida.ObjetoGasto) ? basePartida.ObjetoGasto : inPartida.ObjetoGasto,
+                    ImporteAutorizado = inPartida.ImporteAutorizado ?? ""
+                });
+            }
+
+            return salida;
+        }
+
         // Helper: convierte null → string vacío
         private static string S(string? valor) => valor ?? "";
 
