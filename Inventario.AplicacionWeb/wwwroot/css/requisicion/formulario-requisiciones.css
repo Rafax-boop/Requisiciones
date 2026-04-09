@@ -861,15 +861,124 @@
   background: #f8fafc;
 }
 
-/* Columna Descripción detallada (solo tabla de artículos en hoja 1; no aplica a programación) */
-.pdf-hoja-1 .pdf-tabla th:nth-child(6),
-.pdf-hoja-1 .pdf-tabla td:nth-child(6) {
+/* Tabla principal de artículos (hoja 1; excluye tablas de programación) */
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) thead th:nth-child(1) {
+  width: 10%;
+}
+
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) thead th:nth-child(2) {
+  width: 8%;
+}
+
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) thead th:nth-child(3) {
+  width: 22%;
+}
+
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) thead th:nth-child(4) {
+  width: 12%;
+}
+
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) thead th:nth-child(5) {
+  width: 10%;
+}
+
+/* Columna Descripción detallada */
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) th:nth-child(6),
+.pdf-hoja-1 .pdf-tabla:not(.pdf-tabla-programacion) td:nth-child(6) {
   max-width: 38%;
   width: 38%;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
   white-space: normal;
+}
+
+/* Anchos — programación mensual */
+.pdf-tabla-programacion--mensual thead th:nth-child(1) {
+  width: 5%;
+}
+
+.pdf-tabla-programacion--mensual thead th:nth-child(2) {
+  width: 24%;
+}
+
+.pdf-tabla-programacion--mensual thead th:nth-child(3) {
+  width: 9%;
+}
+
+.pdf-tabla-programacion--mensual thead th:nth-child(4) {
+  width: 12%;
+}
+
+.pdf-tabla-programacion--mensual thead th:nth-child(5),
+.pdf-tabla-programacion--mensual thead th:nth-child(6),
+.pdf-tabla-programacion--mensual thead th:nth-child(7),
+.pdf-tabla-programacion--mensual thead th:nth-child(8) {
+  width: 9%;
+}
+
+.pdf-tabla-programacion--mensual thead th:nth-child(9) {
+  width: 10%;
+}
+
+/* Anchos — programación anual */
+.pdf-tabla-programacion--anual thead th:nth-child(1) {
+  width: 3.5%;
+}
+
+.pdf-tabla-programacion--anual thead th:nth-child(2) {
+  width: 14%;
+}
+
+.pdf-tabla-programacion--anual thead th:nth-child(3) {
+  width: 4.5%;
+}
+
+.pdf-tabla-programacion--anual thead th:nth-child(4),
+.pdf-tabla-programacion--anual thead th:nth-child(5),
+.pdf-tabla-programacion--anual thead th:nth-child(6),
+.pdf-tabla-programacion--anual thead th:nth-child(7),
+.pdf-tabla-programacion--anual thead th:nth-child(8),
+.pdf-tabla-programacion--anual thead th:nth-child(9),
+.pdf-tabla-programacion--anual thead th:nth-child(10),
+.pdf-tabla-programacion--anual thead th:nth-child(11),
+.pdf-tabla-programacion--anual thead th:nth-child(12),
+.pdf-tabla-programacion--anual thead th:nth-child(13),
+.pdf-tabla-programacion--anual thead th:nth-child(14),
+.pdf-tabla-programacion--anual thead th:nth-child(15) {
+  width: 4.2%;
+}
+
+.pdf-tabla-programacion--anual thead th:nth-child(16) {
+  width: 6%;
+}
+
+/* ── Sello digital (hash) ── */
+.pdf-hash-container {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.pdf-hash-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6c757d;
+}
+
+.pdf-hash-valor {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: #4b5563;
+  word-break: break-all;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 6px;
+  background-color: #f8fafc;
 }
 
 /* ── Firmas (abajo del documento) ── */

@@ -18,7 +18,7 @@ namespace Inventario.BLL.DTO
         public int IdEstatus { get; set; }
         public List<ArchivoAtencionDTO> ArchivosSiaf { get; set; } = new();
         public List<ArchivoAtencionDTO> ArchivosTablaApi { get; set; } = new();
-        public int? NumeroApi { get; set; }
+        public string? NumeroApi { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; }
         public List<string> Fotos { get; set; } = new();
         public List<ArchivoAtencionDTO> Cotizaciones { get; set; } = new();

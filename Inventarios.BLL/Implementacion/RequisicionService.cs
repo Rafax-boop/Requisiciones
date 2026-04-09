@@ -298,7 +298,7 @@ namespace Inventario.BLL.Implementacion
                 ArchivosSiaf = archivosSiaf,
                 ArchivosTablaApi = archivosTablaApi,
                 IdEstatus = maestra?.IdEstatus ?? 0,
-                NumeroApi = int.TryParse(maestra?.NumApi, out int numeroApi) ? numeroApi : null
+                NumeroApi = maestra?.NumApi
             };
         }
 
