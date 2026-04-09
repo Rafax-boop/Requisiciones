@@ -128,12 +128,12 @@
             <table class="pdf-tabla">
                 <thead>
                     <tr>
-                        <th style="width:10%">Nº Partida</th>
-                        <th style="width:8%">ID</th>
-                        <th style="width:22%">Descripción</th>
-                        <th style="width:12%">Unidad</th>
-                        <th style="width:10%">Cantidad</th>
-                        <th style="width:38%">Descripción detallada</th>
+                        <th>Nº Partida</th>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Unidad</th>
+                        <th>Cantidad</th>
+                        <th>Descripción detallada</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -175,11 +175,9 @@
             </div>
         </div>
 
-        <div class="pdf-hash-container mt-4 text-center">
-            <span class="pdf-hash-label d-block text-muted"
-                  style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Sello Digital:</span>
-            <span class="pdf-hash-valor d-block font-monospace"
-                  style="font-size: 11px; word-break: break-all; color: #4b5563; border: 1.5px dashed #cbd5e1; padding: 6px 10px; display: inline-block; margin-top: 6px; border-radius: 6px; background-color: #f8fafc;">
+        <div class="pdf-hash-container">
+            <span class="pdf-hash-label">Sello Digital:</span>
+            <span class="pdf-hash-valor">
                 ||@(Model.IdRequiMaestra)|@(Model.NumRequisicion)|@(Model.FechaEmision.HasValue ?
                     Model.FechaEmision.Value.Day.ToString("D2") + "-" + Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Year : "—")|@(Model.Hash ?? "—")||
             </span>
@@ -219,15 +217,15 @@
                         <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--mensual">
                             <thead>
                                 <tr>
-                                    <th style="width:5%">No.</th>
-                                    <th style="width:24%">Descripción detallada</th>
-                                    <th style="width:9%">Unidad de medida</th>
-                                    <th style="width:12%">Mes</th>
-                                    <th style="width:9%">Sem 1</th>
-                                    <th style="width:9%">Sem 2</th>
-                                    <th style="width:9%">Sem 3</th>
-                                    <th style="width:9%">Sem 4</th>
-                                    <th style="width:10%" class="pdf-tabla-col-total">Total</th>
+                                    <th>No.</th>
+                                    <th>Descripción detallada</th>
+                                    <th>Unidad de medida</th>
+                                    <th>Mes</th>
+                                    <th>Sem 1</th>
+                                    <th>Sem 2</th>
+                                    <th>Sem 3</th>
+                                    <th>Sem 4</th>
+                                    <th class="pdf-tabla-col-total">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -256,22 +254,22 @@
                         <table class="pdf-tabla pdf-tabla-programacion pdf-tabla-programacion--anual">
                             <thead>
                                 <tr>
-                                    <th style="width:3.5%">No.</th>
-                                    <th style="width:14%">Descripción detallada</th>
-                                    <th style="width:4.5%">U. med.</th>
-                                    <th style="width:4.2%">Ene</th>
-                                    <th style="width:4.2%">Feb</th>
-                                    <th style="width:4.2%">Mar</th>
-                                    <th style="width:4.2%">Abr</th>
-                                    <th style="width:4.2%">May</th>
-                                    <th style="width:4.2%">Jun</th>
-                                    <th style="width:4.2%">Jul</th>
-                                    <th style="width:4.2%">Ago</th>
-                                    <th style="width:4.2%">Sep</th>
-                                    <th style="width:4.2%">Oct</th>
-                                    <th style="width:4.2%">Nov</th>
-                                    <th style="width:4.2%">Dic</th>
-                                    <th style="width:6%" class="pdf-tabla-col-total">Total</th>
+                                    <th>No.</th>
+                                    <th>Descripción detallada</th>
+                                    <th>U. med.</th>
+                                    <th>Ene</th>
+                                    <th>Feb</th>
+                                    <th>Mar</th>
+                                    <th>Abr</th>
+                                    <th>May</th>
+                                    <th>Jun</th>
+                                    <th>Jul</th>
+                                    <th>Ago</th>
+                                    <th>Sep</th>
+                                    <th>Oct</th>
+                                    <th>Nov</th>
+                                    <th>Dic</th>
+                                    <th class="pdf-tabla-col-total">Total</th>
                                 </tr>
                             </thead>
                             <tbody>

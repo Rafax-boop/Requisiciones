@@ -3,6 +3,7 @@ using Inventario.BLL.Interfaces;
 using Inventario.DAL.Interfaces;
 using Inventario.Entity;
 using iText.IO.Font.Constants;
+using iText.IO.Image;
 using iText.Kernel.Colors;
 using iText.Kernel.Font;
 using iText.Kernel.Geom;
@@ -23,6 +24,19 @@ namespace Inventario.BLL.Implementacion
 {
     public class FinancierosService : IFinancierosService
     {
+        /// <summary>Paleta alineada con formulario-requisiciones.css (PDF de requisiciones).</summary>
+        private static class PdfApiEstiloRequi
+        {
+            public static readonly DeviceRgb FondoEncabezadoTabla = new(248, 250, 252);
+            public static readonly DeviceRgb Borde = new(226, 232, 240);
+            public static readonly DeviceRgb BordeCuadro = new(203, 213, 225);
+            public static readonly DeviceRgb TextoPrincipal = new(26, 26, 26);
+            public static readonly DeviceRgb TextoSecundario = new(100, 116, 139);
+            public static readonly DeviceRgb TextoEncabezadoTabla = new(71, 85, 105);
+            public static readonly DeviceRgb TextoInstitucional = new(45, 45, 45);
+            public static readonly DeviceRgb RosaAcento = new(255, 45, 111);
+        }
+
         private readonly IRequisicionRepository _repositoryRequisicion;
         private readonly IGenericRepository<TblBitacoraEstatus> _repositoryBitacora;
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDiseno;
@@ -276,7 +290,7 @@ namespace Inventario.BLL.Implementacion
 
             var pdfDoc = new PdfDocument(pdfWriter);
             var doc = new Document(pdfDoc, PageSize.LETTER);
-            doc.SetMargins(10f, 10f, 10f, 10f);
+            doc.SetMargins(22f, 34f, 28f, 34f);
 
             // Fuentes estándar embebidas — no requieren archivos en disco
             var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD,
@@ -284,35 +298,42 @@ namespace Inventario.BLL.Implementacion
             var regular = PdfFontFactory.CreateFont(StandardFonts.HELVETICA,
                               iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
 
-            var gris = new DeviceGray(0.82f);
-            var negro = ColorConstants.BLACK;
-
-            // ── Helpers locales ──────────────────────────────────────────────
+            var bordeCelda = new SolidBorder(PdfApiEstiloRequi.Borde, 0.75f);
+            // ── Helpers locales (estética tipo PDF requisiciones) ───────────
             Cell CeldaGris(string texto, int colspan = 1, int rowspan = 1, float size = 6f,
-                           TextAlignment align = TextAlignment.CENTER)
+                           TextAlignment align = TextAlignment.CENTER, bool textoEstiloColumna = false)
             {
-                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size);
+                var colorTxt = textoEstiloColumna ? PdfApiEstiloRequi.TextoEncabezadoTabla : PdfApiEstiloRequi.TextoSecundario;
+                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size).SetFontColor(colorTxt);
                 return new Cell(rowspan, colspan)
-                    .SetBackgroundColor(gris)
+                    .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
                     .SetTextAlignment(align)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .SetPadding(2f)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
                     .Add(p);
             }
 
             Cell CeldaBlanca(string texto, float size = 6f, bool negrita = false,
-                             TextAlignment align = TextAlignment.CENTER)
+                             TextAlignment align = TextAlignment.CENTER, Color? fondoFila = null)
             {
-                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size);
+                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size)
+                    .SetFontColor(PdfApiEstiloRequi.TextoPrincipal);
                 return new Cell()
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE)
                     .SetTextAlignment(align)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .SetPadding(2f)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
                     .Add(p);
             }
 
-            Cell CeldaVacia(float height = 14f) =>
-                new Cell().SetHeight(height).SetPadding(0f);
+            Cell CeldaVacia(float height = 14f, Color? fondoFila = null) =>
+                new Cell()
+                    .SetHeight(height)
+                    .SetPadding(0f)
+                    .SetBorder(bordeCelda)
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE);
 
             // ── Fecha — FechaEmision es DateOnly? en tu entidad ──────────────
             string fechaStr;
@@ -337,48 +358,11 @@ namespace Inventario.BLL.Implementacion
             }
 
             // ════════════════════════════════════════════════════════════════
-            // BLOQUE 1 — ENCABEZADO
+            // BLOQUE 1 — ENCABEZADO (logos laterales + título)
             // ════════════════════════════════════════════════════════════════
-            var tblEnc = new Table(UnitValue.CreatePointArray(new float[] { 90f, 320f, 110f }))
-                .UseAllAvailableWidth();
-
-            // Celda PUEBLA (rowspan 5)
-            tblEnc.AddCell(new Cell(5, 1)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(4f)
-                .Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(11))
-                .Add(new Paragraph("Gobierno del Estado").SetFont(regular).SetFontSize(6))
-                .Add(new Paragraph("2 0 2 4 - 2 0 3 0").SetFont(regular).SetFontSize(5)));
-
-            // Celda título central (1 fila)
-            tblEnc.AddCell(new Cell()
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetPadding(3f)
-                .Add(new Paragraph("Autorización Presupuestal Interna").SetFont(bold).SetFontSize(11))
-                .Add(new Paragraph("Dirección de Administración y Finanzas").SetFont(regular).SetFontSize(8))
-                .Add(new Paragraph("Departamento de Recursos Materiales y Servicios Generales").SetFont(regular).SetFontSize(7))
-                .Add(new Paragraph("Departamento de Recursos Financieros").SetFont(bold).SetFontSize(7))
-                .Add(new Paragraph("EJERCICIO 2026").SetFont(bold).SetFontSize(8)));
-
-            // Celda Familias DIF (rowspan 5)
-            tblEnc.AddCell(new Cell(5, 1)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(4f)
-                .Add(new Paragraph("Familias").SetFont(bold).SetFontSize(12))
-                .Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(7))
-                .Add(new Paragraph(" ").SetFontSize(4f))
-                .Add(new Paragraph("Fecha de elaboración:").SetFont(bold).SetFontSize(6))
-                .Add(new Paragraph(fechaStr).SetFont(regular).SetFontSize(5.5f)));
-
-            // 4 celdas vacías para completar el rowspan de PUEBLA y Familias
-            for (int i = 0; i < 4; i++)
-                tblEnc.AddCell(new Cell().SetHeight(10f).SetPadding(0f));
-
+            var tblEnc = CrearTablaEncabezadoApi(bold, regular, fechaStr, DateTime.Now.Year.ToString());
             doc.Add(tblEnc);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 2 — ÁREA SOLICITANTE
@@ -393,11 +377,12 @@ namespace Inventario.BLL.Implementacion
             foreach (var lbl in new[] { "ADECUACIÓN:", "AUTORIZACIÓN:", "SOLICITUD DE PAGO:" })
             {
                 tblArea.AddCell(CeldaGris(lbl, align: TextAlignment.LEFT));
-                tblArea.AddCell(new Cell(1, 2).SetHeight(10f).SetPadding(0f));
+                tblArea.AddCell(new Cell(1, 2).SetHeight(10f).SetPadding(0f).SetBorder(bordeCelda)
+                    .SetBackgroundColor(ColorConstants.WHITE));
             }
 
             doc.Add(tblArea);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 3 — INFORMACIÓN DEL BIEN O SERVICIO
@@ -406,28 +391,33 @@ namespace Inventario.BLL.Implementacion
                 .UseAllAvailableWidth();
 
             tblBien.AddCell(new Cell(1, 2)
-                .SetBackgroundColor(gris)
-                .SetFont(bold).SetFontSize(6.5f)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
                 .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(2f)
-                .Add(new Paragraph("INFORMACIÓN DEL BIEN O SERVICIO POR ADQUIRIR")));
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("INFORMACIÓN DEL BIEN O SERVICIO POR ADQUIRIR")
+                    .SetFont(bold).SetFontSize(7f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
 
-            tblBien.AddCell(CeldaGris("DESCRIPCIÓN DETALLADA\nDEL BIEN O SERVICIO:").SetHeight(28f));
+            tblBien.AddCell(CeldaGris("DESCRIPCIÓN DETALLADA\nDEL BIEN O SERVICIO:").SetHeight(22f));
             tblBien.AddCell(new Cell()
-                .SetFont(regular).SetFontSize(7f)
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetFont(regular).SetFontSize(8f)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetPadding(3f)
-                .Add(new Paragraph(S(requisicion.UsoEspecifico))));
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph(S(requisicion.UsoEspecifico)).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
 
-            tblBien.AddCell(CeldaGris("JUSTIFICACIÓN:").SetHeight(28f));
+            tblBien.AddCell(CeldaGris("JUSTIFICACIÓN:").SetHeight(22f));
             tblBien.AddCell(new Cell()
-                .SetFont(regular).SetFontSize(6.5f)
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetFont(regular).SetFontSize(7.5f)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetPadding(3f)
-                .Add(new Paragraph(S(requisicion.Justificacion))));
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph(S(requisicion.Justificacion)).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
 
             doc.Add(tblBien);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 4 — TABLA DE PARTIDAS
@@ -438,14 +428,18 @@ namespace Inventario.BLL.Implementacion
 
             // Sub-encabezados de sección (fila 1 del header)
             tblPart.AddHeaderCell(new Cell(1, 4)
-                .SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f)
-                .SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
-                .Add(new Paragraph("SOLICITUD DE SUFICIENCIA")));
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("SOLICITUD DE SUFICIENCIA")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
 
             tblPart.AddHeaderCell(new Cell(1, 6)
-                .SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f)
-                .SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
-                .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")));
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
 
             // Encabezados de columna (fila 2 del header)
             var colTitles = new[]
@@ -455,34 +449,36 @@ namespace Inventario.BLL.Implementacion
                 "ACTIVIDAD", "OBJETO\nDEL GASTO", "IMPORTE\nAUTORIZADO"
             };
             foreach (var h in colTitles)
-                tblPart.AddHeaderCell(CeldaGris(h, size: 5f).SetHeight(18f));
+                tblPart.AddHeaderCell(CeldaGris(h, size: 5.25f, textoEstiloColumna: true).SetHeight(18f));
 
-            // Filas de datos
-            int numFilas = Math.Max(15, detalles.Count + 3);
+            // Filas de datos (zebra). Mínimo 8; crece con partidas (+1 fila de margen).
+            int numFilas = Math.Max(8, detalles.Count + 1);
             for (int i = 0; i < numFilas; i++)
             {
+                Color bg = (i % 2 == 1) ? PdfApiEstiloRequi.FondoEncabezadoTabla : ColorConstants.WHITE;
                 if (i < detalles.Count)
                 {
                     var d = detalles[i];
-                    tblPart.AddCell(CeldaBlanca((i + 1).ToString()));
-                    tblPart.AddCell(CeldaBlanca(S(requisicion.IdDepartamento?.ToString())));
-                    tblPart.AddCell(CeldaBlanca(S(requisicion.ClaveRegion?.ToString())));
-                    tblPart.AddCell(CeldaVacia());   // Importe Solicitado — financiero lo llena
-                    tblPart.AddCell(CeldaBlanca(S(requisicion.Ff)));
-                    tblPart.AddCell(CeldaBlanca(S(requisicion.IdPp?.ToString())));
-                    tblPart.AddCell(CeldaVacia());   // Componente — financiero lo llena
-                    tblPart.AddCell(CeldaVacia());   // Actividad — financiero lo llena
-                    tblPart.AddCell(CeldaBlanca(S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString())));
-                    tblPart.AddCell(CeldaVacia());   // Importe Autorizado — financiero lo llena
+                    tblPart.AddCell(CeldaBlanca((i + 1).ToString(), fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(S(requisicion.IdDepartamento?.ToString()), fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(S(requisicion.ClaveRegion?.ToString()), fondoFila: bg));
+                    tblPart.AddCell(CeldaVacia(11f, bg));
+                    tblPart.AddCell(CeldaBlanca(S(requisicion.Ff), fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(S(requisicion.IdPp?.ToString()), fondoFila: bg));
+                    tblPart.AddCell(CeldaVacia(11f, bg));
+                    tblPart.AddCell(CeldaVacia(11f, bg));
+                    tblPart.AddCell(CeldaBlanca(S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString()), fondoFila: bg));
+                    tblPart.AddCell(CeldaVacia(11f, bg));
                 }
                 else
                 {
                     for (int c = 0; c < 10; c++)
-                        tblPart.AddCell(CeldaVacia(13f));
+                        tblPart.AddCell(CeldaVacia(10f, bg));
                 }
             }
 
             doc.Add(tblPart);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 5 — TOTALES
@@ -493,12 +489,13 @@ namespace Inventario.BLL.Implementacion
             tblTot.AddCell(CeldaGris("Total Solicitado:", size: 7f, align: TextAlignment.LEFT)
                 .SetPaddingLeft(4f));
             tblTot.AddCell(CeldaBlanca("$", align: TextAlignment.LEFT));
-            tblTot.AddCell(new Cell().SetBorder(Border.NO_BORDER));  // espacio
+            tblTot.AddCell(new Cell().SetBorder(bordeCelda).SetBackgroundColor(ColorConstants.WHITE));
             tblTot.AddCell(CeldaGris("Total Autorizado:", size: 7f, align: TextAlignment.LEFT)
                 .SetPaddingLeft(4f));
             tblTot.AddCell(CeldaBlanca("$", align: TextAlignment.LEFT));
 
             doc.Add(tblTot);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 6 — No. REQUISICIÓN
@@ -508,16 +505,27 @@ namespace Inventario.BLL.Implementacion
 
             // Celda "No. Requisición" con el número embebido
             tblNumReq.AddCell(new Cell()
-                .SetBackgroundColor(gris).SetPadding(2f)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .Add(new Paragraph("No. Requisición:  ").SetFont(bold).SetFontSize(6f)
-                    .Add(new Text(S(requisicion.NumRequisicion)).SetFont(regular))));
-            tblNumReq.AddCell(CeldaGris("Oficio Suficiencia / Autorización:", align: TextAlignment.LEFT)
-                .SetPaddingLeft(4f));
-            tblNumReq.AddCell(CeldaGris("Contrato Asociado:", align: TextAlignment.LEFT)
-                .SetPaddingLeft(4f));
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("No. Requisición:  ").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .Add(new Text(S(requisicion.NumRequisicion)).SetFont(regular).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))));
+            tblNumReq.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("Oficio Suficiencia / Autorización:").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)));
+            tblNumReq.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("Contrato Asociado:").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)));
 
             doc.Add(tblNumReq);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 7 — COMENTARIOS
@@ -525,8 +533,9 @@ namespace Inventario.BLL.Implementacion
             var tblCom = new Table(UnitValue.CreatePointArray(new float[] { 520f }))
                 .UseAllAvailableWidth();
             tblCom.AddCell(CeldaGris("COMENTARIOS:", align: TextAlignment.LEFT)
-                .SetHeight(20f).SetPaddingLeft(4f));
+                .SetHeight(18f).SetPaddingLeft(4f).SetPaddingTop(3f));
             doc.Add(tblCom);
+            doc.Add(new Paragraph("").SetMarginBottom(8f));
 
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 8 — FIRMAS
@@ -547,16 +556,23 @@ namespace Inventario.BLL.Implementacion
             foreach (var (titulo, nombre) in firmantes)
             {
                 tblFirmas.AddCell(new Cell()
-                    .SetHeight(65f)
+                    .SetMinHeight(78f)
+                    .SetBackgroundColor(ColorConstants.WHITE)
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetVerticalAlignment(VerticalAlignment.TOP)
-                    .SetPadding(3f)
-                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(5.5f).SetMarginBottom(2f))
-                    .Add(new Paragraph(" ").SetFontSize(18f))   // espacio para firma
-                    .Add(new Paragraph("_____________________________")
-                        .SetFont(regular).SetFontSize(5f).SetMarginBottom(2f))
+                    .SetPaddingTop(10f)
+                    .SetPaddingBottom(10f)
+                    .SetPaddingLeft(6f)
+                    .SetPaddingRight(6f)
+                    .SetBorder(bordeCelda)
+                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(5.75f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla).SetMarginBottom(10f))
+                    .Add(new Paragraph(" ").SetFontSize(22f))
+                    .Add(new Paragraph("_________________________________________")
+                        .SetFont(regular).SetFontSize(5f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginBottom(6f))
                     .Add(new Paragraph(nombre.Replace("\n", " "))
-                        .SetFont(regular).SetFontSize(4.8f)
+                        .SetFont(regular).SetFontSize(5f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
                         .SetTextAlignment(TextAlignment.CENTER)));
             }
 
@@ -630,159 +646,195 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<byte[]> GenerarTablaApiAsync(TablaApiEditableDTO modelo)
         {
-            // Reusar datos base para completar campos faltantes y mantener consistencia.
-            var baseModelo = await ObtenerTablaApiEditableAsync(modelo.IdRequisicion);
-            var finalModel = CombinarModeloTablaApi(baseModelo, modelo);
+            if (modelo.IdRequisicion <= 0)
+                throw new ArgumentException("La requisición es requerida.", nameof(modelo));
+
+            var requi = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
+            if (requi == null)
+                throw new Exception($"No se encontró la requisición {modelo.IdRequisicion}.");
+
+            // Solo lo capturado en el formulario; sin rellenar desde BD ni fusionar modelos.
+            AsegurarTablaApiDesdeFormulario(modelo);
 
             var ms = new MemoryStream();
             var pdfWriter = new PdfWriter(ms);
             var pdfDoc = new PdfDocument(pdfWriter);
             var doc = new Document(pdfDoc, PageSize.LETTER);
-            doc.SetMargins(10f, 10f, 10f, 10f);
+            doc.SetMargins(22f, 34f, 28f, 34f);
 
             var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD,
                               iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
             var regular = PdfFontFactory.CreateFont(StandardFonts.HELVETICA,
                               iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
 
-            var gris = new DeviceGray(0.82f);
+            var bordeCelda = new SolidBorder(PdfApiEstiloRequi.Borde, 0.75f);
 
             Cell CeldaGris(string texto, int colspan = 1, int rowspan = 1, float size = 6f,
-                           TextAlignment align = TextAlignment.CENTER)
+                           TextAlignment align = TextAlignment.CENTER, bool textoEstiloColumna = false)
             {
-                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size);
+                var colorTxt = textoEstiloColumna ? PdfApiEstiloRequi.TextoEncabezadoTabla : PdfApiEstiloRequi.TextoSecundario;
+                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size).SetFontColor(colorTxt);
                 return new Cell(rowspan, colspan)
-                    .SetBackgroundColor(gris)
+                    .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
                     .SetTextAlignment(align)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .SetPadding(2f)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
                     .Add(p);
             }
 
             Cell CeldaBlanca(string texto, float size = 6f, bool negrita = false,
-                             TextAlignment align = TextAlignment.CENTER)
+                             TextAlignment align = TextAlignment.CENTER, Color? fondoFila = null)
             {
-                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size);
+                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size)
+                    .SetFontColor(PdfApiEstiloRequi.TextoPrincipal);
                 return new Cell()
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE)
                     .SetTextAlignment(align)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .SetPadding(2f)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
                     .Add(p);
             }
 
-            Cell CeldaVacia(float height = 14f) =>
-                new Cell().SetHeight(height).SetPadding(0f);
+            Cell CeldaVacia(float height = 14f, Color? fondoFila = null) =>
+                new Cell()
+                    .SetHeight(height)
+                    .SetPadding(0f)
+                    .SetBorder(bordeCelda)
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE);
 
-            var tblEnc = new Table(UnitValue.CreatePointArray(new float[] { 90f, 320f, 110f }))
-                .UseAllAvailableWidth();
-            tblEnc.AddCell(new Cell(5, 1)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(4f)
-                .Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(11))
-                .Add(new Paragraph("Gobierno del Estado").SetFont(regular).SetFontSize(6))
-                .Add(new Paragraph("2 0 2 4 - 2 0 3 0").SetFont(regular).SetFontSize(5)));
-            tblEnc.AddCell(new Cell()
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetPadding(3f)
-                .Add(new Paragraph("Autorización Presupuestal Interna").SetFont(bold).SetFontSize(11))
-                .Add(new Paragraph("Dirección de Administración y Finanzas").SetFont(regular).SetFontSize(8))
-                .Add(new Paragraph("Departamento de Recursos Materiales y Servicios Generales").SetFont(regular).SetFontSize(7))
-                .Add(new Paragraph("Departamento de Recursos Financieros").SetFont(bold).SetFontSize(7))
-                .Add(new Paragraph($"EJERCICIO {S(finalModel.Ejercicio)}").SetFont(bold).SetFontSize(8)));
-            tblEnc.AddCell(new Cell(5, 1)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(4f)
-                .Add(new Paragraph("Familias").SetFont(bold).SetFontSize(12))
-                .Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(7))
-                .Add(new Paragraph(" ").SetFontSize(4f))
-                .Add(new Paragraph("Fecha de elaboración:").SetFont(bold).SetFontSize(6))
-                .Add(new Paragraph(S(finalModel.FechaElaboracion)).SetFont(regular).SetFontSize(5.5f)));
-            for (int i = 0; i < 4; i++) tblEnc.AddCell(new Cell().SetHeight(10f).SetPadding(0f));
+            var ejercicioPdf = S(modelo.Ejercicio).Trim();
+            var tblEnc = CrearTablaEncabezadoApi(bold, regular, S(modelo.FechaElaboracion), ejercicioPdf);
             doc.Add(tblEnc);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var tblArea = new Table(UnitValue.CreatePointArray(new float[] { 85f, 38f, 397f })).UseAllAvailableWidth();
             tblArea.AddCell(CeldaGris("ÁREA SOLICITANTE:", align: TextAlignment.LEFT));
-            tblArea.AddCell(CeldaBlanca(finalModel.AreaSolicitanteClave, negrita: true));
-            tblArea.AddCell(CeldaBlanca(finalModel.AreaSolicitanteNombre, align: TextAlignment.LEFT));
+            tblArea.AddCell(CeldaBlanca(modelo.AreaSolicitanteClave, negrita: true));
+            tblArea.AddCell(CeldaBlanca(modelo.AreaSolicitanteNombre, align: TextAlignment.LEFT));
             foreach (var lbl in new[] { "ADECUACIÓN:", "AUTORIZACIÓN:", "SOLICITUD DE PAGO:" })
             {
                 tblArea.AddCell(CeldaGris(lbl, align: TextAlignment.LEFT));
-                tblArea.AddCell(new Cell(1, 2).SetHeight(10f).SetPadding(0f));
+                tblArea.AddCell(new Cell(1, 2).SetHeight(10f).SetPadding(0f).SetBorder(bordeCelda)
+                    .SetBackgroundColor(ColorConstants.WHITE));
             }
             doc.Add(tblArea);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var tblBien = new Table(UnitValue.CreatePointArray(new float[] { 105f, 415f })).UseAllAvailableWidth();
-            tblBien.AddCell(new Cell(1, 2).SetBackgroundColor(gris).SetFont(bold).SetFontSize(6.5f)
-                .SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
-                .Add(new Paragraph("INFORMACIÓN DEL BIEN O SERVICIO POR ADQUIRIR")));
-            tblBien.AddCell(CeldaGris("DESCRIPCIÓN DETALLADA\nDEL BIEN O SERVICIO:").SetHeight(28f));
-            tblBien.AddCell(new Cell().SetFont(regular).SetFontSize(7f).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(3f)
-                .Add(new Paragraph(S(finalModel.DescripcionBienServicio))));
-            tblBien.AddCell(CeldaGris("JUSTIFICACIÓN:").SetHeight(28f));
-            tblBien.AddCell(new Cell().SetFont(regular).SetFontSize(6.5f).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(3f)
-                .Add(new Paragraph(S(finalModel.Justificacion))));
+            tblBien.AddCell(new Cell(1, 2)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("INFORMACIÓN DEL BIEN O SERVICIO POR ADQUIRIR")
+                    .SetFont(bold).SetFontSize(7f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+            tblBien.AddCell(CeldaGris("DESCRIPCIÓN DETALLADA\nDEL BIEN O SERVICIO:").SetHeight(22f));
+            tblBien.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetFont(regular).SetFontSize(8f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph(S(modelo.DescripcionBienServicio)).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
+            tblBien.AddCell(CeldaGris("JUSTIFICACIÓN:").SetHeight(22f));
+            tblBien.AddCell(new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetFont(regular).SetFontSize(7.5f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph(S(modelo.Justificacion)).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
             doc.Add(tblBien);
-            doc.Add(new Paragraph("").SetMarginBottom(1f));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var colWidths = new float[] { 20f, 26f, 36f, 52f, 50f, 30f, 42f, 36f, 40f, 50f };
             var tblPart = new Table(UnitValue.CreatePointArray(colWidths)).UseAllAvailableWidth();
-            tblPart.AddHeaderCell(new Cell(1, 4).SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f).SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
-                .Add(new Paragraph("SOLICITUD DE SUFICIENCIA")));
-            tblPart.AddHeaderCell(new Cell(1, 6).SetBackgroundColor(gris).SetFont(bold).SetFontSize(5.5f).SetTextAlignment(TextAlignment.CENTER).SetPadding(2f)
-                .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")));
+            tblPart.AddHeaderCell(new Cell(1, 4)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("SOLICITUD DE SUFICIENCIA")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+            tblPart.AddHeaderCell(new Cell(1, 6)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
             var colTitles = new[] { "No.", "UA", "CLAVE\nMUNICIPIO", "IMPORTE\nSOLICITADO", "FUENTE DE\nFINANCIAMIENTO", "PP", "COMPONENTE", "ACTIVIDAD", "OBJETO\nDEL GASTO", "IMPORTE\nAUTORIZADO" };
-            foreach (var h in colTitles) tblPart.AddHeaderCell(CeldaGris(h, size: 5f).SetHeight(18f));
+            foreach (var h in colTitles) tblPart.AddHeaderCell(CeldaGris(h, size: 5.25f, textoEstiloColumna: true).SetHeight(18f));
 
-            int numFilas = Math.Max(15, finalModel.Partidas.Count + 3);
+            int numFilas = Math.Max(8, modelo.Partidas.Count + 1);
             for (int i = 0; i < numFilas; i++)
             {
-                if (i < finalModel.Partidas.Count)
+                Color bg = (i % 2 == 1) ? PdfApiEstiloRequi.FondoEncabezadoTabla : ColorConstants.WHITE;
+                if (i < modelo.Partidas.Count)
                 {
-                    var d = finalModel.Partidas[i];
-                    tblPart.AddCell(CeldaBlanca(d.Numero));
-                    tblPart.AddCell(CeldaBlanca(d.Ua));
-                    tblPart.AddCell(CeldaBlanca(d.ClaveMunicipio));
-                    tblPart.AddCell(CeldaBlanca(d.ImporteSolicitado));
-                    tblPart.AddCell(CeldaBlanca(d.FuenteFinanciamiento));
-                    tblPart.AddCell(CeldaBlanca(d.Pp));
-                    tblPart.AddCell(CeldaBlanca(d.Componente));
-                    tblPart.AddCell(CeldaBlanca(d.Actividad));
-                    tblPart.AddCell(CeldaBlanca(d.ObjetoGasto));
-                    tblPart.AddCell(CeldaBlanca(d.ImporteAutorizado));
+                    var d = modelo.Partidas[i];
+                    tblPart.AddCell(CeldaBlanca(d.Numero, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.Ua, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.ClaveMunicipio, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.ImporteSolicitado, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.FuenteFinanciamiento, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.Pp, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.Componente, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.Actividad, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.ObjetoGasto, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.ImporteAutorizado, fondoFila: bg));
                 }
                 else
                 {
-                    for (int c = 0; c < 10; c++) tblPart.AddCell(CeldaVacia(13f));
+                    for (int c = 0; c < 10; c++) tblPart.AddCell(CeldaVacia(10f, bg));
                 }
             }
             doc.Add(tblPart);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var tblTot = new Table(UnitValue.CreatePointArray(new float[] { 100f, 120f, 142f, 100f, 58f })).UseAllAvailableWidth();
             tblTot.AddCell(CeldaGris("Total Solicitado:", size: 7f, align: TextAlignment.LEFT).SetPaddingLeft(4f));
-            tblTot.AddCell(CeldaBlanca(S(finalModel.TotalSolicitado), align: TextAlignment.LEFT));
-            tblTot.AddCell(new Cell().SetBorder(Border.NO_BORDER));
+            tblTot.AddCell(CeldaBlanca(S(modelo.TotalSolicitado), align: TextAlignment.LEFT));
+            tblTot.AddCell(new Cell().SetBorder(bordeCelda).SetBackgroundColor(ColorConstants.WHITE));
             tblTot.AddCell(CeldaGris("Total Autorizado:", size: 7f, align: TextAlignment.LEFT).SetPaddingLeft(4f));
-            tblTot.AddCell(CeldaBlanca(S(finalModel.TotalAutorizado), align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(S(modelo.TotalAutorizado), align: TextAlignment.LEFT));
             doc.Add(tblTot);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var tblNumReq = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f })).UseAllAvailableWidth();
-            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .Add(new Paragraph("No. Requisición:  ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.NumeroRequisicion)).SetFont(regular))));
-            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .Add(new Paragraph("Oficio Suficiencia / Autorización: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.OficioSuficiencia)).SetFont(regular))));
-            tblNumReq.AddCell(new Cell().SetBackgroundColor(gris).SetPadding(2f).SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                .Add(new Paragraph("Contrato Asociado: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.ContratoAsociado)).SetFont(regular))));
+            tblNumReq.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("No. Requisición:  ").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .Add(new Text(S(modelo.NumeroRequisicion)).SetFont(regular).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))));
+            tblNumReq.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("Oficio Suficiencia / Autorización: ").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .Add(new Text(S(modelo.OficioSuficiencia)).SetFont(regular).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))));
+            tblNumReq.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("Contrato Asociado: ").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .Add(new Text(S(modelo.ContratoAsociado)).SetFont(regular).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))));
             doc.Add(tblNumReq);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
 
             var tblCom = new Table(UnitValue.CreatePointArray(new float[] { 520f })).UseAllAvailableWidth();
-            tblCom.AddCell(new Cell().SetBackgroundColor(gris).SetHeight(20f).SetPaddingLeft(4f).SetPaddingTop(3f)
-                .Add(new Paragraph("COMENTARIOS: ").SetFont(bold).SetFontSize(6f).Add(new Text(S(finalModel.Comentarios)).SetFont(regular))));
+            tblCom.AddCell(new Cell()
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetMinHeight(18f).SetPaddingLeft(4f).SetPaddingTop(3f).SetPaddingRight(4f)
+                .SetBorder(bordeCelda)
+                .Add(new Paragraph("COMENTARIOS: ").SetFont(bold).SetFontSize(6.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .Add(new Text(S(modelo.Comentarios)).SetFont(regular).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))));
             doc.Add(tblCom);
+            doc.Add(new Paragraph("").SetMarginBottom(8f));
 
             var tblFirmas = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f })).UseAllAvailableWidth();
             var firmantes = new (string Titulo, string Nombre)[]
@@ -793,11 +845,24 @@ namespace Inventario.BLL.Implementacion
             };
             foreach (var (titulo, nombre) in firmantes)
             {
-                tblFirmas.AddCell(new Cell().SetHeight(65f).SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.TOP).SetPadding(3f)
-                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(5.5f).SetMarginBottom(2f))
-                    .Add(new Paragraph(" ").SetFontSize(18f))
-                    .Add(new Paragraph("_____________________________").SetFont(regular).SetFontSize(5f).SetMarginBottom(2f))
-                    .Add(new Paragraph(nombre.Replace("\n", " ")).SetFont(regular).SetFontSize(4.8f).SetTextAlignment(TextAlignment.CENTER)));
+                tblFirmas.AddCell(new Cell()
+                    .SetMinHeight(78f)
+                    .SetBackgroundColor(ColorConstants.WHITE)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetVerticalAlignment(VerticalAlignment.TOP)
+                    .SetPaddingTop(10f)
+                    .SetPaddingBottom(10f)
+                    .SetPaddingLeft(6f)
+                    .SetPaddingRight(6f)
+                    .SetBorder(bordeCelda)
+                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(5.75f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla).SetMarginBottom(10f))
+                    .Add(new Paragraph(" ").SetFontSize(22f))
+                    .Add(new Paragraph("_________________________________________").SetFont(regular).SetFontSize(5f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginBottom(6f))
+                    .Add(new Paragraph(nombre.Replace("\n", " ")).SetFont(regular).SetFontSize(5f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                        .SetTextAlignment(TextAlignment.CENTER)));
             }
             doc.Add(tblFirmas);
 
@@ -805,47 +870,215 @@ namespace Inventario.BLL.Implementacion
             return ms.ToArray();
         }
 
-        private static TablaApiEditableDTO CombinarModeloTablaApi(TablaApiEditableDTO baseModelo, TablaApiEditableDTO entrada)
+        private Table CrearTablaEncabezadoApi(PdfFont bold, PdfFont regular, string fechaElaboracion, string ejercicioAnio)
         {
-            var salida = new TablaApiEditableDTO
-            {
-                IdRequisicion = baseModelo.IdRequisicion,
-                FechaElaboracion = string.IsNullOrWhiteSpace(entrada.FechaElaboracion) ? baseModelo.FechaElaboracion : entrada.FechaElaboracion,
-                Ejercicio = string.IsNullOrWhiteSpace(entrada.Ejercicio) ? baseModelo.Ejercicio : entrada.Ejercicio,
-                AreaSolicitanteClave = string.IsNullOrWhiteSpace(entrada.AreaSolicitanteClave) ? baseModelo.AreaSolicitanteClave : entrada.AreaSolicitanteClave,
-                AreaSolicitanteNombre = string.IsNullOrWhiteSpace(entrada.AreaSolicitanteNombre) ? baseModelo.AreaSolicitanteNombre : entrada.AreaSolicitanteNombre,
-                DescripcionBienServicio = string.IsNullOrWhiteSpace(entrada.DescripcionBienServicio) ? baseModelo.DescripcionBienServicio : entrada.DescripcionBienServicio,
-                Justificacion = string.IsNullOrWhiteSpace(entrada.Justificacion) ? baseModelo.Justificacion : entrada.Justificacion,
-                NumeroRequisicion = string.IsNullOrWhiteSpace(entrada.NumeroRequisicion) ? baseModelo.NumeroRequisicion : entrada.NumeroRequisicion,
-                OficioSuficiencia = entrada.OficioSuficiencia ?? "",
-                ContratoAsociado = entrada.ContratoAsociado ?? "",
-                Comentarios = entrada.Comentarios ?? "",
-                TotalSolicitado = string.IsNullOrWhiteSpace(entrada.TotalSolicitado) ? baseModelo.TotalSolicitado : entrada.TotalSolicitado,
-                TotalAutorizado = string.IsNullOrWhiteSpace(entrada.TotalAutorizado) ? baseModelo.TotalAutorizado : entrada.TotalAutorizado,
-                Partidas = new List<TablaApiPartidaEditableDTO>()
-            };
+            var borde = new SolidBorder(PdfApiEstiloRequi.Borde, 1f);
+            var bordeFecha = new SolidBorder(PdfApiEstiloRequi.BordeCuadro, 1.5f);
 
-            var origen = (entrada.Partidas != null && entrada.Partidas.Any()) ? entrada.Partidas : baseModelo.Partidas;
-            for (int i = 0; i < origen.Count; i++)
+            var tblEnc = new Table(UnitValue.CreatePointArray(new float[] { 100f, 292f, 120f }))
+                .UseAllAvailableWidth();
+            tblEnc.SetBorder(borde);
+            tblEnc.SetBackgroundColor(ColorConstants.WHITE);
+
+            var celdaIzq = new Cell(1, 1)
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(8f)
+                .SetBorder(borde);
+
+            if (!IntentarAgregarLogoEnCelda(celdaIzq,
+                    new[] { "corazon.png", "pensargrande.png", "familias-dif.png" }, 64f, 48f))
             {
-                var basePartida = i < baseModelo.Partidas.Count ? baseModelo.Partidas[i] : new TablaApiPartidaEditableDTO();
-                var inPartida = origen[i] ?? new TablaApiPartidaEditableDTO();
-                salida.Partidas.Add(new TablaApiPartidaEditableDTO
-                {
-                    Numero = string.IsNullOrWhiteSpace(inPartida.Numero) ? basePartida.Numero : inPartida.Numero,
-                    Ua = string.IsNullOrWhiteSpace(inPartida.Ua) ? basePartida.Ua : inPartida.Ua,
-                    ClaveMunicipio = string.IsNullOrWhiteSpace(inPartida.ClaveMunicipio) ? basePartida.ClaveMunicipio : inPartida.ClaveMunicipio,
-                    ImporteSolicitado = inPartida.ImporteSolicitado ?? "",
-                    FuenteFinanciamiento = string.IsNullOrWhiteSpace(inPartida.FuenteFinanciamiento) ? basePartida.FuenteFinanciamiento : inPartida.FuenteFinanciamiento,
-                    Pp = string.IsNullOrWhiteSpace(inPartida.Pp) ? basePartida.Pp : inPartida.Pp,
-                    Componente = inPartida.Componente ?? "",
-                    Actividad = inPartida.Actividad ?? "",
-                    ObjetoGasto = string.IsNullOrWhiteSpace(inPartida.ObjetoGasto) ? basePartida.ObjetoGasto : inPartida.ObjetoGasto,
-                    ImporteAutorizado = inPartida.ImporteAutorizado ?? ""
-                });
+                celdaIzq.Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(10f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))
+                    .Add(new Paragraph("Gobierno del Estado").SetFont(regular).SetFontSize(6.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario))
+                    .Add(new Paragraph("2 0 2 4 - 2 0 3 0").SetFont(regular).SetFontSize(5.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario));
             }
 
-            return salida;
+            tblEnc.AddCell(celdaIzq);
+
+            var centro = new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetVerticalAlignment(VerticalAlignment.TOP)
+                .SetPadding(10f)
+                .SetBorder(borde);
+            centro.Add(new Paragraph("SISTEMA PARA EL DESARROLLO INTEGRAL DE LA FAMILIA")
+                .SetFont(bold).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoInstitucional)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("DEL ESTADO DE PUEBLA")
+                .SetFont(bold).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoInstitucional)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("Autorización Presupuestal Interna")
+                .SetFont(bold).SetFontSize(12.5f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)
+                .SetTextAlignment(TextAlignment.CENTER).SetMarginTop(5f));
+            centro.Add(new Paragraph("Dirección de Administración y Finanzas")
+                .SetFont(regular).SetFontSize(8f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER).SetMarginTop(2f));
+            centro.Add(new Paragraph("Departamento de Recursos Materiales y Servicios Generales")
+                .SetFont(regular).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("Departamento de Recursos Financieros")
+                .SetFont(bold).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph($"EJERCICIO {S(ejercicioAnio)}")
+                .SetFont(bold).SetFontSize(10f).SetFontColor(PdfApiEstiloRequi.RosaAcento)
+                .SetTextAlignment(TextAlignment.CENTER).SetMarginTop(5f));
+            tblEnc.AddCell(centro);
+
+            var celdaDer = new Cell(1, 1)
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(8f)
+                .SetBorder(borde);
+
+            if (!IntentarAgregarLogoEnCelda(celdaDer, new[] { "familias-dif-rosa.png", "familias-dif.png" }, 64f, 48f))
+            {
+                celdaDer.Add(new Paragraph("Familias").SetFont(bold).SetFontSize(11f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))
+                    .Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(7f).SetFontColor(PdfApiEstiloRequi.TextoSecundario))
+                    .Add(new Paragraph(" ").SetFontSize(4f));
+            }
+            else
+            {
+                celdaDer.Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                    .SetMarginTop(2f));
+            }
+
+            tblEnc.AddCell(celdaDer);
+
+            // Segunda fila: la fecha ya no comparte alto con el título (evita franjas vacías bajo EJERCICIO).
+            var tblFecha = new Table(1).UseAllAvailableWidth();
+            tblFecha.AddCell(new Cell()
+                .SetBorder(bordeFecha)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                .SetPadding(6f)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .Add(new Paragraph("Fecha de elaboración").SetFont(bold).SetFontSize(7f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoSecundario))
+                .Add(new Paragraph(S(fechaElaboracion)).SetFont(regular).SetFontSize(7.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginTop(2f)));
+
+            // Tres columnas iguales: la fecha queda centrada en la página.
+            var filaFechaCentrada = new Table(UnitValue.CreatePercentArray(new float[] { 33.34f, 33.33f, 33.33f }))
+                .UseAllAvailableWidth();
+            filaFechaCentrada.AddCell(new Cell().SetBorder(Border.NO_BORDER).SetPadding(0f));
+            filaFechaCentrada.AddCell(new Cell().SetBorder(Border.NO_BORDER).SetPadding(0f).Add(tblFecha));
+            filaFechaCentrada.AddCell(new Cell().SetBorder(Border.NO_BORDER).SetPadding(0f));
+
+            tblEnc.AddCell(new Cell(1, 3)
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetPaddingTop(2f)
+                .SetPaddingRight(4f)
+                .SetPaddingBottom(4f)
+                .SetPaddingLeft(4f)
+                .SetBorderTop(Border.NO_BORDER)
+                .SetBorderLeft(borde)
+                .SetBorderRight(borde)
+                .SetBorderBottom(borde)
+                .Add(filaFechaCentrada));
+
+            return tblEnc;
+        }
+
+        private static bool IntentarAgregarLogoEnCelda(Cell celda, string[] nombresArchivo, float maxAnchoPt, float maxAltoPt)
+        {
+            foreach (var nombre in nombresArchivo)
+            {
+                var ruta = ResolverRutaImagenWwwRoot(nombre);
+                if (ruta == null) continue;
+                try
+                {
+                    var img = new Image(ImageDataFactory.Create(ruta));
+                    img.SetHorizontalAlignment(HorizontalAlignment.CENTER);
+                    img.ScaleToFit(maxAnchoPt, maxAltoPt);
+                    celda.Add(img);
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+            return false;
+        }
+
+        private static string? ResolverRutaImagenWwwRoot(string nombreArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(nombreArchivo)) return null;
+            foreach (var raiz in EnumerarRaicesPosiblesWeb())
+            {
+                var ruta = System.IO.Path.Combine(raiz, "wwwroot", "img", nombreArchivo);
+                if (File.Exists(ruta)) return System.IO.Path.GetFullPath(ruta);
+            }
+            return null;
+        }
+
+        private static List<string> EnumerarRaicesPosiblesWeb()
+        {
+            var rutas = new List<string>();
+            var vistos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void Agregar(string? dir)
+            {
+                if (string.IsNullOrWhiteSpace(dir)) return;
+                string full;
+                try { full = System.IO.Path.GetFullPath(dir); }
+                catch { return; }
+                if (vistos.Add(full)) rutas.Add(full);
+            }
+
+            Agregar(Directory.GetCurrentDirectory());
+            var bd = AppContext.BaseDirectory;
+            if (!string.IsNullOrEmpty(bd))
+            {
+                Agregar(bd);
+                try
+                {
+                    var info = new DirectoryInfo(bd);
+                    for (int i = 0; i < 8 && info != null; i++, info = info.Parent)
+                    {
+                        var web = System.IO.Path.Combine(info.FullName, "Inventario.AplicacionWeb");
+                        if (Directory.Exists(web)) Agregar(web);
+                    }
+                }
+                catch { /* ignorar rutas inválidas */ }
+            }
+
+            return rutas;
+        }
+
+        /// <summary>
+        /// Normaliza nulls tras el model binding del formulario; no rellena desde BD.
+        /// </summary>
+        private static void AsegurarTablaApiDesdeFormulario(TablaApiEditableDTO m)
+        {
+            static string Z(string? s) => s ?? "";
+            m.FechaElaboracion = Z(m.FechaElaboracion);
+            m.Ejercicio = Z(m.Ejercicio);
+            m.AreaSolicitanteClave = Z(m.AreaSolicitanteClave);
+            m.AreaSolicitanteNombre = Z(m.AreaSolicitanteNombre);
+            m.DescripcionBienServicio = Z(m.DescripcionBienServicio);
+            m.Justificacion = Z(m.Justificacion);
+            m.NumeroRequisicion = Z(m.NumeroRequisicion);
+            m.OficioSuficiencia = Z(m.OficioSuficiencia);
+            m.ContratoAsociado = Z(m.ContratoAsociado);
+            m.Comentarios = Z(m.Comentarios);
+            m.TotalSolicitado = Z(m.TotalSolicitado);
+            m.TotalAutorizado = Z(m.TotalAutorizado);
+            m.Partidas ??= new List<TablaApiPartidaEditableDTO>();
+            foreach (var p in m.Partidas)
+            {
+                p.Numero = Z(p.Numero);
+                p.Ua = Z(p.Ua);
+                p.ClaveMunicipio = Z(p.ClaveMunicipio);
+                p.ImporteSolicitado = Z(p.ImporteSolicitado);
+                p.FuenteFinanciamiento = Z(p.FuenteFinanciamiento);
+                p.Pp = Z(p.Pp);
+                p.Componente = Z(p.Componente);
+                p.Actividad = Z(p.Actividad);
+                p.ObjetoGasto = Z(p.ObjetoGasto);
+                p.ImporteAutorizado = Z(p.ImporteAutorizado);
+            }
         }
 
         // Helper: convierte null → string vacío
