@@ -37,6 +37,7 @@ namespace Inventario.BLL.Interfaces
             int idRequisicion,
             List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
+            List<IFormFile> anexos,
             string webRootPath);
 
         //metodos de archivos proveedor

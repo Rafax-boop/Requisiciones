@@ -360,7 +360,7 @@ namespace Inventario.BLL.Implementacion
                 .Add(new Paragraph("Dirección de Administración y Finanzas").SetFont(regular).SetFontSize(8))
                 .Add(new Paragraph("Departamento de Recursos Materiales y Servicios Generales").SetFont(regular).SetFontSize(7))
                 .Add(new Paragraph("Departamento de Recursos Financieros").SetFont(bold).SetFontSize(7))
-                .Add(new Paragraph("EJERCICIO 2025").SetFont(bold).SetFontSize(8)));
+                .Add(new Paragraph("EJERCICIO 2026").SetFont(bold).SetFontSize(8)));
 
             // Celda Familias DIF (rowspan 5)
             tblEnc.AddCell(new Cell(5, 1)

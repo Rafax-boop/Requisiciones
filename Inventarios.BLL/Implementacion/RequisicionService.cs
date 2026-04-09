@@ -264,6 +264,15 @@ namespace Inventario.BLL.Implementacion
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
+            var queryAnexos = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "anexo");
+            var anexos = await queryAnexos
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
+
             var querySIAF = await _repositoryDisenos.Consultar(
                 f => f.IdRequisicion == idMaestro && f.Tipo == "SIAF");
             var archivosSiaf = await querySIAF  // ← querySIAF, no queryCuadro
@@ -294,6 +303,7 @@ namespace Inventario.BLL.Implementacion
                 Articulos = lista,
                 Cotizaciones = cotizaciones,
                 CuadroComparativo = cuadro,
+                Anexos = anexos,
                 Observaciones = observacion,
                 ArchivosSiaf = archivosSiaf,
                 ArchivosTablaApi = archivosTablaApi,
@@ -777,6 +787,7 @@ namespace Inventario.BLL.Implementacion
             int idRequisicion,
             List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
+            List<IFormFile> anexos,
             string webRootPath)
         {
             async Task Guardar(List<IFormFile> archivos, string carpetaNombre, string tipo)
@@ -804,6 +815,7 @@ namespace Inventario.BLL.Implementacion
 
             await Guardar(cotizaciones, "cotizaciones", "cotizacion");
             await Guardar(cuadroComparativo, "cuadro_comparativo", "cuadro_comparativo");
+            await Guardar(anexos, "Anexos", "anexo");
             return true;
         }
 

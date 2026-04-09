@@ -417,6 +417,17 @@
                     );
                 }
 
+                (function () {
+                    var c = document.getElementById("contenedorArchivosReadonly");
+                    if (!c || !window.ModalAdjuntos) return;
+                    if ((data.anexos || []).length === 0) return;
+                    var divAnexos = document.createElement("div");
+                    divAnexos.id = "seccionAnexosDetalle";
+                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                    c.appendChild(divAnexos);
+                })();
+
                 // Diferenciar solo la parte de observaciones y botones
                 if (isReadonly) {
                     $("#txtObservaciones")
@@ -526,14 +537,18 @@
             // Cotizaciones / cuadro
             (function () {
                 var c = document.getElementById("expFinArchivosBase");
-                if (window.ModalAdjuntos) {
-                    c.innerHTML = 
-                        window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones || []) +
-                        window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo || []);
-                    window.ModalAdjuntos.enlazarEventosContenedor(c);
-                } else {
-                    c.innerHTML = "";
-                }
+                if (!window.ModalAdjuntos) { c.innerHTML = ""; return; }
+
+                var html = "";
+                if ((data.cotizaciones || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones);
+                if ((data.cuadroComparativo || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                if ((data.anexos || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+
+                c.innerHTML = html;
+                window.ModalAdjuntos.enlazarEventosContenedor(c);
             })();
 
             // Observaciones

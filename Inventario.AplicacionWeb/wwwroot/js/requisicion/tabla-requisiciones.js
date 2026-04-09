@@ -661,8 +661,10 @@
             success: function () {
                 var inputCot = document.getElementById("inputCotizaciones");
                 var inputCuadro = document.getElementById("inputCuadroComparativo");
+                var inputAnexos = document.getElementById("inputAnexos");
                 var tieneCot = inputCot && inputCot.files.length > 0;
                 var tieneCuadro = inputCuadro && inputCuadro.files.length > 0;
+                var tieneAnexos = inputAnexos && inputAnexos.files.length > 0;
 
                 if (!tieneCot && !tieneCuadro) {
                     // Sin archivos, terminar directo
@@ -676,6 +678,7 @@
                 formData.append("IdRequisicion", requisicionActual);
                 if (tieneCot) Array.from(inputCot.files).forEach(f => formData.append("Cotizaciones", f));
                 if (tieneCuadro) Array.from(inputCuadro.files).forEach(f => formData.append("CuadroComparativo", f));
+                if (tieneAnexos) Array.from(inputAnexos.files).forEach(f => formData.append("Anexos", f));
 
                 $.ajax({
                     url: urlSubirArchivosAtencion,
@@ -1024,11 +1027,22 @@
                     var btnEnviar = document.querySelector(".seccionAtender div[style*='text-align:right']");
                     if (btnEnviar) btnEnviar.style.display = "none";
 
-                    var rowArchivos = document.querySelector(".seccionAtender .row.mb-3");
-                    if (rowArchivos) rowArchivos.style.display = "none";
+                    document.querySelectorAll(".seccionAtender .row.mb-3").forEach(function (row) {
+                        row.style.display = "none";
+                    });
 
                     // Mostrar archivos subidos
                     renderizarArchivosReadonly(data.cotizaciones || [], data.cuadroComparativo || []);
+
+                    (function () {
+                        var c = document.getElementById("contenedorArchivosReadonly");
+                        if (!c || !window.ModalAdjuntos) return;
+                        if (!(data.anexos || []).length) return;
+                        var div = document.createElement("div");
+                        div.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                        window.ModalAdjuntos.enlazarEventosContenedor(div);
+                        c.appendChild(div);
+                    })();
                 }
             }
 
@@ -1133,14 +1147,18 @@
             // Cotizaciones / cuadro
             (function () {
                 var contenedor = document.getElementById("expArchivosBase");
-                if (window.ModalAdjuntos) {
-                    contenedor.innerHTML = 
-                        window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones || []) +
-                        window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo || []);
-                    window.ModalAdjuntos.enlazarEventosContenedor(contenedor);
-                } else {
-                    contenedor.innerHTML = "";
-                }
+                if (!window.ModalAdjuntos) { contenedor.innerHTML = ""; return; }
+
+                var html = "";
+                if ((data.cotizaciones || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones);
+                if ((data.cuadroComparativo || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                if ((data.anexos || []).length)
+                    html += window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+
+                contenedor.innerHTML = html;
+                window.ModalAdjuntos.enlazarEventosContenedor(contenedor);
             })();
 
             // Observaciones financieros

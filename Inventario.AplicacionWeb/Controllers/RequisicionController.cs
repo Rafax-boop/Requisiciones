@@ -393,13 +393,15 @@ namespace Inventario.AplicacionWeb.Controllers
         public async Task<IActionResult> SubirArchivosAtencion(
             int IdRequisicion,
             List<IFormFile>? Cotizaciones,
-            List<IFormFile>? CuadroComparativo)
+            List<IFormFile>? CuadroComparativo,
+            List<IFormFile> anexos)
         {
             var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
             await _requisicionService.GuardarArchivosAtencion(
                 IdRequisicion,
                 Cotizaciones ?? new List<IFormFile>(),
                 CuadroComparativo ?? new List<IFormFile>(),
+                anexos,
                 webRootPath
             );
             return Ok();
