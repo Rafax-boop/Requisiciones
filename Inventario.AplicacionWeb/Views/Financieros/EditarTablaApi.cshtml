@@ -1,0 +1,147 @@
+@model Inventario.BLL.DTO.TablaApiEditableDTO
+@{
+    ViewData["Title"] = "Editar Tabla API";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/componentes/form-comun.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/financieros/editar-tabla-api.css" asp-append-version="true" />
+}
+
+<div class="mt-3 container tabla-api-editor-page">
+    <div class="info-requisicion">
+        <div class="fantasma"></div>
+        <div class="container-info">
+            <p class="info-titulo mt-3">Edición de Tabla API</p>
+        </div>
+        <div class="requisicion-info">
+            <div class="requisicion">
+                <p class="info-body">Requisición:</p>
+                <label class="info-body">@Model.NumeroRequisicion</label>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="GenerarTablaApiEditada" asp-controller="Financieros" method="post" class="no-loader">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdRequisicion" />
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Fecha de elaboración</label>
+                    <input asp-for="FechaElaboracion" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Ejercicio</label>
+                    <input asp-for="Ejercicio" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Área solicitante (clave)</label>
+                    <input asp-for="AreaSolicitanteClave" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Área solicitante (nombre)</label>
+                    <input asp-for="AreaSolicitanteNombre" type="text" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Número de requisición</label>
+                    <input asp-for="NumeroRequisicion" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Oficio suficiencia / autorización</label>
+                    <input asp-for="OficioSuficiencia" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Contrato asociado</label>
+                    <input asp-for="ContratoAsociado" type="text" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <div class="formulario-input">
+                    <label>Descripción detallada del bien o servicio</label>
+                    <textarea asp-for="DescripcionBienServicio" rows="2"></textarea>
+                </div>
+                <div class="formulario-input">
+                    <label>Justificación</label>
+                    <textarea asp-for="Justificacion" rows="2"></textarea>
+                </div>
+                <div class="formulario-input">
+                    <label>Comentarios</label>
+                    <textarea asp-for="Comentarios" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <h5 class="mb-3 text-center">Partidas editables para PDF</h5>
+                <div class="table-responsive-container seccion-completa">
+                    <table class="tabla-api-editor-grid">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>UA</th>
+                                <th>Clave municipio</th>
+                                <th>Importe solicitado</th>
+                                <th>Fuente</th>
+                                <th>PP</th>
+                                <th>Componente</th>
+                                <th>Actividad</th>
+                                <th>Objeto del gasto</th>
+                                <th>Importe autorizado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Partidas.Count; i++)
+                            {
+                                <tr>
+                                    <td><input asp-for="Partidas[i].Numero" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].Ua" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].ClaveMunicipio" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].ImporteSolicitado" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].FuenteFinanciamiento" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].Pp" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].Componente" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].Actividad" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].ObjetoGasto" type="text" /></td>
+                                    <td><input asp-for="Partidas[i].ImporteAutorizado" type="text" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Total solicitado</label>
+                    <input asp-for="TotalSolicitado" type="text" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Total autorizado</label>
+                    <input asp-for="TotalAutorizado" type="text" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario mt-4">
+            <div class="seccion-completa text-center editor-actions">
+                <a class="btn boton-gris btn-lg" href="@Url.Action("TablaFinancieros", "Financieros")">Volver</a>
+                <button type="submit" class="btn boton-rosa btn-lg">
+                    Generar PDF editado
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

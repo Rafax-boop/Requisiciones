@@ -31,8 +31,11 @@ public static class TimelineHelper
     public static (int fase, bool esTerminal, bool esMod, int progress) Calcular(int idEstatus)
     {
         bool esTerminal = EstatusFlow.EsTerminal(idEstatus);
+        bool esTerminalNegativo = EstatusFlow.EsTerminalNegativo(idEstatus);
         bool esMod = idEstatus == 3 || idEstatus == 18;
-        int fase = esTerminal ? 1 : FaseMap.GetValueOrDefault(idEstatus, 1);
+        // Solo los terminales negativos reinician la línea.
+        // Los terminales positivos (7,12,17) deben quedar en cierre completo.
+        int fase = esTerminalNegativo ? 1 : FaseMap.GetValueOrDefault(idEstatus, 1);
 
         int progress = fase switch
         {

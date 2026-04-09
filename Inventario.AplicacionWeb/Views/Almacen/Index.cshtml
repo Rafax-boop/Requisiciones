@@ -1,4 +1,5 @@
 @using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.AplicacionWeb.Utilidades
 @model VMAlmacenIndex
 @{
     ViewData["Title"] = "Almacen";
@@ -89,7 +90,7 @@
                         <th>Fecha Emisión</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
-                        <th>Items</th>
+                        <th>Partida(s)</th>
                         <th>Estado</th>
                         <th></th>
                     </tr>
@@ -111,7 +112,7 @@
                             <td>@r.Departamento</td>
                             <td>@r.Responsable</td>
                             <td style="text-align:center">@r.CantidadPartidas</td>
-                            <td>@r.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(r.IdEstatus, r.Estatus))</td>
                             <td>
                                 <div class="acciones-grupo">
                                     <button type="button" class="btn-accion btn-ver" title="Analizar"

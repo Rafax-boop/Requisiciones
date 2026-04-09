@@ -14,6 +14,9 @@
     var urlDescargarTablaApi = container
         ? container.getAttribute("data-url-descargar-tabla-api")
         : "";
+    var urlEditarTablaApi = container
+        ? container.getAttribute("data-url-editar-tabla-api")
+        : "";
 
     // Variables al inicio del módulo
     var urlObtenerDocsProveedor = container
@@ -287,6 +290,23 @@
         var url = (urlDescargarTablaApi || "").replace(/\/$/, "")
             + "?idRequisicion=" + requisicionActual;
 
+        window.open(url, "_blank");
+    };
+
+    window.editarTablaApi = function () {
+        if (!requisicionActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin requisición",
+                text: "No se pudo identificar la requisición actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        var url = (urlEditarTablaApi || "").replace(/\/$/, "")
+            + "?idRequisicion=" + requisicionActual;
         window.open(url, "_blank");
     };
 

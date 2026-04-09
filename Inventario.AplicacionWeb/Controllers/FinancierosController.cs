@@ -169,6 +169,41 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditarTablaApi(int idRequisicion)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerTablaApiEditableAsync(idRequisicion);
+                return View(modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error preparando edición de Tabla API para requisición {Id}", idRequisicion);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarTablaApiEditada([FromForm] TablaApiEditableDTO modelo)
+        {
+            try
+            {
+                if (modelo.IdRequisicion <= 0)
+                    return BadRequest("La requisición es requerida.");
+
+                var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
+                var nombreArchivo = $"TablaAPI_Editada_{modelo.IdRequisicion}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(bytes, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error generando Tabla API editada para requisición {Id}", modelo.IdRequisicion);
+                return StatusCode(500, $"Error al generar el PDF editado: {ex.Message}");
+            }
+        }
+
         /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
         [HttpGet]
         public async Task<IActionResult> SnapshotIdsPorTab()
