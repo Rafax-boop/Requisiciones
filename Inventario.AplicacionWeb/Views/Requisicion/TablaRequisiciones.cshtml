@@ -88,7 +88,7 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Verificadas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
     </nav>
 
     @{
@@ -98,7 +98,7 @@
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
     }
 
     <!-- Pestaña En seguimiento -->

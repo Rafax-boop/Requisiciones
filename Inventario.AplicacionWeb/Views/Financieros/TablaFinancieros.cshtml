@@ -69,7 +69,7 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">Proceso de pago</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">En proceso de pago</button>
     </nav>
 
     @{
@@ -646,6 +646,22 @@
                     <div id="expFinChecklistDocs" style="display:flex; flex-direction:column; gap:8px;"></div>
                 </div>
 
+                <div style="margin-top:16px;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:10px;">
+                        <i class="fa-solid fa-file-invoice"></i> Factura firmada
+                    </p>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="formulario-input">
+                                <label>Subir factura</label>
+                                <input type="file" id="inputFactura" name="Factura"
+                                       multiple class="input-file-rosa" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Botones -->
                 <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" class="btn btn-danger" onclick="rebotarDocumentos()">
@@ -761,46 +777,61 @@
                         <textarea id="txtObservaciones" class="form-control" rows="4"
                                   placeholder="Escriba las observaciones aquí..."></textarea>
 
-                        <div class="row mb-3 mt-3">
-                            <div class="col-md-5">
-                                <div class="formulario-input">
-                                    <label>Subir Documento SIAF</label>
-                                    <input type="file" id="inputSiaf" name="DocSiaf" multiple class="input-file-rosa" />
+                        @if (User.IsInRole("9"))
+                        {
+                            <!-- Solo el analista (rol 9) puede subir archivos -->
+                            <div class="row mb-3 mt-3">
+                                <div class="col-md-5">
+                                    <div class="formulario-input">
+                                        <label>Subir Documento SIAF</label>
+                                        <input type="file" id="inputSiaf" name="DocSiaf" multiple class="input-file-rosa" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="formulario-input">
-                                    <label>Tabla de API</label>
+                                <div class="col-md-5">
+                                    <div class="formulario-input">
+                                        <label>Tabla de API</label>
 
-                                    <!-- Botón para descargar la Tabla API pre-llenada desde el sistema -->
-                                    <button type="button"
-                                            class="btn boton-rosa mb-2 w-100"
-                                            id="btnDescargarTablaApi"
-                                            onclick="descargarTablaApi()"
-                                            title="Genera el formato pre-llenado con los datos de la requisición">
-                                        <i class="fa-solid fa-file-arrow-down"></i>
-                                        Descargar Tabla API
-                                    </button>
+                                        <!-- Botón para descargar la Tabla API pre-llenada desde el sistema -->
+                                        <button type="button"
+                                                class="btn boton-rosa mb-2 w-100"
+                                                id="btnDescargarTablaApi"
+                                                onclick="descargarTablaApi()"
+                                                title="Genera el formato pre-llenado con los datos de la requisición">
+                                            <i class="fa-solid fa-file-arrow-down"></i>
+                                            Descargar Tabla API
+                                        </button>
 
-                                    <!-- Input para subir la Tabla API ya firmada (flujo original) -->
-                                    <input type="file"
-                                           id="inputTablaApi"
-                                           name="TablaApi"
-                                           multiple
-                                           class="input-file-rosa" />
-                                    <small class="text-muted" style="font-size:11px;">
-                                        Descarga, firma y luego sube el archivo aquí
-                                    </small>
+                                        <!-- Input para subir la Tabla API ya firmada (flujo original) -->
+                                        <input type="file"
+                                               id="inputTablaApi"
+                                               name="TablaApi"
+                                               multiple
+                                               class="input-file-rosa" />
+                                        <small class="text-muted" style="font-size:11px;">
+                                            Descarga, firma y luego sube el archivo aquí
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="formulario-input">
+                                        <label>Nº API</label>
+                                        <!-- El número se genera automáticamente al guardar.
+                                             Se muestra aquí solo para referencia visual. -->
+                                        <input type="text"
+                                               id="inputNumeroApi"
+                                               class="form-control"
+                                               placeholder="Se generará al autorizar"
+                                               readonly
+                                               style="background:#f0fdf4; border-color:#bbf7d0;
+                                                    color:#166534; font-weight:600; cursor:default;" />
+                                        <small class="text-muted" style="font-size:10px;">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            Asignado automáticamente
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="formulario-input">
-                                    <label>Nº API</label>
-                                    <input type="text" id="inputNumeroApi" class="form-control"
-                                           placeholder="API-000" maxlength="20" />
-                                </div>
-                            </div>
-                        </div>
+                        }
                     </div>
                     <div id="botonesAtender" style="margin-top:20px; text-align:right; display:none;">
                         <button type="button" class="btn btn-danger me-2" onclick="rechazarDesdeAtencion()">

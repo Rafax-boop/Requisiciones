@@ -138,10 +138,10 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> FinalizarRequisicion([FromBody] VMRevisarRequisicion modelo)
+        public async Task<IActionResult> FinalizarRequisicion([FromForm] VMRevisarRequisicion modelo)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, idUsuario);
+            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, modelo.Factura, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
         }

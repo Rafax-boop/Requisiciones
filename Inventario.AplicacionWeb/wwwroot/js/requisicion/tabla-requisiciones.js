@@ -347,7 +347,7 @@
 
             // Botón subir solo si estatus permite (16 o 18)
             var btnSubir = "";
-            if (idEstatus === 16 || idEstatus === 18) {
+            if (idEstatus === 15 || idEstatus === 18) {
                 btnSubir = '<label style="margin-left:auto;cursor:pointer;">' +
                     '<input type="file" style="display:none;" ' +
                     'onchange="subirDocProveedor(' + idRequi + ', \'' + doc.clave + '\', this)">' +
@@ -367,7 +367,7 @@
         });
 
         var acciones = document.getElementById("expAccionesProveedor");
-        if (idEstatus === 16 || idEstatus === 18) {
+        if (idEstatus === 15 || idEstatus === 18) {
             acciones.style.display = todosSubidos ? "block" : "none";
         } else {
             acciones.style.display = "none";
