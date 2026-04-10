@@ -39,9 +39,7 @@ namespace Inventario.BLL.Implementacion
             _repoMovimiento = repoMovimiento;
         }
 
-        // ─────────────────────────────────────────────
         // Helpers privados
-        // ─────────────────────────────────────────────
 
         private async Task<TblRequisicion> ObtenerRequisicionConDetallesAsync(int idRequisicion)
         {
@@ -52,7 +50,7 @@ namespace Inventario.BLL.Implementacion
                 .FirstOrDefaultAsync();
 
             if (req == null)
-                throw new Exception($"No se encontró la requisición con ID {idRequisicion}.");
+                throw new Exception($"No se encontro la requisicion con ID {idRequisicion}.");
 
             return req;
         }
@@ -72,12 +70,10 @@ namespace Inventario.BLL.Implementacion
         private static void ValidarEstatusAlmacen(TblRequisicion req)
         {
             if (req.IdEstatus != ESTATUS_EN_ALMACEN)
-                throw new Exception($"La requisición {req.NumRequisicion} no está en estatus de Almacén.");
+                throw new Exception($"La requisicion {req.NumRequisicion} no esta en estatus de Almacen.");
         }
 
-        // ─────────────────────────────────────────────
         // Consultas
-        // ─────────────────────────────────────────────
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesAlmacen()
         {
@@ -97,13 +93,8 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lista las requisiciones que tienen artículos pendientes de entrega física
-        /// (movimientos tipo ENTREGA registrados al procesar, aún no confirmados).
-        /// </summary>
         public async Task<List<EntregaPendienteDTO>> ListarEntregasPendientes()
         {
-            // Movimientos de tipo ENTREGA que aún no han sido confirmados
             var movQuery = await _repoMovimiento.Consultar(
                 m => m.TipoMovimiento == "ENTREGA" && m.Confirmado != true);
 
@@ -113,7 +104,6 @@ namespace Inventario.BLL.Implementacion
                 .Include(m => m.IdRequisicionDetalleNavigation)
                 .ToListAsync();
 
-            // Agrupar por requisición
             var grupos = movimientos
                 .GroupBy(m => m.IdRequisicion)
                 .Select(g =>
@@ -143,68 +133,90 @@ namespace Inventario.BLL.Implementacion
             return grupos;
         }
 
-        /// <summary>
-        /// Confirma la entrega física de uno o varios movimientos de entrega.
-        /// Marca cada movimiento como Confirmado = true.
-        /// Si todos los movimientos de la requisición quedan confirmados, cambia el estatus a ENTREGADO (12).
-        /// </summary>
-        public async Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string? formatoSalidaFirmadoRuta)
+        // El stock se descuenta aqui, cuando almacen confirma la entrega fisica.
+        // ProcesarRequisicion solo registra el movimiento y valida que hay stock,
+        // pero no lo toca hasta este momento.
+        public async Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario)
         {
             if (idsMovimientos == null || idsMovimientos.Count == 0)
-                throw new Exception("Debe seleccionar al menos un artículo para confirmar.");
+                throw new Exception("Debe seleccionar al menos un articulo para confirmar.");
 
             await _uow.BeginTransactionAsync();
             try
             {
-                // Marcar los movimientos seleccionados como confirmados
+                // Cargar una sola vez los detalles con navegacion al articulo
+                var reqConDetalles = await ObtenerRequisicionConDetallesAsync(idRequisicion);
+                var detallesPorId = reqConDetalles.TblRequisicionDetalles
+                    .ToDictionary(d => d.IdRequisicionDetalle);
+
                 foreach (var idMov in idsMovimientos)
                 {
-                    var mov = await _repoMovimiento.Obtener(m => m.IdMovimiento == idMov && m.IdRequisicion == idRequisicion)
-                              ?? throw new Exception($"No se encontró el movimiento con ID {idMov}.");
+                    var mov = await _repoMovimiento.Obtener(
+                        m => m.IdMovimiento == idMov && m.IdRequisicion == idRequisicion)
+                        ?? throw new Exception($"No se encontro el movimiento con ID {idMov}.");
+
+                    if (mov.Confirmado == true)
+                        throw new Exception($"El movimiento {idMov} ya fue confirmado anteriormente.");
+
+                    var det = detallesPorId.GetValueOrDefault(mov.IdRequisicionDetalle)
+                        ?? throw new Exception($"No se encontro el detalle del movimiento {idMov}.");
+
+                    var clave = (det.IdArticuloNavigation?.Clave ?? "").Trim();
+                    var desc = (det.Descripcion ?? "").Trim();
+                    var cantConfirmar = mov.CantidadMovimiento;
+
+                    if (string.IsNullOrWhiteSpace(clave))
+                        throw new Exception($"El articulo '{desc}' no tiene clave registrada.");
+
+                    var inv = await _repoInventario.Obtener(i => i.Clave == clave)
+                        ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
+
+                    if (inv.Existencia < cantConfirmar)
+                        throw new Exception(
+                            $"Stock insuficiente al confirmar entrega de: {desc}. " +
+                            $"Disponible: {inv.Existencia}, a entregar: {cantConfirmar}.");
+
+                    // Descontar stock al momento de la entrega fisica
+                    inv.Existencia -= cantConfirmar;
+                    await _repoInventario.Editar(inv);
 
                     mov.Confirmado = true;
                     mov.FechaConfirmacion = DateTime.Now;
                     mov.IdUsuarioConfirmacion = idUsuario;
-                    mov.FormatoSalidaFirmado = formatoSalidaFirmadoRuta;
                     await _repoMovimiento.Editar(mov);
                 }
 
-                // Verificar si TODOS los movimientos de entrega de esta requisición ya están confirmados
+                // Verificar si todos los movimientos de entrega quedaron confirmados
                 var todosMovQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
                 var todosMovs = await todosMovQuery.ToListAsync();
-
                 bool todoConfirmado = todosMovs.Any() && todosMovs.All(m => m.Confirmado == true);
 
                 if (todoConfirmado)
                 {
                     var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
-                              ?? throw new Exception("No se encontró la requisición.");
+                        ?? throw new Exception("No se encontro la requisicion.");
 
-                    // Solo cambiar estatus si no tiene compras pendientes (estatus 11)
-                    // Si tiene compras, el estatus 11 lo maneja materiales; cuando confirmen
-                    // las entregas, la requisición pasa a ENTREGADO solo si ya no hay nada en compra
+                    // Solo pasa a ENTREGADO si no tiene compras pendientes (estatus 11)
                     if (req.IdEstatus != ESTATUS_EN_COMPRA)
                     {
                         req.IdEstatus = ESTATUS_ENTREGADO;
                         req.FechaModificacion = DateTime.Now;
                         await _repositoryRequisicion.Editar(req);
-
                         await RegistrarBitacoraAsync(idRequisicion, ESTATUS_ENTREGADO, idUsuario,
-                            "Almacén confirmó entrega física de todos los artículos.");
+                            "Almacen confirmo entrega fisica de todos los articulos.");
                     }
                     else
                     {
                         await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 0, idUsuario,
-                            "Almacén confirmó entrega física de artículos (pendiente proceso de compra).");
+                            "Almacen confirmo entrega fisica de articulos (pendiente proceso de compra).");
                     }
                 }
                 else
                 {
-                    await RegistrarBitacoraAsync(idRequisicion,
-                        (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion))?.IdEstatus ?? 0,
-                        idUsuario,
-                        $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).");
+                    var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+                    await RegistrarBitacoraAsync(idRequisicion, req?.IdEstatus ?? 0, idUsuario,
+                        $"Almacen confirmo entrega parcial: {idsMovimientos.Count} articulo(s) entregado(s).");
                 }
 
                 await _uow.CommitAsync();
@@ -268,9 +280,7 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        // ─────────────────────────────────────────────
-        // Operaciones con transacción
-        // ─────────────────────────────────────────────
+        // Operaciones con transaccion
 
         public async Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto)
         {
@@ -278,7 +288,7 @@ namespace Inventario.BLL.Implementacion
             var unidadMedida = (dto.UnidadMedida ?? "").Trim();
             var motivo = (dto.Motivo ?? "").Trim();
 
-            if (string.IsNullOrWhiteSpace(descripcion)) throw new Exception("La descripción es obligatoria.");
+            if (string.IsNullOrWhiteSpace(descripcion)) throw new Exception("La descripcion es obligatoria.");
             if (string.IsNullOrWhiteSpace(unidadMedida)) throw new Exception("La unidad de medida es obligatoria.");
             if (dto.Cantidad <= 0) throw new Exception("La cantidad debe ser mayor a 0.");
             if (string.IsNullOrWhiteSpace(motivo)) throw new Exception("El motivo es obligatorio.");
@@ -287,9 +297,8 @@ namespace Inventario.BLL.Implementacion
             try
             {
                 var inv = await _repoInventario.Obtener(i => i.Descripcion == descripcion && i.UnidadMedida == unidadMedida);
-                bool esNuevo = inv == null;
 
-                if (esNuevo)
+                if (inv == null)
                 {
                     if (string.IsNullOrWhiteSpace(dto.Clave))
                         throw new Exception("La clave es obligatoria para dar de alta un material nuevo.");
@@ -331,7 +340,7 @@ namespace Inventario.BLL.Implementacion
 
                 var detalles = req.TblRequisicionDetalles.ToList();
                 if (detalles.Count == 0)
-                    throw new Exception("La requisición no tiene partidas.");
+                    throw new Exception("La requisicion no tiene partidas.");
 
                 var resumenEgresos = new List<string>();
 
@@ -345,7 +354,7 @@ namespace Inventario.BLL.Implementacion
                     var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
-                        throw new Exception("Hay partidas sin descripción o unidad de medida.");
+                        throw new Exception("Hay partidas sin descripcion o unidad de medida.");
 
                     var inv = await _repoInventario.Obtener(i => i.Clave == clave)
                         ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
@@ -358,34 +367,12 @@ namespace Inventario.BLL.Implementacion
                     resumenEgresos.Add($"{desc} x{cant}");
                 }
 
-                // Mismo criterio que ProcesarRequisicion: el tab "A Entregar" lista movimientos
-                // TipoMovimiento ENTREGA con Confirmado = false. Sin este registro, la aprobación
-                // completa solo cambia estatus y stock pero no aparece pendiente de entrega física.
-                foreach (var d in detalles)
-                {
-                    var cant = (int)Math.Ceiling(d.Cantidad ?? 0m);
-                    if (cant <= 0) continue;
-
-                    var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
-                    await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
-                    {
-                        IdRequisicion = idRequisicion,
-                        IdRequisicionDetalle = d.IdRequisicionDetalle,
-                        TipoMovimiento = "ENTREGA",
-                        CantidadOriginal = cantSolicitada,
-                        CantidadMovimiento = cant,
-                        FechaMovimiento = DateTime.Now,
-                        IdUsuario = idUsuario,
-                        Confirmado = false
-                    });
-                }
-
                 req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, ESTATUS_APROBADA_ALMACEN, idUsuario,
-                    $"Almacén autorizó completa. Egreso: {string.Join(", ", resumenEgresos)}.");
+                    $"Almacen autorizo completa. Egreso: {string.Join(", ", resumenEgresos)}.");
 
                 await _uow.CommitAsync();
                 return true;
@@ -425,7 +412,7 @@ namespace Inventario.BLL.Implementacion
                     if (cantAprobada <= 0) continue;
 
                     if (!detallesById.TryGetValue(idDetalle, out var d))
-                        throw new Exception("Una de las partidas no pertenece a la requisición.");
+                        throw new Exception("Una de las partidas no pertenece a la requisicion.");
 
                     var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
                     if (cantAprobada > cantSolicitada)
@@ -436,7 +423,7 @@ namespace Inventario.BLL.Implementacion
                     var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(desc) || string.IsNullOrWhiteSpace(unidad))
-                        throw new Exception("Hay partidas sin descripción o unidad de medida.");
+                        throw new Exception("Hay partidas sin descripcion o unidad de medida.");
 
                     var inv = await _repoInventario.Obtener(i => i.Clave == clave)
                         ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
@@ -466,7 +453,7 @@ namespace Inventario.BLL.Implementacion
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
-                var obs = new StringBuilder("Almacén autorizó parcial. Egreso: ");
+                var obs = new StringBuilder("Almacen autorizo parcial. Egreso: ");
                 obs.Append(string.Join(", ", resumenEgresos));
                 if (faltantes.Count > 0)
                     obs.Append($". FALTANTES: {string.Join("; ", faltantes)}. Urgente resurtir stock.");
@@ -493,7 +480,7 @@ namespace Inventario.BLL.Implementacion
             try
             {
                 var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
-                          ?? throw new Exception($"No se encontró la requisición con ID {idRequisicion}.");
+                    ?? throw new Exception($"No se encontro la requisicion con ID {idRequisicion}.");
 
                 ValidarEstatusAlmacen(req);
 
@@ -502,7 +489,7 @@ namespace Inventario.BLL.Implementacion
                 await _repositoryRequisicion.Editar(req);
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, ESTATUS_RECHAZADA_ALMACEN, idUsuario,
-                    $"Almacén rechazó requisición. Motivo: {motivo}");
+                    $"Almacen rechazo requisicion. Motivo: {motivo}");
 
                 await _uow.CommitAsync();
                 return true;
@@ -540,13 +527,15 @@ namespace Inventario.BLL.Implementacion
                 var resumenEntregas = new List<string>();
                 var resumenCompras = new List<string>();
 
-                // ── Entregas: descontar stock y registrar movimiento (pendiente de confirmar) ──
+                // Entregas: solo validar existencia y registrar movimiento.
+                // El stock NO se descuenta aqui; se descuenta en ConfirmarEntrega
+                // cuando almacen entrega fisicamente el material.
                 foreach (var (idDetalle, cantAprobada) in listaEntregas)
                 {
                     if (cantAprobada <= 0) continue;
 
                     if (!detallesById.TryGetValue(idDetalle, out var d))
-                        throw new Exception("Una de las partidas de entrega no pertenece a la requisición.");
+                        throw new Exception("Una de las partidas de entrega no pertenece a la requisicion.");
 
                     var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
                     if (cantAprobada > cantSolicitada)
@@ -554,23 +543,17 @@ namespace Inventario.BLL.Implementacion
 
                     var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
-                    var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(clave))
-                        throw new Exception($"El artículo '{desc}' no tiene clave registrada.");
+                        throw new Exception($"El articulo '{desc}' no tiene clave registrada.");
 
+                    // Solo validar que existe y tiene stock — el descuento es al confirmar entrega
                     var inv = await _repoInventario.Obtener(i => i.Clave == clave)
-                              ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
+                        ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
 
                     if (inv.Existencia < cantAprobada)
                         throw new Exception($"Stock insuficiente para: {desc}. Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
 
-                    // Descontar stock
-                    inv.Existencia -= cantAprobada;
-                    await _repoInventario.Editar(inv);
-
-                    // Registrar movimiento de entrega — Confirmado = false hasta que almacén
-                    // haga la entrega física en el tab "A Entregar"
                     await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
                     {
                         IdRequisicion = idRequisicion,
@@ -586,11 +569,11 @@ namespace Inventario.BLL.Implementacion
                     resumenEntregas.Add($"{desc} x{cantAprobada}");
                 }
 
-                // ── Compras: solo registrar movimiento, sin tocar stock ──
+                // Compras: solo registrar movimiento, sin tocar stock
                 foreach (var (idDetalle, cantComprar) in listaCompras)
                 {
                     if (!detallesById.TryGetValue(idDetalle, out var d))
-                        throw new Exception("Una de las partidas de compra no pertenece a la requisición.");
+                        throw new Exception("Una de las partidas de compra no pertenece a la requisicion.");
 
                     var cantSolicitada = (int)Math.Ceiling(d.Cantidad ?? 0m);
 
@@ -609,18 +592,16 @@ namespace Inventario.BLL.Implementacion
                     resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
                 }
 
-                // ── Determinar estatus final ──
-                // Con compras → estatus 11 (regresa a materiales para gestionar la compra)
-                // Solo entregas → la requisición queda en espera de confirmación de entrega física
-                //                 se usa estatus 9 temporalmente — el tab "A Entregar" la mostrará
-                //                 y al confirmar pasará a 12 (ENTREGADO)
+                // Con compras -> estatus 11 (regresa a materiales)
+                // Solo entregas -> queda en 9 para que aparezca en tab "A Entregar"
+                //                  y al confirmar pasa a 12 (ENTREGADO)
                 int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_EN_ALMACEN;
 
                 req.IdEstatus = estatusFinal;
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
-                var obs = new StringBuilder("Almacén procesó requisición.");
+                var obs = new StringBuilder("Almacen proceso requisicion.");
                 if (resumenEntregas.Count > 0) obs.Append($" Preparados para entrega: {string.Join(", ", resumenEntregas)}.");
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 

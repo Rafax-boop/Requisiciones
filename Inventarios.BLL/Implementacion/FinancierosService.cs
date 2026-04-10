@@ -161,7 +161,7 @@ namespace Inventario.BLL.Implementacion
             catch { throw; }
         }
 
-        public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? facturas, int idUsuario)
+        public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario)
         {
             try
             {
@@ -186,15 +186,14 @@ namespace Inventario.BLL.Implementacion
 
                 await _repositoryBitacora.Crear(bitacora);
 
-                if (facturas != null && facturas.Any())
+                if (transferencias != null && transferencias.Any())
                 {
                     var rutaBase = System.IO.Path.Combine(
                         Directory.GetCurrentDirectory(),
-                        "wwwroot", "uploads", "Factura", idRequisicion.ToString());
-
+                        "wwwroot", "uploads", "Transferencias", idRequisicion.ToString());
                     Directory.CreateDirectory(rutaBase);
 
-                    foreach (var archivo in facturas)
+                    foreach (var archivo in transferencias)
                     {
                         if (archivo.Length == 0) continue;
 
@@ -207,9 +206,9 @@ namespace Inventario.BLL.Implementacion
                         var registro = new TblRegistroDiseno
                         {
                             IdRequisicion = idRequisicion,
-                            Ruta = $"/uploads/Factura/{idRequisicion}/{nombreArchivo}",
+                            Ruta = $"/uploads/Transferencias/{idRequisicion}/{nombreArchivo}",
                             FechaSubida = DateTime.Now,
-                            Tipo = "Factura"
+                            Tipo = "Transferencia"
                         };
                         await _repositoryDiseno.Crear(registro);
                     }

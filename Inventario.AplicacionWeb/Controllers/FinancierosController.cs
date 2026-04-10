@@ -141,7 +141,7 @@ namespace Inventario.AplicacionWeb.Controllers
         public async Task<IActionResult> FinalizarRequisicion([FromForm] VMRevisarRequisicion modelo)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, modelo.Factura, idUsuario);
+            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, modelo.Transferencia, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
         }

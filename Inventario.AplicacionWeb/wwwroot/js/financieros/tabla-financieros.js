@@ -668,10 +668,10 @@
             var formData = new FormData();
             formData.append("IdRequisicion", expedienteFinActual);
 
-            var inputFactura = document.getElementById("inputFactura");
-            if (inputFactura && inputFactura.files.length) {
-                for (var i = 0; i < inputFactura.files.length; i++)
-                    formData.append("Factura", inputFactura.files[i]);
+            var inputTransferencia = document.getElementById("inputTransferencia");
+            if (inputTransferencia && inputTransferencia.files.length) {
+                for (var i = 0; i < inputTransferencia.files.length; i++)
+                    formData.append("Transferencia", inputTransferencia.files[i]);
             }
 
             $.ajax({
@@ -684,7 +684,7 @@
                     bootstrap.Modal.getInstance(
                         document.getElementById("modalExpedienteFinancieros")
                     ).hide();
-                    if (inputFactura) inputFactura.value = "";
+                    if (inputTransferencia) inputTransferencia.value = "";
                     Swal.fire({
                         icon: "success",
                         title: "Requisición finalizada",
