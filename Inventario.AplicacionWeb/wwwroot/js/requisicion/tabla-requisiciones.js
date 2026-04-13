@@ -866,16 +866,135 @@
     document.querySelector(".select2-search__field")?.focus();
   });
 
-  $(document).on("shown.bs.modal", "#modalProveedoresRequisicion", function () {
-    var $sel = $("#selectProveedorRequisicionModal");
-    if (!$sel.length) return;
-    if ($sel.data("select2")) return;
-    $sel.select2({
-      dropdownParent: $("#modalProveedoresRequisicion"),
-      width: "100%",
-      language: "es",
+  (function modalProveedoresRequisicion() {
+    var MAX_FILAS_PROVEEDORES = 6;
+    var FILAS_INICIALES_PROVEEDORES = 2;
+    var CATALOGO_PROVEEDORES_MODAL = [];
+    for (var c = 1; c <= 10; c++) {
+      CATALOGO_PROVEEDORES_MODAL.push({ v: String(c), t: "Proveedor " + c });
+    }
+
+    function $modalProveedores() {
+      return $("#modalProveedoresRequisicion");
+    }
+
+    function $contenedorFilas() {
+      return $("#modalProveedoresFilas");
+    }
+
+    function destruirSelect2ProveedoresEn($root) {
+      $root.find(".modal-proveedores-select").each(function () {
+        var $s = $(this);
+        if ($s.data("select2")) $s.select2("destroy");
+      });
+    }
+
+    function buildFullOptionsHtml() {
+      var html = '<option value="">-- Seleccione proveedor --</option>';
+      CATALOGO_PROVEEDORES_MODAL.forEach(function (p) {
+        html += "<option value=\"" + p.v + "\">" + p.t + "</option>";
+      });
+      return html;
+    }
+
+    function initSelect2Proveedor($sel) {
+      if (!$sel.length || typeof $.fn.select2 === "undefined") return;
+      $sel.select2({
+        dropdownParent: $modalProveedores(),
+        width: "100%",
+        language: "es",
+      });
+    }
+
+    function sincronizarOpcionesProveedores() {
+      var $c = $contenedorFilas();
+      if (!$c.length) return;
+      var $filas = $c.find(".modal-proveedores-fila");
+      var values = $filas
+        .map(function () {
+          return $(this).find(".modal-proveedores-select").val() || "";
+        })
+        .get();
+
+      $filas.each(function (idx) {
+        var $sel = $(this).find(".modal-proveedores-select");
+        var current = values[idx] || "";
+        if ($sel.data("select2")) $sel.select2("destroy");
+
+        var tomadosPorOtros = {};
+        values.forEach(function (v, j) {
+          if (j !== idx && v) tomadosPorOtros[v] = true;
+        });
+
+        var html = '<option value="">-- Seleccione proveedor --</option>';
+        CATALOGO_PROVEEDORES_MODAL.forEach(function (p) {
+          if (!tomadosPorOtros[p.v] || p.v === current) {
+            html += "<option value=\"" + p.v + "\">" + p.t + "</option>";
+          }
+        });
+        $sel.html(html);
+        if (current && $sel.find('option[value="' + current + '"]').length) {
+          $sel.val(current);
+        } else {
+          $sel.val("");
+        }
+        initSelect2Proveedor($sel);
+      });
+    }
+
+    function actualizarBotonAgregarProveedores() {
+      var $c = $contenedorFilas();
+      var $btn = $("#btnModalProveedoresAgregar");
+      if (!$c.length || !$btn.length) return;
+      var n = $c.find(".modal-proveedores-fila").length;
+      $btn.prop("disabled", n >= MAX_FILAS_PROVEEDORES);
+    }
+
+    function resetModalProveedores() {
+      var $m = $modalProveedores();
+      var $c = $contenedorFilas();
+      if (!$m.length || !$c.length) return;
+
+      destruirSelect2ProveedoresEn($m);
+      while ($c.find(".modal-proveedores-fila").length > FILAS_INICIALES_PROVEEDORES) {
+        $c.find(".modal-proveedores-fila").last().remove();
+      }
+      $c.find(".modal-proveedores-fila").each(function () {
+        $(this).find(".modal-proveedores-input-precio").val("");
+        var $sel = $(this).find(".modal-proveedores-select");
+        $sel.html(buildFullOptionsHtml());
+        $sel.val("");
+      });
+      sincronizarOpcionesProveedores();
+      actualizarBotonAgregarProveedores();
+    }
+
+    $(document).on("shown.bs.modal", "#modalProveedoresRequisicion", function () {
+      resetModalProveedores();
     });
-  });
+
+    $(document).on("hidden.bs.modal", "#modalProveedoresRequisicion", function () {
+      destruirSelect2ProveedoresEn($(this));
+    });
+
+    $(document).on(
+      "select2:select select2:clear",
+      "#modalProveedoresRequisicion .modal-proveedores-select",
+      function () {
+        sincronizarOpcionesProveedores();
+      },
+    );
+
+    $(document).on("click", "#btnModalProveedoresAgregar", function () {
+      var $c = $contenedorFilas();
+      var tpl = document.getElementById("tplModalProveedorFila");
+      if (!$c.length || !tpl || !tpl.content) return;
+      if ($c.find(".modal-proveedores-fila").length >= MAX_FILAS_PROVEEDORES) return;
+      $c[0].appendChild(tpl.content.cloneNode(true));
+      sincronizarOpcionesProveedores();
+      actualizarBotonAgregarProveedores();
+    });
+  })();
 
   $(document).on("mousedown", function (e) {
     if (!_descPanelModalTrigger) return;
