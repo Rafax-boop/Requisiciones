@@ -1440,3 +1440,22 @@
   border: 1px solid #7dd3fc;
 }
 .badge-estado-info i { color: #0284c7; }
+
+/* ──────────────────────────────────────────
+   Modal proveedores (desde artículos / atender)
+────────────────────────────────────────── */
+.modal-proveedores-campo {
+  margin-bottom: 1rem;
+}
+
+.modal-proveedores-acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--slate-200, #e2e8f0);
+}
+
+.modal-proveedores-abrir {
+  width: 100%;
+}

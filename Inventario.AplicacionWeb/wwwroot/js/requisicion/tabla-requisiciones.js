@@ -863,6 +863,17 @@
     document.querySelector(".select2-search__field")?.focus();
   });
 
+  $(document).on("shown.bs.modal", "#modalProveedoresRequisicion", function () {
+    var $sel = $("#selectProveedorRequisicionModal");
+    if (!$sel.length) return;
+    if ($sel.data("select2")) return;
+    $sel.select2({
+      dropdownParent: $("#modalProveedoresRequisicion"),
+      width: "100%",
+      language: "es",
+    });
+  });
+
   $(document).on("mousedown", function (e) {
     if (!_descPanelModalTrigger) return;
     var panel = document.getElementById("desc-panel-modal");

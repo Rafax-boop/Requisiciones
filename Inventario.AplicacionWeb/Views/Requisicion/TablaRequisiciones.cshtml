@@ -810,8 +810,13 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="formulario-input">
-                                <label>Subir cotizaciones</label>
-                                <input type="file" id="inputCotizaciones" name="Cotizaciones" multiple class="input-file-rosa" />
+                                @*<label>Subir cotizaciones</label>
+                                <input type="file" id="inputCotizaciones" name="Cotizaciones" multiple class="input-file-rosa" />*@
+                                <label>Cotizaciones</label>
+                                <button type="button" class="btn boton-rosa modal-proveedores-abrir"
+                                        data-bs-toggle="modal" data-bs-target="#modalProveedoresRequisicion">
+                                    Seleccionar Proveedores
+                                </button>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -832,6 +837,41 @@
                             Enviar
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalProveedoresRequisicion" tabindex="-1" aria-labelledby="modalProveedoresRequisicionLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores</h5>
+                    <p class="modal-subtitulo-premium">Precio y proveedor</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium modal-proveedores-cuerpo">
+                <div class="formulario-input modal-proveedores-campo">
+                    <label for="inputPrecioProveedorRequisicion">Precio</label>
+                    <input type="text" id="inputPrecioProveedorRequisicion" class="form-control" inputmode="decimal"
+                           placeholder="0.00" autocomplete="off" />
+                </div>
+                <div class="formulario-input modal-proveedores-campo">
+                    <label for="selectProveedorRequisicionModal">Proveedor</label>
+                    <select id="selectProveedorRequisicionModal" class="form-select select2" title="Proveedor">
+                        <option value="">-- Seleccione proveedor --</option>
+                        <option value="1">proveedor 1</option>
+                        <option value="2">proveedor 2</option>
+                    </select>
+                </div>
+                <div class="modal-proveedores-acciones">
+                    <button type="button" class="btn boton-rosa" data-bs-dismiss="modal">Aceptar</button>
                 </div>
             </div>
         </div>
