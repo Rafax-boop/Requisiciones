@@ -13,9 +13,9 @@ public partial class TblRequisicionDetalleMovimiento
 
     public string TipoMovimiento { get; set; } = null!;
 
-    public decimal CantidadOriginal { get; set; }
+    public int CantidadOriginal { get; set; }
 
-    public decimal CantidadMovimiento { get; set; }
+    public int CantidadMovimiento { get; set; }
 
     public DateTime FechaMovimiento { get; set; }
 

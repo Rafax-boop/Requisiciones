@@ -62,7 +62,7 @@ namespace Inventario.AplicacionWeb.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.Error = "Ocurrió un error al procesar la solicitud";
+                ViewBag.Error = "Ocurrió un error al procesar la solicitud: " + ex.Message;
                 return View();
             }
         }
