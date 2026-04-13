@@ -857,19 +857,53 @@
                 </button>
             </div>
             <div class="modal-body modal-body-premium modal-proveedores-cuerpo">
-                <div class="formulario-input modal-proveedores-campo">
-                    <label for="inputPrecioProveedorRequisicion">Precio</label>
-                    <input type="text" id="inputPrecioProveedorRequisicion" class="form-control" inputmode="decimal"
-                           placeholder="0.00" autocomplete="off" />
+                <div id="modalProveedoresFilas" class="modal-proveedores-lista">
+                    @for (var filaIdx = 0; filaIdx < 2; filaIdx++)
+                    {
+                        <div class="modal-proveedores-fila">
+                            <div class="formulario-input modal-proveedores-campo-precio">
+                                <label for="precioProveedor_@filaIdx">Precio</label>
+                                <input type="text" id="precioProveedor_@filaIdx" class="form-control modal-proveedores-input-precio"
+                                       inputmode="decimal" placeholder="0.00" autocomplete="off" />
+                            </div>
+                            <div class="formulario-input modal-proveedores-campo-select">
+                                <label for="selectProveedor_@filaIdx">Proveedor</label>
+                                <select id="selectProveedor_@filaIdx" class="form-select select2 modal-proveedores-select" title="Proveedor">
+                                    <option value="">-- Seleccione proveedor --</option>
+                                    @for (int i = 1; i <= 10; i++)
+                                    {
+                                        <option value="@i">Proveedor @i</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    }
                 </div>
-                <div class="formulario-input modal-proveedores-campo">
-                    <label for="selectProveedorRequisicionModal">Proveedor</label>
-                    <select id="selectProveedorRequisicionModal" class="form-select select2" title="Proveedor">
-                        <option value="">-- Seleccione proveedor --</option>
-                        <option value="1">proveedor 1</option>
-                        <option value="2">proveedor 2</option>
-                    </select>
+                <div class="modal-proveedores-agregar-wrap">
+                    <button type="button" id="btnModalProveedoresAgregar" class="btn modal-proveedores-btn-agregar">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        Agregar
+                    </button>
                 </div>
+                <template id="tplModalProveedorFila">
+                    <div class="modal-proveedores-fila">
+                        <div class="formulario-input modal-proveedores-campo-precio">
+                            <label>Precio</label>
+                            <input type="text" class="form-control modal-proveedores-input-precio"
+                                   inputmode="decimal" placeholder="0.00" autocomplete="off" />
+                        </div>
+                        <div class="formulario-input modal-proveedores-campo-select">
+                            <label>Proveedor</label>
+                            <select class="form-select select2 modal-proveedores-select" title="Proveedor">
+                                <option value="">-- Seleccione proveedor --</option>
+                                @for (int i = 1; i <= 10; i++)
+                                {
+                                    <option value="@i">Proveedor @i</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </template>
                 <div class="modal-proveedores-acciones">
                     <button type="button" class="btn boton-rosa" data-bs-dismiss="modal">Aceptar</button>
                 </div>
