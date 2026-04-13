@@ -23,6 +23,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMunicipioServie _municipioService;
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
         private readonly IAlmacenService _almacenService;
+        private readonly IProveedoresService _proveedoresService;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         public RequisicionController(
@@ -32,6 +33,7 @@ namespace Inventario.AplicacionWeb.Controllers
             IMunicipioServie municipioService,
             IProgramaPresupuestarioService programaPresupuestarioService,
             IAlmacenService almacenService,
+            IProveedoresService proveedoresService,
             IWebHostEnvironment webHostEnvironment
         )
         {
@@ -42,6 +44,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
             _almacenService = almacenService;
+            _proveedoresService = proveedoresService;
             _webHostEnvironment = webHostEnvironment;
         }
 
@@ -100,6 +103,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ObtenerActividades();
 
             var municipios = await _municipioService.ObtenerMunicipios();
+            var proveedores = await _proveedoresService.ObtenerProveedores();
             var estatus = await _almacenService.ObtenerEstatus();
 
             var vm = new VMTablaRequisiciones
@@ -116,6 +120,12 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     Value = m.Id.ToString(),
                     Text = m.Municipio
+                }).ToList(),
+
+                ListaProveedores = proveedores.Select(p => new SelectListItem
+                {
+                    Value = p.Id.ToString(),
+                    Text = p.Proveedor
                 }).ToList(),
                 Estatus = estatus
             };
@@ -486,5 +496,19 @@ namespace Inventario.AplicacionWeb.Controllers
 
             return Json(new { principal, autorizadas, rechazadas, verificadas });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> GuardarCotizaciones([FromBody] GuardarCotizacionesRequest modelo)
+        {
+            var ok = await _requisicionService.GuardarCotizaciones(modelo.IdRequisicion, modelo.Cotizaciones);
+            return Ok(new { success = ok });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerCotizaciones(int idRequisicion)
+        {
+            var cotizaciones = await _requisicionService.ObtenerCotizaciones(idRequisicion);
+            return Ok(cotizaciones);
+        }                                                                                                                         
     }
 }

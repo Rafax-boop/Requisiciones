@@ -135,6 +135,14 @@ public partial class DbSigereContext : DbContext
             entity.HasKey(e => e.IdCotizacion);
 
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.IdProveedorNavigation).WithMany(p => p.TblCotizaciones)
+                .HasForeignKey(d => d.IdProveedor)
+                .HasConstraintName("FK_TblCotizaciones_tblProvedor");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblCotizaciones)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblCotizaciones_tblRequisicion");
         });
 
         modelBuilder.Entity<TblDepartamento>(entity =>

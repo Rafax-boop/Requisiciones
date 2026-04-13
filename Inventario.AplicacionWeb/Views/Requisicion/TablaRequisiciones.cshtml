@@ -29,7 +29,9 @@
      data-url-subir-doc-proveedor="@Url.Action("SubirDocumentoProveedor", "Requisicion")"
      data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
      data-url-enviar-financieros-docs="@Url.Action("EnviarAFinancierosConDocs", "Requisicion")"
-     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")">
+     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
+     data-url-guardar-cotizaciones="@Url.Action("GuardarCotizaciones", "Requisicion")"
+     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -878,9 +880,9 @@
                                 <label for="selectProveedor_@filaIdx">Proveedor</label>
                                 <select id="selectProveedor_@filaIdx" class="form-select select2 modal-proveedores-select" title="Proveedor">
                                     <option value="">-- Seleccione proveedor --</option>
-                                    @for (int i = 1; i <= 10; i++)
+                                    @foreach (var act in Model.ListaProveedores)
                                     {
-                                        <option value="@i">Proveedor @i</option>
+                                        <option value="@act.Value">@act.Text</option>
                                     }
                                 </select>
                             </div>
@@ -904,9 +906,9 @@
                             <label>Proveedor</label>
                             <select class="form-select select2 modal-proveedores-select" title="Proveedor">
                                 <option value="">-- Seleccione proveedor --</option>
-                                @for (int i = 1; i <= 10; i++)
+                                @foreach (var act in Model.ListaProveedores)
                                 {
-                                    <option value="@i">Proveedor @i</option>
+                                    <option value="@act.Value">@act.Text</option>
                                 }
                             </select>
                         </div>

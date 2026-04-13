@@ -20,4 +20,6 @@ public partial class TblProvedor
     public DateTime? FechaBaja { get; set; }
 
     public virtual TblProvedorTipo? IdProvedorTipoNavigation { get; set; }
+
+    public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 }

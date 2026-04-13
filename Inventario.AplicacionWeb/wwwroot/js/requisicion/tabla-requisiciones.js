@@ -23,6 +23,7 @@
         ? container.getAttribute("data-url-subir-archivos-atencion")
         : "";
     var _idRequiAsignar = null;
+    var _idRequiCotizaciones = null;
     var expedienteActual = null;
     var expedienteEstatusActual = 0;
     var expedienteNotaActual = "";
@@ -38,6 +39,11 @@
         ? container.getAttribute("data-url-enviar-financieros-docs") : "";
     var urlRebotarDocumentos = container
         ? container.getAttribute("data-url-rebotar-documentos") : "";
+
+    var urlGuardarCotizaciones = container
+        ? container.getAttribute("data-url-guardar-cotizaciones") : "";
+    var urlObtenerCotizaciones = container
+        ? container.getAttribute("data-url-obtener-cotizaciones") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -869,10 +875,11 @@
   (function modalProveedoresRequisicion() {
     var MAX_FILAS_PROVEEDORES = 6;
     var FILAS_INICIALES_PROVEEDORES = 2;
-    var CATALOGO_PROVEEDORES_MODAL = [];
-    for (var c = 1; c <= 10; c++) {
-      CATALOGO_PROVEEDORES_MODAL.push({ v: String(c), t: "Proveedor " + c });
-    }
+      var CATALOGO_PROVEEDORES_MODAL = [];
+      $("#selectProveedor_0 option").each(function () {
+          var val = $(this).val();
+          if (val) CATALOGO_PROVEEDORES_MODAL.push({ v: val, t: $(this).text() });
+      });
 
     function $modalProveedores() {
       return $("#modalProveedoresRequisicion");
@@ -969,9 +976,81 @@
       actualizarBotonAgregarProveedores();
     }
 
-    $(document).on("shown.bs.modal", "#modalProveedoresRequisicion", function () {
-      resetModalProveedores();
-    });
+      $(document).on("show.bs.modal", "#modalProveedoresRequisicion", function () {
+          if (!_idRequiCotizaciones) {
+              resetModalProveedores();
+              return;
+          }
+
+          $.get(urlObtenerCotizaciones, { idRequisicion: _idRequiCotizaciones }, function (data) {
+              // Siempre resetear primero para limpiar estado previo
+              destruirSelect2ProveedoresEn($("#modalProveedoresRequisicion"));
+
+              var $c = $contenedorFilas();
+
+              // Ajustar número de filas al número de cotizaciones guardadas (mínimo FILAS_INICIALES)
+              var filasMeta = Math.max(data ? data.length : 0, FILAS_INICIALES_PROVEEDORES);
+
+              while ($c.find(".modal-proveedores-fila").length < filasMeta) {
+                  var tpl = document.getElementById("tplModalProveedorFila");
+                  $c[0].appendChild(tpl.content.cloneNode(true));
+              }
+              while ($c.find(".modal-proveedores-fila").length > filasMeta) {
+                  $c.find(".modal-proveedores-fila").last().remove();
+              }
+
+              // Limpiar todas las filas primero
+              $c.find(".modal-proveedores-fila").each(function () {
+                  $(this).find(".modal-proveedores-input-precio").val("");
+                  $(this).find(".modal-proveedores-select").html(buildFullOptionsHtml()).val("");
+              });
+
+              // Precargar valores si hay datos
+              if (data && data.length) {
+                  $c.find(".modal-proveedores-fila").each(function (i) {
+                      if (!data[i]) return;
+                      $(this).find(".modal-proveedores-input-precio").val(data[i].importe || "");
+                      $(this).find(".modal-proveedores-select").val(data[i].idProveedor || "");
+                  });
+              }
+
+              sincronizarOpcionesProveedores();
+              actualizarBotonAgregarProveedores();
+          }).fail(function () {
+              resetModalProveedores();
+          });
+      });
+
+      // Guardar al hacer clic en Aceptar
+      $(document).on("click", "#modalProveedoresRequisicion .boton-rosa[data-bs-dismiss='modal']", function () {
+          if (!_idRequiCotizaciones) return;
+
+          var cotizaciones = [];
+          $contenedorFilas().find(".modal-proveedores-fila").each(function () {
+              var idProveedor = parseInt($(this).find(".modal-proveedores-select").val()) || 0;
+              var importe = parseFloat(
+                  $(this).find(".modal-proveedores-input-precio").val().replace(/,/g, "")
+              ) || 0;
+              if (idProveedor > 0) {
+                  cotizaciones.push({ idProveedor: idProveedor, importe: importe });
+              }
+          });
+
+          if (!cotizaciones.length) return;
+
+          $.ajax({
+              url: urlGuardarCotizaciones,
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({
+                  idRequisicion: _idRequiCotizaciones,
+                  cotizaciones: cotizaciones
+              }),
+              success: function () {
+                  // Toast silencioso opcional
+              }
+          });
+      });
 
     $(document).on("hidden.bs.modal", "#modalProveedoresRequisicion", function () {
       destruirSelect2ProveedoresEn($(this));
@@ -1009,6 +1088,7 @@
   });
 
     window.verDetalle = function (idMaestro, modo = "ver") {
+        _idRequiCotizaciones = idMaestro;
         // Limpiar contenedores al abrir
         var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
         if (archivosReadonly) archivosReadonly.innerHTML = "";

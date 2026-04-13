@@ -22,6 +22,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
+        private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
         private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
@@ -905,6 +906,38 @@ namespace Inventario.BLL.Implementacion
             });
 
             return true;
+        }
+
+        public async Task<bool> GuardarCotizaciones(int idRequisicion, List<CotizacionDTO> cotizaciones)
+        {
+            // Eliminar cotizaciones anteriores de esta requisición
+            var queryPrev = await _repositoryCotizaciones.Consultar(c => c.IdRequisicion == idRequisicion);
+            var previas = await queryPrev.ToListAsync();
+            foreach (var p in previas)
+                await _repositoryCotizaciones.Eliminar(p);
+
+            // Insertar las nuevas
+            foreach (var cot in cotizaciones)
+            {
+                if (cot.IdProveedor <= 0) continue;
+                await _repositoryCotizaciones.Crear(new TblCotizacione
+                {
+                    IdRequisicion = idRequisicion,
+                    IdProveedor = cot.IdProveedor,
+                    Importe = cot.Importe
+                });
+            }
+            return true;
+        }
+
+        public async Task<List<CotizacionDTO>> ObtenerCotizaciones(int idRequisicion)
+        {
+            var query = await _repositoryCotizaciones.Consultar(c => c.IdRequisicion == idRequisicion);
+            return await query.Select(c => new CotizacionDTO
+            {
+                IdProveedor = c.IdProveedor ?? 0,
+                Importe = c.Importe ?? 0
+            }).ToListAsync();
         }
 
         private string GenerarSelloDigital()

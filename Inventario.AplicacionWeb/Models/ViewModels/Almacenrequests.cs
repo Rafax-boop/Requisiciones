@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Inventario.BLL.DTO;
+using Microsoft.AspNetCore.Http;
 
 namespace Inventario.AplicacionWeb.Models.ViewModels
 {
@@ -76,5 +77,11 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public List<int> IdsMovimientos { get; set; } = new();
         public IFormFile? FormatoSalidaFirmado { get; set; }
+    }
+
+    public class GuardarCotizacionesRequest
+    {
+        public int IdRequisicion { get; set; }
+        public List<CotizacionDTO> Cotizaciones { get; set; } = new();
     }
 }
