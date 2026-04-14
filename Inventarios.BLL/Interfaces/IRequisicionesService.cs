@@ -35,7 +35,6 @@ namespace Inventario.BLL.Interfaces
 
         Task<bool> GuardarArchivosAtencion(
             int idRequisicion,
-            List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
             List<IFormFile> anexos,
             string webRootPath);
@@ -50,8 +49,5 @@ namespace Inventario.BLL.Interfaces
 
         Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
             List<string> docsObservados, int idUsuario);
-
-        Task<bool> GuardarCotizaciones(int idRequisicion, List<CotizacionDTO> cotizaciones);
-        Task<List<CotizacionDTO>> ObtenerCotizaciones(int idRequisicion);
     }
 }

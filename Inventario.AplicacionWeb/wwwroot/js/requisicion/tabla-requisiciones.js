@@ -58,7 +58,8 @@
         { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
         { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
         { clave: "ActaConst", label: "Acta Constitutiva" },
-        { clave: "CompDomicilio", label: "Comprobante de Domicilio" }
+        { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
+        { clave: "MemoPago", label: "Memorandum Instrucción de Pago" }
     ];
 
   var fechaSeleccionada = "";
@@ -1022,7 +1023,7 @@
       });
 
       // Guardar al hacer clic en Aceptar
-      $(document).on("click", "#modalProveedoresRequisicion .boton-rosa[data-bs-dismiss='modal']", function () {
+      $(document).on("click", "#modalProveedoresRequisicion .boton-rosa", function () {
           if (!_idRequiCotizaciones) return;
 
           var cotizaciones = [];
@@ -1046,9 +1047,7 @@
                   idRequisicion: _idRequiCotizaciones,
                   cotizaciones: cotizaciones
               }),
-              success: function () {
-                  // Toast silencioso opcional
-              }
+              success: function () { /* guardado silencioso */ }
           });
       });
 
@@ -1357,18 +1356,33 @@
             // Cotizaciones / cuadro
             (function () {
                 var contenedor = document.getElementById("expArchivosBase");
-                if (!window.ModalAdjuntos) { contenedor.innerHTML = ""; return; }
+                contenedor.innerHTML = "";
 
-                var html = "";
-                if ((data.cotizaciones || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones);
-                if ((data.cuadroComparativo || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
-                if ((data.anexos || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                // Botón cotizaciones
+                var btnCot = document.createElement("div");
+                btnCot.style.cssText = "margin-bottom:12px;";
+                btnCot.innerHTML =
+                    '<button type="button" class="btn boton-rosa" ' +
+                    'onclick="verCotizaciones(' + idRequi + ')">' +
+                    '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
+                    '</button>';
+                contenedor.appendChild(btnCot);
 
-                contenedor.innerHTML = html;
-                window.ModalAdjuntos.enlazarEventosContenedor(contenedor);
+                // Cuadro comparativo (se mantiene)
+                if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
+                    var divCuadro = document.createElement("div");
+                    divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
+                    contenedor.appendChild(divCuadro);
+                }
+
+                // Anexos
+                if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
+                    var divAnexos = document.createElement("div");
+                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                    contenedor.appendChild(divAnexos);
+                }
             })();
 
             // Observaciones financieros
@@ -1461,6 +1475,69 @@
                 }
             });
         });
+    };
+
+    window.verCotizaciones = function (idRequi) {
+        $.get(urlObtenerCotizaciones, { idRequisicion: idRequi }, function (data) {
+            var lista = document.getElementById("listaCotizacionesModal");
+            lista.innerHTML = "";
+
+            if (!data || !data.length) {
+                lista.innerHTML =
+                    '<p style="color:var(--color-text-secondary);font-style:italic;font-size:13px;">' +
+                    'Sin cotizaciones registradas.</p>';
+            } else {
+                data.forEach(function (c, i) {
+                    var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
+                        style: "currency", currency: "MXN"
+                    });
+                    var fila = document.createElement("div");
+                    fila.style.cssText =
+                        "display:flex;align-items:center;gap:12px;padding:10px 14px;" +
+                        "border-radius:8px;border:1px solid var(--color-border-tertiary);" +
+                        "background:var(--color-background-secondary);";
+                    fila.innerHTML =
+                        '<span style="font-size:12px;color:var(--color-text-secondary);' +
+                        'min-width:20px;text-align:center;">#' + (i + 1) + '</span>' +
+                        '<span style="flex:1;font-size:13px;font-weight:500;">' +
+                        (c.nombreProveedor || "Proveedor #" + c.idProveedor) +
+                        '</span>' +
+                        '<span style="font-size:13px;color:var(--color-text-success);font-weight:500;">' +
+                        importe +
+                        '</span>';
+                    lista.appendChild(fila);
+                });
+            }
+
+            new bootstrap.Modal(document.getElementById("modalVerCotizaciones")).show();
+        }).fail(function () {
+            Swal.fire({ icon: "error", title: "No se pudieron cargar las cotizaciones." });
+        });
+    };
+
+    window.abrirModalProveedoresSinCerrar = function () {
+        // Abre el modal de proveedores de forma manual sin que Bootstrap
+        // interfiera con el modal de detalle que ya está abierto
+        var el = document.getElementById("modalProveedoresRequisicion");
+        if (!el) return;
+
+        // Evitar doble instancia
+        var instancia = bootstrap.Modal.getInstance(el);
+        if (instancia) {
+            instancia.show();
+        } else {
+            var modal = new bootstrap.Modal(el, {
+                backdrop: false,   // sin backdrop extra para no apilar dos oscurecimientos
+                keyboard: false
+            });
+            modal.show();
+        }
+    };
+
+    window.cerrarSoloModalProveedores = function () {
+        var el = document.getElementById("modalProveedoresRequisicion");
+        var instancia = bootstrap.Modal.getInstance(el);
+        if (instancia) instancia.hide();
     };
 
   /* ══════════════════════════════════════════════

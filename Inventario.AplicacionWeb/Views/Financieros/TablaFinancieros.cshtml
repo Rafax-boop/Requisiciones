@@ -26,7 +26,8 @@
      data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
-     data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")">
+     data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
+     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -915,6 +916,28 @@
                     <button type="button" class="btn btn-danger" onclick="confirmarRebotar()">
                         <i class="fa-solid fa-rotate-left"></i> Confirmar rebotar
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ver cotizaciones (solo lectura) -->
+<div class="modal" id="modalVerCotizaciones" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Cotizaciones</h5>
+                    <p class="modal-subtitulo-premium">Precios registrados por proveedor</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div id="listaCotizacionesModal"
+                     style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
                 </div>
             </div>
         </div>

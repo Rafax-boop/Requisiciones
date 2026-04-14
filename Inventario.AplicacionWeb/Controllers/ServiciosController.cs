@@ -20,6 +20,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IAlmacenService _almacenService;
         private readonly IProgramaPresupuestarioService _programaService;
         private readonly IMunicipioServie _municipioService;
+        private readonly IProveedoresService _proveedorService;
         private readonly IWebHostEnvironment _env;
 
         public ServiciosController(
@@ -30,6 +31,7 @@ namespace Inventario.AplicacionWeb.Controllers
             IAlmacenService almacenService,
             IMunicipioServie municipioService,
             IProgramaPresupuestarioService programaService,
+            IProveedoresService proveedorService,
             IWebHostEnvironment env
         )
         {
@@ -40,6 +42,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _almacenService = almacenService;
             _municipioService = municipioService;
             _programaService = programaService;
+            _proveedorService = proveedorService;
             _env = env;
         }
 
@@ -76,6 +79,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ObtenerActividades();
 
             var municipios = await _municipioService.ObtenerMunicipios();
+            var proveedores = await _proveedorService.ObtenerProveedores();
             var estatus = await _almacenService.ObtenerEstatus();
 
             var vm = new VMTablaRequisiciones
@@ -92,6 +96,12 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     Value = m.Id.ToString(),
                     Text = m.Municipio
+                }).ToList(),
+
+                ListaProveedores = proveedores.Select(p => new SelectListItem
+                {
+                    Value = p.Id.ToString(),
+                    Text = p.Proveedor
                 }).ToList(),
                 Estatus = estatus
             };

@@ -10,5 +10,7 @@ namespace Inventario.BLL.Interfaces
     public interface IProveedoresService
     {
         Task<List<ProveedoresDTO>> ObtenerProveedores();
+        Task<bool> GuardarCotizaciones(int idRequisicion, List<CotizacionDTO> cotizaciones);
+        Task<List<CotizacionDTO>> ObtenerCotizaciones(int idRequisicion);
     }
 }

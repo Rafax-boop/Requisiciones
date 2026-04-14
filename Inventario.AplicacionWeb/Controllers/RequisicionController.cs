@@ -402,14 +402,14 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> SubirArchivosAtencion(
             int IdRequisicion,
-            List<IFormFile>? Cotizaciones,
+            //List<IFormFile>? Cotizaciones,
             List<IFormFile>? CuadroComparativo,
             List<IFormFile> anexos)
         {
             var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
             await _requisicionService.GuardarArchivosAtencion(
                 IdRequisicion,
-                Cotizaciones ?? new List<IFormFile>(),
+                //Cotizaciones ?? new List<IFormFile>(),
                 CuadroComparativo ?? new List<IFormFile>(),
                 anexos,
                 webRootPath
@@ -500,14 +500,14 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> GuardarCotizaciones([FromBody] GuardarCotizacionesRequest modelo)
         {
-            var ok = await _requisicionService.GuardarCotizaciones(modelo.IdRequisicion, modelo.Cotizaciones);
+            var ok = await _proveedoresService.GuardarCotizaciones(modelo.IdRequisicion, modelo.Cotizaciones);
             return Ok(new { success = ok });
         }
 
         [HttpGet]
         public async Task<IActionResult> ObtenerCotizaciones(int idRequisicion)
         {
-            var cotizaciones = await _requisicionService.ObtenerCotizaciones(idRequisicion);
+            var cotizaciones = await _proveedoresService.ObtenerCotizaciones(idRequisicion);
             return Ok(cotizaciones);
         }                                                                                                                         
     }

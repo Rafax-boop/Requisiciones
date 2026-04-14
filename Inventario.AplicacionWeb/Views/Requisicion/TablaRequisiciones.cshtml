@@ -816,7 +816,7 @@
                                 <input type="file" id="inputCotizaciones" name="Cotizaciones" multiple class="input-file-rosa" />*@
                                 <label>Cotizaciones</label>
                                 <button type="button" class="btn boton-rosa modal-proveedores-abrir"
-                                        data-bs-toggle="modal" data-bs-target="#modalProveedoresRequisicion">
+                                        onclick="abrirModalProveedoresSinCerrar()">
                                     Seleccionar Proveedores
                                 </button>
                             </div>
@@ -915,7 +915,7 @@
                     </div>
                 </template>
                 <div class="modal-proveedores-acciones">
-                    <button type="button" class="btn boton-rosa" data-bs-dismiss="modal">Aceptar</button>
+                    <button type="button" class="btn boton-rosa" onclick="cerrarSoloModalProveedores()">Aceptar</button>
                 </div>
             </div>
         </div>
@@ -1087,6 +1087,29 @@
         </div>
     </div>
 </div>
+
+<!-- Modal ver cotizaciones (solo lectura) -->
+<div class="modal" id="modalVerCotizaciones" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Cotizaciones</h5>
+                    <p class="modal-subtitulo-premium">Precios registrados por proveedor</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div id="listaCotizacionesModal"
+                     style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Panel de descripción detallada — fuera del modal para evitar clipping -->
 <div id="desc-panel-modal" style="display:none;">
     <div class="desc-panel-modal-header">

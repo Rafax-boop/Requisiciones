@@ -7,6 +7,8 @@
     var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
     var urlObtenerProgreso = container ? container.getAttribute("data-url-obtener-progreso") : "";
+    var urlObtenerCotizaciones = container
+        ? container.getAttribute("data-url-obtener-cotizaciones") : "";
     var expedienteFinActual = null;
     var urlFinalizarExpediente = container
         ? container.getAttribute("data-url-finalizar-expediente")
@@ -37,7 +39,8 @@
         { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
         { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
         { clave: "ActaConst", label: "Acta Constitutiva" },
-        { clave: "CompDomicilio", label: "Comprobante de Domicilio" }
+        { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
+        { clave: "MemoPago", label: "Memorandum Instrucción de Pago" }
     ];
     const contenedor = document.querySelector(".tabla-requi-page");
     const atenderUrl = contenedor ? contenedor.dataset.urlAtender : "";
@@ -430,22 +433,37 @@
                 $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
                     .prop("disabled", true);
 
-                if (window.ModalAdjuntos && typeof window.ModalAdjuntos.renderizarArchivosReadonly === 'function') {
-                    window.ModalAdjuntos.renderizarArchivosReadonly(
-                        data.cotizaciones || [],
-                        data.cuadroComparativo || []
-                    );
-                }
-
                 (function () {
                     var c = document.getElementById("contenedorArchivosReadonly");
-                    if (!c || !window.ModalAdjuntos) return;
-                    if ((data.anexos || []).length === 0) return;
-                    var divAnexos = document.createElement("div");
-                    divAnexos.id = "seccionAnexosDetalle";
-                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
-                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
-                    c.appendChild(divAnexos);
+                    if (!c) return;
+                    c.innerHTML = "";
+
+                    // Botón cotizaciones
+                    var btnCot = document.createElement("div");
+                    btnCot.style.cssText = "margin-bottom:12px;";
+                    btnCot.innerHTML =
+                        '<button type="button" class="btn boton-rosa" ' +
+                        'onclick="verCotizaciones(' + idMaestro + ')">' +
+                        '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
+                        '</button>';
+                    c.appendChild(btnCot);
+
+                    // Cuadro comparativo (se mantiene)
+                    if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
+                        var divCuadro = document.createElement("div");
+                        divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                        window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
+                        c.appendChild(divCuadro);
+                    }
+
+                    // Anexos
+                    if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
+                        var divAnexos = document.createElement("div");
+                        divAnexos.id = "seccionAnexosDetalle";
+                        divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                        window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                        c.appendChild(divAnexos);
+                    }
                 })();
 
                 // Diferenciar solo la parte de observaciones y botones
@@ -462,6 +480,44 @@
             }
 
             new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+        });
+    };
+
+    window.verCotizaciones = function (idRequi) {
+        $.get(urlObtenerCotizaciones, { idRequisicion: idRequi }, function (data) {
+            var lista = document.getElementById("listaCotizacionesModal");
+            lista.innerHTML = "";
+
+            if (!data || !data.length) {
+                lista.innerHTML =
+                    '<p style="color:var(--color-text-secondary);font-style:italic;font-size:13px;">' +
+                    'Sin cotizaciones registradas.</p>';
+            } else {
+                data.forEach(function (c, i) {
+                    var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
+                        style: "currency", currency: "MXN"
+                    });
+                    var fila = document.createElement("div");
+                    fila.style.cssText =
+                        "display:flex;align-items:center;gap:12px;padding:10px 14px;" +
+                        "border-radius:8px;border:1px solid var(--color-border-tertiary);" +
+                        "background:var(--color-background-secondary);";
+                    fila.innerHTML =
+                        '<span style="font-size:12px;color:var(--color-text-secondary);' +
+                        'min-width:20px;text-align:center;">#' + (i + 1) + '</span>' +
+                        '<span style="flex:1;font-size:13px;font-weight:500;">' +
+                        (c.nombreProveedor || "Proveedor #" + c.idProveedor) +
+                        '</span>' +
+                        '<span style="font-size:13px;color:var(--color-text-success);font-weight:500;">' +
+                        importe +
+                        '</span>';
+                    lista.appendChild(fila);
+                });
+            }
+
+            new bootstrap.Modal(document.getElementById("modalVerCotizaciones")).show();
+        }).fail(function () {
+            Swal.fire({ icon: "error", title: "No se pudieron cargar las cotizaciones." });
         });
     };
 
@@ -557,18 +613,33 @@
             // Cotizaciones / cuadro
             (function () {
                 var c = document.getElementById("expFinArchivosBase");
-                if (!window.ModalAdjuntos) { c.innerHTML = ""; return; }
+                c.innerHTML = "";
 
-                var html = "";
-                if ((data.cotizaciones || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Cotizaciones", data.cotizaciones);
-                if ((data.cuadroComparativo || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
-                if ((data.anexos || []).length)
-                    html += window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                // Botón cotizaciones
+                var btnCot = document.createElement("div");
+                btnCot.style.cssText = "margin-bottom:12px;";
+                btnCot.innerHTML =
+                    '<button type="button" class="btn boton-rosa" ' +
+                    'onclick="verCotizaciones(' + idRequi + ')">' +
+                    '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
+                    '</button>';
+                c.appendChild(btnCot);
 
-                c.innerHTML = html;
-                window.ModalAdjuntos.enlazarEventosContenedor(c);
+                // Cuadro comparativo (se mantiene)
+                if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
+                    var divCuadro = document.createElement("div");
+                    divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
+                    c.appendChild(divCuadro);
+                }
+
+                // Anexos
+                if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
+                    var divAnexos = document.createElement("div");
+                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                    c.appendChild(divAnexos);
+                }
             })();
 
             // Observaciones
