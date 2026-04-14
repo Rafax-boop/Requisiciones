@@ -29,7 +29,8 @@
      data-url-subir-doc-proveedor="@Url.Action("SubirDocumentoProveedor", "Requisicion")"
      data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
      data-url-enviar-financieros-docs="@Url.Action("EnviarAFinancierosConDocs", "Requisicion")"
-     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")">
+     data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
+     data-url-descargar-cuadro-comparativo="@Url.Action("DescargarCuadroComparativo", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -822,6 +823,13 @@
                         <div class="col-md-6">
                             <div class="formulario-input">
                                 <label>Cuadro comparativo</label>
+                                <button type="button"
+                                        id="btnDescargarCuadroComparativo"
+                                        class="btn boton-rosa w-100 mb-2"
+                                        onclick="descargarCuadroComparativo()"
+                                        title="Próximamente se habilitará la descarga del cuadro comparativo PDF">
+                                    Descargar cuadro comparativo
+                                </button>
                                 <input type="file" id="inputCuadroComparativo" name="CuadroComparativo" multiple class="input-file-rosa" />
                             </div>
                         </div>

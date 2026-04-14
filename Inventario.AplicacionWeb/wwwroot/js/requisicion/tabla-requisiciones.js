@@ -38,6 +38,8 @@
         ? container.getAttribute("data-url-enviar-financieros-docs") : "";
     var urlRebotarDocumentos = container
         ? container.getAttribute("data-url-rebotar-documentos") : "";
+    var urlDescargarCuadroComparativo = container
+        ? container.getAttribute("data-url-descargar-cuadro-comparativo") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -834,6 +836,23 @@
 
   window.verPdf = function (id) {
     var url = (verPdfUrl || "").replace(/\/$/, "") + "/" + id;
+    window.open(url, "_blank");
+  };
+
+  window.descargarCuadroComparativo = function () {
+    if (!requisicionActual) {
+      Swal.fire({
+        icon: "warning",
+        title: "Sin requisicion",
+        text: "Primero abre una requisicion en modo atender.",
+        confirmButtonText: "Ok",
+        confirmButtonColor: "#fe6291",
+      });
+      return;
+    }
+
+    var url = (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
+      "?idRequisicion=" + requisicionActual;
     window.open(url, "_blank");
   };
 
