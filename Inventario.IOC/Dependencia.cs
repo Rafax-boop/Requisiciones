@@ -26,6 +26,7 @@ namespace Inventario.IOC
             services.AddScoped<IRequisicionRepository, RequisicionRepository>();
             services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddScoped<IRequisicionesService, RequisicionService>();
+            services.AddScoped<ICuadroComparativoPdfService, CuadroComparativoPdfService>();
             services.AddScoped<IArticulosService, ArticulosService>();
             services.AddScoped<IAlmacenService, AlmacenService>();
             services.AddScoped<IMunicipioServie, MunicipioService>();

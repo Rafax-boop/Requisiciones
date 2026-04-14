@@ -1,0 +1,33 @@
+---
+description: Arquitectura en capas — controladores delgados, lógica en BLL, DI en Inventario.IOC.
+alwaysApply: true
+---
+
+# Arquitectura limpia (Inventario)
+
+## Controladores (`Inventario.AplicacionWeb/Controllers`)
+
+- Responsables de: HTTP, autorización, validación mínima de entrada, llamadas a servicios inyectados y devolución de `IActionResult`, `File` o `Json`.
+- **No** incluir: lógica de negocio pesada, generación de PDF/Excel u otros documentos, ni clases DTO o helpers anidadas en el mismo archivo del controlador.
+
+## BLL (`Inventario.BLL`)
+
+- Reglas de negocio, orquestación de repositorios, generación de documentos (PDF, etc.).
+- Contratos en interfaces `I*Service` e implementaciones en `Implementacion/`.
+
+## Rutas de archivos estáticos
+
+- El host puede obtener `IWebHostEnvironment.WebRootPath` y pasar `string webRootPath` al servicio (mismo patrón que métodos que ya reciben `webRootPath`).
+- Evitar acoplar BLL a `IWebHostEnvironment` si el proyecto ya usa el patrón de `string webRootPath`.
+
+## Inyección de dependencias
+
+- Registrar nuevos servicios en `Inventario.IOC/Dependencia.cs` con el lifetime acordado (típicamente `Scoped` para servicios por solicitud HTTP).
+
+## Consistencia
+
+- Antes de añadir código, revisar un caso parecido en el repo (por ejemplo `FinancierosService` u otros `*Service` para PDFs o informes).
+
+## Relación con otras reglas
+
+- Complementa `backend-patron-existente.mdc`: primero alinear con lo existente; además, mantener las capas separadas según lo anterior.
