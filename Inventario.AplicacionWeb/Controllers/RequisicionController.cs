@@ -524,6 +524,13 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var cotizaciones = await _proveedoresService.ObtenerCotizaciones(idRequisicion);
             return Ok(cotizaciones);
-        }                                                                                                                         
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerPartidas(int idRequisicion)
+        {
+            var partidas = await _proveedoresService.ObtenerPartidas(idRequisicion);
+            return Ok(partidas);
+        }
     }
 }

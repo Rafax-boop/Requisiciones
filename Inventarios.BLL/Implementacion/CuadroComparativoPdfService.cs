@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using iText.IO.Font.Constants;
 using iText.IO.Image;
@@ -16,16 +10,27 @@ using iText.Layout;
 using iText.Layout.Borders;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Inventario.BLL.Implementacion
 {
     public class CuadroComparativoPdfService : ICuadroComparativoPdfService
     {
         private readonly IRequisicionesService _requisicionesService;
+        private readonly IProveedoresService _cotizacionesService; // <-- inyecta tu servicio
 
-        public CuadroComparativoPdfService(IRequisicionesService requisicionesService)
+        public CuadroComparativoPdfService(
+            IRequisicionesService requisicionesService,
+            IProveedoresService cotizacionesService)
         {
             _requisicionesService = requisicionesService;
+            _cotizacionesService = cotizacionesService;
         }
 
         public async Task<(byte[] PdfBytes, string FileName)?> GenerarAsync(
@@ -34,9 +39,24 @@ namespace Inventario.BLL.Implementacion
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             var dto = await _requisicionesService.ObtenerRequisicionCompletaPorId(idRequisicion);
-            if (dto == null)
-                return null;
+            if (dto == null) return null;
+
+            var cotizaciones = await _cotizacionesService.ObtenerCotizaciones(idRequisicion);
+
+            // Agrupa cotizaciones por IdPartida (IdRequiDetalle), luego por proveedor
+            // Resultado: dict[idPartida] = lista de cotizaciones de ese artículo
+            var cotsPorPartida = cotizaciones
+                .GroupBy(c => c.IdPartida)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Extrae hasta 3 proveedores distintos (en el orden en que aparecen)
+            var proveedores = cotizaciones
+                .Select(c => new { c.IdProveedor, c.NombreProveedor })
+                .DistinctBy(p => p.IdProveedor)
+                .Take(3)
+                .ToList();
 
             var filas = dto.Articulos?
                 .Select(a =>
@@ -47,15 +67,32 @@ namespace Inventario.BLL.Implementacion
                             : a.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
                         : "";
 
+                    // Busca las cotizaciones de esta partida usando el Id real (no se muestra)
+                    var cotsDeLaPartida = cotsPorPartida.TryGetValue(a.IdRequisicionDetalle, out var lista)
+                        ? lista
+                        : new List<CotizacionDTO>();
+
+                    // Mapea hasta 3 precios según el orden de proveedores detectado arriba
+                    var precios = proveedores
+                        .Select(p => cotsDeLaPartida
+                            .FirstOrDefault(c => c.IdProveedor == p.IdProveedor)?.Importe)
+                        .ToArray();
+
                     return new CuadroComparativoFilaPdf
                     {
                         Partida = a.NumPartida?.ToString() ?? "",
-                        Descripcion = a.Descripcion ?? a.DescripcionDetallada ?? "",
-                        Cantidad = cantidadTexto,
-                        Unidad = a.UnidadMedida ?? ""
+                        Descripcion = a.DescripcionDetallada ?? a.Descripcion ?? "",
+                        Cantidad = a.Cantidad ?? 0m,
+                        CantidadTxt = cantidadTexto,
+                        Unidad = a.UnidadMedida ?? "",
+                        PrecioP1 = precios.ElementAtOrDefault(0),
+                        PrecioP2 = precios.ElementAtOrDefault(1),
+                        PrecioP3 = precios.ElementAtOrDefault(2),
                     };
                 })
                 .ToList() ?? new List<CuadroComparativoFilaPdf>();
+
+            var nombresProveedores = proveedores.Select(p => p.NombreProveedor).ToArray();
 
             var bytes = GenerarCuadroComparativoPdf(
                 webRootPath,
@@ -63,7 +100,8 @@ namespace Inventario.BLL.Implementacion
                 fecha: dto.FechaEmision?.ToDateTime(TimeOnly.MinValue),
                 departamento: dto.Departamento ?? "",
                 justificacion: dto.Justificacion ?? "",
-                filas: filas);
+                filas: filas,
+                nombresProveedores: nombresProveedores);
 
             var nombreArchivo =
                 $"CuadroComparativo_{(dto.NumRequisicion ?? idRequisicion.ToString()).Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
@@ -71,14 +109,49 @@ namespace Inventario.BLL.Implementacion
             return (bytes, nombreArchivo);
         }
 
+        // ─────────────────────────────────────────────────────────────────────
         private static byte[] GenerarCuadroComparativoPdf(
             string webRootPath,
             string requisicion,
             DateTime? fecha,
             string departamento,
             string justificacion,
-            List<CuadroComparativoFilaPdf> filas)
+            List<CuadroComparativoFilaPdf> filas,
+            string[] nombresProveedores)
         {
+            const decimal tasaIva = 0.16m;
+
+            // Pre-calcula totales por proveedor (suma de importe*cantidad)
+            decimal SumaProveedor(int idx) => filas
+                .Where(f => idx == 0 ? f.PrecioP1.HasValue : idx == 1 ? f.PrecioP2.HasValue : f.PrecioP3.HasValue)
+                .Sum(f =>
+                {
+                    var precio = idx == 0 ? f.PrecioP1!.Value : idx == 1 ? f.PrecioP2!.Value : f.PrecioP3!.Value;
+                    return precio * f.Cantidad;
+                });
+
+            var sumas = new[] { SumaProveedor(0), SumaProveedor(1), SumaProveedor(2) };
+            var ivas = sumas.Select(s => s * tasaIva).ToArray();
+            var totals = sumas.Select((s, i) => s + ivas[i]).ToArray();
+
+            // Proveedor seleccionado: el de menor total (solo entre los que tienen datos)
+            var indiceGanador = -1;
+            var menorTotal = decimal.MaxValue;
+            for (var i = 0; i < 3; i++)
+            {
+                if (totals[i] > 0 && totals[i] < menorTotal)
+                {
+                    menorTotal = totals[i];
+                    indiceGanador = i;
+                }
+            }
+
+            // ── helpers de formato ──────────────────────────────────────────
+            static string Moneda(decimal v) => v == 0 ? "" : v.ToString("C2", new CultureInfo("es-MX"));
+            static string MonedaFmt(decimal? v) => v.HasValue && v.Value != 0
+                ? v.Value.ToString("C2", new CultureInfo("es-MX"))
+                : "";
+
             var ms = new MemoryStream();
             using var writer = new PdfWriter(ms);
             using var pdf = new PdfDocument(writer);
@@ -94,47 +167,61 @@ namespace Inventario.BLL.Implementacion
             var textoEncabezado = new DeviceRgb(71, 85, 105);
             var textoInstitucional = new DeviceRgb(45, 45, 45);
             var rosaAcento = new DeviceRgb(255, 45, 111);
+            var verdeGanador = new DeviceRgb(220, 252, 231); // fondo verde suave
+            var verdeTexto = new DeviceRgb(22, 101, 52);  // texto verde oscuro
             var borde = new SolidBorder(new DeviceRgb(226, 232, 240), 0.85f);
 
-            Cell CellHead(string text, int colspan = 1, int rowspan = 1, TextAlignment align = TextAlignment.LEFT)
+            Cell CellHead(string text, int colspan = 1, int rowspan = 1,
+                          TextAlignment align = TextAlignment.LEFT,
+                          DeviceRgb bgOverride = null, DeviceRgb fgOverride = null)
                 => new Cell(rowspan, colspan)
                     .SetBorder(borde)
-                    .SetBackgroundColor(fondoEncabezado)
+                    .SetBackgroundColor(bgOverride ?? fondoEncabezado)
                     .SetPadding(4f)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
                     .SetTextAlignment(align)
-                    .Add(new Paragraph(text).SetFont(fontBold).SetFontSize(6.6f).SetFontColor(textoEncabezado));
+                    .Add(new Paragraph(text)
+                        .SetFont(fontBold)
+                        .SetFontSize(6.6f)
+                        .SetFontColor(fgOverride ?? textoEncabezado));
 
-            Cell CellBody(string text, int colspan = 1, int rowspan = 1, TextAlignment align = TextAlignment.LEFT, float minHeight = 0f)
+            Cell CellBody(string text, int colspan = 1, int rowspan = 1,
+                          TextAlignment align = TextAlignment.LEFT, float minHeight = 0f,
+                          DeviceRgb bgOverride = null, DeviceRgb fgOverride = null)
             {
                 var c = new Cell(rowspan, colspan)
                     .SetBorder(borde)
                     .SetPadding(4f)
                     .SetVerticalAlignment(VerticalAlignment.MIDDLE)
                     .SetTextAlignment(align)
-                    .Add(new Paragraph(text).SetFont(fontRegular).SetFontSize(6.8f).SetFontColor(textoPrincipal));
-                if (minHeight > 0f)
-                    c.SetMinHeight(minHeight);
+                    .Add(new Paragraph(text)
+                        .SetFont(fontRegular)
+                        .SetFontSize(6.8f)
+                        .SetFontColor(fgOverride ?? textoPrincipal));
+                if (bgOverride != null) c.SetBackgroundColor(bgOverride);
+                if (minHeight > 0f) c.SetMinHeight(minHeight);
                 return c;
             }
 
-            var header = new Table(UnitValue.CreatePercentArray(new float[] { 18f, 64f, 18f })).UseAllAvailableWidth();
+            // ── ENCABEZADO INSTITUCIONAL ────────────────────────────────────
+            var header = new Table(UnitValue.CreatePercentArray(new float[] { 18f, 64f, 18f }))
+                .UseAllAvailableWidth();
             header.SetBorder(borde);
 
-            var logoIzq = new Cell().SetBorder(borde).SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(6f);
+            var logoIzq = new Cell().SetBorder(borde)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(6f);
             var rutaLogoIzq = System.IO.Path.Combine(webRootPath, "img", "corazon.png");
             if (File.Exists(rutaLogoIzq))
-            {
-                var img = new Image(ImageDataFactory.Create(rutaLogoIzq)).ScaleToFit(90f, 42f).SetHorizontalAlignment(HorizontalAlignment.CENTER);
-                logoIzq.Add(img);
-            }
+                logoIzq.Add(new Image(ImageDataFactory.Create(rutaLogoIzq))
+                    .ScaleToFit(90f, 42f).SetHorizontalAlignment(HorizontalAlignment.CENTER));
             else
-            {
-                logoIzq.Add(new Paragraph("PUEBLA").SetFont(fontBold).SetFontSize(10f).SetTextAlignment(TextAlignment.CENTER));
-            }
+                logoIzq.Add(new Paragraph("PUEBLA").SetFont(fontBold).SetFontSize(10f)
+                    .SetTextAlignment(TextAlignment.CENTER));
             header.AddCell(logoIzq);
 
-            var centro = new Cell().SetBorder(borde).SetTextAlignment(TextAlignment.CENTER).SetPadding(6f);
+            var centro = new Cell().SetBorder(borde)
+                .SetTextAlignment(TextAlignment.CENTER).SetPadding(6f);
             centro.Add(new Paragraph("SISTEMA PARA EL DESARROLLO INTEGRAL DE LA FAMILIA DEL ESTADO DE PUEBLA")
                 .SetFont(fontBold).SetFontSize(7.2f).SetFontColor(textoInstitucional));
             centro.Add(new Paragraph("DIRECCION DE ADMINISTRACION Y FINANZAS")
@@ -145,23 +232,26 @@ namespace Inventario.BLL.Implementacion
                 .SetFont(fontBold).SetFontSize(10f).SetFontColor(rosaAcento).SetMarginTop(4f));
             header.AddCell(centro);
 
-            var logoDer = new Cell().SetBorder(borde).SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(6f);
+            var logoDer = new Cell().SetBorder(borde)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(6f);
             var rutaLogoDer = System.IO.Path.Combine(webRootPath, "img", "familias-dif-rosa.png");
             if (File.Exists(rutaLogoDer))
-            {
-                var img = new Image(ImageDataFactory.Create(rutaLogoDer)).ScaleToFit(95f, 42f).SetHorizontalAlignment(HorizontalAlignment.CENTER);
-                logoDer.Add(img);
-            }
+                logoDer.Add(new Image(ImageDataFactory.Create(rutaLogoDer))
+                    .ScaleToFit(95f, 42f).SetHorizontalAlignment(HorizontalAlignment.CENTER));
             else
-            {
-                logoDer.Add(new Paragraph("Familias").SetFont(fontBold).SetFontSize(10f).SetTextAlignment(TextAlignment.CENTER));
-            }
+                logoDer.Add(new Paragraph("Familias").SetFont(fontBold).SetFontSize(10f)
+                    .SetTextAlignment(TextAlignment.CENTER));
             header.AddCell(logoDer);
             doc.Add(header);
             doc.Add(new Paragraph(" ").SetMargin(2f));
 
-            var fechaTxt = fecha.HasValue ? fecha.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : "";
-            var info = new Table(UnitValue.CreatePercentArray(new float[] { 20f, 58f, 10f, 12f })).UseAllAvailableWidth();
+            // ── INFO REQUISICION ────────────────────────────────────────────
+            var fechaTxt = fecha.HasValue
+                ? fecha.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                : "";
+            var info = new Table(UnitValue.CreatePercentArray(new float[] { 20f, 58f, 10f, 12f }))
+                .UseAllAvailableWidth();
             info.AddCell(CellHead("SECCION DE ADQUISICIONES", 4));
             info.AddCell(CellHead("TIPO DE PROCEDIMIENTO:"));
             info.AddCell(CellBody("PROCEDIMIENTO DE ADJUDICACION (PENDIENTE DE CAPTURA)", 3));
@@ -178,84 +268,142 @@ namespace Inventario.BLL.Implementacion
             doc.Add(info);
             doc.Add(new Paragraph(" ").SetMargin(2f));
 
-            var tabla = new Table(UnitValue.CreatePercentArray(new float[] { 7f, 31f, 7f, 7f, 8f, 8f, 8f, 8f, 8f, 8f })).UseAllAvailableWidth();
+            // ── TABLA COMPARATIVA ───────────────────────────────────────────
+            // Nombres de proveedores en encabezado (o genérico si no hay)
+            string NombreEnc(int i) => i < nombresProveedores.Length && !string.IsNullOrWhiteSpace(nombresProveedores[i])
+                ? nombresProveedores[i]
+                : $"PROVEEDOR {i + 1}";
+
+            var tabla = new Table(UnitValue.CreatePercentArray(
+                new float[] { 7f, 31f, 7f, 7f, 8f, 8f, 8f, 8f, 8f, 8f }))
+                .UseAllAvailableWidth();
+
             tabla.AddHeaderCell(CellHead("PARTIDA", 1, 2, TextAlignment.CENTER));
             tabla.AddHeaderCell(CellHead("DESCRIPCION", 1, 2, TextAlignment.CENTER));
             tabla.AddHeaderCell(CellHead("CANTIDAD", 1, 2, TextAlignment.CENTER));
             tabla.AddHeaderCell(CellHead("U.M.", 1, 2, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("PROVEEDOR 1", 2, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("PROVEEDOR 2", 2, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("PROVEEDOR 3", 2, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("P/UNITARIO", 1, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("TOTAL", 1, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("P/UNITARIO", 1, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("TOTAL", 1, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("P/UNITARIO", 1, 1, TextAlignment.CENTER));
-            tabla.AddHeaderCell(CellHead("TOTAL", 1, 1, TextAlignment.CENTER));
+            tabla.AddHeaderCell(CellHead(NombreEnc(0), 2, 1, TextAlignment.CENTER,
+                indiceGanador == 0 ? verdeGanador : null,
+                indiceGanador == 0 ? verdeTexto : null));
+            tabla.AddHeaderCell(CellHead(NombreEnc(1), 2, 1, TextAlignment.CENTER,
+                indiceGanador == 1 ? verdeGanador : null,
+                indiceGanador == 1 ? verdeTexto : null));
+            tabla.AddHeaderCell(CellHead(NombreEnc(2), 2, 1, TextAlignment.CENTER,
+                indiceGanador == 2 ? verdeGanador : null,
+                indiceGanador == 2 ? verdeTexto : null));
+            // Segunda fila de encabezado: P/UNITARIO | TOTAL × 3
+            for (var p = 0; p < 3; p++)
+            {
+                var esGanador = indiceGanador == p;
+                tabla.AddHeaderCell(CellHead("P/UNITARIO", 1, 1, TextAlignment.CENTER,
+                    esGanador ? verdeGanador : null, esGanador ? verdeTexto : null));
+                tabla.AddHeaderCell(CellHead("TOTAL", 1, 1, TextAlignment.CENTER,
+                    esGanador ? verdeGanador : null, esGanador ? verdeTexto : null));
+            }
 
+            // Filas de artículos
             var totalFilas = Math.Max(2, filas.Count);
             for (var i = 0; i < totalFilas; i++)
             {
                 var fila = i < filas.Count ? filas[i] : new CuadroComparativoFilaPdf();
                 var fondoFila = i % 2 == 1 ? fondoEncabezado : ColorConstants.WHITE;
-                var c1 = CellBody(string.IsNullOrWhiteSpace(fila.Partida) ? (i + 1).ToString() : fila.Partida, align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c2 = CellBody(fila.Descripcion ?? "", minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c3 = CellBody(fila.Cantidad ?? "", align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c4 = CellBody(fila.Unidad ?? "", align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c5 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c6 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c7 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c8 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c9 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
-                var c10 = CellBody("", align: TextAlignment.RIGHT, minHeight: 17f).SetBackgroundColor(fondoFila);
 
-                tabla.AddCell(c1);
-                tabla.AddCell(c2);
-                tabla.AddCell(c3);
-                tabla.AddCell(c4);
-                tabla.AddCell(c5);
-                tabla.AddCell(c6);
-                tabla.AddCell(c7);
-                tabla.AddCell(c8);
-                tabla.AddCell(c9);
-                tabla.AddCell(c10);
+                decimal? Total(decimal? precio) =>
+                    precio.HasValue && fila.Cantidad > 0 ? precio.Value * fila.Cantidad : null;
+
+                tabla.AddCell(CellBody(
+                    string.IsNullOrWhiteSpace(fila.Partida) ? (i + 1).ToString() : fila.Partida,
+                    align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila));
+                tabla.AddCell(CellBody(fila.Descripcion ?? "",
+                    minHeight: 17f).SetBackgroundColor(fondoFila));
+                tabla.AddCell(CellBody(fila.CantidadTxt ?? "",
+                    align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila));
+                tabla.AddCell(CellBody(fila.Unidad ?? "",
+                    align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila));
+
+                // Precio unitario y total por cada proveedor
+                var precios = new[] { fila.PrecioP1, fila.PrecioP2, fila.PrecioP3 };
+                for (var p = 0; p < 3; p++)
+                {
+                    var esGanador = indiceGanador == p;
+                    var bgFila = esGanador ? verdeGanador : fondoFila;
+                    tabla.AddCell(CellBody(MonedaFmt(precios[p]),
+                        align: TextAlignment.RIGHT, minHeight: 17f, bgOverride: (DeviceRgb)bgFila));
+                    tabla.AddCell(CellBody(MonedaFmt(Total(precios[p])),
+                        align: TextAlignment.RIGHT, minHeight: 17f, bgOverride: (DeviceRgb)bgFila));
+                }
             }
 
-            foreach (var etiqueta in new[] { "SUMA", "IVA", "TOTAL" })
+            // Filas SUMA / IVA / TOTAL
+            var etiquetasResumen = new[] { ("SUMA", sumas), ("IVA", ivas), ("TOTAL", totals) };
+            foreach (var (etiqueta, valores) in etiquetasResumen)
             {
-                tabla.AddCell(CellBody("", 4));
-                tabla.AddCell(CellHead(etiqueta, 1, 1, TextAlignment.CENTER));
-                tabla.AddCell(CellBody("$", align: TextAlignment.CENTER));
-                tabla.AddCell(CellHead(etiqueta, 1, 1, TextAlignment.CENTER));
-                tabla.AddCell(CellBody("$", align: TextAlignment.CENTER));
-                tabla.AddCell(CellHead(etiqueta, 1, 1, TextAlignment.CENTER));
-                tabla.AddCell(CellBody("$", align: TextAlignment.CENTER));
+                tabla.AddCell(CellBody("", 4)); // columnas vacías izquierda
+                for (var p = 0; p < 3; p++)
+                {
+                    var esGanador = indiceGanador == p;
+                    var bg = esGanador ? verdeGanador : null;
+                    var fg = esGanador ? verdeTexto : null;
+                    tabla.AddCell(CellHead(etiqueta, 1, 1, TextAlignment.CENTER, bg, fg));
+                    tabla.AddCell(CellBody(Moneda(valores[p]),
+                        align: TextAlignment.RIGHT, bgOverride: bg, fgOverride: fg));
+                }
             }
 
+            // Condiciones de pago
             tabla.AddCell(CellHead("CONDICIONES DE PAGO", 4, 1, TextAlignment.CENTER));
-            tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER));
-            tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER));
-            tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER));
+            for (var p = 0; p < 3; p++)
+            {
+                var esGanador = indiceGanador == p;
+                tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER,
+                    bgOverride: esGanador ? verdeGanador : null,
+                    fgOverride: esGanador ? verdeTexto : null));
+            }
+
             doc.Add(tabla);
             doc.Add(new Paragraph(" ").SetMargin(3f));
 
-            var proveedor = new Table(UnitValue.CreatePercentArray(new float[] { 44f, 16f, 10f, 10f, 10f, 10f })).UseAllAvailableWidth();
-            proveedor.AddCell(CellHead("PROVEEDOR(ES) SELECCIONADO(S)"));
-            proveedor.AddCell(CellBody(""));
+            // ── PROVEEDOR SELECCIONADO ──────────────────────────────────────────
+            var nombreGanador = indiceGanador >= 0 && indiceGanador < nombresProveedores.Length
+                ? nombresProveedores[indiceGanador]
+                : "";
+
+            var bgGanador = indiceGanador >= 0 ? verdeGanador : null;
+            var fgGanador = indiceGanador >= 0 ? verdeTexto : null;
+
+            var proveedor = new Table(UnitValue.CreatePercentArray(
+                new float[] { 55f, 15f, 15f, 15f }))  // 4 columnas exactas
+                .UseAllAvailableWidth();
+
+            // ── fila 1: encabezados ──
+            proveedor.AddCell(CellHead("PROVEEDOR(ES) SELECCIONADO(S)", align: TextAlignment.CENTER));
             proveedor.AddCell(CellHead("SUMA", align: TextAlignment.CENTER));
             proveedor.AddCell(CellHead("IVA", align: TextAlignment.CENTER));
             proveedor.AddCell(CellHead("SUBTOTAL", align: TextAlignment.CENTER));
-            proveedor.AddCell(CellBody("$", align: TextAlignment.CENTER));
-            doc.Add(proveedor);
-            doc.Add(new Paragraph(" ").SetMargin(8f));
 
+            // ── fila 2: datos ──
+            proveedor.AddCell(CellBody(nombreGanador,
+                bgOverride: bgGanador, fgOverride: fgGanador));
+            proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(sumas[indiceGanador]) : "",
+                align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
+            proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(ivas[indiceGanador]) : "",
+                align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
+            proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(totals[indiceGanador]) : "",
+                align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
+
+            doc.Add(proveedor);
+
+            // ── FIRMAS ──────────────────────────────────────────────────────
             var tblFirmas = new Table(UnitValue.CreatePointArray(new float[] { 173f, 173f, 174f }))
                 .UseAllAvailableWidth();
             var firmantes = new (string Titulo, string Nombre)[]
             {
-                ("ASIGNACIÓN PRESUPUESTAL", "JOEL MARTÍNEZ PÉREZ\nJEFE DEL DEPARTAMENTO DE RECURSOS\nFINANCIEROS"),
-                ("Vo.Bo.", "C. MARCOS MATAMOROS MORENO\nDIRECTOR DE ADMINISTRACIÓN Y FINANZAS"),
-                ("AUTORIZÓ", "C. CIRO MIGUEL JUÁREZ PALACIOS\nTITULAR DE LA UNIDAD DE PLANEACIÓN,\nADMINISTRACIÓN Y FINANZAS"),
+                ("ASIGNACIÓN PRESUPUESTAL",
+                 "JOEL MARTÍNEZ PÉREZ\nJEFE DEL DEPARTAMENTO DE RECURSOS\nFINANCIEROS"),
+                ("Vo.Bo.",
+                 "C. MARCOS MATAMOROS MORENO\nDIRECTOR DE ADMINISTRACIÓN Y FINANZAS"),
+                ("AUTORIZÓ",
+                 "C. CIRO MIGUEL JUÁREZ PALACIOS\nTITULAR DE LA UNIDAD DE PLANEACIÓN,\nADMINISTRACIÓN Y FINANZAS"),
             };
 
             foreach (var (titulo, nombre) in firmantes)
@@ -265,17 +413,18 @@ namespace Inventario.BLL.Implementacion
                     .SetBackgroundColor(ColorConstants.WHITE)
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetVerticalAlignment(VerticalAlignment.TOP)
-                    .SetPaddingTop(10f)
-                    .SetPaddingBottom(10f)
-                    .SetPaddingLeft(6f)
-                    .SetPaddingRight(6f)
+                    .SetPaddingTop(10f).SetPaddingBottom(10f)
+                    .SetPaddingLeft(6f).SetPaddingRight(6f)
                     .SetBorder(borde)
-                    .Add(new Paragraph(titulo).SetFont(fontBold).SetFontSize(5.75f)
+                    .Add(new Paragraph(titulo)
+                        .SetFont(fontBold).SetFontSize(5.75f)
                         .SetFontColor(textoEncabezado).SetMarginBottom(10f))
                     .Add(new Paragraph(" ").SetFontSize(22f))
-                    .Add(new Paragraph("_________________________________________").SetFont(fontRegular).SetFontSize(5f)
+                    .Add(new Paragraph("_________________________________________")
+                        .SetFont(fontRegular).SetFontSize(5f)
                         .SetFontColor(textoPrincipal).SetMarginBottom(6f))
-                    .Add(new Paragraph(nombre.Replace("\n", " ")).SetFont(fontRegular).SetFontSize(5f)
+                    .Add(new Paragraph(nombre.Replace("\n", " "))
+                        .SetFont(fontRegular).SetFontSize(5f)
                         .SetFontColor(textoSecundario)
                         .SetTextAlignment(TextAlignment.CENTER)));
             }
@@ -285,12 +434,17 @@ namespace Inventario.BLL.Implementacion
             return ms.ToArray();
         }
 
+        // ── DTOs internos ───────────────────────────────────────────────────
         private sealed class CuadroComparativoFilaPdf
         {
             public string Partida { get; set; } = "";
             public string Descripcion { get; set; } = "";
-            public string Cantidad { get; set; } = "";
+            public decimal Cantidad { get; set; }       // numérico para cálculos
+            public string CantidadTxt { get; set; } = ""; // texto formateado para mostrar
             public string Unidad { get; set; } = "";
+            public decimal? PrecioP1 { get; set; }
+            public decimal? PrecioP2 { get; set; }
+            public decimal? PrecioP3 { get; set; }
         }
     }
 }

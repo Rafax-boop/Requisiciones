@@ -32,7 +32,8 @@
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
      data-url-descargar-cuadro-comparativo="@Url.Action("DescargarCuadroComparativo", "Requisicion")"
      data-url-guardar-cotizaciones="@Url.Action("GuardarCotizaciones", "Requisicion")"
-     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")">
+     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
+     data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -879,10 +880,11 @@
                     @for (var filaIdx = 0; filaIdx < 2; filaIdx++)
                     {
                         <div class="modal-proveedores-fila">
-                            <div class="formulario-input modal-proveedores-campo-precio">
-                                <label for="precioProveedor_@filaIdx">Precio</label>
-                                <input type="text" id="precioProveedor_@filaIdx" class="form-control modal-proveedores-input-precio"
-                                       inputmode="decimal" placeholder="0.00" autocomplete="off" />
+                            <div class="formulario-input modal-proveedores-campo-select">
+                                <label>Partida</label>
+                                <select class="form-select select2 modal-partida-select" title="Partida">
+                                    <option value="">-- Seleccione partida --</option>
+                                </select>
                             </div>
                             <div class="formulario-input modal-proveedores-campo-select">
                                 <label for="selectProveedor_@filaIdx">Proveedor</label>
@@ -893,6 +895,11 @@
                                         <option value="@act.Value">@act.Text</option>
                                     }
                                 </select>
+                            </div>
+                            <div class="formulario-input modal-proveedores-campo-precio">
+                                <label for="precioProveedor_@filaIdx">Precio</label>
+                                <input type="text" id="precioProveedor_@filaIdx" class="form-control modal-proveedores-input-precio"
+                                       inputmode="decimal" placeholder="0.00" autocomplete="off" />
                             </div>
                         </div>
                     }
@@ -905,10 +912,11 @@
                 </div>
                 <template id="tplModalProveedorFila">
                     <div class="modal-proveedores-fila">
-                        <div class="formulario-input modal-proveedores-campo-precio">
-                            <label>Precio</label>
-                            <input type="text" class="form-control modal-proveedores-input-precio"
-                                   inputmode="decimal" placeholder="0.00" autocomplete="off" />
+                        <div class="formulario-input modal-proveedores-campo-select">
+                            <label>Partida</label>
+                            <select class="form-select select2 modal-partida-select" title="Partida">
+                                <option value="">-- Seleccione partida --</option>
+                            </select>
                         </div>
                         <div class="formulario-input modal-proveedores-campo-select">
                             <label>Proveedor</label>
@@ -919,6 +927,11 @@
                                     <option value="@act.Value">@act.Text</option>
                                 }
                             </select>
+                        </div>
+                        <div class="formulario-input modal-proveedores-campo-precio">
+                            <label>Precio</label>
+                            <input type="text" class="form-control modal-proveedores-input-precio"
+                                   inputmode="decimal" placeholder="0.00" autocomplete="off" />
                         </div>
                     </div>
                 </template>

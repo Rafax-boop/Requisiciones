@@ -140,6 +140,10 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdProveedor)
                 .HasConstraintName("FK_TblCotizaciones_tblProvedor");
 
+            entity.HasOne(d => d.IdRequiDetalleNavigation).WithMany(p => p.TblCotizaciones)
+                .HasForeignKey(d => d.IdRequiDetalle)
+                .HasConstraintName("FK_TblCotizaciones_TblRequisicionDetalle");
+
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblCotizaciones)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_TblCotizaciones_tblRequisicion");

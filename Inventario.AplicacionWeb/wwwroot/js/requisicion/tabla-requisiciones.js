@@ -46,6 +46,9 @@
         ? container.getAttribute("data-url-guardar-cotizaciones") : "";
     var urlObtenerCotizaciones = container
         ? container.getAttribute("data-url-obtener-cotizaciones") : "";
+    var urlObtenerPartidas = container
+        ? container.getAttribute("data-url-obtener-partidas")
+        : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -63,6 +66,8 @@
         { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
         { clave: "MemoPago", label: "Memorandum Instrucción de Pago" }
     ];
+
+    var CACHE_PARTIDAS = [];
 
   var fechaSeleccionada = "";
 
@@ -308,6 +313,42 @@
         ['pasoOpciones', 'pasoAsignar', 'pasoAlmacen', 'pasoRechazar', 'pasoModificar'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
+        });
+    }
+
+    function obtenerOpcionesPartidasHtml(callback) {
+        var buildHtml = function (data) {
+            var html = '<option value="">-- Seleccione partida --</option>';
+            data.forEach(function (p) {
+                html += '<option value="' + p.idRequiDetalle + '">' + p.nombrePartida + '</option>';
+            });
+            callback(html);
+        };
+
+        if (CACHE_PARTIDAS.length) {
+            buildHtml(CACHE_PARTIDAS);
+        } else {
+            $.get(urlObtenerPartidas, { idRequisicion: _idRequiCotizaciones }, function (data) {
+                CACHE_PARTIDAS = data;
+                buildHtml(data);
+            });
+        }
+    }
+
+    // Llena SOLO el select de partidas de una fila específica (sin tocar las demás)
+    function cargarPartidasEnFila($fila, valorSeleccionado) {
+        obtenerOpcionesPartidasHtml(function (html) {
+            var $sel = $fila.find(".modal-partida-select");
+            $sel.html(html);
+            if (valorSeleccionado) $sel.val(valorSeleccionado);
+        });
+    }
+
+    // Llena TODOS los selects de partidas (solo al abrir el modal, antes de precargar valores)
+    function cargarPartidasEnTodasLasFilas(callback) {
+        obtenerOpcionesPartidasHtml(function (html) {
+            $(".modal-partida-select").html(html);
+            if (callback) callback();
         });
     }
 
@@ -893,7 +934,6 @@
   });
 
   (function modalProveedoresRequisicion() {
-    var MAX_FILAS_PROVEEDORES = 6;
     var FILAS_INICIALES_PROVEEDORES = 2;
       var CATALOGO_PROVEEDORES_MODAL = [];
       $("#selectProveedor_0 option").each(function () {
@@ -933,41 +973,19 @@
       });
     }
 
-    function sincronizarOpcionesProveedores() {
-      var $c = $contenedorFilas();
-      if (!$c.length) return;
-      var $filas = $c.find(".modal-proveedores-fila");
-      var values = $filas
-        .map(function () {
-          return $(this).find(".modal-proveedores-select").val() || "";
-        })
-        .get();
+      function sincronizarOpcionesProveedores() {
+          var $c = $contenedorFilas();
+          if (!$c.length) return;
 
-      $filas.each(function (idx) {
-        var $sel = $(this).find(".modal-proveedores-select");
-        var current = values[idx] || "";
-        if ($sel.data("select2")) $sel.select2("destroy");
-
-        var tomadosPorOtros = {};
-        values.forEach(function (v, j) {
-          if (j !== idx && v) tomadosPorOtros[v] = true;
-        });
-
-        var html = '<option value="">-- Seleccione proveedor --</option>';
-        CATALOGO_PROVEEDORES_MODAL.forEach(function (p) {
-          if (!tomadosPorOtros[p.v] || p.v === current) {
-            html += "<option value=\"" + p.v + "\">" + p.t + "</option>";
-          }
-        });
-        $sel.html(html);
-        if (current && $sel.find('option[value="' + current + '"]').length) {
-          $sel.val(current);
-        } else {
-          $sel.val("");
-        }
-        initSelect2Proveedor($sel);
-      });
-    }
+          $c.find(".modal-proveedores-fila").each(function () {
+              var $sel = $(this).find(".modal-proveedores-select");
+              var current = $sel.val() || "";
+              if ($sel.data("select2")) $sel.select2("destroy");
+              $sel.html(buildFullOptionsHtml());
+              if (current) $sel.val(current);
+              initSelect2Proveedor($sel);
+          });
+      }
 
     function actualizarBotonAgregarProveedores() {
       var $c = $contenedorFilas();
@@ -1002,15 +1020,13 @@
               return;
           }
 
+          destruirSelect2ProveedoresEn($("#modalProveedoresRequisicion"));
+          var $c = $contenedorFilas();
+
           $.get(urlObtenerCotizaciones, { idRequisicion: _idRequiCotizaciones }, function (data) {
-              // Siempre resetear primero para limpiar estado previo
-              destruirSelect2ProveedoresEn($("#modalProveedoresRequisicion"));
-
-              var $c = $contenedorFilas();
-
-              // Ajustar número de filas al número de cotizaciones guardadas (mínimo FILAS_INICIALES)
               var filasMeta = Math.max(data ? data.length : 0, FILAS_INICIALES_PROVEEDORES);
 
+              // 1. Ajustar cantidad de filas ANTES de cargar partidas
               while ($c.find(".modal-proveedores-fila").length < filasMeta) {
                   var tpl = document.getElementById("tplModalProveedorFila");
                   $c[0].appendChild(tpl.content.cloneNode(true));
@@ -1019,23 +1035,29 @@
                   $c.find(".modal-proveedores-fila").last().remove();
               }
 
-              // Limpiar todas las filas primero
+              // 2. Limpiar proveedores y precios
               $c.find(".modal-proveedores-fila").each(function () {
                   $(this).find(".modal-proveedores-input-precio").val("");
                   $(this).find(".modal-proveedores-select").html(buildFullOptionsHtml()).val("");
               });
 
-              // Precargar valores si hay datos
-              if (data && data.length) {
-                  $c.find(".modal-proveedores-fila").each(function (i) {
-                      if (!data[i]) return;
-                      $(this).find(".modal-proveedores-input-precio").val(data[i].importe || "");
-                      $(this).find(".modal-proveedores-select").val(data[i].idProveedor || "");
-                  });
-              }
+              // 3. Ahora que TODAS las filas existen, cargar partidas en todas
+              cargarPartidasEnTodasLasFilas(function () {
 
-              sincronizarOpcionesProveedores();
-              actualizarBotonAgregarProveedores();
+                  // 4. Precargar valores guardados
+                  if (data && data.length) {
+                      $c.find(".modal-proveedores-fila").each(function (i) {
+                          if (!data[i]) return;
+                          $(this).find(".modal-partida-select").val(data[i].idPartida || "");
+                          $(this).find(".modal-proveedores-input-precio").val(data[i].importe || "");
+                          $(this).find(".modal-proveedores-select").val(data[i].idProveedor || "");
+                      });
+                  }
+
+                  sincronizarOpcionesProveedores();
+                  actualizarBotonAgregarProveedores();
+              });
+
           }).fail(function () {
               resetModalProveedores();
           });
@@ -1047,12 +1069,13 @@
 
           var cotizaciones = [];
           $contenedorFilas().find(".modal-proveedores-fila").each(function () {
+              var idPartida = parseInt($(this).find(".modal-partida-select").val()) || 0;
               var idProveedor = parseInt($(this).find(".modal-proveedores-select").val()) || 0;
               var importe = parseFloat(
                   $(this).find(".modal-proveedores-input-precio").val().replace(/,/g, "")
               ) || 0;
               if (idProveedor > 0) {
-                  cotizaciones.push({ idProveedor: idProveedor, importe: importe });
+                  cotizaciones.push({ idProveedor: idProveedor, importe: importe, idPartida: idPartida });
               }
           });
 
@@ -1082,15 +1105,27 @@
       },
     );
 
-    $(document).on("click", "#btnModalProveedoresAgregar", function () {
-      var $c = $contenedorFilas();
-      var tpl = document.getElementById("tplModalProveedorFila");
-      if (!$c.length || !tpl || !tpl.content) return;
-      if ($c.find(".modal-proveedores-fila").length >= MAX_FILAS_PROVEEDORES) return;
-      $c[0].appendChild(tpl.content.cloneNode(true));
-      sincronizarOpcionesProveedores();
-      actualizarBotonAgregarProveedores();
-    });
+      $(document).on("click", "#btnModalProveedoresAgregar", function () {
+          var $c = $contenedorFilas();
+          var tpl = document.getElementById("tplModalProveedorFila");
+          if (!$c.length || !tpl || !tpl.content) return;
+
+          $c[0].appendChild(tpl.content.cloneNode(true));
+
+          var $filaNew = $c.find(".modal-proveedores-fila").last();
+
+          // Copiar opciones de partidas del primer select (ya están cargadas)
+          var opcionesPartidas = $c.find(".modal-proveedores-fila").first()
+              .find(".modal-partida-select").html();
+          $filaNew.find(".modal-partida-select").html(opcionesPartidas);
+
+          // Inicializar select2 solo en la fila nueva
+          var $selProv = $filaNew.find(".modal-proveedores-select");
+          $selProv.html(buildFullOptionsHtml());
+          initSelect2Proveedor($selProv);
+
+          actualizarBotonAgregarProveedores();
+      });
   })();
 
   $(document).on("mousedown", function (e) {

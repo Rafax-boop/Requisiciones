@@ -15,11 +15,13 @@ namespace Inventario.BLL.Implementacion
     {
         private readonly IGenericRepository<TblProvedor> _repository;
         private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
+        private readonly IGenericRepository<TblRequisicionDetalle> _repositoryDetalle;
 
-        public ProveedoresService(IGenericRepository<TblProvedor> repository, IGenericRepository<TblCotizacione> repositoryCotizaciones)
+        public ProveedoresService(IGenericRepository<TblProvedor> repository, IGenericRepository<TblCotizacione> repositoryCotizaciones, IGenericRepository<TblRequisicionDetalle> repositoryDetalle)
         {
             _repository = repository;
             _repositoryCotizaciones = repositoryCotizaciones;
+            _repositoryDetalle = repositoryDetalle;
         }
 
         public async Task<List<ProveedoresDTO>> ObtenerProveedores()
@@ -54,7 +56,8 @@ namespace Inventario.BLL.Implementacion
                 {
                     IdRequisicion = idRequisicion,
                     IdProveedor = cot.IdProveedor,
-                    Importe = cot.Importe
+                    Importe = cot.Importe,
+                    IdRequiDetalle = cot.IdPartida
                 });
             }
             return true;
@@ -67,7 +70,18 @@ namespace Inventario.BLL.Implementacion
             {
                 IdProveedor = c.IdProveedor ?? 0,
                 Importe = c.Importe ?? 0,
-                NombreProveedor = c.IdProveedorNavigation.NombreProvedor
+                NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
+                IdPartida = c.IdRequiDetalle
+            }).ToListAsync();
+        }
+
+        public async Task<List<PartidaDTO>> ObtenerPartidas(int idRequisicion)
+        {
+            var query = await _repositoryDetalle.Consultar(c => c.IdRequisicion == idRequisicion);
+            return await query.Select(c => new PartidaDTO
+            {
+                IdRequiDetalle = c.IdRequisicionDetalle,
+                NombrePartida = c.DescripcionDetallada
             }).ToListAsync();
         }
     }

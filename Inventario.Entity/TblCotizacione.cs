@@ -11,9 +11,13 @@ public partial class TblCotizacione
 
     public int? IdProveedor { get; set; }
 
+    public int? IdRequiDetalle { get; set; }
+
     public decimal? Importe { get; set; }
 
     public virtual TblProvedor? IdProveedorNavigation { get; set; }
+
+    public virtual TblRequisicionDetalle? IdRequiDetalleNavigation { get; set; }
 
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
 }
