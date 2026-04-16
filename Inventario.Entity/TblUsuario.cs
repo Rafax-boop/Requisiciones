@@ -32,4 +32,6 @@ public partial class TblUsuario
     public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioMatNavigations { get; set; } = new List<TblRequisicion>();
 
     public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioNavigations { get; set; } = new List<TblRequisicion>();
+
+    public virtual ICollection<TblTablaApiHistorial> TblTablaApiHistorials { get; set; } = new List<TblTablaApiHistorial>();
 }

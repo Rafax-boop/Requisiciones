@@ -50,6 +50,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblRol> TblRols { get; set; }
 
+    public virtual DbSet<TblTablaApiHistorial> TblTablaApiHistorials { get; set; }
+
     public virtual DbSet<TblUnidadMedidum> TblUnidadMedida { get; set; }
 
     public virtual DbSet<TblUsuario> TblUsuarios { get; set; }
@@ -466,6 +468,28 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblTablaApiHistorial>(entity =>
+        {
+            entity.HasKey(e => e.IdHistorial).HasName("PK__TblTabla__9CC7DBB4AB0CBD01");
+
+            entity.ToTable("TblTablaApiHistorial");
+
+            entity.Property(e => e.FechaGeneracion)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Observacion).HasMaxLength(500);
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblTablaApiHistorials)
+                .HasForeignKey(d => d.IdRequisicion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TablaApiHistorial_Requisicion");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblTablaApiHistorials)
+                .HasForeignKey(d => d.IdUsuario)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TablaApiHistorial_Usuario");
         });
 
         modelBuilder.Entity<TblUnidadMedidum>(entity =>

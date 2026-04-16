@@ -42,14 +42,25 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDiseno;
         private readonly IGenericRepository<TblDepartamento> _repoDepartamento;
         private readonly IGenericRepository<TblRequisicionDetalle> _repoDetalle;
+        private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
+        private readonly IGenericRepository<TblTablaApiHistorial> _repoHistorial;
 
-        public FinancierosService(IRequisicionRepository repositoryRequisicion, IGenericRepository<TblBitacoraEstatus> repositoryBitacora, IGenericRepository<TblRegistroDiseno> repositoryDiseno, IGenericRepository<TblDepartamento> repoDepartamento, IGenericRepository<TblRequisicionDetalle> repoDetalle)
+        public FinancierosService(
+            IRequisicionRepository repositoryRequisicion,
+            IGenericRepository<TblBitacoraEstatus> repositoryBitacora,
+            IGenericRepository<TblRegistroDiseno> repositoryDiseno,
+            IGenericRepository<TblDepartamento> repoDepartamento,
+            IGenericRepository<TblRequisicionDetalle> repoDetalle,
+            IGenericRepository<TblCotizacione> repositoryCotizaciones,
+            IGenericRepository<TblTablaApiHistorial> repoHistorial)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
             _repositoryDiseno = repositoryDiseno;
             _repoDepartamento = repoDepartamento;
             _repoDetalle = repoDetalle;
+            _repositoryCotizaciones = repositoryCotizaciones;
+            _repoHistorial = repoHistorial;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -275,6 +286,14 @@ namespace Inventario.BLL.Implementacion
 
             var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
+            var cotizacionConCantidad = await ObtenerCotizacionConCantidadAsync(idRequisicion);
+
+            // Importe final por partida (precio × cantidad × IVA)
+            var importePorPartida = cotizacionConCantidad.ToDictionary(
+                kv => kv.Key,
+                kv => AplicarIva(kv.Value.PrecioUnitario, kv.Value.Cantidad));
+
+            decimal totalSolicitado = importePorPartida.Values.Any() ? importePorPartida.Values.Sum() : 0;
 
             // ── 2. Generar PDF ───────────────────────────────────────────────
             // IMPORTANTE: NO usar "using" en el MemoryStream.
@@ -458,10 +477,14 @@ namespace Inventario.BLL.Implementacion
                 if (i < detalles.Count)
                 {
                     var d = detalles[i];
+                    var importeStr = importePorPartida.TryGetValue(d.IdRequisicionDetalle, out var imp)
+                        ? FormatearImporte(imp)
+                        : "";
+
                     tblPart.AddCell(CeldaBlanca((i + 1).ToString(), fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.IdDepartamento?.ToString()), fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.ClaveRegion?.ToString()), fondoFila: bg));
-                    tblPart.AddCell(CeldaVacia(11f, bg));
+                    tblPart.AddCell(CeldaBlanca(importeStr, fondoFila: bg));              // ← antes CeldaVacia
                     tblPart.AddCell(CeldaBlanca(S(requisicion.Ff), fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.IdPp?.ToString()), fondoFila: bg));
                     tblPart.AddCell(CeldaVacia(11f, bg));
@@ -482,12 +505,14 @@ namespace Inventario.BLL.Implementacion
             // ════════════════════════════════════════════════════════════════
             // BLOQUE 5 — TOTALES
             // ════════════════════════════════════════════════════════════════
+
+            var totalSolicitadoStr = totalSolicitado > 0 ? FormatearImporte(totalSolicitado) : "$";
             var tblTot = new Table(UnitValue.CreatePointArray(new float[] { 100f, 120f, 142f, 100f, 58f }))
                 .UseAllAvailableWidth();
 
             tblTot.AddCell(CeldaGris("Total Solicitado:", size: 7f, align: TextAlignment.LEFT)
                 .SetPaddingLeft(4f));
-            tblTot.AddCell(CeldaBlanca("$", align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(totalSolicitadoStr, align: TextAlignment.LEFT));
             tblTot.AddCell(new Cell().SetBorder(bordeCelda).SetBackgroundColor(ColorConstants.WHITE));
             tblTot.AddCell(CeldaGris("Total Autorizado:", size: 7f, align: TextAlignment.LEFT)
                 .SetPaddingLeft(4f));
@@ -602,6 +627,15 @@ namespace Inventario.BLL.Implementacion
             var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
 
+            // ← NUEVO
+            var cotizacionConCantidad = await ObtenerCotizacionConCantidadAsync(idRequisicion);
+
+            var importePorPartida = cotizacionConCantidad.ToDictionary(
+                kv => kv.Key,
+                kv => AplicarIva(kv.Value.PrecioUnitario, kv.Value.Cantidad));
+
+            decimal totalSolicitado = importePorPartida.Values.Any() ? importePorPartida.Values.Sum() : 0;
+
             var fecha = requisicion.FechaEmision.HasValue
                 ? requisicion.FechaEmision.Value.ToDateTime(TimeOnly.MinValue)
                 : DateTime.Now;
@@ -619,18 +653,22 @@ namespace Inventario.BLL.Implementacion
                 OficioSuficiencia = "",
                 ContratoAsociado = "",
                 Comentarios = "",
-                TotalSolicitado = "$",
+                TotalSolicitado = totalSolicitado > 0 ? FormatearImporte(totalSolicitado) : "$",
                 TotalAutorizado = "$"
             };
 
             foreach (var d in detalles)
             {
+                var importeStr = importePorPartida.TryGetValue(d.IdRequisicionDetalle, out var imp)
+                        ? FormatearImporte(imp)
+                        : "";
+
                 modelo.Partidas.Add(new TablaApiPartidaEditableDTO
                 {
                     Numero = (modelo.Partidas.Count + 1).ToString(),
                     Ua = S(requisicion.IdDepartamento?.ToString()),
                     ClaveMunicipio = S(requisicion.ClaveRegion?.ToString()),
-                    ImporteSolicitado = "",
+                    ImporteSolicitado = importeStr,
                     FuenteFinanciamiento = S(requisicion.Ff),
                     Pp = S(requisicion.IdPp?.ToString()),
                     Componente = "",
@@ -867,6 +905,29 @@ namespace Inventario.BLL.Implementacion
 
             doc.Close();
             return ms.ToArray();
+        }
+
+        public async Task GuardarHistorialTablaApiAsync(
+            TablaApiEditableDTO modelo,
+            int idUsuario,
+            string? observacion = null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(modelo, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var registro = new TblTablaApiHistorial
+            {
+                IdRequisicion = modelo.IdRequisicion,
+                IdUsuario = idUsuario,
+                FechaGeneracion = DateTime.Now,
+                DatosJson = json,
+                Observacion = observacion
+            };
+
+            await _repoHistorial.Crear(registro);
         }
 
         private Table CrearTablaEncabezadoApi(PdfFont bold, PdfFont regular, string fechaElaboracion, string ejercicioAnio)
@@ -1125,5 +1186,43 @@ namespace Inventario.BLL.Implementacion
             // Formato final: API-0001/26  (4 dígitos con ceros)
             return $"API-{siguiente:D4}/{sufAno}";
         }
+
+        private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad)>> ObtenerCotizacionConCantidadAsync(int idRequisicion)
+        {
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => c.IdRequisicion == idRequisicion
+                  && c.IdRequiDetalle.HasValue
+                  && c.Importe.HasValue);
+            var cotizaciones = await queryCot.ToListAsync();
+
+            // Precio ganador (mínimo) por partida
+            var precioGanador = cotizaciones
+                .GroupBy(c => c.IdRequiDetalle!.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Min(c => c.Importe!.Value));
+
+            // Cantidad por partida desde TblRequisicionDetalle
+            var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+            var detalles = await queryDet.ToListAsync();
+
+            var cantidadPorPartida = detalles.ToDictionary(
+                d => d.IdRequisicionDetalle,
+                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+
+            // Combinar: solo partidas que tienen cotización
+            return precioGanador.ToDictionary(
+                kv => kv.Key,
+                kv => (
+                    PrecioUnitario: kv.Value,
+                    Cantidad: cantidadPorPartida.TryGetValue(kv.Key, out var cant) ? cant : 1m
+                ));
+        }
+
+        private static decimal AplicarIva(decimal precioUnitario, decimal cantidad) =>
+            precioUnitario * cantidad * 1.16m;
+
+        private static string FormatearImporte(decimal valor) =>
+            valor.ToString("C2", new System.Globalization.CultureInfo("es-MX"));
     }
 }

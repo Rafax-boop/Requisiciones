@@ -398,11 +398,11 @@ namespace Inventario.BLL.Implementacion
                 .UseAllAvailableWidth();
             var firmantes = new (string Titulo, string Nombre)[]
             {
-                ("ASIGNACIÓN PRESUPUESTAL",
-                 "JOEL MARTÍNEZ PÉREZ\nJEFE DEL DEPARTAMENTO DE RECURSOS\nFINANCIEROS"),
-                ("Vo.Bo.",
-                 "C. MARCOS MATAMOROS MORENO\nDIRECTOR DE ADMINISTRACIÓN Y FINANZAS"),
+                ("SOLICITÁ",
+                 "MARIA GABRIELA OLIVARES ROBLES\nJEFA DEL DEPARTAMENTO DE RECURSOS\nMATERIALES Y SERVICIOS GENERALES"),
                 ("AUTORIZÓ",
+                 "C. MARCOS MATAMOROS MORENO\nDIRECTOR DE ADMINISTRACIÓN Y FINANZAS"),
+                ("V.BO",
                  "C. CIRO MIGUEL JUÁREZ PALACIOS\nTITULAR DE LA UNIDAD DE PLANEACIÓN,\nADMINISTRACIÓN Y FINANZAS"),
             };
 

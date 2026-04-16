@@ -71,7 +71,8 @@ namespace Inventario.BLL.Implementacion
                 IdProveedor = c.IdProveedor ?? 0,
                 Importe = c.Importe ?? 0,
                 NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
-                IdPartida = c.IdRequiDetalle
+                IdPartida = c.IdRequiDetalle,
+                NombrePartida = c.IdRequiDetalleNavigation.DescripcionDetallada
             }).ToListAsync();
         }
 

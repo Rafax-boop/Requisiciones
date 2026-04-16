@@ -193,7 +193,17 @@ namespace Inventario.AplicacionWeb.Controllers
                 if (modelo.IdRequisicion <= 0)
                     return BadRequest("La requisición es requerida.");
 
+                // Obtener usuario de sesión (ajusta según tu implementación)
+                int idUsuario = int.Parse(User.FindFirst("IdUsuario")?.Value ?? "0");
+
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
+
+                // Guardar historial antes de devolver
+                await _financierosService.GuardarHistorialTablaApiAsync(
+                    modelo,
+                    idUsuario,
+                    observacion: $"PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
+
                 var nombreArchivo = $"TablaAPI_Editada_{modelo.IdRequisicion}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(bytes, "application/pdf", nombreArchivo);
             }
