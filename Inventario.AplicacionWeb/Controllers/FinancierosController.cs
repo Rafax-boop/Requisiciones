@@ -214,6 +214,21 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> HistorialTablaApi(int idRequisicion)
+        {
+            try
+            {
+                var historial = await _financierosService.ObtenerHistorialTablaApiAsync(idRequisicion);
+                return View(historial);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error obteniendo historial Tabla API para requisición {Id}", idRequisicion);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
         /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
         [HttpGet]
         public async Task<IActionResult> SnapshotIdsPorTab()

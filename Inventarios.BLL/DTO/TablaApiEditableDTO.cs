@@ -31,4 +31,16 @@ namespace Inventario.BLL.DTO
         public string ObjetoGasto { get; set; } = "";
         public string ImporteAutorizado { get; set; } = "";
     }
+
+    // Inventario.BLL.DTO/TablaApiHistorialDTO.cs
+    public class TablaApiHistorialDTO
+    {
+        public int IdHistorial { get; set; }
+        public int IdRequisicion { get; set; }
+        public string NumeroRequisicion { get; set; } = "";
+        public DateTime FechaGeneracion { get; set; }
+        public string NombreUsuario { get; set; } = "";
+        public string? Observacion { get; set; }
+        public TablaApiEditableDTO? Modelo { get; set; }
+    }
 }

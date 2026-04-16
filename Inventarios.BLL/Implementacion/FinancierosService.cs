@@ -930,6 +930,36 @@ namespace Inventario.BLL.Implementacion
             await _repoHistorial.Crear(registro);
         }
 
+        public async Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiAsync(int idRequisicion)
+        {
+            var query = await _repoHistorial.Consultar(h => h.IdRequisicion == idRequisicion);
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdRequisicion,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            return lista.Select(h => new TablaApiHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = h.IdRequisicion,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                                        .Deserialize<TablaApiEditableDTO>(h.DatosJson)
+            }).ToList();
+        }
+
         private Table CrearTablaEncabezadoApi(PdfFont bold, PdfFont regular, string fechaElaboracion, string ejercicioAnio)
         {
             var borde = new SolidBorder(PdfApiEstiloRequi.Borde, 1f);
