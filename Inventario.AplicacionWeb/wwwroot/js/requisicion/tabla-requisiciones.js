@@ -1541,25 +1541,52 @@
                     '<p style="color:var(--color-text-secondary);font-style:italic;font-size:13px;">' +
                     'Sin cotizaciones registradas.</p>';
             } else {
-                data.forEach(function (c, i) {
-                    var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
-                        style: "currency", currency: "MXN"
+                // Agrupar por partida
+                var porPartida = {};
+                data.forEach(function (c) {
+                    var key = c.idPartida || 0;
+                    var label = c.nombrePartida || "Partida #" + key;
+                    if (!porPartida[key]) porPartida[key] = { label: label, items: [] };
+                    porPartida[key].items.push(c);
+                });
+
+                Object.keys(porPartida).forEach(function (key) {
+                    var grupo = porPartida[key];
+
+                    // Encabezado de partida
+                    var header = document.createElement("div");
+                    header.style.cssText =
+                        "font-size:12px;font-weight:600;color:var(--color-text-secondary);" +
+                        "text-transform:uppercase;letter-spacing:.04em;" +
+                        "padding:8px 4px 4px;border-bottom:1px solid var(--color-border-tertiary);" +
+                        "margin-bottom:4px;" +
+                        (Object.keys(porPartida).indexOf(key) > 0 ? "margin-top:12px;" : "");
+                    header.innerHTML =
+                        '<i class="fa-solid fa-tag" style="margin-right:5px;font-size:10px;"></i>' +
+                        grupo.label;
+                    lista.appendChild(header);
+
+                    // Filas de proveedores de esa partida
+                    grupo.items.forEach(function (c, i) {
+                        var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
+                            style: "currency", currency: "MXN"
+                        });
+                        var fila = document.createElement("div");
+                        fila.style.cssText =
+                            "display:flex;align-items:center;gap:12px;padding:8px 14px;" +
+                            "border-radius:8px;border:1px solid var(--color-border-tertiary);" +
+                            "background:var(--color-background-secondary);margin-bottom:4px;";
+                        fila.innerHTML =
+                            '<span style="font-size:12px;color:var(--color-text-secondary);' +
+                            'min-width:20px;text-align:center;">#' + (i + 1) + '</span>' +
+                            '<span style="flex:1;font-size:13px;font-weight:500;">' +
+                            (c.nombreProveedor || "Proveedor #" + c.idProveedor) +
+                            '</span>' +
+                            '<span style="font-size:13px;color:var(--color-text-success);font-weight:500;">' +
+                            importe +
+                            '</span>';
+                        lista.appendChild(fila);
                     });
-                    var fila = document.createElement("div");
-                    fila.style.cssText =
-                        "display:flex;align-items:center;gap:12px;padding:10px 14px;" +
-                        "border-radius:8px;border:1px solid var(--color-border-tertiary);" +
-                        "background:var(--color-background-secondary);";
-                    fila.innerHTML =
-                        '<span style="font-size:12px;color:var(--color-text-secondary);' +
-                        'min-width:20px;text-align:center;">#' + (i + 1) + '</span>' +
-                        '<span style="flex:1;font-size:13px;font-weight:500;">' +
-                        (c.nombreProveedor || "Proveedor #" + c.idProveedor) +
-                        '</span>' +
-                        '<span style="font-size:13px;color:var(--color-text-success);font-weight:500;">' +
-                        importe +
-                        '</span>';
-                    lista.appendChild(fila);
                 });
             }
 
