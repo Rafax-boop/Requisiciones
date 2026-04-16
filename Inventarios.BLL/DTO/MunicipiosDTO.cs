@@ -30,6 +30,7 @@ namespace Inventario.BLL.DTO
     public class PartidaDTO
     {
         public int IdRequiDetalle { get; set; }
+        public int? NumPartida { get; set; }
         public string NombrePartida { get; set; }
     }
 }
