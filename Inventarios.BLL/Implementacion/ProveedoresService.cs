@@ -81,6 +81,7 @@ namespace Inventario.BLL.Implementacion
             return await query.Select(c => new PartidaDTO
             {
                 IdRequiDetalle = c.IdRequisicionDetalle,
+                NumPartida = c.NumPartida,
                 NombrePartida = c.DescripcionDetallada
             }).ToListAsync();
         }

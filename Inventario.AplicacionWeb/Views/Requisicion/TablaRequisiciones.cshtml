@@ -868,56 +868,32 @@
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores</h5>
-                    <p class="modal-subtitulo-premium">Precio y proveedor</p>
+                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores por partida</h5>
+                    <p class="modal-subtitulo-premium" id="wizardProveedoresSubtitulo">Partida 1 de 1</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div class="modal-body modal-body-premium modal-proveedores-cuerpo">
-                <div id="modalProveedoresFilas" class="modal-proveedores-lista">
-                    @for (var filaIdx = 0; filaIdx < 2; filaIdx++)
-                    {
-                        <div class="modal-proveedores-fila">
-                            <div class="formulario-input modal-proveedores-campo-select">
-                                <label>Partida</label>
-                                <select class="form-select select2 modal-partida-select" title="Partida">
-                                    <option value="">-- Seleccione partida --</option>
-                                </select>
-                            </div>
-                            <div class="formulario-input modal-proveedores-campo-select">
-                                <label for="selectProveedor_@filaIdx">Proveedor</label>
-                                <select id="selectProveedor_@filaIdx" class="form-select select2 modal-proveedores-select" title="Proveedor">
-                                    <option value="">-- Seleccione proveedor --</option>
-                                    @foreach (var act in Model.ListaProveedores)
-                                    {
-                                        <option value="@act.Value">@act.Text</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="formulario-input modal-proveedores-campo-precio">
-                                <label for="precioProveedor_@filaIdx">Precio</label>
-                                <input type="text" id="precioProveedor_@filaIdx" class="form-control modal-proveedores-input-precio"
-                                       inputmode="decimal" placeholder="0.00" autocomplete="off" />
-                            </div>
-                        </div>
-                    }
-                </div>
+
+                <!-- Nombre de la partida activa -->
+                <p id="wizardProveedoresNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 1rem;"></p>
+
+                <!-- Filas de proveedor + precio para la partida activa -->
+                <div id="modalProveedoresFilas" class="modal-proveedores-lista"></div>
+
+                <!-- Botón agregar fila -->
                 <div class="modal-proveedores-agregar-wrap">
                     <button type="button" id="btnModalProveedoresAgregar" class="btn modal-proveedores-btn-agregar">
                         <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                        Agregar
+                        Agregar proveedor
                     </button>
                 </div>
+
+                <!-- Template de fila (sin select de partida) -->
                 <template id="tplModalProveedorFila">
                     <div class="modal-proveedores-fila">
-                        <div class="formulario-input modal-proveedores-campo-select">
-                            <label>Partida</label>
-                            <select class="form-select select2 modal-partida-select" title="Partida">
-                                <option value="">-- Seleccione partida --</option>
-                            </select>
-                        </div>
                         <div class="formulario-input modal-proveedores-campo-select">
                             <label>Proveedor</label>
                             <select class="form-select select2 modal-proveedores-select" title="Proveedor">
@@ -933,10 +909,22 @@
                             <input type="text" class="form-control modal-proveedores-input-precio"
                                    inputmode="decimal" placeholder="0.00" autocomplete="off" />
                         </div>
+                        <div style="display:flex; align-items:flex-end; padding-bottom:4px;">
+                            <button type="button" class="btn boton-gris btn-wizard-eliminar-fila" title="Eliminar fila" style="padding:6px 10px;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                     </div>
                 </template>
-                <div class="modal-proveedores-acciones">
-                    <button type="button" class="btn boton-rosa" onclick="cerrarSoloModalProveedores()">Aceptar</button>
+
+                <!-- Navegación del wizard -->
+                <div class="modal-proveedores-acciones" style="justify-content:space-between;">
+                    <button type="button" id="btnWizardAnterior" class="btn boton-gris" style="display:none;">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+                    <button type="button" id="btnWizardSiguiente" class="btn boton-rosa">
+                        Siguiente <i class="fa-solid fa-chevron-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
