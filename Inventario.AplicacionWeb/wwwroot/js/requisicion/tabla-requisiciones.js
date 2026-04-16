@@ -934,11 +934,14 @@
   });
 
   (function modalProveedoresRequisicion() {
-    // ── Catálogo de proveedores (leído del DOM al iniciar) ──
+    // ── Catálogo de proveedores (leído del content del <template>, que es un DocumentFragment) ──
     var CATALOGO_PROVEEDORES_MODAL = [];
-    document.querySelectorAll("#tplModalProveedorFila .modal-proveedores-select option").forEach(function (o) {
-        if (o.value) CATALOGO_PROVEEDORES_MODAL.push({ v: o.value, t: o.text });
-    });
+    var _tplEl = document.getElementById("tplModalProveedorFila");
+    if (_tplEl) {
+        _tplEl.content.querySelectorAll(".modal-proveedores-select option").forEach(function (o) {
+            if (o.value) CATALOGO_PROVEEDORES_MODAL.push({ v: o.value, t: o.text });
+        });
+    }
 
     // ── Estado del wizard ──
     // wizardDatos[i] = [ { idProveedor, importe }, ... ]  (filas de la partida i)
