@@ -194,7 +194,7 @@ namespace Inventario.AplicacionWeb.Controllers
                     return BadRequest("La requisición es requerida.");
 
                 // Obtener usuario de sesión (ajusta según tu implementación)
-                int idUsuario = int.Parse(User.FindFirst("IdUsuario")?.Value ?? "0");
+                int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
 
@@ -209,8 +209,8 @@ namespace Inventario.AplicacionWeb.Controllers
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error generando Tabla API editada para requisición {Id}", modelo.IdRequisicion);
-                return StatusCode(500, $"Error al generar el PDF editado: {ex.Message}");
+                var inner = ex.InnerException?.Message ?? "sin inner";
+                return StatusCode(500, $"Error: {ex.Message} | Inner: {inner}");
             }
         }
 
