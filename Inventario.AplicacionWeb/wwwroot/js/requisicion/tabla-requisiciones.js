@@ -978,7 +978,7 @@
         $contenedor().find(".modal-proveedores-fila").each(function () {
             filas.push({
                 idProveedor: parseInt($(this).find(".modal-proveedores-select").val()) || 0,
-                importe: ""   // el precio no se precarga en la siguiente partida
+                importe: $(this).find(".modal-proveedores-input-precio").val() || ""
             });
         });
         wizardDatos[wizardIdx] = filas;
