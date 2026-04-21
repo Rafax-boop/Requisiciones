@@ -14,7 +14,8 @@ public partial class TblCotizacione
     public int? IdRequiDetalle { get; set; }
 
     public decimal? Importe { get; set; }
-    public bool? IVA { get; set; }
+
+    public bool? Iva { get; set; }
 
     public virtual TblProvedor? IdProveedorNavigation { get; set; }
 

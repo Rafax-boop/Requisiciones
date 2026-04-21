@@ -23,7 +23,7 @@ namespace Inventario.BLL.Implementacion
     public class CuadroComparativoPdfService : ICuadroComparativoPdfService
     {
         private readonly IRequisicionesService _requisicionesService;
-        private readonly IProveedoresService _cotizacionesService; // <-- inyecta tu servicio
+        private readonly IProveedoresService _cotizacionesService;
 
         public CuadroComparativoPdfService(
             IRequisicionesService requisicionesService,
@@ -75,7 +75,7 @@ namespace Inventario.BLL.Implementacion
                     // Mapea hasta 3 precios según el orden de proveedores detectado arriba
                     var precios = proveedores
                         .Select(p => cotsDeLaPartida
-                            .FirstOrDefault(c => c.IdProveedor == p.IdProveedor)?.Importe)
+                            .FirstOrDefault(c => c.IdProveedor == p.IdProveedor))
                         .ToArray();
 
                     return new CuadroComparativoFilaPdf
@@ -85,9 +85,12 @@ namespace Inventario.BLL.Implementacion
                         Cantidad = a.Cantidad ?? 0m,
                         CantidadTxt = cantidadTexto,
                         Unidad = a.UnidadMedida ?? "",
-                        PrecioP1 = precios.ElementAtOrDefault(0),
-                        PrecioP2 = precios.ElementAtOrDefault(1),
-                        PrecioP3 = precios.ElementAtOrDefault(2),
+                        PrecioP1 = precios.ElementAtOrDefault(0)?.Importe,
+                        PrecioP2 = precios.ElementAtOrDefault(1)?.Importe,
+                        PrecioP3 = precios.ElementAtOrDefault(2)?.Importe,
+                        IvaP1 = precios.ElementAtOrDefault(0)?.IVA ?? false,
+                        IvaP2 = precios.ElementAtOrDefault(1)?.IVA ?? false,
+                        IvaP3 = precios.ElementAtOrDefault(2)?.IVA ?? false,
                     };
                 })
                 .ToList() ?? new List<CuadroComparativoFilaPdf>();
@@ -122,16 +125,23 @@ namespace Inventario.BLL.Implementacion
             const decimal tasaIva = 0.16m;
 
             // Pre-calcula totales por proveedor (suma de importe*cantidad)
-            decimal SumaProveedor(int idx) => filas
-                .Where(f => idx == 0 ? f.PrecioP1.HasValue : idx == 1 ? f.PrecioP2.HasValue : f.PrecioP3.HasValue)
-                .Sum(f =>
-                {
-                    var precio = idx == 0 ? f.PrecioP1!.Value : idx == 1 ? f.PrecioP2!.Value : f.PrecioP3!.Value;
-                    return precio * f.Cantidad;
-                });
+            decimal SubtotalProveedor(int idx) => filas.Sum(f =>
+            {
+                var precio = idx == 0 ? f.PrecioP1 : idx == 1 ? f.PrecioP2 : f.PrecioP3;
+                if (!precio.HasValue) return 0m;
+                return precio.Value * f.Cantidad;
+            });
 
-            var sumas = new[] { SumaProveedor(0), SumaProveedor(1), SumaProveedor(2) };
-            var ivas = sumas.Select(s => s * tasaIva).ToArray();
+            decimal IvaProveedor(int idx) => filas.Sum(f =>
+            {
+                var precio = idx == 0 ? f.PrecioP1 : idx == 1 ? f.PrecioP2 : f.PrecioP3;
+                var tieneIva = idx == 0 ? f.IvaP1 : idx == 1 ? f.IvaP2 : f.IvaP3;
+                if (!precio.HasValue || !tieneIva) return 0m;
+                return precio.Value * f.Cantidad * tasaIva;
+            });
+
+            var sumas = new[] { SubtotalProveedor(0), SubtotalProveedor(1), SubtotalProveedor(2) };
+            var ivas = new[] { IvaProveedor(0), IvaProveedor(1), IvaProveedor(2) };
             var totals = sumas.Select((s, i) => s + ivas[i]).ToArray();
 
             // Proveedor seleccionado: el de menor total (solo entre los que tienen datos)
@@ -321,7 +331,6 @@ namespace Inventario.BLL.Implementacion
                 tabla.AddCell(CellBody(fila.Unidad ?? "",
                     align: TextAlignment.CENTER, minHeight: 17f).SetBackgroundColor(fondoFila));
 
-                // Precio unitario y total por cada proveedor
                 var precios = new[] { fila.PrecioP1, fila.PrecioP2, fila.PrecioP3 };
                 for (var p = 0; p < 3; p++)
                 {
@@ -338,15 +347,17 @@ namespace Inventario.BLL.Implementacion
             var etiquetasResumen = new[] { ("SUMA", sumas), ("IVA", ivas), ("TOTAL", totals) };
             foreach (var (etiqueta, valores) in etiquetasResumen)
             {
-                tabla.AddCell(CellBody("", 4)); // columnas vacías izquierda
+                tabla.AddCell(CellBody("", 4));
                 for (var p = 0; p < 3; p++)
                 {
                     var esGanador = indiceGanador == p;
                     var bg = esGanador ? verdeGanador : null;
                     var fg = esGanador ? verdeTexto : null;
                     tabla.AddCell(CellHead(etiqueta, 1, 1, TextAlignment.CENTER, bg, fg));
-                    tabla.AddCell(CellBody(Moneda(valores[p]),
-                        align: TextAlignment.RIGHT, bgOverride: bg, fgOverride: fg));
+
+                    // ✅ Solo este cambio: guión si IVA es 0
+                    var texto = (etiqueta == "IVA" && valores[p] == 0) ? "—" : Moneda(valores[p]);
+                    tabla.AddCell(CellBody(texto, align: TextAlignment.RIGHT, bgOverride: bg, fgOverride: fg));
                 }
             }
 
@@ -386,8 +397,14 @@ namespace Inventario.BLL.Implementacion
                 bgOverride: bgGanador, fgOverride: fgGanador));
             proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(sumas[indiceGanador]) : "",
                 align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
-            proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(ivas[indiceGanador]) : "",
+
+            // ✅ Guión si el IVA del ganador es 0
+            var textoIvaGanador = indiceGanador >= 0
+                ? (ivas[indiceGanador] == 0 ? "—" : Moneda(ivas[indiceGanador]))
+                : "";
+            proveedor.AddCell(CellBody(textoIvaGanador,
                 align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
+
             proveedor.AddCell(CellBody(indiceGanador >= 0 ? Moneda(totals[indiceGanador]) : "",
                 align: TextAlignment.RIGHT, bgOverride: bgGanador, fgOverride: fgGanador));
 
@@ -445,6 +462,9 @@ namespace Inventario.BLL.Implementacion
             public decimal? PrecioP1 { get; set; }
             public decimal? PrecioP2 { get; set; }
             public decimal? PrecioP3 { get; set; }
+            public bool IvaP1 { get; set; }
+            public bool IvaP2 { get; set; }
+            public bool IvaP3 { get; set; }
         }
     }
 }

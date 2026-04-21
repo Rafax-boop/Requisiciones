@@ -874,6 +874,14 @@
                             <input type="text" class="form-control modal-proveedores-input-precio"
                                    inputmode="decimal" placeholder="0.00" autocomplete="off" />
                         </div>
+
+                        <!-- ✅ IVA en línea, alineado al fondo igual que el botón eliminar -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:4px; gap:2px;">
+                            <label style="font-size:11px; font-weight:600; color:var(--color-text-secondary); margin:0; line-height:1;">Calcula IVA</label>
+                            <input type="checkbox" class="modal-proveedores-check-iva"
+                                   style="width:18px; height:18px; cursor:pointer; accent-color:#fe6291; margin:0;" />
+                        </div>
+
                         <div style="display:flex; align-items:flex-end; padding-bottom:4px;">
                             <button type="button" class="btn boton-gris btn-wizard-eliminar-fila" title="Eliminar fila" style="padding:6px 10px;">
                                 <i class="fa-solid fa-xmark"></i>

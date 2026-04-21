@@ -978,7 +978,8 @@
         $contenedor().find(".modal-proveedores-fila").each(function () {
             filas.push({
                 idProveedor: parseInt($(this).find(".modal-proveedores-select").val()) || 0,
-                importe: $(this).find(".modal-proveedores-input-precio").val() || ""
+                importe: $(this).find(".modal-proveedores-input-precio").val() || "",
+                iva: $(this).find(".modal-proveedores-check-iva").prop("checked")
             });
         });
         wizardDatos[wizardIdx] = filas;
@@ -1025,6 +1026,7 @@
             $sel.html(buildOpcionesHtml());
             if (fila.idProveedor) $sel.val(fila.idProveedor);
             if (fila.importe) $nueva.find(".modal-proveedores-input-precio").val(fila.importe);
+            if (fila.iva) $nueva.find(".modal-proveedores-check-iva").prop("checked", true);
             initSelect2($sel);
         });
 
@@ -1063,7 +1065,7 @@
                         var idxPartida = partidas.findIndex(function (p) { return p.idRequiDetalle === cot.idPartida; });
                         if (idxPartida < 0) return;
                         if (!wizardDatos[idxPartida]) wizardDatos[idxPartida] = [];
-                        wizardDatos[idxPartida].push({ idProveedor: cot.idProveedor, importe: cot.importe });
+                        wizardDatos[idxPartida].push({ idProveedor: cot.idProveedor, importe: cot.importe, iva: cot.iva });
                     });
                     // Rellenar partidas sin datos con 2 filas vacías
                     wizardDatos = wizardDatos.map(function (d) {
@@ -1097,7 +1099,8 @@
                         cotizaciones.push({
                             idProveedor: fila.idProveedor,
                             importe: parseFloat(String(fila.importe).replace(/,/g, "")) || 0,
-                            idPartida: partida.idRequiDetalle
+                            idPartida: partida.idRequiDetalle,
+                            iva: fila.iva === true
                         });
                     }
                 });

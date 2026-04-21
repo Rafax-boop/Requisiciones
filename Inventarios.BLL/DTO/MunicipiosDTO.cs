@@ -25,7 +25,7 @@ namespace Inventario.BLL.DTO
         public string NombreProveedor { get; set; }
         public int? IdPartida { get; set; }
         public string NombrePartida { get; set; }
-        public bool IVA { get; set; }
+        public bool? IVA { get; set; }
     }
 
     public class PartidaDTO

@@ -291,7 +291,9 @@ namespace Inventario.BLL.Implementacion
             // Importe final por partida (precio × cantidad × IVA)
             var importePorPartida = cotizacionConCantidad.ToDictionary(
                 kv => kv.Key,
-                kv => AplicarIva(kv.Value.PrecioUnitario, kv.Value.Cantidad));
+                kv => (bool)kv.Value.IVA
+                    ? kv.Value.PrecioUnitario * kv.Value.Cantidad * 1.16m
+                    : kv.Value.PrecioUnitario * kv.Value.Cantidad);
 
             decimal totalSolicitado = importePorPartida.Values.Any() ? importePorPartida.Values.Sum() : 0;
 
@@ -632,7 +634,9 @@ namespace Inventario.BLL.Implementacion
 
             var importePorPartida = cotizacionConCantidad.ToDictionary(
                 kv => kv.Key,
-                kv => AplicarIva(kv.Value.PrecioUnitario, kv.Value.Cantidad));
+                kv => (bool)kv.Value.IVA
+                    ? kv.Value.PrecioUnitario * kv.Value.Cantidad * 1.16m
+                    : kv.Value.PrecioUnitario * kv.Value.Cantidad);
 
             decimal totalSolicitado = importePorPartida.Values.Any() ? importePorPartida.Values.Sum() : 0;
 
@@ -1217,7 +1221,7 @@ namespace Inventario.BLL.Implementacion
             return $"API-{siguiente:D4}/{sufAno}";
         }
 
-        private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad)>> ObtenerCotizacionConCantidadAsync(int idRequisicion)
+        private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad, bool? IVA)>> ObtenerCotizacionConCantidadAsync(int idRequisicion)
         {
             var queryCot = await _repositoryCotizaciones.Consultar(
                 c => c.IdRequisicion == idRequisicion
@@ -1225,14 +1229,6 @@ namespace Inventario.BLL.Implementacion
                   && c.Importe.HasValue);
             var cotizaciones = await queryCot.ToListAsync();
 
-            // Precio ganador (mínimo) por partida
-            var precioGanador = cotizaciones
-                .GroupBy(c => c.IdRequiDetalle!.Value)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Min(c => c.Importe!.Value));
-
-            // Cantidad por partida desde TblRequisicionDetalle
             var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
 
@@ -1240,12 +1236,40 @@ namespace Inventario.BLL.Implementacion
                 d => d.IdRequisicionDetalle,
                 d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
 
-            // Combinar: solo partidas que tienen cotización
-            return precioGanador.ToDictionary(
+            // ✅ Ganador = proveedor con menor TOTAL GLOBAL (suma de precio×cantidad×iva por todas sus partidas)
+            // Igual que el cuadro comparativo
+            var totalPorProveedor = cotizaciones
+                .GroupBy(c => c.IdProveedor)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(c =>
+                    {
+                        var cantidad = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var cant) ? cant : 1m;
+                        var precio = c.Importe!.Value * cantidad;
+                        return c.Iva == true ? precio * 1.16m : precio;
+                    }));
+
+            // El proveedor ganador es el de menor total global
+            var idProveedorGanador = totalPorProveedor
+                .Where(kv => kv.Value > 0)
+                .OrderBy(kv => kv.Value)
+                .Select(kv => kv.Key)
+                .FirstOrDefault();
+
+            // Tomar solo las cotizaciones del proveedor ganador, una por partida
+            var cotGanadora = cotizaciones
+                .Where(c => c.IdProveedor == idProveedorGanador)
+                .GroupBy(c => c.IdRequiDetalle!.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.First());
+
+            return cotGanadora.ToDictionary(
                 kv => kv.Key,
                 kv => (
-                    PrecioUnitario: kv.Value,
-                    Cantidad: cantidadPorPartida.TryGetValue(kv.Key, out var cant) ? cant : 1m
+                    PrecioUnitario: kv.Value.Importe!.Value,
+                    Cantidad: cantidadPorPartida.TryGetValue(kv.Key, out var cant) ? cant : 1m,
+                    IVA: kv.Value.Iva
                 ));
         }
 

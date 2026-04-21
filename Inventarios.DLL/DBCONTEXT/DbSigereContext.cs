@@ -139,6 +139,7 @@ public partial class DbSigereContext : DbContext
             entity.HasKey(e => e.IdCotizacion);
 
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Iva).HasColumnName("IVA");
 
             entity.HasOne(d => d.IdProveedorNavigation).WithMany(p => p.TblCotizaciones)
                 .HasForeignKey(d => d.IdProveedor)
@@ -463,9 +464,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.FechaMovimiento)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.FormatoSalidaFirmado)
-                .HasMaxLength(500)
-                .IsUnicode(false);
             entity.Property(e => e.Observacion)
                 .HasMaxLength(500)
                 .IsUnicode(false);
