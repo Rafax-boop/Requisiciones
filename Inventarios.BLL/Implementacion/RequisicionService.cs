@@ -331,7 +331,7 @@ namespace Inventario.BLL.Implementacion
                 {
                     IdRequisicionDetalle = r.IdRequisicionDetalle,
                     NumPartida = r.NumPartida,
-                    ClaveMaterial = r.IdArticuloNavigation.ClaveMaterial,
+                    ClaveMaterial = r.IdArticuloNavigation.Clave,
                     IdArticulo = r.IdArticulo,
                     Cantidad = r.Cantidad,
                     UnidadMedida = r.UnidadMedida,

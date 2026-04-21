@@ -29,7 +29,9 @@ public partial class TblRequisicionDetalleMovimiento
 
     public int? IdUsuarioConfirmacion { get; set; }
 
-    public string? FormatoSalidaFirmado { get; set; }
+    public int? IdFormato { get; set; }
+
+    public virtual TblFormato? IdFormatoNavigation { get; set; }
 
     public virtual TblRequisicionDetalle IdRequisicionDetalleNavigation { get; set; } = null!;
 

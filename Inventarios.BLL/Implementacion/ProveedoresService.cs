@@ -57,7 +57,8 @@ namespace Inventario.BLL.Implementacion
                     IdRequisicion = idRequisicion,
                     IdProveedor = cot.IdProveedor,
                     Importe = cot.Importe,
-                    IdRequiDetalle = cot.IdPartida
+                    IdRequiDetalle = cot.IdPartida,
+                    IVA = cot.IVA
                 });
             }
             return true;

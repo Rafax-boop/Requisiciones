@@ -27,6 +27,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? TipoServicio { get; set; }
         public DateOnly? FechaServicio { get; set; }
         public bool? RequiServicio { get; set; }
+        public int? NumeroFormato { get; set; }
         public List<ItemRequiVM> Articulos { get; set; } = new();
         public List<VMFotoExistente> FotosExistentes { get; set; } = new();
     }
@@ -36,7 +37,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public int? Cog { get; set; }
         public int? IdArticulo { get; set; }
-        public int? ClaveMaterial { get; set; }
+        public string? ClaveMaterial { get; set; }
         public decimal? Cantidad { get; set; }
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }

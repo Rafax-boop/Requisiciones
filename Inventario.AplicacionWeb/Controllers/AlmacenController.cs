@@ -87,12 +87,16 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(dto);
         }
 
-        [HttpGet]
         public async Task<IActionResult> VerSalidaParaPdf(int id)
         {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+
             var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
-            if (dto == null)
-                return NotFound();
+            if (dto == null) return NotFound();
+
+            // Generar o reutilizar el folio
+            var numeroFormato = await _almacenService.GenerarFormatoSalida(id, userId.Value);
 
             var entregasPendientes = await _almacenService.ListarEntregasPendientes();
             var entregaActual = entregasPendientes.FirstOrDefault(x => x.IdRequisicion == id);
@@ -114,6 +118,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 NomDirector = dto.NomDirector,
                 CargoDirector = dto.CargoDirector,
                 UsoMaterial = dto.UsoMaterial,
+                NumeroFormato = numeroFormato,
                 Articulos = articulosPendientes.Select(a =>
                 {
                     detallePorId.TryGetValue(a.IdRequisicionDetalle, out var det);
@@ -140,10 +145,6 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(stock);
         }
 
-        /// <summary>
-        /// Devuelve los art?culos pendientes de entrega f?sica para una requisici?n.
-        /// Usado por el tab "A Entregar" al abrir el modal de detalle.
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ObtenerEntregasPendientes()
         {
@@ -186,7 +187,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 }
 
                 var rutaDb = "/" + Path.Combine(carpetaRelativa, nombreArchivo).Replace("\\", "/");
-                await _almacenService.ConfirmarEntrega(
+                var resultado = await _almacenService.ConfirmarEntrega(
                     request.IdRequisicion,
                     request.IdsMovimientos,
                     userId.Value,
@@ -234,48 +235,6 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AprobarCompleta([FromBody] JsonElement body)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, error = "No autorizado." });
-
-            if (!body.TryGetProperty("idRequisicion", out var prop) || !prop.TryGetInt32(out int idRequisicion))
-                return BadRequest(new { ok = false, error = "idRequisicion inv?lido." });
-
-            try
-            {
-                await _almacenService.AprobarRequisicionCompleta(idRequisicion, userId.Value);
-                return Json(new { ok = true, mensaje = "Requisici?n autorizada completa." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { ok = false, error = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AprobarParcial([FromBody] AprobarParcialRequest request)
-        {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized(new { ok = false, error = "No autorizado." });
-
-            var partidas = (request.Partidas ?? new List<AprobarParcialPartidaRequest>())
-                .Select(p => (p.IdRequisicionDetalle, p.CantidadAprobada));
-
-            try
-            {
-                await _almacenService.AprobarRequisicionParcial(request.IdRequisicion, userId.Value, partidas);
-                return Json(new { ok = true, mensaje = "Requisici?n autorizada parcialmente." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { ok = false, error = ex.Message });
-            }
-        }
-
-        [HttpPost]
         public async Task<IActionResult> Rechazar([FromBody] RechazarRequest request)
         {
             var userId = GetUserId();
@@ -286,7 +245,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 await _almacenService.RechazarRequisicionAlmacen(
                     request.IdRequisicion, userId.Value, request.Motivo ?? "");
-                return Json(new { ok = true, mensaje = "Requisici?n rechazada correctamente." });
+                return Json(new { ok = true, mensaje = "Requisición rechazada correctamente." });
             }
             catch (Exception ex)
             {
@@ -311,7 +270,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 await _almacenService.ProcesarRequisicion(
                     request.IdRequisicion, userId.Value, entregas, compras);
-                return Json(new { ok = true, mensaje = "Requisici?n procesada correctamente." });
+                return Json(new { ok = true, mensaje = "Requisición procesada correctamente." });
             }
             catch (Exception ex)
             {

@@ -163,17 +163,20 @@
                                                 <i class="fa-solid fa-clipboard-user"></i>
                                             </button>
                                         }
-                                        @if (User.IsInRole("9") && item.IdEstatus == 14)
+                                        @if (User.IsInRole("9") && item.IdEstatus >= 14)
                                         {
                                             <button class="btn-accion" title="Atender" onclick="atenderRequisicion(@item.IdRequi)">
                                                 <i class="fa-solid fa-hand-holding"></i>
                                             </button>
                                         }
-                                        <a class="btn boton-gris btn-sm"
-                                               href="@Url.Action("HistorialTablaApi", "Financieros", new { idRequisicion = item.IdRequi })"
-                                               title="Ver histórico Tabla API">
-                                            <i class="bi bi-clock-history"></i>
-                                        </a>
+                                        @if (item.IdEstatus == 14)
+                                        {
+                                            <a class="btn btn-accion"
+                                                   href="@Url.Action("HistorialTablaApi", "Financieros", new { idRequisicion = item.IdRequi })"
+                                                   title="Ver histórico Tabla API">
+                                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                            </a>
+                                        }
                                     </div>
                                 </div>
                             </td>

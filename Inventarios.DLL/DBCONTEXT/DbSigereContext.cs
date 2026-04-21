@@ -28,6 +28,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblEstatus> TblEstatuses { get; set; }
 
+    public virtual DbSet<TblFormato> TblFormatos { get; set; }
+
     public virtual DbSet<TblInventario> TblInventarios { get; set; }
 
     public virtual DbSet<TblMunicipio> TblMunicipios { get; set; }
@@ -196,6 +198,27 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NombreEstatus)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblFormato>(entity =>
+        {
+            entity.HasKey(e => e.IdFormato).HasName("PK__TblForma__A7043164A21296AF");
+
+            entity.ToTable("TblFormato");
+
+            entity.HasIndex(e => new { e.NumeroFormato, e.TipoFormato }, "UQ_Formato_Numero_Tipo").IsUnique();
+
+            entity.Property(e => e.FechaFormato).HasColumnType("datetime");
+            entity.Property(e => e.RutaArchivo)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.TipoFormato)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblFormatos)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_Formato_Requisicion");
         });
 
         modelBuilder.Entity<TblInventario>(entity =>
@@ -449,6 +472,10 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.TipoMovimiento)
                 .HasMaxLength(10)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.IdFormatoNavigation).WithMany(p => p.TblRequisicionDetalleMovimientos)
+                .HasForeignKey(d => d.IdFormato)
+                .HasConstraintName("FK_Movimiento_Formato");
 
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalleMovimientos)
                 .HasForeignKey(d => d.IdRequisicion)

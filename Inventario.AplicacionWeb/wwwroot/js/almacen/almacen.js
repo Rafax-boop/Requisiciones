@@ -6,12 +6,6 @@
   var urlVerPdfSalida = container
     ? container.getAttribute("data-url-ver-pdf")
     : "";
-  var urlAprobarCompleta = container
-    ? container.getAttribute("data-url-aprobar-completa")
-    : "";
-  var urlAprobarParcial = container
-    ? container.getAttribute("data-url-aprobar-parcial")
-    : "";
   var urlRechazar = container
     ? container.getAttribute("data-url-rechazar")
     : "";
@@ -544,28 +538,6 @@
     );
   }
 
-  function actualizarBotonCompleta() {
-    var btnCompleta = document.getElementById("btnAprobarCompleta");
-    if (!btnCompleta || !reqCompleta) return;
-    var articulos = obtenerArticulosDeReq(reqCompleta);
-    var puedeCompleta = articulos.length > 0;
-    articulos.forEach(function (a) {
-      var info = getStockInfo(idDetalleArticulo(a));
-      var cantSolicitada = (a.cantidad != null ? a.cantidad : a.Cantidad) || 0;
-      if (
-        !info ||
-        !info.existeEnInventario ||
-        info.stockDisponible < cantSolicitada
-      ) {
-        puedeCompleta = false;
-      }
-    });
-    btnCompleta.disabled = !puedeCompleta;
-    btnCompleta.title = !puedeCompleta
-      ? "No hay stock suficiente para todos los materiales."
-      : "";
-  }
-
   /* ========== RENDER MODAL TABS ANÁLISIS ========== */
 
   function renderModalTab(i) {
@@ -706,7 +678,6 @@
         });
       });
 
-      actualizarBotonCompleta();
     } else if (i === 1) {
       var r = reqCompleta;
       var html = '<div class="almacen-grid2">';
@@ -811,9 +782,6 @@
       "Estado: " + (estatus || "");
     modalBody.innerHTML =
       '<p class="text-muted">Cargando requisición e inventario...</p>';
-
-    var btnCompleta = document.getElementById("btnAprobarCompleta");
-    if (btnCompleta) btnCompleta.disabled = true;
 
     var modal = new bootstrap.Modal(document.getElementById("modalAlmacen"));
     modal.show();
@@ -1174,44 +1142,6 @@
     if (!reqActualId) {
       swalError("No se pudo identificar la requisición.");
       return;
-    }
-
-    /* ---- APROBAR COMPLETA ---- */
-    if (btnAprobar) {
-      if (!urlAprobarCompleta) {
-        swalError("URL de aprobación no configurada.");
-        return;
-      }
-      swalConfirmar(
-        "Aprobar completa",
-        "Se descontará del inventario el total de materiales solicitados. ¿Desea continuar?",
-        "Sí, aprobar",
-      ).then(function (result) {
-        if (!result.isConfirmed) return;
-        Swal.fire({
-          title: "Procesando...",
-          allowOutsideClick: false,
-          didOpen: function () {
-            Swal.showLoading();
-          },
-        });
-        postJson(urlAprobarCompleta, { idRequisicion: reqActualId })
-          .then(function (r) {
-            if (r.ok) {
-              cerrarModalAlmacen();
-              swalExito(r.mensaje || "Requisición autorizada completa.").then(
-                function () {
-                  location.reload();
-                },
-              );
-            } else {
-              swalError(r.error || "No se pudo aprobar.");
-            }
-          })
-          .catch(function (err) {
-            swalError(typeof err === "string" ? err : "No se pudo aprobar.");
-          });
-      });
     }
 
     /* ---- PROCESAR (entregas + compras) ---- */

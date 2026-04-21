@@ -12,11 +12,6 @@ namespace Inventario.BLL.Interfaces
 
         // ─── Operaciones ─────────────────────────────────────────
         Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto);
-        Task<bool> AprobarRequisicionCompleta(int idRequisicion, int idUsuario);
-        Task<bool> AprobarRequisicionParcial(
-            int idRequisicion,
-            int idUsuario,
-            IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> partidas);
         Task<bool> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
         Task<bool> ProcesarRequisicion(
             int idRequisicion,
@@ -26,6 +21,7 @@ namespace Inventario.BLL.Interfaces
 
         //ENTREGAS
         Task<List<EntregaPendienteDTO>> ListarEntregasPendientes();
-        Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string? formatoSalidaFirmadoRuta);
+        Task<int> GenerarFormatoSalida(int idRequisicion, int idUsuario);
+        Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string rutaArchivoFirmado);
     }
 }

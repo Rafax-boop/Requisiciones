@@ -81,6 +81,8 @@ public partial class TblRequisicion
 
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 
+    public virtual ICollection<TblFormato> TblFormatos { get; set; } = new List<TblFormato>();
+
     public virtual ICollection<TblRegistroDiseno> TblRegistroDisenos { get; set; } = new List<TblRegistroDiseno>();
 
     public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();

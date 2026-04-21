@@ -7,7 +7,9 @@
     var solicitante = Model.NomResponsableDepartamento ?? "—";
     var esDonativo = Model.UsoMaterial == true;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
-    const string folioEstatico = "1000";
+    var folioEstatico = Model.NumeroFormato.HasValue
+        ? Model.NumeroFormato.Value.ToString().PadLeft(4, '0')
+        : "—";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -86,8 +88,8 @@
                                 @foreach (var item in articulos)
                                 {
                                     string clave;
-                                    if (item.ClaveMaterial.HasValue)
-                                        clave = item.ClaveMaterial.Value.ToString(CultureInfo.InvariantCulture);
+                                    if (!string.IsNullOrEmpty(item.ClaveMaterial))
+                                        clave = item.ClaveMaterial;
                                     else if (item.Cog.HasValue)
                                         clave = item.Cog.Value.ToString(CultureInfo.InvariantCulture);
                                     else if (item.IdArticulo.HasValue)
