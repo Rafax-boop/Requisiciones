@@ -55,13 +55,17 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var entregasPendientes = await _almacenService.ListarEntregasPendientes();
 
+            var pedidosDto = await _almacenService.ListarPedidosEstatus7();
+            var pedidos = _mapper.Map<List<VMRequisicionMaestra>>(pedidosDto);
+
             var vm = new VMAlmacenIndex
             {
                 Requisiciones = requisiciones,
                 Inventario = inventario,
                 Estatus = estatus,
                 UnidadesMedida = unidadesMedida,
-                EntregasPendientes = entregasPendientes
+                EntregasPendientes = entregasPendientes,
+                Pedidos = pedidos
             };
 
             return View(vm);
@@ -136,6 +140,62 @@ namespace Inventario.AplicacionWeb.Controllers
             };
 
             return View("SalidaMaterialesParaPdf", vm);
+        }
+
+        /// <summary>
+        /// Genera y muestra el Formato de Entrada de Materiales para una requisición en estatus 7.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> FormatoEntradaPdf(int id)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null) return NotFound();
+
+            var partidasCompra = await _almacenService.ObtenerPartidasCompraParaEntrada(id);
+
+            // Generar o reutilizar el folio ENTRADA
+            var numeroFormato = await _almacenService.GenerarFormatoEntrada(id, userId.Value);
+
+            var vm = new VMRequiForm
+            {
+                IdRequiMaestra = id,
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                CargoResponsableDepartamento = dto.CargoResponsableDepartamento,
+                NomDirector = dto.NomDirector,
+                CargoDirector = dto.CargoDirector,
+                UsoMaterial = dto.UsoMaterial,
+                NumeroFormato = numeroFormato,
+                Articulos = (partidasCompra.Any()
+                    ? partidasCompra.Select(a => new ItemRequiVM
+                    {
+                        IdArticulo = a.IdArticulo,
+                        Cog = a.NumPartida,
+                        ClaveMaterial = a.ClaveMaterial,
+                        Cantidad = a.CantidadComprar,
+                        UnidadMedida = a.UnidadMedida,
+                        Descripcion = a.Descripcion,
+                        DescripcionDetallada = a.Descripcion
+                    })
+                    : dto.Articulos.Select(a => new ItemRequiVM
+                    {
+                        IdArticulo = a.IdArticulo,
+                        Cog = a.NumPartida,
+                        ClaveMaterial = a.ClaveMaterial,
+                        Cantidad = a.Cantidad,
+                        UnidadMedida = a.UnidadMedida,
+                        Descripcion = a.Descripcion,
+                        DescripcionDetallada = a.DescripcionDetallada
+                    })).ToList()
+            };
+
+            return View("EntradaMaterialesParaPdf", vm);
         }
 
         [HttpGet]

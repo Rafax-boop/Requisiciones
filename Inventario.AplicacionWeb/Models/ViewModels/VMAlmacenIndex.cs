@@ -19,5 +19,10 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public List<string> UnidadesMedida { get; set; } = new();
 
         public List<EntregaPendienteDTO> EntregasPendientes { get; set; } = new();
+
+        /// <summary>
+        /// Requisiciones en estatus 7 (Finalizado - En trámite de pago) listas para generar formato de entrada.
+        /// </summary>
+        public List<VMRequisicionMaestra> Pedidos { get; set; } = new();
     }
 }

@@ -282,6 +282,83 @@
 
   aplicarPaginacionEntregas();
 
+  /* ========== FILTROS + PAGINACIÓN PEDIDOS ========== */
+
+  var filtroBuscarPedidos = document.getElementById("filtroBuscarPedidos");
+  var tbodyPedidos = document.querySelector("#tablaPedidos tbody");
+  var paginacionPedidos = document.getElementById("paginacionPedidos");
+  var TAMANO_PAGINA_PEDIDOS = 7;
+  var paginaPedidosActual = 1;
+
+  if (filtroBuscarPedidos)
+    filtroBuscarPedidos.addEventListener("input", filtrarTablaPedidos);
+
+  function getFilasPedidosVisibles() {
+    var texto = (filtroBuscarPedidos ? filtroBuscarPedidos.value : "")
+      .toLowerCase()
+      .trim();
+    var filas = tbodyPedidos
+      ? [].slice.call(tbodyPedidos.querySelectorAll("tr[data-folio]"))
+      : [];
+    return filas.filter(function (tr) {
+      var folio = (tr.getAttribute("data-folio") || "").toLowerCase();
+      var depto = (tr.getAttribute("data-depto") || "").toLowerCase();
+      return (
+        !texto ||
+        folio.includes(texto) ||
+        depto.includes(texto) ||
+        (tr.textContent || "").toLowerCase().includes(texto)
+      );
+    });
+  }
+
+  function aplicarPaginacionPedidos() {
+    var visibles = getFilasPedidosVisibles();
+    var total = visibles.length;
+    var totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_PEDIDOS));
+    if (paginaPedidosActual > totalPaginas)
+      paginaPedidosActual = totalPaginas;
+    var inicio = (paginaPedidosActual - 1) * TAMANO_PAGINA_PEDIDOS;
+    var fin = inicio + TAMANO_PAGINA_PEDIDOS;
+
+    if (tbodyPedidos) {
+      tbodyPedidos.querySelectorAll("tr[data-folio]").forEach(function (tr) {
+        tr.style.display = "none";
+      });
+      visibles.forEach(function (tr, i) {
+        tr.style.display = i >= inicio && i < fin ? "" : "none";
+      });
+    }
+
+    var trVacio = tbodyPedidos ? tbodyPedidos.querySelector(".fila-vacia") : null;
+    if (total === 0) {
+      if (trVacio) trVacio.style.display = "";
+    } else if (trVacio) {
+      trVacio.style.display = "none";
+    }
+
+    renderPaginacion(
+      paginacionPedidos,
+      total,
+      inicio,
+      fin,
+      totalPaginas,
+      paginaPedidosActual,
+      function (p) {
+        paginaPedidosActual = p;
+        aplicarPaginacionPedidos();
+      },
+      "pedidos",
+    );
+  }
+
+  function filtrarTablaPedidos() {
+    paginaPedidosActual = 1;
+    aplicarPaginacionPedidos();
+  }
+
+  aplicarPaginacionPedidos();
+
   /* ========== FILTROS + PAGINACIÓN INVENTARIO ========== */
 
   var tbodyInv = document.querySelector("#tablaInventario tbody");

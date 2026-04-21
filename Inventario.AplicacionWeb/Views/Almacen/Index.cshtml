@@ -31,6 +31,7 @@
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="requisiciones">Requisiciones Recibidas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="entregas">A Entregar</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="pedidos">Pedidos</button>
         <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
     </nav>
 
@@ -209,40 +210,81 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Pestaña: Pedidos (Estatus 7 — Finalizado / En trámite)     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-pedidos" class="almacen-tab-panel">
+        @{
+            var totalPedidos = Model.Pedidos.Count;
+        }
+        <div class="almacen-stats">
+            <div class="stat-card">
+                <div class="stat-numero">@totalPedidos</div>
+                <div class="stat-label">Pedidos pendientes de ingreso</div>
+            </div>
+        </div>
+
+        <div class="container-formulario filtros-container">
+            <div class="filtro-grupo" style="flex:2;">
+                <label>Buscar</label>
+                <input type="text" id="filtroBuscarPedidos" placeholder="Buscar por folio, departamento o responsable..." />
+            </div>
+        </div>
+
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaPedidos">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha Emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th style="text-align:center">Partida(s)</th>
+                        <th style="text-align:center">Formato de Entrada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var idxP = 0;
+                    }
+                    @foreach (var p in Model.Pedidos)
+                    {
+                        idxP++;
+                        <tr data-folio="@(p.NumRequi ?? "")" data-depto="@(p.Departamento ?? "")">
+                            <td style="text-align:center">@idxP</td>
+                            <td><span class="folio-badge">@p.NumRequi</span></td>
+                            <td>@p.FechaEmision?.ToString("dd/MM/yyyy")</td>
+                            <td>@p.Departamento</td>
+                            <td>@p.Responsable</td>
+                            <td style="text-align:center">@p.CantidadPartidas</td>
+                            <td style="text-align:center">
+                                <div class="acciones-grupo" style="justify-content:center">
+                                    <a href="@Url.Action("FormatoEntradaPdf", "Almacen", new { id = p.IdRequi })"
+                                       target="_blank"
+                                       class="btn-accion btn-ver"
+                                       title="Ver Formato de Entrada">
+                                        <i class="fa-solid fa-file-arrow-down"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Pedidos.Any())
+                    {
+                        <tr class="fila-vacia">
+                            <td colspan="7" class="text-center">No hay pedidos en trámite de pago</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div id="paginacionPedidos" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- Pestaña: Inventario                                         -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="tab-inventario" class="almacen-tab-panel">
-        <div class="container-formulario" style="margin-bottom:16px;">
-            <h4 style="margin:0 0 10px 0; font-family:var(--font-display); color:var(--slate-700);">Ingreso de material</h4>
-            <div class="filtros-container">
-                <div class="filtro-grupo" style="flex:1; min-width:180px;">
-                    <label>Clave (solo si es nuevo)</label>
-                    <input type="text" id="ingresoClave" class="input-app" placeholder="Clave" />
-                </div>
-                <div class="filtro-grupo" style="flex:2; min-width:260px;">
-                    <label>Descripción</label>
-                    <input type="text" id="ingresoDescripcion" class="input-app" placeholder="Descripción del material" />
-                </div>
-                <div class="filtro-grupo" style="flex:1; min-width:160px;">
-                    <label>Unidad de medida</label>
-                    <input type="text" id="ingresoUnidad" class="input-app" placeholder="PZA, CAJA, etc." />
-                </div>
-                <div class="filtro-grupo" style="flex:1; min-width:140px;">
-                    <label>Cantidad</label>
-                    <input type="number" id="ingresoCantidad" class="input-app" min="1" step="1" placeholder="0" />
-                </div>
-                <div class="filtro-grupo" style="flex:2; min-width:260px;">
-                    <label>Motivo</label>
-                    <input type="text" id="ingresoMotivo" class="input-app" placeholder="Compra, donación, ajuste..." />
-                </div>
-                <div class="filtro-grupo" style="min-width:160px;">
-                    <label>&nbsp;</label>
-                    <button type="button" id="btnRegistrarIngreso" class="boton-rosa" style="width:100%;">
-                        Registrar ingreso
-                    </button>
-                </div>
-            </div>
-        </div>
 
         <div class="container-formulario filtros-container">
             <div class="filtro-grupo" style="flex:2;">

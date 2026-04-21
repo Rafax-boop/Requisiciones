@@ -100,6 +100,61 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
         }
 
+        public async Task<List<RequisicionMaestraDTO>> ListarPedidosEstatus7()
+        {
+            var movCompraQuery = await _repoMovimiento.Consultar(m => m.TipoMovimiento == "COMPRA");
+            var comprasPorRequi = await movCompraQuery
+                .GroupBy(m => m.IdRequisicion)
+                .Select(g => new
+                {
+                    IdRequisicion = g.Key,
+                    CantidadPartidasCompra = g.Select(x => x.IdRequisicionDetalle).Distinct().Count()
+                })
+                .ToListAsync();
+
+            var idsConCompra = comprasPorRequi
+                .Select(x => x.IdRequisicion)
+                .Distinct()
+                .ToList();
+
+            if (!idsConCompra.Any())
+                return new List<RequisicionMaestraDTO>();
+
+            var cantidadPartidasCompraPorRequi = comprasPorRequi
+                .ToDictionary(x => x.IdRequisicion, x => x.CantidadPartidasCompra);
+
+            var query = await _repositoryRequisicion.Consultar(
+                r => r.IdEstatus == 7 && r.RequiServicio != true && idsConCompra.Contains(r.IdRequisicion));
+
+            var requisiciones = await query
+                .OrderByDescending(r => r.FechaModificacion)
+                .Select(r => new
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    FechaModificacion = r.FechaModificacion,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento,
+                    IdEstatus = r.IdEstatus ?? 0,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus
+                })
+                .ToListAsync();
+
+            return requisiciones.Select(r => new RequisicionMaestraDTO
+            {
+                IdRequi = r.IdRequi,
+                NumRequi = r.NumRequi,
+                FechaEmision = r.FechaEmision,
+                FechaModificacion = r.FechaModificacion,
+                Departamento = r.Departamento,
+                Responsable = r.Responsable,
+                IdEstatus = r.IdEstatus,
+                Estatus = r.Estatus,
+                CantidadPartidas = cantidadPartidasCompraPorRequi.GetValueOrDefault(r.IdRequi, 0)
+            }).ToList();
+        }
+
         /// <summary>
         /// Lista las requisiciones que tienen artículos pendientes de entrega física
         /// (movimientos tipo ENTREGA registrados al procesar, aún no confirmados).
@@ -521,6 +576,65 @@ namespace Inventario.BLL.Implementacion
                 await _uow.RollbackAsync();
                 throw;
             }
+        }
+        public async Task<int> GenerarFormatoEntrada(int idRequisicion, int idUsuario)
+        {
+            // Reutilizar si ya existe un formato ENTRADA pendiente para esta requisición
+            var queryExistente = await _repoFormato.Consultar(
+                f => f.TipoFormato == "ENTRADA" && f.IdRequisicion == idRequisicion && f.RutaArchivo == "PENDIENTE");
+            var existente = await queryExistente.FirstOrDefaultAsync();
+            if (existente != null)
+                return existente.NumeroFormato;
+
+            // Generar consecutivo
+            var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "ENTRADA");
+            var listaFormatos = await queryFormatos.ToListAsync();
+            var nuevoNumero = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
+
+            await _repoFormato.Crear(new TblFormato
+            {
+                NumeroFormato = nuevoNumero,
+                TipoFormato = "ENTRADA",
+                IdRequisicion = idRequisicion,
+                FechaFormato = DateTime.Now,
+                IdUsuario = idUsuario,
+                RutaArchivo = "PENDIENTE"
+            });
+
+            return nuevoNumero;
+        }
+
+        public async Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraParaEntrada(int idRequisicion)
+        {
+            var query = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+
+            var movimientosCompra = await query
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
+                .ToListAsync();
+
+            var partidas = movimientosCompra
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .Select(g =>
+                {
+                    var det = g.First().IdRequisicionDetalleNavigation;
+                    return new PartidaCompraEntradaDTO
+                    {
+                        IdRequisicionDetalle = g.Key,
+                        NumPartida = det?.NumPartida,
+                        IdArticulo = det?.IdArticulo,
+                        ClaveMaterial = det?.IdArticuloNavigation?.Clave ?? string.Empty,
+                        Descripcion = det?.Descripcion ?? string.Empty,
+                        UnidadMedida = det?.UnidadMedida ?? string.Empty,
+                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento)
+                    };
+                })
+                .OrderBy(x => x.NumPartida)
+                .ThenBy(x => x.IdRequisicionDetalle)
+                .ToList();
+
+            return partidas;
         }
     }
 }

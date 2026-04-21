@@ -1,4 +1,4 @@
-﻿using Inventario.BLL.DTO;
+using Inventario.BLL.DTO;
 
 namespace Inventario.BLL.Interfaces
 {
@@ -9,6 +9,7 @@ namespace Inventario.BLL.Interfaces
         Task<List<InventarioItemDTO>> ObtenerInventario();
         Task<List<string>> ObtenerEstatus();
         Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
+        Task<List<RequisicionMaestraDTO>> ListarPedidosEstatus7();
 
         // ─── Operaciones ─────────────────────────────────────────
         Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto);
@@ -23,5 +24,9 @@ namespace Inventario.BLL.Interfaces
         Task<List<EntregaPendienteDTO>> ListarEntregasPendientes();
         Task<int> GenerarFormatoSalida(int idRequisicion, int idUsuario);
         Task<bool> ConfirmarEntrega(int idRequisicion, List<int> idsMovimientos, int idUsuario, string rutaArchivoFirmado);
+
+        //ENTRADAS
+        Task<int> GenerarFormatoEntrada(int idRequisicion, int idUsuario);
+        Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraParaEntrada(int idRequisicion);
     }
 }

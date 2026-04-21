@@ -1,0 +1,277 @@
+@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+@using System.Globalization
+@{
+    Layout = null;
+    var cultura = CultureInfo.GetCultureInfo("es-MX");
+    var fechaTexto = Model.FechaEmision.HasValue
+        ? Model.FechaEmision.Value.ToDateTime(TimeOnly.MinValue).ToString("dd/MM/yyyy", cultura)
+        : DateTime.Now.ToString("dd/MM/yyyy", cultura);
+    var requisicion = Model.NumRequisicion ?? "—";
+    var solicitante = Model.NomResponsableDepartamento ?? "—";
+    var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
+    var folioEstatico = Model.NumeroFormato.HasValue
+        ? Model.NumeroFormato.Value.ToString().PadLeft(4, '0')
+        : "—";
+    // Filas mínimas para mantener proporciones del formato físico
+    var minFilas = 14;
+    var totalFilas = Math.Max(minFilas, articulos.Count);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrada de materiales — @requisicion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+    <style>
+        /* ── Overrides específicos para el Formato de Entrada ─────── */
+
+        /* Cabecera: renglones de campos (FACTURA, SALIDA, etc.) */
+        .pdf-entrada-campos {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+
+        .pdf-entrada-fila {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 5px 0;
+            font-size: 11px;
+        }
+
+        .pdf-entrada-fila:last-child { border-bottom: none; }
+
+        .pdf-entrada-fila-multi {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0 16px;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 5px 0;
+        }
+
+        .pdf-entrada-fila-multi:last-child { border-bottom: none; }
+
+        .pdf-entrada-fila-multi .pdf-entrada-campo { display: flex; align-items: baseline; gap: 6px; }
+
+        .pdf-entrada-campo { display: flex; align-items: baseline; gap: 6px; }
+
+        .pdf-entrada-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #64748b;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .pdf-entrada-valor {
+            font-size: 12px;
+            font-weight: 500;
+            color: #1a1a1a;
+            border-bottom: 1px solid #cbd5e1;
+            flex: 1;
+            min-height: 18px;
+            min-width: 60px;
+        }
+
+        /* Folio rojo — sobreescribe .pdf-requi-num del sistema */
+        .pdf-folio-valor {
+            font-size: 22px !important;
+            font-weight: 800 !important;
+            color: #b91c1c !important;
+            border-bottom: none !important;
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+
+        /* Tabla de artículos con filas vacías */
+        .pdf-tabla-entrada tbody tr.fila-vacia td {
+            height: 20px;
+            padding: 2px 12px;
+        }
+
+        /* Leyenda inferior */
+        .pdf-entrada-leyenda {
+            text-align: center;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #374151;
+            margin-top: 10px;
+            margin-bottom: 0;
+        }
+
+        @@media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="pdf-documento">
+    <div class="pdf-wrapper">
+        <div class="pdf-hoja-1">
+
+            <!-- ══ ENCABEZADO INSTITUCIONAL ════════════════════════════ -->
+            <div class="pdf-encabezado">
+                <div class="pdf-encabezado-logo">
+                    <img src="~/img/familias-dif-rosa.png" alt="Logo DIF Puebla" />
+                </div>
+                <div class="pdf-encabezado-texto">
+                    <p>Unidad de Planeación, Administración y Finanzas</p>
+                    <p>Departamento de Recursos Materiales y Servicios Generales</p>
+                    <p>Almacén e Inventario</p>
+                    <p class="pdf-encabezado-titulo">Entradas de Materiales</p>
+                </div>
+                <div class="pdf-encabezado-cuadro">
+                    <span class="pdf-requi-label">Folio</span>
+                    <span class="pdf-requi-num pdf-folio-valor">@folioEstatico</span>
+                </div>
+            </div>
+
+            <!-- ══ CAMPOS DE CABECERA ════════════════════════════════ -->
+            <div class="pdf-entrada-campos">
+                <!-- Fila 1: Factura / Salida / Pedido / Fecha / Almacén -->
+                <div class="pdf-entrada-fila-multi" style="grid-template-columns: repeat(5,1fr);">
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Factura No.:</span>
+                        <span class="pdf-entrada-valor"></span>
+                    </div>
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Salida No.</span>
+                        <span class="pdf-entrada-valor"></span>
+                    </div>
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Pedido:</span>
+                        <span class="pdf-entrada-valor"></span>
+                    </div>
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Fecha:</span>
+                        <span class="pdf-entrada-valor">@fechaTexto</span>
+                    </div>
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Almacén:</span>
+                        <span class="pdf-entrada-valor">Almacén e Inventarios</span>
+                    </div>
+                </div>
+                <!-- Fila 2: Proveedor -->
+                <div class="pdf-entrada-fila">
+                    <div class="pdf-entrada-campo" style="flex:1;">
+                        <span class="pdf-entrada-label">Proveedor:</span>
+                        <span class="pdf-entrada-valor"></span>
+                    </div>
+                </div>
+                <!-- Fila 3: Solicitante / Requisición No. -->
+                <div class="pdf-entrada-fila-multi" style="grid-template-columns: 2fr 1fr;">
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Solicitante:</span>
+                        <span class="pdf-entrada-valor">@solicitante</span>
+                    </div>
+                    <div class="pdf-entrada-campo">
+                        <span class="pdf-entrada-label">Requisición No.:</span>
+                        <span class="pdf-entrada-valor">@requisicion</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ TABLA DE ARTÍCULOS ════════════════════════════════ -->
+            <div class="pdf-salida-cuerpo">
+                <div class="pdf-seccion pdf-salida-tabla-wrap">
+                    <table class="pdf-tabla pdf-tabla-salida pdf-tabla-entrada">
+                        <thead>
+                            <tr>
+                                <th>Clave</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < totalFilas; i++)
+                            {
+                                if (i < articulos.Count)
+                                {
+                                    var item = articulos[i];
+                                    string clave;
+                                    if (!string.IsNullOrEmpty(item.ClaveMaterial))
+                                        clave = item.ClaveMaterial;
+                                    else if (item.Cog.HasValue)
+                                        clave = item.Cog.Value.ToString(CultureInfo.InvariantCulture);
+                                    else if (item.IdArticulo.HasValue)
+                                        clave = item.IdArticulo.Value.ToString(CultureInfo.InvariantCulture);
+                                    else
+                                        clave = "";
+
+                                    var cantidad = item.Cantidad.HasValue
+                                        ? decimal.Truncate(item.Cantidad.Value) == item.Cantidad.Value
+                                            ? ((int)item.Cantidad.Value).ToString(CultureInfo.InvariantCulture)
+                                            : item.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
+                                        : "";
+                                    <tr>
+                                        <td>@clave</td>
+                                        <td>@cantidad</td>
+                                        <td>@(item.UnidadMedida ?? "")</td>
+                                        <td>@(item.Descripcion ?? item.DescripcionDetallada ?? "")</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr class="fila-vacia">
+                                        <td>&nbsp;</td>
+                                        <td>&nbsp;</td>
+                                        <td>&nbsp;</td>
+                                        <td>&nbsp;</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ══ FIRMAS ════════════════════════════════════════ -->
+                <div class="pdf-seccion pdf-firmas pdf-firmas--salida">
+                    <div class="pdf-firma-item">
+                        <span class="pdf-firma-titulo-salida">Autorizo</span>
+                        <div class="pdf-firma-linea" aria-hidden="true"></div>
+                        <span class="pdf-firma-rol">Nombre y Firma</span>
+                    </div>
+                    <div class="pdf-firma-item">
+                        <span class="pdf-firma-titulo-salida">Entrego</span>
+                        <div class="pdf-firma-linea" aria-hidden="true"></div>
+                        <span class="pdf-firma-rol">Nombre y Firma</span>
+                    </div>
+                    <div class="pdf-firma-item">
+                        <span class="pdf-firma-titulo-salida">Recibió</span>
+                        <div class="pdf-firma-linea" aria-hidden="true"></div>
+                        <span class="pdf-firma-rol">Nombre y Firma</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="pdf-entrada-leyenda">Sección de Almacén e Inventarios</p>
+
+        </div><!-- /.pdf-hoja-1 -->
+
+        <!-- ══ BOTÓN IMPRIMIR ════════════════════════════════════════ -->
+        <div class="pdf-imprimir no-print">
+            <button type="button" onclick="window.print();">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" />
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z" />
+                </svg>
+                Imprimir / Guardar como PDF
+            </button>
+        </div>
+
+    </div><!-- /.pdf-wrapper -->
+</body>
+</html>
