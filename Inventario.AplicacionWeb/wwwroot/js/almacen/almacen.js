@@ -20,7 +20,10 @@
     : "";
   var urlConfirmarEntrega = container
     ? container.getAttribute("data-url-confirmar-entrega")
-    : "";
+        : "";
+    var urlGuardarBorradorIngreso = container ? container.getAttribute("data-url-guardar-borrador-ingreso") : "";
+    var urlConfirmarIngresoPedido = container ? container.getAttribute("data-url-confirmar-ingreso-pedido") : "";
+    var urlObtenerPartidasCompra = container ? container.getAttribute("data-url-obtener-partidas-compra") : "";
 
   /* ========== HELPERS ========== */
 
@@ -1528,4 +1531,263 @@
   if (container && window.TabsNotificacionesRequi) {
     window.TabsNotificacionesRequi.mount({ container: container });
   }
+
+    /* ========== MODAL INGRESO DE PEDIDO ========== */
+
+    var ingresoPedidoActualId = null;
+    var ingresoPedidoArticulos = [];
+    var borradorGuardado = false;   // ← controla si ya se guardó en paso 1
+
+    var inputFormatoEntradaFirmado = document.getElementById("inputFormatoEntradaFirmado");
+    var estadoFormatoEntradaFirmado = document.getElementById("formatoEntradaFirmadoEstado");
+    var btnGuardarBorrador = document.getElementById("btnGuardarBorradorIngreso");
+    var btnConfirmarIngresoPedido = document.getElementById("btnConfirmarIngresoPedido");
+
+    function setEstadoFormatoEntrada(tipo, mensaje) {
+        if (!estadoFormatoEntradaFirmado) return;
+        estadoFormatoEntradaFirmado.textContent = mensaje || "";
+        estadoFormatoEntradaFirmado.style.color =
+            tipo === "ok" ? "#15803d" : tipo === "error" ? "#b91c1c" : "#64748b";
+    }
+
+    function validarFormatoEntrada() {
+        if (!inputFormatoEntradaFirmado || !btnConfirmarIngresoPedido) return false;
+        var archivo = inputFormatoEntradaFirmado.files && inputFormatoEntradaFirmado.files[0]
+            ? inputFormatoEntradaFirmado.files[0] : null;
+        if (!archivo) {
+            btnConfirmarIngresoPedido.disabled = true;
+            setEstadoFormatoEntrada("info", "Sube el formato firmado para habilitar la confirmación.");
+            return false;
+        }
+        if (!(archivo.name || "").toLowerCase().endsWith(".pdf")) {
+            btnConfirmarIngresoPedido.disabled = true;
+            setEstadoFormatoEntrada("error", "El archivo debe ser PDF.");
+            return false;
+        }
+        if (!borradorGuardado) {
+            btnConfirmarIngresoPedido.disabled = true;
+            setEstadoFormatoEntrada("info", "Primero guarda y genera el formato antes de subir el firmado.");
+            return false;
+        }
+        btnConfirmarIngresoPedido.disabled = false;
+        setEstadoFormatoEntrada("ok", "Archivo cargado: " + archivo.name);
+        return true;
+    }
+
+    if (inputFormatoEntradaFirmado)
+        inputFormatoEntradaFirmado.addEventListener("change", validarFormatoEntrada);
+
+    function renderTablaIngresoPedido(articulos) {
+        var tbody = document.getElementById("tablaIngresoPedidoBody");
+        if (!tbody) return;
+        if (!articulos || articulos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin artículos</td></tr>';
+            return;
+        }
+
+        var html = "";
+        articulos.forEach(function (a) {
+            var idDetalle = a.idRequisicionDetalle || a.IdRequisicionDetalle;
+            var desc = a.descripcion || a.Descripcion || "";
+            var unidad = a.unidadMedida || a.UnidadMedida || "";
+            var solicitado = parseFloat(a.cantidadComprar || a.CantidadComprar || 0);
+
+            html += '<tr data-detalle="' + idDetalle + '">';
+            html += "<td>" + desc + "</td>";
+            html += "<td>" + unidad + "</td>";
+            html += '<td style="text-align:center;font-weight:600;">' + solicitado + "</td>";
+            html += '<td style="text-align:center;">'
+                + '<input type="number" class="input-app ingreso-cant-recibida" '
+                + 'min="0" max="' + solicitado + '" step="1" value="' + solicitado + '" '
+                + 'data-detalle="' + idDetalle + '" data-solicitado="' + solicitado + '" '
+                + 'style="width:90px;padding:8px 10px;" />'
+                + "</td>";
+            html += '<td style="text-align:center;" id="faltante-' + idDetalle + '">'
+                + '<span class="stock-badge stock-badge-ok">0</span>'
+                + "</td>";
+            html += "</tr>";
+        });
+
+        tbody.innerHTML = html;
+
+        // Calcular faltante en tiempo real + resetear borrador si el usuario modifica
+        tbody.querySelectorAll(".ingreso-cant-recibida").forEach(function (inp) {
+            inp.addEventListener("input", function () {
+                // Si ya había guardado borrador y cambia algo, invalida el borrador
+                if (borradorGuardado) {
+                    borradorGuardado = false;
+                    if (btnConfirmarIngresoPedido) btnConfirmarIngresoPedido.disabled = true;
+                    if (btnGuardarBorrador) {
+                        btnGuardarBorrador.innerHTML =
+                            '<i class="fa-solid fa-floppy-disk"></i> Guardar y generar formato';
+                        btnGuardarBorrador.disabled = false;
+                    }
+                    setEstadoFormatoEntrada("info",
+                        "Modificaste las cantidades. Vuelve a guardar y generar el formato.");
+                }
+
+                var solicitado = parseFloat(inp.getAttribute("data-solicitado") || "0");
+                var recibido = parseFloat(inp.value || "0");
+                if (isNaN(recibido) || recibido < 0) { inp.value = 0; recibido = 0; }
+                if (recibido > solicitado) { inp.value = solicitado; recibido = solicitado; }
+
+                var faltante = solicitado - recibido;
+                var idDetalle = inp.getAttribute("data-detalle");
+                var celda = document.getElementById("faltante-" + idDetalle);
+                if (celda) {
+                    celda.innerHTML = faltante <= 0
+                        ? '<span class="stock-badge stock-badge-ok">0</span>'
+                        : '<span class="stock-badge stock-badge-parcial">'
+                        + '<i class="fa-solid fa-exclamation"></i> ' + faltante + '</span>';
+                }
+            });
+            inp.dispatchEvent(new Event("input"));
+        });
+    }
+
+    // ── Abrir modal ──
+    document.body.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-abrir-ingreso-pedido]");
+        if (!btn) return;
+        e.preventDefault();
+
+        ingresoPedidoActualId = parseInt(btn.getAttribute("data-id"), 10);
+        borradorGuardado = false;
+        ingresoPedidoArticulos = [];
+
+        document.getElementById("modalIngresoPedidoTitulo").textContent =
+            "Registrar Ingreso — " + (btn.getAttribute("data-folio") || "");
+        document.getElementById("modalIngresoPedidoSubtitulo").textContent =
+            (btn.getAttribute("data-depto") || "") + " · Material recibido del proveedor";
+        document.getElementById("tablaIngresoPedidoBody").innerHTML =
+            '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
+
+        if (inputFormatoEntradaFirmado) inputFormatoEntradaFirmado.value = "";
+        if (btnConfirmarIngresoPedido) btnConfirmarIngresoPedido.disabled = true;
+        if (btnGuardarBorrador) {
+            btnGuardarBorrador.innerHTML =
+                '<i class="fa-solid fa-floppy-disk"></i> Guardar y generar formato';
+            btnGuardarBorrador.disabled = false;
+        }
+        setEstadoFormatoEntrada("info", "Primero guarda las cantidades para generar el formato.");
+
+        fetch(
+            (urlObtenerPartidasCompra || "").replace(/\/$/, "") +
+            "?id=" + encodeURIComponent(ingresoPedidoActualId),
+            { credentials: "same-origin", headers: { Accept: "application/json" } }
+        )
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (data) {
+                ingresoPedidoArticulos = Array.isArray(data) ? data : [];
+                renderTablaIngresoPedido(ingresoPedidoArticulos);
+            })
+            .catch(function () {
+                document.getElementById("tablaIngresoPedidoBody").innerHTML =
+                    '<tr><td colspan="5" class="text-danger text-center">Error al cargar los artículos</td></tr>';
+            });
+
+        new bootstrap.Modal(document.getElementById("modalIngresoPedido")).show();
+    });
+
+    // ── Paso 1: Guardar borrador y abrir PDF en nueva pestaña ──
+    if (btnGuardarBorrador) {
+        btnGuardarBorrador.addEventListener("click", function () {
+            if (!ingresoPedidoActualId) { swalError("No se identificó la requisición."); return; }
+
+            var cantidades = [];
+            var hayAlMenosUna = false;
+            var invalido = false, errorMsg = "";
+
+            document.querySelectorAll(".ingreso-cant-recibida").forEach(function (inp) {
+                var idDetalle = parseInt(inp.getAttribute("data-detalle"), 10);
+                var solicitado = parseFloat(inp.getAttribute("data-solicitado") || "0");
+                var recibido = parseFloat(inp.value || "0");
+                if (isNaN(recibido) || recibido < 0) { invalido = true; errorMsg = "Cantidades no pueden ser negativas."; return; }
+                if (recibido > solicitado) { invalido = true; errorMsg = "Una cantidad excede la solicitada."; return; }
+                cantidades.push({ idRequisicionDetalle: idDetalle, cantidadRecibida: recibido });
+                if (recibido > 0) hayAlMenosUna = true;
+            });
+
+            if (invalido) { swalWarning(errorMsg); return; }
+            if (!hayAlMenosUna) { swalWarning("Ingresa al menos una cantidad recibida mayor a 0."); return; }
+
+            btnGuardarBorrador.disabled = true;
+            btnGuardarBorrador.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+            postJson(urlGuardarBorradorIngreso, {
+                idRequisicion: ingresoPedidoActualId,
+                cantidades: cantidades
+            })
+                .then(function (r) {
+                    if (!r.ok) throw r.error || "No se pudo guardar.";
+
+                    borradorGuardado = true;
+                    btnGuardarBorrador.innerHTML =
+                        '<i class="fa-solid fa-check"></i> Guardado — generar de nuevo';
+                    btnGuardarBorrador.disabled = false;
+
+                    // Habilitar upload solo si ya hay archivo seleccionado
+                    validarFormatoEntrada();
+
+                    // Abrir PDF con cantidades reales en nueva pestaña
+                    window.open(r.urlPdf, "_blank");
+
+                    setEstadoFormatoEntrada("info",
+                        "Formato generado. Imprímelo, recaba la firma y súbelo abajo.");
+                })
+                .catch(function (err) {
+                    btnGuardarBorrador.disabled = false;
+                    btnGuardarBorrador.innerHTML =
+                        '<i class="fa-solid fa-floppy-disk"></i> Guardar y generar formato';
+                    swalError(typeof err === "string" ? err : "No se pudo guardar el borrador.");
+                });
+        });
+    }
+
+    // ── Paso 2: Confirmar ingreso con PDF firmado ──
+    if (btnConfirmarIngresoPedido) {
+        btnConfirmarIngresoPedido.addEventListener("click", function () {
+            if (!ingresoPedidoActualId) { swalError("No se identificó la requisición."); return; }
+            if (!borradorGuardado) { swalWarning("Primero guarda las cantidades y genera el formato."); return; }
+            if (!validarFormatoEntrada()) { swalWarning("Debes subir el formato de entrada firmado en PDF."); return; }
+
+            var tieneFaltante = document.querySelectorAll(".stock-badge-parcial").length > 0;
+            var textoConfirm = tieneFaltante
+                ? "El material llegó parcialmente. Lo recibido pasará a 'A Entregar' y el faltante seguirá en 'Pedidos'. ¿Continuar?"
+                : "Se registrará el ingreso completo. El material pasará a 'A Entregar'. ¿Continuar?";
+
+            swalConfirmar("Confirmar ingreso", textoConfirm, "Sí, confirmar").then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: "Procesando...", allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                var form = new FormData();
+                form.append("IdRequisicion", String(ingresoPedidoActualId));
+                form.append("FormatoEntradaFirmado", inputFormatoEntradaFirmado.files[0]);
+
+                fetch(urlConfirmarIngresoPedido, {
+                    method: "POST", body: form, credentials: "same-origin"
+                })
+                    .then(async function (resp) {
+                        var r = await resp.json().catch(function () { return {}; });
+                        if (!resp.ok) throw (r && r.error ? r.error : "Error en el servidor.");
+                        if (r.ok) {
+                            bootstrap.Modal.getInstance(
+                                document.getElementById("modalIngresoPedido")).hide();
+                            swalExito(r.mensaje || "Ingreso registrado correctamente.")
+                                .then(function () { location.reload(); });
+                        } else {
+                            swalError(r.error || "No se pudo confirmar el ingreso.");
+                        }
+                    })
+                    .catch(function (err) {
+                        swalError(typeof err === "string" ? err : "No se pudo confirmar el ingreso.");
+                    });
+            });
+        });
+    }
 })();
