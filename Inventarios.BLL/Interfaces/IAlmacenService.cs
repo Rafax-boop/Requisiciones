@@ -28,5 +28,9 @@ namespace Inventario.BLL.Interfaces
         //ENTRADAS
         Task<int> GenerarFormatoEntrada(int idRequisicion, int idUsuario);
         Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraParaEntrada(int idRequisicion);
+
+        Task GuardarBorradorIngreso(int idRequisicion, int idUsuario, List<CantidadRecibidaDTO> cantidades);
+        Task<List<PartidaCompraEntradaDTO>> ObtenerBorradorIngreso(int idRequisicion);
+        Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado);
     }
 }

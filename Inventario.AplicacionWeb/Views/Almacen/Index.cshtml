@@ -19,7 +19,10 @@
      data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
      data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
      data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")"
-     data-url-confirmar-entrega="@Url.Action("ConfirmarEntrega", "Almacen")">
+     data-url-confirmar-entrega="@Url.Action("ConfirmarEntrega", "Almacen")"
+     data-url-obtener-partidas-compra="@Url.Action("ObtenerPartidasCompra", "Almacen")"
+     data-url-guardar-borrador-ingreso="@Url.Action("GuardarBorradorIngreso", "Almacen")"
+     data-url-confirmar-ingreso-pedido="@Url.Action("ConfirmarIngresoPedido", "Almacen")">
 
     <div class="tabla-requi-header">
         <div>
@@ -250,7 +253,7 @@
                     @foreach (var p in Model.Pedidos)
                     {
                         idxP++;
-                        <tr data-folio="@(p.NumRequi ?? "")" data-depto="@(p.Departamento ?? "")">
+                        <tr data-id="@p.IdRequi" data-folio="@(p.NumRequi ?? "")" data-depto="@(p.Departamento ?? "")">
                             <td style="text-align:center">@idxP</td>
                             <td><span class="folio-badge">@p.NumRequi</span></td>
                             <td>@p.FechaEmision?.ToString("dd/MM/yyyy")</td>
@@ -259,12 +262,21 @@
                             <td style="text-align:center">@p.CantidadPartidas</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    <a href="@Url.Action("FormatoEntradaPdf", "Almacen", new { id = p.IdRequi })"
+                                    @* <a href="@Url.Action("FormatoEntradaPdf", "Almacen", new { id = p.IdRequi })"
                                        target="_blank"
                                        class="btn-accion btn-ver"
                                        title="Ver Formato de Entrada">
                                         <i class="fa-solid fa-file-arrow-down"></i>
-                                    </a>
+                                    </a> *@
+                                    <button type="button"
+                                            class="btn-accion btn-ver"
+                                            title="Registrar ingreso de material"
+                                            data-id="@p.IdRequi"
+                                            data-folio="@(p.NumRequi ?? "")"
+                                            data-depto="@(p.Departamento ?? "")"
+                                            data-abrir-ingreso-pedido>
+                                        <i class="fa-solid fa-truck-arrow-right"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -438,6 +450,84 @@
                 </button>
                 <button type="button" class="almacen-btn almacen-btn-completa" id="btnConfirmarEntrega" disabled>
                     <i class="fa-solid fa-truck-ramp-box"></i> Confirmar Entrega
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Modal: Registrar Ingreso de Pedido                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modalIngresoPedido" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalIngresoPedidoTitulo">Registrar Ingreso</h5>
+                    <p class="modal-subtitulo-premium" id="modalIngresoPedidoSubtitulo">Material recibido del proveedor</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body modal-body-premium">
+
+                <!-- Paso 1 -->
+                <div class="almacen-paso-indicator" style="margin-bottom:16px;">
+                    <span class="almacen-paso activo" id="pasoIndicador1">
+                        <i class="fa-solid fa-1"></i> Captura cantidades
+                    </span>
+                    <span class="almacen-paso" id="pasoIndicador2">
+                        <i class="fa-solid fa-2"></i> Imprime y firma
+                    </span>
+                    <span class="almacen-paso" id="pasoIndicador3">
+                        <i class="fa-solid fa-3"></i> Sube firmado
+                    </span>
+                </div>
+
+                <div class="table-responsive-container" style="margin-bottom:16px;">
+                    <table class="tabla-requisiciones" id="tablaModalIngresoPedido">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Unidad</th>
+                                <th style="text-align:center">Solicitado</th>
+                                <th style="text-align:center">Recibido</th>
+                                <th style="text-align:center">Faltante</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaIngresoPedidoBody">
+                            <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paso 2/3 -->
+                <div class="formulario-input">
+                    <label for="inputFormatoEntradaFirmado">
+                        Subir formato de entrada firmado (PDF)
+                    </label>
+                    <input type="file" id="inputFormatoEntradaFirmado"
+                           accept=".pdf,application/pdf" class="input-file-rosa" />
+                    <small id="formatoEntradaFirmadoEstado" class="text-muted" style="font-size:11px;">
+                        Primero guarda las cantidades para generar el formato.
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-parcial" id="btnGuardarBorradorIngreso">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar y generar formato
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-completa"
+                        id="btnConfirmarIngresoPedido" disabled>
+                    <i class="fa-solid fa-truck-arrow-right"></i> Confirmar ingreso
                 </button>
             </div>
         </div>

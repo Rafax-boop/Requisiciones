@@ -84,4 +84,23 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public List<CotizacionDTO> Cotizaciones { get; set; } = new();
     }
+
+    public class RegistrarIngresoPedidoRequest
+    {
+        public int IdRequisicion { get; set; }
+        public string? Cantidades { get; set; }
+        public IFormFile? FormatoEntradaFirmado { get; set; }
+    }
+
+    public class GuardarBorradorIngresoRequest
+    {
+        public int IdRequisicion { get; set; }
+        public List<CantidadRecibidaDTO> Cantidades { get; set; } = new();
+    }
+
+    public class ConfirmarIngresoPedidoRequest
+    {
+        public int IdRequisicion { get; set; }
+        public IFormFile? FormatoEntradaFirmado { get; set; }
+    }
 }

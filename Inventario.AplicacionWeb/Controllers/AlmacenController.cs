@@ -337,5 +337,119 @@ namespace Inventario.AplicacionWeb.Controllers
                 return Json(new { ok = false, error = ex.Message });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerPartidasCompra(int id)
+        {
+            var partidas = await _almacenService.ObtenerPartidasCompraParaEntrada(id);
+            return Json(partidas);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GuardarBorradorIngreso([FromBody] GuardarBorradorIngresoRequest request)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            try
+            {
+                await _almacenService.GuardarBorradorIngreso(
+                    request.IdRequisicion, userId.Value, request.Cantidades ?? new());
+
+                var urlPdf = Url.Action("FormatoEntradaRealPdf", "Almacen",
+                    new { id = request.IdRequisicion });
+
+                return Json(new { ok = true, urlPdf });
+            }
+            catch (Exception ex)
+            {
+                var mensajeCompleto = ex.InnerException?.Message ?? ex.Message;
+                return Json(new { ok = false, error = mensajeCompleto });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> FormatoEntradaRealPdf(int id)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null) return NotFound();
+
+            // Leer cantidades reales del borrador
+            var partidasReales = await _almacenService.ObtenerBorradorIngreso(id);
+            if (!partidasReales.Any())
+                return BadRequest("No hay borrador guardado para esta requisición.");
+
+            var numeroFormato = await _almacenService.GenerarFormatoEntrada(id, userId.Value);
+
+            var vm = new VMRequiForm
+            {
+                IdRequiMaestra = id,
+                NumRequisicion = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                IdDepartamento = dto.IdDepartamento,
+                Departamento = dto.Departamento,
+                NomResponsableDepartamento = dto.NomResponsableDepartamento,
+                CargoResponsableDepartamento = dto.CargoResponsableDepartamento,
+                NomDirector = dto.NomDirector,
+                CargoDirector = dto.CargoDirector,
+                UsoMaterial = dto.UsoMaterial,
+                NumeroFormato = numeroFormato,
+                Articulos = partidasReales.Select(a => new ItemRequiVM
+                {
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    ClaveMaterial = a.ClaveMaterial,
+                    Cantidad = a.CantidadComprar,
+                    UnidadMedida = a.UnidadMedida,
+                    Descripcion = a.Descripcion,
+                    DescripcionDetallada = a.Descripcion
+                }).ToList()
+            };
+
+            return View("EntradaMaterialesParaPdf", vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ConfirmarIngresoPedido([FromForm] ConfirmarIngresoPedidoRequest request)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized(new { ok = false, error = "No autorizado." });
+
+            if (request.FormatoEntradaFirmado == null || request.FormatoEntradaFirmado.Length == 0)
+                return BadRequest(new { ok = false, error = "Debes subir el formato de entrada firmado." });
+
+            var ext = Path.GetExtension(request.FormatoEntradaFirmado.FileName)?.ToLowerInvariant();
+            if (ext != ".pdf")
+                return BadRequest(new { ok = false, error = "El formato firmado debe ser un archivo PDF." });
+
+            try
+            {
+                var carpetaRelativa = Path.Combine("uploads", "formato-entrada", request.IdRequisicion.ToString());
+                var carpetaFisica = Path.Combine(_webHostEnvironment.WebRootPath, carpetaRelativa);
+                Directory.CreateDirectory(carpetaFisica);
+
+                var nombreArchivo = $"entrada_firmada_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}.pdf";
+                var rutaFisica = Path.Combine(carpetaFisica, nombreArchivo);
+
+                await using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                    await request.FormatoEntradaFirmado.CopyToAsync(stream);
+
+                var rutaDb = "/" + Path.Combine(carpetaRelativa, nombreArchivo).Replace("\\", "/");
+
+                await _almacenService.ConfirmarIngresoPedido(
+                    request.IdRequisicion, userId.Value, rutaDb);
+
+                return Json(new { ok = true, mensaje = "Ingreso registrado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, error = ex.Message });
+            }
+        }
     }
 }

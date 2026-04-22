@@ -34,4 +34,10 @@ namespace Inventario.BLL.DTO
         public int? NumPartida { get; set; }
         public string NombrePartida { get; set; }
     }
+
+    public class CantidadRecibidaDTO
+    {
+        public int IdRequisicionDetalle { get; set; }
+        public decimal CantidadRecibida { get; set; }
+    }
 }

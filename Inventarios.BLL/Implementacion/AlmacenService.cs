@@ -23,6 +23,7 @@ namespace Inventario.BLL.Implementacion
         private const int ESTATUS_RECHAZADA_ALMACEN = 5;
         private const int ESTATUS_EN_COMPRA = 11;
         private const int ESTATUS_ENTREGADO = 12;
+        private const string TIPO_COMPRA_BORRADOR = "COMPRA_RECIBIDA";
 
         public AlmacenService(
             IRequisicionRepository requisicionRepository,
@@ -635,6 +636,250 @@ namespace Inventario.BLL.Implementacion
                 .ToList();
 
             return partidas;
+        }
+
+        public async Task GuardarBorradorIngreso(
+    int idRequisicion, int idUsuario,
+    List<CantidadRecibidaDTO> cantidades)
+        {
+            if (cantidades == null || cantidades.Count == 0)
+                throw new Exception("Debe indicar al menos una cantidad recibida.");
+
+            if (cantidades.Any(c => c.CantidadRecibida < 0))
+                throw new Exception("Las cantidades recibidas no pueden ser negativas.");
+
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                // Eliminar borrador previo si existe (el usuario corrigió cantidades)
+                var borradorQuery = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion
+                      && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                      && m.Confirmado != true);
+                var borradorPrevio = await borradorQuery.ToListAsync();
+                foreach (var b in borradorPrevio)
+                    await _repoMovimiento.Eliminar(b);
+
+                // Leer partidas de compra originales para tener CantidadOriginal y datos del artículo
+                var compraQuery = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion
+                      && m.TipoMovimiento == "COMPRA"
+                      && m.Confirmado != true);
+                var movsCompra = await compraQuery
+                    .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ToListAsync();
+
+                if (!movsCompra.Any())
+                    throw new Exception("No se encontraron partidas de compra pendientes.");
+
+                var movsPorDetalle = movsCompra
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var item in cantidades)
+                {
+                    if (!movsPorDetalle.TryGetValue(item.IdRequisicionDetalle, out var movsDetalle))
+                        continue;
+
+                    var cantSolicitada = movsDetalle.Sum(m => (decimal)m.CantidadMovimiento);
+                    var cantRecibida = Math.Min(item.CantidadRecibida, cantSolicitada);
+
+                    // Solo guardar borrador si recibió algo (0 = no llegó, no genera movimiento)
+                    if (cantRecibida <= 0) continue;
+
+                    await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                    {
+                        IdRequisicion = idRequisicion,
+                        IdRequisicionDetalle = item.IdRequisicionDetalle,
+                        TipoMovimiento = TIPO_COMPRA_BORRADOR,
+                        CantidadOriginal = (int)cantSolicitada,
+                        CantidadMovimiento = (int)cantRecibida,
+                        FechaMovimiento = DateTime.Now,
+                        IdUsuario = idUsuario,
+                        Confirmado = false,
+                        Observacion = "Borrador — pendiente de confirmar con formato firmado"
+                    });
+                }
+
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<PartidaCompraEntradaDTO>> ObtenerBorradorIngreso(int idRequisicion)
+        {
+            var query = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion
+                  && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                  && m.Confirmado != true);
+
+            var movs = await query
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
+                .ToListAsync();
+
+            return movs
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .Select(g =>
+                {
+                    var det = g.First().IdRequisicionDetalleNavigation;
+                    return new PartidaCompraEntradaDTO
+                    {
+                        IdRequisicionDetalle = g.Key,
+                        NumPartida = det?.NumPartida,
+                        IdArticulo = det?.IdArticulo,
+                        ClaveMaterial = det?.IdArticuloNavigation?.Clave ?? "",
+                        Descripcion = det?.Descripcion ?? "",
+                        UnidadMedida = det?.UnidadMedida ?? "",
+                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento) // aquí es la real
+                    };
+                })
+                .OrderBy(x => x.NumPartida)
+                .ThenBy(x => x.IdRequisicionDetalle)
+                .ToList();
+        }
+
+        public async Task<bool> ConfirmarIngresoPedido(
+    int idRequisicion, int idUsuario, string rutaArchivoFirmado)
+        {
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                // ── Leer borrador ──
+                var borradorQuery = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion
+                      && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                      && m.Confirmado != true);
+                var borradores = await borradorQuery
+                    .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ToListAsync();
+
+                if (!borradores.Any())
+                    throw new Exception("No hay borrador guardado. Captura las cantidades recibidas primero.");
+
+                // ── Leer compras originales pendientes ──
+                var compraQuery = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion
+                      && m.TipoMovimiento == "COMPRA"
+                      && m.Confirmado != true);
+                var movsCompra = await compraQuery
+                    .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ToListAsync();
+
+                var movsPorDetalle = movsCompra
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var borradorPorDetalle = borradores
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.CantidadMovimiento));
+
+                // ── Cerrar formato de entrada (PENDIENTE → ruta real) ──
+                var fmtQuery = await _repoFormato.Consultar(
+                    f => f.TipoFormato == "ENTRADA"
+                      && f.IdRequisicion == idRequisicion
+                      && f.RutaArchivo == "PENDIENTE");
+                var formato = await fmtQuery.FirstOrDefaultAsync();
+                if (formato != null)
+                {
+                    formato.RutaArchivo = rutaArchivoFirmado;
+                    await _repoFormato.Editar(formato);
+                }
+
+                var resumenEntregas = new List<string>();
+                var resumenFaltantes = new List<string>();
+                bool hayFaltante = false;
+
+                foreach (var (idDetalle, movsOriginales) in movsPorDetalle)
+                {
+                    var det = movsOriginales.First().IdRequisicionDetalleNavigation;
+                    var desc = (det?.Descripcion ?? "").Trim();
+                    var cantSolicitada = movsOriginales.Sum(m => (decimal)m.CantidadMovimiento);
+                    var cantRecibida = borradorPorDetalle.GetValueOrDefault(idDetalle, 0);
+                    var cantFaltante = cantSolicitada - cantRecibida;
+
+                    // Marcar compras originales como confirmadas
+                    foreach (var mov in movsOriginales)
+                    {
+                        mov.Confirmado = true;
+                        mov.FechaConfirmacion = DateTime.Now;
+                        mov.IdUsuarioConfirmacion = idUsuario;
+                        await _repoMovimiento.Editar(mov);
+                    }
+
+                    // Convertir borrador → movimiento ENTREGA real
+                    if (cantRecibida > 0)
+                    {
+                        await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                        {
+                            IdRequisicion = idRequisicion,
+                            IdRequisicionDetalle = idDetalle,
+                            TipoMovimiento = "ENTREGA",
+                            CantidadOriginal = (int)cantSolicitada,
+                            CantidadMovimiento = (int)cantRecibida,
+                            FechaMovimiento = DateTime.Now,
+                            IdUsuario = idUsuario,
+                            Confirmado = false   // confirmará al hacer entrega física
+                        });
+                        resumenEntregas.Add($"{desc} x{cantRecibida}");
+                    }
+
+                    // Faltante → nuevo COMPRA pendiente (sigue en Pedidos)
+                    if (cantFaltante > 0)
+                    {
+                        hayFaltante = true;
+                        await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                        {
+                            IdRequisicion = idRequisicion,
+                            IdRequisicionDetalle = idDetalle,
+                            TipoMovimiento = "COMPRA",
+                            CantidadOriginal = (int)cantSolicitada,
+                            CantidadMovimiento = (int)cantFaltante,
+                            FechaMovimiento = DateTime.Now,
+                            IdUsuario = idUsuario,
+                            Confirmado = false,
+                            Observacion = $"Faltante del proveedor — entrega anterior: {cantRecibida}"
+                        });
+                        resumenFaltantes.Add($"{desc} faltante: x{cantFaltante}");
+                    }
+                }
+
+                // Eliminar borradores (ya procesados)
+                foreach (var b in borradores)
+                    await _repoMovimiento.Eliminar(b);
+
+                // ── Estatus final de la requisición ──
+                var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
+                          ?? throw new Exception("No se encontró la requisición.");
+
+                if (!hayFaltante)
+                {
+                    // Todo llegó → sale de Pedidos, va a A Entregar
+                    req.IdEstatus = ESTATUS_APROBADA_ALMACEN; // 4
+                    req.FechaModificacion = DateTime.Now;
+                    await _repositoryRequisicion.Editar(req);
+                }
+                // Si hay faltante → permanece en estatus 7 (sigue visible en Pedidos)
+
+                // ── Bitácora ──
+                var obs = new System.Text.StringBuilder("Almacén registró ingreso de material del proveedor.");
+                if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
+                if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
+
+                await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 7, idUsuario, obs.ToString());
+
+                await _uow.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
         }
     }
 }
