@@ -44,6 +44,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalle> _repoDetalle;
         private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
         private readonly IGenericRepository<TblTablaApiHistorial> _repoHistorial;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -52,7 +53,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblDepartamento> repoDepartamento,
             IGenericRepository<TblRequisicionDetalle> repoDetalle,
             IGenericRepository<TblCotizacione> repositoryCotizaciones,
-            IGenericRepository<TblTablaApiHistorial> repoHistorial)
+            IGenericRepository<TblTablaApiHistorial> repoHistorial,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
@@ -61,6 +63,7 @@ namespace Inventario.BLL.Implementacion
             _repoDetalle = repoDetalle;
             _repositoryCotizaciones = repositoryCotizaciones;
             _repoHistorial = repoHistorial;
+            _repoMovimiento = repoMovimiento;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -284,8 +287,7 @@ namespace Inventario.BLL.Implementacion
                 nombreDepartamento = depto?.NombreDepartamento ?? "";
             }
 
-            var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
-            var detalles = await queryDet.ToListAsync();
+            var detalles = await ObtenerDetallesFiltradosAsync(idRequisicion, requisicion.RequiServicio ?? false);
             var cotizacionConCantidad = await ObtenerCotizacionConCantidadAsync(idRequisicion);
 
             // Importe final por partida (precio × cantidad × IVA)
@@ -626,8 +628,7 @@ namespace Inventario.BLL.Implementacion
                 nombreDepartamento = depto?.NombreDepartamento ?? "";
             }
 
-            var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
-            var detalles = await queryDet.ToListAsync();
+            var detalles = await ObtenerDetallesFiltradosAsync(idRequisicion, requisicion.RequiServicio ?? false);
 
             // ← NUEVO
             var cotizacionConCantidad = await ObtenerCotizacionConCantidadAsync(idRequisicion);
@@ -1278,5 +1279,25 @@ namespace Inventario.BLL.Implementacion
 
         private static string FormatearImporte(decimal valor) =>
             valor.ToString("C2", new System.Globalization.CultureInfo("es-MX"));
+
+        private async Task<List<TblRequisicionDetalle>> ObtenerDetallesFiltradosAsync(int idRequisicion, bool esServicio)
+        {
+            var query = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+
+            if (!esServicio)
+            {
+                var queryMovimientos = await _repoMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+                var idsParaCompra = await queryMovimientos
+                    .Select(m => m.IdRequisicionDetalle)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (idsParaCompra.Any())
+                    query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
+            }
+
+            return await query.ToListAsync();
+        }
     }
 }

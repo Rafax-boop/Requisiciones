@@ -16,12 +16,22 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblProvedor> _repository;
         private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryDetalle;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repositoryMovimiento;
+        private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
 
-        public ProveedoresService(IGenericRepository<TblProvedor> repository, IGenericRepository<TblCotizacione> repositoryCotizaciones, IGenericRepository<TblRequisicionDetalle> repositoryDetalle)
+        public ProveedoresService(
+            IGenericRepository<TblProvedor> repository,
+            IGenericRepository<TblCotizacione> repositoryCotizaciones,
+            IGenericRepository<TblRequisicionDetalle> repositoryDetalle,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repositoryMovimiento,
+            IGenericRepository<TblRequisicion> repositoryRequisicion
+        )
         {
             _repository = repository;
             _repositoryCotizaciones = repositoryCotizaciones;
             _repositoryDetalle = repositoryDetalle;
+            _repositoryMovimiento = repositoryMovimiento;
+            _repositoryRequisicion = repositoryRequisicion;
         }
 
         public async Task<List<ProveedoresDTO>> ObtenerProveedores()
@@ -80,12 +90,64 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<PartidaDTO>> ObtenerPartidas(int idRequisicion)
         {
+            // Verificar si es requisición de servicio
+            var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idRequisicion);
+            var maestra = await queryMaestra.FirstOrDefaultAsync();
+            bool esServicio = maestra?.RequiServicio ?? false;
+
             var query = await _repositoryDetalle.Consultar(c => c.IdRequisicion == idRequisicion);
+
+            if (!esServicio)
+            {
+                var queryMovimientos = await _repositoryMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+                var idsParaCompra = await queryMovimientos
+                    .Select(m => m.IdRequisicionDetalle)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (idsParaCompra.Any())
+                    query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
+            }
+
             return await query.Select(c => new PartidaDTO
             {
                 IdRequiDetalle = c.IdRequisicionDetalle,
                 NumPartida = c.NumPartida,
                 NombrePartida = c.DescripcionDetallada
+            }).ToListAsync();
+        }
+
+        public async Task<List<DetalleArticuloDTO>> ObtenerArticulosParaCompra(int idRequisicion)
+        {
+            var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idRequisicion);
+            var maestra = await queryMaestra.FirstOrDefaultAsync();
+            bool esServicio = maestra?.RequiServicio ?? false;
+
+            var query = await _repositoryDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
+
+            if (!esServicio)
+            {
+                var queryMovimientos = await _repositoryMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+                var idsParaCompra = await queryMovimientos
+                    .Select(m => m.IdRequisicionDetalle)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (idsParaCompra.Any())
+                    query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
+            }
+
+            return await query.Select(r => new DetalleArticuloDTO
+            {
+                IdRequisicionDetalle = r.IdRequisicionDetalle,
+                NumPartida = r.NumPartida,
+                IdArticulo = r.IdArticulo,
+                Cantidad = r.Cantidad,
+                UnidadMedida = r.UnidadMedida,
+                Descripcion = r.Descripcion,
+                DescripcionDetallada = r.DescripcionDetallada
             }).ToListAsync();
         }
     }

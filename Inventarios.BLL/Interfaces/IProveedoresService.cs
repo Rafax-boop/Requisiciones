@@ -13,5 +13,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> GuardarCotizaciones(int idRequisicion, List<CotizacionDTO> cotizaciones);
         Task<List<CotizacionDTO>> ObtenerCotizaciones(int idRequisicion);
         Task<List<PartidaDTO>> ObtenerPartidas(int idRequisicion);
+        Task<List<DetalleArticuloDTO>> ObtenerArticulosParaCompra(int idRequisicion);
     }
 }

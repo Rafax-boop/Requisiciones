@@ -43,6 +43,8 @@ namespace Inventario.BLL.Implementacion
             var dto = await _requisicionesService.ObtenerRequisicionCompletaPorId(idRequisicion);
             if (dto == null) return null;
 
+            dto.Articulos = await _cotizacionesService.ObtenerArticulosParaCompra(idRequisicion);
+
             var cotizaciones = await _cotizacionesService.ObtenerCotizaciones(idRequisicion);
 
             // Agrupa cotizaciones por IdPartida (IdRequiDetalle), luego por proveedor
@@ -312,7 +314,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             // Filas de artículos
-            var totalFilas = Math.Max(2, filas.Count);
+            var totalFilas = filas.Count; ;
             for (var i = 0; i < totalFilas; i++)
             {
                 var fila = i < filas.Count ? filas[i] : new CuadroComparativoFilaPdf();
