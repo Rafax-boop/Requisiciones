@@ -125,7 +125,7 @@ namespace Inventario.BLL.Implementacion
                 .ToDictionary(x => x.IdRequisicion, x => x.CantidadPartidasCompra);
 
             var query = await _repositoryRequisicion.Consultar(
-                r => r.IdEstatus == 7 && r.RequiServicio != true && idsConCompra.Contains(r.IdRequisicion));
+                r => r.IdEstatus == 7 && idsConCompra.Contains(r.IdRequisicion));
 
             var requisiciones = await query
                 .OrderByDescending(r => r.FechaModificacion)

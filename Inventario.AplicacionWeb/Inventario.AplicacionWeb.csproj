@@ -21,11 +21,7 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\img\" />
-    <Folder Include="wwwroot\uploads\cuadro_comparativo\" />
-    <Folder Include="wwwroot\uploads\diseños\" />
-    <Folder Include="wwwroot\uploads\DocumentoSIAF\" />
-    <Folder Include="wwwroot\uploads\Proveedor\" />
-    <Folder Include="wwwroot\uploads\TablaApi\" />
+    <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
   <ItemGroup>
