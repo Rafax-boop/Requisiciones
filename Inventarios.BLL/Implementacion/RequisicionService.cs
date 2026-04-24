@@ -179,7 +179,12 @@ namespace Inventario.BLL.Implementacion
                         .OrderByDescending(b => b.FechaEstatus)
                         .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
                         .FirstOrDefault(),
-                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null
+                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null,
+                    ComentarioRechazo = r.TblBitacoraEstatuses
+                        .Where(b => b.IdEstatus == 5)
+                        .OrderByDescending(b => b.FechaEstatus)
+                        .Select(b => b.Observacion)
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 

@@ -283,14 +283,18 @@
 }
 
 .timeline-track::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 22px;
   left: 40px;
   right: 40px;
   height: 4px;
   background: var(--slate-100);
-  background-image: linear-gradient(to right, var(--rosa-400) var(--progress, 0%), transparent var(--progress, 0%));
+  background-image: linear-gradient(
+    to right,
+    var(--rosa-400) var(--progress, 0%),
+    transparent var(--progress, 0%)
+  );
   z-index: 1;
   border-radius: 2px;
 }
@@ -380,7 +384,7 @@
 
 /* Triángulo apuntando hacia ARRIBA (porque el globo está abajo) */
 .timeline-step .step-tooltip::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 100%;
   top: auto;
@@ -408,7 +412,7 @@
    En lugar de animar el .step-tooltip en el hover del todo el step (.timeline-step:hover),
    cambiamos para que dispare solo si el hover es en el ícono.
 */
-.timeline-step .step-icon:hover~.step-tooltip,
+.timeline-step .step-icon:hover ~ .step-tooltip,
 .timeline-step .step-tooltip:hover {
   opacity: 1;
   visibility: visible;
@@ -686,7 +690,7 @@
 }
 
 .mtl-item:not(:last-child) .mtl-dot-col::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 24px;
   left: 12px;
@@ -742,7 +746,7 @@
 }
 
 .mtl-item.done .mtl-dot::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -760,7 +764,7 @@
 }
 
 .mtl-item.active .mtl-dot::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -778,7 +782,7 @@
 }
 
 .mtl-item.completed .mtl-dot::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -796,7 +800,7 @@
 }
 
 .mtl-item.cancelled .mtl-dot::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -897,7 +901,7 @@
   line-height: 1.5;
 }
 
-.mtl-dr+.mtl-dr {
+.mtl-dr + .mtl-dr {
   margin-top: 0.25rem;
 }
 
@@ -1119,12 +1123,12 @@
   transition: background 0.3s var(--ease-premium);
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet {
   border-color: var(--rosa-400);
   animation: explode 0.35s;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet::after {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet::after {
   background: var(--rosa-400);
 }
 
@@ -1188,39 +1192,39 @@
   height: 8px;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.zero {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.zero {
   animation: drop-zero 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.one {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.one {
   animation: drop-one 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.two {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.two {
   animation: drop-two 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.three {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.three {
   animation: drop-three 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.four {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.four {
   animation: drop-four 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.five {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.five {
   animation: drop-five 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.six {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.six {
   animation: drop-six 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet .line.seven {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet .line.seven {
   animation: drop-seven 0.9s 0.1s forwards;
 }
 
-.atender-opcion input[type="checkbox"]:checked~.bullet+span {
+.atender-opcion input[type="checkbox"]:checked ~ .bullet + span {
   color: var(--rosa-500);
 }
 
@@ -1240,7 +1244,9 @@
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
   backdrop-filter: blur(6px);
   cursor: zoom-out;
 }
@@ -1302,7 +1308,9 @@
   border-radius: var(--radius-sm, 8px);
   border: 1px solid var(--slate-200, #e5e7eb);
   display: block;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .modal-adjunto-thumb:hover img,
@@ -1341,7 +1349,10 @@
   cursor: pointer;
   text-decoration: none;
   font-family: var(--font-body, inherit);
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .modal-adjunto-chip:hover {
@@ -1407,7 +1418,9 @@
   color: #166534;
   border: 1px solid #86efac;
 }
-.badge-estado-success i { color: #15803d; }
+.badge-estado-success i {
+  color: #15803d;
+}
 
 /* 2. Púrpura (Autorizaciones / Verificaciones) */
 .badge-estado-purple {
@@ -1415,7 +1428,9 @@
   color: #581c87;
   border: 1px solid #d8b4fe;
 }
-.badge-estado-purple i { color: #7e22ce; }
+.badge-estado-purple i {
+  color: #7e22ce;
+}
 
 /* 3. Rojo (Rechazo / Cancelación) */
 .badge-estado-danger {
@@ -1423,7 +1438,9 @@
   color: #991b1b;
   border: 1px solid #fca5a5;
 }
-.badge-estado-danger i { color: #b91c1c; }
+.badge-estado-danger i {
+  color: #b91c1c;
+}
 
 /* 4. Naranja (Corrección / Observaciones) */
 .badge-estado-warning {
@@ -1431,7 +1448,9 @@
   color: #9a3412;
   border: 1px solid #fdba74;
 }
-.badge-estado-warning i { color: #c2410c; }
+.badge-estado-warning i {
+  color: #c2410c;
+}
 
 /* 5. Azul/Info (En Proceso / Espera) */
 .badge-estado-info {
@@ -1439,7 +1458,9 @@
   color: #075985;
   border: 1px solid #7dd3fc;
 }
-.badge-estado-info i { color: #0284c7; }
+.badge-estado-info i {
+  color: #0284c7;
+}
 
 /* ──────────────────────────────────────────
    Modal proveedores (desde artículos / atender)
@@ -1486,7 +1507,8 @@
   border: 1px solid var(--slate-200, #e2e8f0);
   border-radius: var(--radius-sm, 8px);
   cursor: pointer;
-  transition: border-color 0.2s var(--ease-premium, ease),
+  transition:
+    border-color 0.2s var(--ease-premium, ease),
     color 0.2s var(--ease-premium, ease),
     background 0.2s var(--ease-premium, ease);
 }

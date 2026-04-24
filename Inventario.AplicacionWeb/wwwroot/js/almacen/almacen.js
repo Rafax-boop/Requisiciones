@@ -57,8 +57,8 @@
   function swalExito(msg) {
     return Swal.fire({
       icon: "success",
-      title: "¡Listo!",
-      text: msg || "Operación exitosa.",
+      title: "\u00a1Listo!",
+      text: msg || "Operaci\u00f3n exitosa.",
       confirmButtonColor: "#e11d48",
     });
   }
@@ -66,7 +66,7 @@
   function swalWarning(msg) {
     Swal.fire({
       icon: "warning",
-      title: "Atención",
+      title: "Atenci\u00f3n",
       text: msg,
       confirmButtonColor: "#e11d48",
     });
@@ -80,7 +80,7 @@
       showCancelButton: true,
       confirmButtonColor: "#e11d48",
       cancelButtonColor: "#64748b",
-      confirmButtonText: botonTexto || "Sí, continuar",
+      confirmButtonText: botonTexto || "S\u00ed, continuar",
       cancelButtonText: "Cancelar",
     });
   }
@@ -1329,7 +1329,7 @@
               if (r.ok) {
                 cerrarModalAlmacen();
                 swalExito(
-                  r.mensaje || "Requisición procesada correctamente.",
+                  r.mensaje || "Requisici\u00f3n procesada correctamente.",
                 ).then(function () {
                   location.reload();
                 });
@@ -1389,7 +1389,7 @@
           .then(function (r) {
             if (r.ok) {
               cerrarModalAlmacen();
-              swalExito(r.mensaje || "Requisición rechazada.").then(
+              swalExito(r.mensaje || "Requisici\u00f3n rechazada.").then(
                 function () {
                   location.reload();
                 },

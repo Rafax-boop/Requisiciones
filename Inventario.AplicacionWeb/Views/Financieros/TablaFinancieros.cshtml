@@ -781,17 +781,13 @@
                 <!-- Archivos subidos (readonly) -->
                 <div id="contenedorArchivosReadonly"></div>
 
-                <!-- Sección atender: observaciones + botones (solo rol 9) -->
+                <!-- Sección atender: botones de documentos + observaciones (solo rol 9) -->
                 <div class="seccionAtender" style="display:none; margin-top:20px;">
                     <div class="formulario-input">
-                        <label>Observaciones</label>
-                        <textarea id="txtObservaciones" class="form-control" rows="4"
-                                  placeholder="Escriba las observaciones aquí..."></textarea>
-
                         @if (User.IsInRole("9"))
                         {
                             <!-- Solo el analista (rol 9) puede subir archivos -->
-                            <div class="row mb-3 mt-3">
+                            <div class="row mb-3">
                                 <div class="col-md-5">
                                     <div class="formulario-input">
                                         <label>Subir Documento SIAF</label>
@@ -801,16 +797,6 @@
                                 <div class="col-md-5">
                                     <div class="formulario-input">
                                         <label>Tabla de API</label>
-
-                                        <!-- Botón para descargar la Tabla API pre-llenada desde el sistema -->
-                                        <button type="button"
-                                                class="btn boton-rosa mb-2 w-100"
-                                                id="btnDescargarTablaApi"
-                                                onclick="descargarTablaApi()"
-                                                title="Genera el formato pre-llenado con los datos de la requisición">
-                                            <i class="fa-solid fa-file-arrow-down"></i>
-                                            Descargar Tabla API
-                                        </button>
 
                                         <button type="button"
                                                 class="btn boton-gris mb-2 w-100"
@@ -834,8 +820,6 @@
                                 <div class="col-md-2">
                                     <div class="formulario-input">
                                         <label>Nº API</label>
-                                        <!-- El número se genera automáticamente al guardar.
-                                             Se muestra aquí solo para referencia visual. -->
                                         <input type="text"
                                                id="inputNumeroApi"
                                                class="form-control"
@@ -851,6 +835,10 @@
                                 </div>
                             </div>
                         }
+
+                        <label>Observaciones</label>
+                        <textarea id="txtObservaciones" class="form-control" rows="4"
+                                  placeholder="Escriba las observaciones aquí..."></textarea>
                     </div>
                     <div id="botonesAtender" style="margin-top:20px; text-align:right; display:none;">
                         <button type="button" class="btn btn-danger me-2" onclick="rechazarDesdeAtencion()">

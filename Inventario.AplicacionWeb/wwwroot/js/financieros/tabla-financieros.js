@@ -752,13 +752,13 @@
 
     window.finalizarExpediente = function () {
         Swal.fire({
-            title: "¿Finalizar requisición?",
-            text: "Se marcará como finalizada y enviada a proceso de pago.",
+            title: "\u00bfFinalizar requisici\u00f3n?",
+            text: "Se marcar\u00e1 como finalizada y enviada a proceso de pago.",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#fe6291",
             cancelButtonColor: "var(--slate-500)",
-            confirmButtonText: "Sí, finalizar",
+            confirmButtonText: "S\u00ed, finalizar",
             cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (!result.isConfirmed) return;
@@ -791,7 +791,7 @@
                     }).then(function () { location.reload(); });
                 },
                 error: function () {
-                    Swal.fire({ icon: "error", title: "Error al finalizar la requisición." });
+                    Swal.fire({ icon: "error", title: "Error al finalizar la requisici\u00f3n." });
                 }
             });
         });
@@ -873,7 +873,7 @@
     window.enviarAtencion = function () {
         var observaciones = document.getElementById("txtObservaciones").value.trim();
         if (!observaciones) {
-            Swal.fire({ icon: "warning", title: "Debe escribir una observación.", confirmButtonText: "Ok" });
+            Swal.fire({ icon: "warning", title: "Debe escribir una observaci\u00f3n.", confirmButtonText: "Ok" });
             return;
         }
 
@@ -907,12 +907,12 @@
                 if (inputTablaApi) inputTablaApi.value = "";
                 document.getElementById("txtObservaciones").value = "";
                 Swal.fire({
-                    icon: "success", title: "Requisición atendida",
+                    icon: "success", title: "Requisici\u00f3n atendida",
                     timer: 2000, showConfirmButton: false
                 }).then(function () { location.reload(); });
             },
             error: function () {
-                Swal.fire({ icon: "error", title: "Error al atender la requisición." });
+                Swal.fire({ icon: "error", title: "Error al atender la requisici\u00f3n." });
             }
         });
     };
