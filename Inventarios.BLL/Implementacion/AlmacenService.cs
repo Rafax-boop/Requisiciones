@@ -103,7 +103,8 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<RequisicionMaestraDTO>> ListarPedidosEstatus7()
         {
-            var movCompraQuery = await _repoMovimiento.Consultar(m => m.TipoMovimiento == "COMPRA");
+            var movCompraQuery = await _repoMovimiento.Consultar(
+                m => m.TipoMovimiento == "COMPRA" && m.Confirmado != true);
             var comprasPorRequi = await movCompraQuery
                 .GroupBy(m => m.IdRequisicion)
                 .Select(g => new
@@ -283,7 +284,7 @@ namespace Inventario.BLL.Implementacion
                 }
 
                 var todosMovQuery = await _repoMovimiento.Consultar(
-                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
+    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
                 var todosMovs = await todosMovQuery.ToListAsync();
 
                 bool todoConfirmado = todosMovs.Any() && todosMovs.All(m => m.Confirmado == true);
@@ -293,8 +294,28 @@ namespace Inventario.BLL.Implementacion
                     var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                               ?? throw new Exception("No se encontró la requisición.");
 
-                    if (req.IdEstatus != ESTATUS_EN_COMPRA)
+                    // ── NUEVO: verificar si aún hay compras pendientes ──
+                    var comprasPendientesQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == idRequisicion
+                          && m.TipoMovimiento == "COMPRA"
+                          && m.Confirmado != true);
+                    var comprasPendientes = await comprasPendientesQuery.ToListAsync();
+                    bool hayComprasPendientes = comprasPendientes.Any();
+
+                    if (hayComprasPendientes)
                     {
+                        // Aún faltan materiales del proveedor → volver a estatus 7 (Pedidos)
+                        req.IdEstatus = 7;
+                        req.FechaModificacion = DateTime.Now;
+                        await _repositoryRequisicion.Editar(req);
+
+                        await RegistrarBitacoraAsync(idRequisicion, 7, idUsuario,
+                            "Almacén confirmó entrega física de los artículos recibidos. " +
+                            "Requisición regresa a Pedidos por material faltante del proveedor.");
+                    }
+                    else if (req.IdEstatus != ESTATUS_EN_COMPRA)
+                    {
+                        // Todo entregado y sin compras pendientes → Entregado
                         req.IdEstatus = ESTATUS_ENTREGADO;
                         req.FechaModificacion = DateTime.Now;
                         await _repositoryRequisicion.Editar(req);
@@ -608,7 +629,9 @@ namespace Inventario.BLL.Implementacion
         public async Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraParaEntrada(int idRequisicion)
         {
             var query = await _repoMovimiento.Consultar(
-                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+                m => m.IdRequisicion == idRequisicion
+                  && m.TipoMovimiento == "COMPRA"
+                  && m.Confirmado != true);   // ← solo pendientes
 
             var movimientosCompra = await query
                 .Include(m => m.IdRequisicionDetalleNavigation)
@@ -761,22 +784,22 @@ namespace Inventario.BLL.Implementacion
                 if (!borradores.Any())
                     throw new Exception("No hay borrador guardado. Captura las cantidades recibidas primero.");
 
-                // ── Leer compras originales pendientes ──
+                var borradorPorDetalle = borradores
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.CantidadMovimiento));
+
+                // ── Leer TODAS las compras originales pendientes ──
                 var compraQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion
                       && m.TipoMovimiento == "COMPRA"
                       && m.Confirmado != true);
                 var movsCompra = await compraQuery
                     .Include(m => m.IdRequisicionDetalleNavigation)
+                        .ThenInclude(d => d.IdArticuloNavigation)
                     .ToListAsync();
 
-                var movsPorDetalle = movsCompra
-                    .GroupBy(m => m.IdRequisicionDetalle)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                var borradorPorDetalle = borradores
-                    .GroupBy(m => m.IdRequisicionDetalle)
-                    .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.CantidadMovimiento));
+                if (!movsCompra.Any())
+                    throw new Exception("No se encontraron partidas de compra pendientes.");
 
                 // ── Cerrar formato de entrada (PENDIENTE → ruta real) ──
                 var fmtQuery = await _repoFormato.Consultar(
@@ -794,15 +817,22 @@ namespace Inventario.BLL.Implementacion
                 var resumenFaltantes = new List<string>();
                 bool hayFaltante = false;
 
+                // Agrupar compras originales por detalle
+                var movsPorDetalle = movsCompra
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
                 foreach (var (idDetalle, movsOriginales) in movsPorDetalle)
                 {
                     var det = movsOriginales.First().IdRequisicionDetalleNavigation;
                     var desc = (det?.Descripcion ?? "").Trim();
+                    var clave = (det?.IdArticuloNavigation?.Clave ?? "").Trim();
+                    var unidad = (det?.UnidadMedida ?? "").Trim();
                     var cantSolicitada = movsOriginales.Sum(m => (decimal)m.CantidadMovimiento);
                     var cantRecibida = borradorPorDetalle.GetValueOrDefault(idDetalle, 0);
                     var cantFaltante = cantSolicitada - cantRecibida;
 
-                    // Marcar compras originales como confirmadas
+                    // ── Marcar TODOS los movimientos COMPRA originales como confirmados ──
                     foreach (var mov in movsOriginales)
                     {
                         mov.Confirmado = true;
@@ -811,7 +841,7 @@ namespace Inventario.BLL.Implementacion
                         await _repoMovimiento.Editar(mov);
                     }
 
-                    // Convertir borrador → movimiento ENTREGA real
+                    // ── Lo recibido → ENTREGA pendiente + actualizar inventario ──
                     if (cantRecibida > 0)
                     {
                         await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
@@ -823,12 +853,38 @@ namespace Inventario.BLL.Implementacion
                             CantidadMovimiento = (int)cantRecibida,
                             FechaMovimiento = DateTime.Now,
                             IdUsuario = idUsuario,
-                            Confirmado = false   // confirmará al hacer entrega física
+                            Confirmado = false
                         });
                         resumenEntregas.Add($"{desc} x{cantRecibida}");
+
+                        // ── Actualizar o crear en inventario ──
+                        if (!string.IsNullOrWhiteSpace(clave))
+                        {
+                            var inv = await _repoInventario.Obtener(i => i.Clave == clave);
+                            if (inv != null)
+                            {
+                                inv.Existencia += (int)cantRecibida;
+                                await _repoInventario.Editar(inv);
+                            }
+                            else
+                            {
+                                await _repoInventario.Crear(new TblInventario
+                                {
+                                    Clave = clave,
+                                    Descripcion = desc,
+                                    UnidadMedida = unidad,
+                                    Existencia = (int)cantRecibida,
+                                    Entrada = (int)cantRecibida,
+                                    Costo = 0,
+                                    Iva = 0,
+                                    CostoUnitario = 0,
+                                    Total = 0
+                                });
+                            }
+                        }
                     }
 
-                    // Faltante → nuevo COMPRA pendiente (sigue en Pedidos)
+                    // ── Faltante → nuevo COMPRA pendiente (queda en Pedidos) ──
                     if (cantFaltante > 0)
                     {
                         hayFaltante = true;
@@ -848,22 +904,21 @@ namespace Inventario.BLL.Implementacion
                     }
                 }
 
-                // Eliminar borradores (ya procesados)
+                // ── Eliminar borradores ya procesados ──
                 foreach (var b in borradores)
                     await _repoMovimiento.Eliminar(b);
 
-                // ── Estatus final de la requisición ──
+                // ── Estatus final ──
                 var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                           ?? throw new Exception("No se encontró la requisición.");
 
                 if (!hayFaltante)
                 {
-                    // Todo llegó → sale de Pedidos, va a A Entregar
                     req.IdEstatus = ESTATUS_APROBADA_ALMACEN; // 4
                     req.FechaModificacion = DateTime.Now;
                     await _repositoryRequisicion.Editar(req);
                 }
-                // Si hay faltante → permanece en estatus 7 (sigue visible en Pedidos)
+                // Si hay faltante → permanece en estatus 7 (sigue en Pedidos)
 
                 // ── Bitácora ──
                 var obs = new System.Text.StringBuilder("Almacén registró ingreso de material del proveedor.");
