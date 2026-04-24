@@ -352,8 +352,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ThenBy(r => r.IdRequi)
                 .ToList();
 
-            var principal = listaDTO.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).Select(r => r.IdRequi).ToList();
-            var autorizadas = listaDTO.Where(r => r.IdEstatus == 4).Select(r => r.IdRequi).ToList();
+            var principal = listaDTO.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5).Select(r => r.IdRequi).ToList();
+            var autorizadas = listaDTO.Where(r => r.IdEstatus == 7).Select(r => r.IdRequi).ToList();
             var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
             var verificadas = listaDTO.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).Select(r => r.IdRequi).ToList();
 

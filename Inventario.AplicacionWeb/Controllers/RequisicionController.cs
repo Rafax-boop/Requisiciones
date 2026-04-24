@@ -68,6 +68,13 @@ namespace Inventario.AplicacionWeb.Controllers
 
             ViewBag.UsaFlujoContinuar = true;
 
+            var municipios = await _municipioService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Municipio
+            }).ToList();
+
             return View(vm);
         }
 

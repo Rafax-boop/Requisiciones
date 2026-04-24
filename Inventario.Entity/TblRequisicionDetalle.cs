@@ -27,6 +27,10 @@ public partial class TblRequisicionDetalle
 
     public bool? Activo { get; set; }
 
+    public int? IdMunicipio { get; set; }
+
+    public virtual TblMunicipio? IdMunicipioNavigation { get; set; }
+
     public virtual TblArticulo? IdArticuloNavigation { get; set; }
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;

@@ -1790,4 +1790,130 @@
             });
         });
     }
+
+    /* ========== EXPEDIENTES ========== */
+
+    var urlObtenerDocumentos = container ? container.getAttribute("data-url-documentos") : "";
+    var filtroBuscarExpedientes = document.getElementById("filtroBuscarExpedientes");
+    var tbodyExpedientes = document.querySelector("#tablaExpedientes tbody");
+    var paginacionExpedientes = document.getElementById("paginacionExpedientes");
+    var TAMANO_PAGINA_EXPEDIENTES = 7;
+    var paginaExpedientesActual = 1;
+
+    if (filtroBuscarExpedientes)
+        filtroBuscarExpedientes.addEventListener("input", function () {
+            paginaExpedientesActual = 1;
+            aplicarPaginacionExpedientes();
+        });
+
+    function getFilasExpedientesVisibles() {
+        var texto = (filtroBuscarExpedientes ? filtroBuscarExpedientes.value : "").toLowerCase().trim();
+        var filas = tbodyExpedientes ? [].slice.call(tbodyExpedientes.querySelectorAll("tr")) : [];
+        return filas.filter(function (tr) {
+            if (tr.classList.contains("fila-vacia")) return false;
+            return !texto || (tr.textContent || "").toLowerCase().includes(texto);
+        });
+    }
+
+    function aplicarPaginacionExpedientes() {
+        var visibles = getFilasExpedientesVisibles();
+        var total = visibles.length;
+        var totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_EXPEDIENTES));
+        if (paginaExpedientesActual > totalPaginas) paginaExpedientesActual = totalPaginas;
+        var inicio = (paginaExpedientesActual - 1) * TAMANO_PAGINA_EXPEDIENTES;
+        var fin = inicio + TAMANO_PAGINA_EXPEDIENTES;
+
+        if (tbodyExpedientes) {
+            tbodyExpedientes.querySelectorAll("tr").forEach(function (tr) {
+                if (!tr.classList.contains("fila-vacia")) tr.style.display = "none";
+            });
+            visibles.forEach(function (tr, i) {
+                tr.style.display = (i >= inicio && i < fin) ? "" : "none";
+            });
+        }
+
+        renderPaginacion(
+            paginacionExpedientes,
+            total,
+            inicio,
+            fin,
+            totalPaginas,
+            paginaExpedientesActual,
+            function (p) {
+                paginaExpedientesActual = p;
+                aplicarPaginacionExpedientes();
+            },
+            "expedientes"
+        );
+    }
+
+    aplicarPaginacionExpedientes();
+
+    // Ver documentos del expediente
+    $(document).on("click", ".btn-ver-expediente", function () {
+        var idReq = $(this).data("id");
+        var folio = $(this).data("folio");
+
+        $("#modalExpedienteTitulo").text("Expediente Digital: " + folio);
+        $("#tablaExpedienteBody").html('<tr><td colspan="4" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Cargando documentos...</td></tr>');
+        
+        var modal = new bootstrap.Modal(document.getElementById("modalExpediente"));
+        modal.show();
+
+        fetch(urlObtenerDocumentos + "?idRequisicion=" + idReq)
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (!json.ok) throw json.error || "Error al cargar documentos.";
+
+                var docs = json.data || [];
+                if (docs.length === 0) {
+                    $("#tablaExpedienteBody").html('<tr><td colspan="4" class="text-center">No hay documentos vinculados</td></tr>');
+                    return;
+                }
+
+                var html = "";
+                docs.forEach(function (d) {
+                    var icon = d.tipo === "Adjunto" ? "fa-file-image" : "fa-file-pdf";
+                    var color = d.tipo === "Adjunto" ? "text-info" : "text-danger";
+
+                    html += "<tr>";
+                    html += "<td><i class='fa-solid " + icon + " " + color + " me-2'></i>" + d.nombre + "</td>";
+                    html += "<td><span class='badge bg-light text-dark border'>" + d.tipo + "</span></td>";
+                    html += "<td>" + (d.fechaSubida || "—") + "</td>";
+                    html += "<td style='text-align:center'>";
+                    html += "<button type='button' class='btn-accion btn-ver' title='Ver Documento' onclick='verDocumentoPreview(\"" + d.ruta + "\", \"" + d.nombre + "\")'><i class='fa-solid fa-eye'></i></button>";
+                    html += "</td>";
+                    html += "</tr>";
+                });
+                $("#tablaExpedienteBody").html(html);
+            })
+            .catch(function (err) {
+                $("#tablaExpedienteBody").html('<tr><td colspan="4" class="text-center text-danger">Error: ' + err + '</td></tr>');
+            });
+    });
 })();
+
+// Función global para el visor de documentos
+window.verDocumentoPreview = function (url, nombre) {
+    $("#visorTitulo").text(nombre);
+    $("#btnDescargarVisor").attr("href", url);
+    $("#visorCargando").show();
+    $("#visorContent iframe, #visorContent img").remove();
+
+    var content = "";
+    var extension = url.split('.').pop().toLowerCase();
+
+    if (extension === "pdf") {
+        content = '<iframe src="' + url + '#toolbar=0" style="width:100%; height:100%; border:none; display:none;" onload="$(this).show(); $(\'#visorCargando\').hide();"></iframe>';
+    } else if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+        content = '<img src="' + url + '" style="max-width:100%; max-height:100%; object-fit:contain; display:none;" onload="$(this).show(); $(\'#visorCargando\').hide();" />';
+    } else {
+        // Para otros archivos, simplemente descargar
+        window.open(url, '_blank');
+        return;
+    }
+
+    $("#visorContent").append(content);
+    var modal = new bootstrap.Modal(document.getElementById("modalVisor"));
+    modal.show();
+};
