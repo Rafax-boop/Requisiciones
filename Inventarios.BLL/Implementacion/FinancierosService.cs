@@ -45,6 +45,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
         private readonly IGenericRepository<TblTablaApiHistorial> _repoHistorial;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
+        private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -54,7 +55,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblRequisicionDetalle> repoDetalle,
             IGenericRepository<TblCotizacione> repositoryCotizaciones,
             IGenericRepository<TblTablaApiHistorial> repoHistorial,
-            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento)
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
+            IGenericRepository<TblProveedorGanador> repositoryGanador)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
@@ -64,6 +66,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryCotizaciones = repositoryCotizaciones;
             _repoHistorial = repoHistorial;
             _repoMovimiento = repoMovimiento;
+            _repositoryGanador = repositoryGanador;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -140,39 +143,33 @@ namespace Inventario.BLL.Implementacion
             }
         }
 
-        public async Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario)
+        public async Task<AtenderResultadoDTO> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario)
         {
-            try
+            var requisicion = await _repositoryRequisicion
+                .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
+            if (requisicion == null) return new AtenderResultadoDTO { Exito = false };
+
+            var numApi = await GenerarNumeroApiAsync(); // ← guardarlo aquí
+
+            requisicion.IdEstatus = 15;
+            requisicion.FechaModificacion = DateTime.Now;
+            requisicion.NumApi = numApi;               // ← usar variable
+
+            await _repositoryRequisicion.Editar(requisicion);
+
+            await _repositoryBitacora.Crear(new TblBitacoraEstatus
             {
-                var requisicion = await _repositoryRequisicion
-                    .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
-                if (requisicion == null) return false;
+                IdRequisicion = requisicion.IdRequisicion,
+                IdEstatus = 15,
+                FechaEstatus = DateTime.Now,
+                Observacion = modelo.Observaciones,
+                IdUsuario = idUsuario
+            });
 
-                // Actualizar estatus y número de API
-                requisicion.IdEstatus = 15;
-                requisicion.FechaModificacion = DateTime.Now;
-                requisicion.NumApi = await GenerarNumeroApiAsync();
+            await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
+            await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
 
-                await _repositoryRequisicion.Editar(requisicion);
-
-                // Bitácora
-                var bitacora = new TblBitacoraEstatus
-                {
-                    IdRequisicion = requisicion.IdRequisicion,
-                    IdEstatus = 15,
-                    FechaEstatus = DateTime.Now,
-                    Observacion = modelo.Observaciones,
-                    IdUsuario = idUsuario
-                };
-                await _repositoryBitacora.Crear(bitacora);
-
-                // Guardar archivos
-                await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
-                await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
-
-                return true;
-            }
-            catch { throw; }
+            return new AtenderResultadoDTO { Exito = true, NumApi = numApi };
         }
 
         public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario)
@@ -1222,7 +1219,9 @@ namespace Inventario.BLL.Implementacion
             return $"API-{siguiente:D4}/{sufAno}";
         }
 
-        private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad, bool? IVA)>> ObtenerCotizacionConCantidadAsync(int idRequisicion)
+        // DESPUÉS: jala el ganador guardado en BD
+        private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad, bool? IVA)>>
+            ObtenerCotizacionConCantidadAsync(int idRequisicion)
         {
             var queryCot = await _repositoryCotizaciones.Consultar(
                 c => c.IdRequisicion == idRequisicion
@@ -1237,25 +1236,32 @@ namespace Inventario.BLL.Implementacion
                 d => d.IdRequisicionDetalle,
                 d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
 
-            // ✅ Ganador = proveedor con menor TOTAL GLOBAL (suma de precio×cantidad×iva por todas sus partidas)
-            // Igual que el cuadro comparativo
-            var totalPorProveedor = cotizaciones
-                .GroupBy(c => c.IdProveedor)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Sum(c =>
-                    {
-                        var cantidad = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var cant) ? cant : 1m;
-                        var precio = c.Importe!.Value * cantidad;
-                        return c.Iva == true ? precio * 1.16m : precio;
-                    }));
+            // ── Jalar el proveedor ganador desde BD ──
+            var queryGanador = await _repositoryGanador.Consultar(
+                g => g.IdRequisicion == idRequisicion);
+            var ganador = await queryGanador.FirstOrDefaultAsync();
+            var idProveedorGanador = ganador?.IdProveedor;
 
-            // El proveedor ganador es el de menor total global
-            var idProveedorGanador = totalPorProveedor
-                .Where(kv => kv.Value > 0)
-                .OrderBy(kv => kv.Value)
-                .Select(kv => kv.Key)
-                .FirstOrDefault();
+            // Si no hay ganador guardado, fallback al de menor total
+            if (idProveedorGanador == null || idProveedorGanador <= 0)
+            {
+                var totalPorProveedor = cotizaciones
+                    .GroupBy(c => c.IdProveedor)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(c =>
+                        {
+                            var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                            var precio = c.Importe!.Value * cant;
+                            return c.Iva == true ? precio * 1.16m : precio;
+                        }));
+
+                idProveedorGanador = totalPorProveedor
+                    .Where(kv => kv.Value > 0)
+                    .OrderBy(kv => kv.Value)
+                    .Select(kv => kv.Key)
+                    .FirstOrDefault();
+            }
 
             // Tomar solo las cotizaciones del proveedor ganador, una por partida
             var cotGanadora = cotizaciones

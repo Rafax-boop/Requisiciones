@@ -40,7 +40,7 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblProvedor> TblProvedors { get; set; }
 
-    public virtual DbSet<TblProvedorTipo> TblProvedorTipos { get; set; }
+    public virtual DbSet<TblProveedorGanador> TblProveedorGanadors { get; set; }
 
     public virtual DbSet<TblRegistroDiseno> TblRegistroDisenos { get; set; }
 
@@ -53,8 +53,6 @@ public partial class DbSigereContext : DbContext
     public virtual DbSet<TblRol> TblRols { get; set; }
 
     public virtual DbSet<TblTablaApiHistorial> TblTablaApiHistorials { get; set; }
-
-    public virtual DbSet<TblUnidadMedidum> TblUnidadMedida { get; set; }
 
     public virtual DbSet<TblUsuario> TblUsuarios { get; set; }
 
@@ -313,24 +311,20 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(15)
                 .IsUnicode(false)
                 .HasColumnName("RFC");
-
-            entity.HasOne(d => d.IdProvedorTipoNavigation).WithMany(p => p.TblProvedors)
-                .HasForeignKey(d => d.IdProvedorTipo)
-                .HasConstraintName("FK_tblProvedor_tblProvedorTipo");
         });
 
-        modelBuilder.Entity<TblProvedorTipo>(entity =>
+        modelBuilder.Entity<TblProveedorGanador>(entity =>
         {
-            entity.HasKey(e => e.IdProvedorTipo).HasName("PK_tblTipoProveedor");
+            entity.HasKey(e => e.IdGanador).HasName("PK__TblRequi__2CD13744A8959712");
 
-            entity.ToTable("tblProvedorTipo");
+            entity.ToTable("TblProveedorGanador");
 
-            entity.Property(e => e.Descricpion)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.Sigla)
-                .HasMaxLength(10)
-                .IsUnicode(false);
+            entity.HasIndex(e => e.IdRequisicion, "UQ_Ganador_Requi").IsUnique();
+
+            entity.Property(e => e.FechaSeleccion).HasColumnType("datetime");
+            entity.Property(e => e.Iva).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Subtotal).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Total).HasColumnType("decimal(18, 2)");
         });
 
         modelBuilder.Entity<TblRegistroDiseno>(entity =>
@@ -468,7 +462,7 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(500)
                 .IsUnicode(false);
             entity.Property(e => e.TipoMovimiento)
-                .HasMaxLength(10)
+                .HasMaxLength(20)
                 .IsUnicode(false);
 
             entity.HasOne(d => d.IdFormatoNavigation).WithMany(p => p.TblRequisicionDetalleMovimientos)
@@ -515,17 +509,6 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdUsuario)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_TablaApiHistorial_Usuario");
-        });
-
-        modelBuilder.Entity<TblUnidadMedidum>(entity =>
-        {
-            entity.HasKey(e => e.IdUnidadMedida);
-
-            entity.ToTable("tblUnidadMedida");
-
-            entity.Property(e => e.DescripcionUnidadMedida)
-                .HasMaxLength(150)
-                .IsUnicode(false);
         });
 
         modelBuilder.Entity<TblUsuario>(entity =>

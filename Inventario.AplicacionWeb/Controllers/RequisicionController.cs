@@ -532,5 +532,21 @@ namespace Inventario.AplicacionWeb.Controllers
             var partidas = await _proveedoresService.ObtenerPartidas(idRequisicion);
             return Ok(partidas);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerOpcionesGanador(int idRequisicion)
+        {
+            var opciones = await _proveedoresService.ObtenerOpcionesGanador(idRequisicion);
+            return Ok(opciones);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GuardarProveedorGanador([FromBody] GuardarGanadorRequest modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _proveedoresService.GuardarProveedorGanador(
+                modelo.IdRequisicion, modelo.IdProveedor, modelo.SeleccionManual, idUsuario);
+            return Ok(new { success = ok });
+        }
     }
 }

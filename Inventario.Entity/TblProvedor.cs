@@ -7,8 +7,6 @@ public partial class TblProvedor
 {
     public int IdProvedor { get; set; }
 
-    public int? IdProvedorTipo { get; set; }
-
     public string NombreProvedor { get; set; } = null!;
 
     public string Direccion { get; set; } = null!;
@@ -18,8 +16,6 @@ public partial class TblProvedor
     public bool Activo { get; set; }
 
     public DateTime? FechaBaja { get; set; }
-
-    public virtual TblProvedorTipo? IdProvedorTipoNavigation { get; set; }
 
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 }

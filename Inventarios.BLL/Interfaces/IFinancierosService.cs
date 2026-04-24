@@ -12,7 +12,7 @@ namespace Inventario.BLL.Interfaces
     {
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null);
         Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan);
-        Task<bool> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario);
+        Task<AtenderResultadoDTO> AtenderRequisicion(AtenderRequiDTO modelo, int idUsuario);
         Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario);
 
         //tabla api

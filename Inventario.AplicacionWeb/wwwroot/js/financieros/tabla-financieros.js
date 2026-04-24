@@ -901,14 +901,20 @@
             data: formData,
             processData: false,
             contentType: false,
-            success: function () {
+            success: function (res) {
                 bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                 if (inputSiaf) inputSiaf.value = "";
                 if (inputTablaApi) inputTablaApi.value = "";
                 document.getElementById("txtObservaciones").value = "";
                 Swal.fire({
-                    icon: "success", title: "Requisici\u00f3n atendida",
-                    timer: 2000, showConfirmButton: false
+                    icon: "success",
+                    title: "Requisici\u00f3n autorizada",
+                    html: res && res.numApi
+                        ? "N\u00famero de API asignado:<br><strong style=\"font-size:1.4rem;color:#166534;letter-spacing:.05em;\">"
+                        + res.numApi + "</strong>"
+                        : "La requisici\u00f3n fue autorizada correctamente.",
+                    confirmButtonText: "Aceptar",
+                    confirmButtonColor: "#fe6291"
                 }).then(function () { location.reload(); });
             },
             error: function () {

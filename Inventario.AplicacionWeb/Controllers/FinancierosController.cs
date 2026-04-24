@@ -126,15 +126,12 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Atender([FromForm] VMAtenderRequisicion modelo)
+        public async Task<IActionResult> Atender([FromForm] AtenderRequiDTO modelo)
         {
-            int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var dto = _mapper.Map<AtenderRequiDTO>(modelo);
-
-            var resultado = await _financierosService.AtenderRequisicion(dto, idUsuario);
-
-            if (!resultado) return BadRequest();
-            return Ok();
+            int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var resultado = await _financierosService.AtenderRequisicion(modelo, idUsuario);
+            if (!resultado.Exito) return BadRequest();
+            return Ok(new { success = true, numApi = resultado.NumApi });
         }
 
         [HttpPost]

@@ -103,4 +103,11 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public IFormFile? FormatoEntradaFirmado { get; set; }
     }
+
+    public class GuardarGanadorRequest
+    {
+        public int IdRequisicion { get; set; }
+        public int IdProveedor { get; set; }
+        public bool SeleccionManual { get; set; }
+    }
 }

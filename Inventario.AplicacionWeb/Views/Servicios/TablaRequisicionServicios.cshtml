@@ -31,7 +31,9 @@
      data-url-descargar-cuadro-comparativo="@Url.Action("DescargarCuadroComparativo", "Requisicion")"
      data-url-guardar-cotizaciones="@Url.Action("GuardarCotizaciones", "Requisicion")"
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
-     data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")">
+     data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")"
+     data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
+     data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -904,6 +906,28 @@
                     <button type="button" id="btnWizardSiguiente" class="btn boton-rosa">
                         Siguiente <i class="fa-solid fa-chevron-right"></i>
                     </button>
+                </div>
+
+                <!-- Paso: Confirmar Ganador (se muestra solo en el último paso) -->
+                <div id="wizardPasoGanador" style="display:none;">
+                    <hr style="margin: 0 0 1rem;" />
+                    <p style="font-size:13px; font-weight:600; color:var(--slate-700); margin:0 0 .75rem;">
+                        <i class="fa-solid fa-trophy" style="color:#f59e0b; margin-right:6px;"></i>
+                        Proveedor seleccionado
+                    </p>
+
+                    <div id="wizardGanadorOpciones" style="display:flex; flex-direction:column; gap:8px; margin-bottom:1rem;">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+
+                    <div id="wizardGanadorCambio" style="display:none; margin-top:8px;">
+                        <div class="formulario-input">
+                            <label>Selecciona otro proveedor:</label>
+                            <select id="selectGanadorManual" class="form-select select2">
+                                <option value="">-- Seleccionar --</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

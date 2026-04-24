@@ -49,6 +49,10 @@
     var urlObtenerPartidas = container
         ? container.getAttribute("data-url-obtener-partidas")
         : "";
+    var urlObtenerOpcionesGanador = container
+        ? container.getAttribute("data-url-obtener-opciones-ganador") : "";
+    var urlGuardarGanador = container
+        ? container.getAttribute("data-url-guardar-ganador") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -83,6 +87,10 @@
       filtrarTabla();
     },
   });
+
+    var wizardOpciones = [];
+    var wizardIdGanador = 0;
+    var wizardGanadorManual = false;
 
   window.limpiarFecha = function () {
     fpInstance.clear();
@@ -333,6 +341,130 @@
                 buildHtml(data);
             });
         }
+    }
+
+    function mostrarPasoGanadorDesdeBD() {
+        // Ocultar navegación del wizard y contenedor de filas
+        $("#btnWizardSiguiente").hide();
+        $("#btnWizardAnterior").hide();
+        $("#modalProveedoresFilas").hide();
+        $("#btnModalProveedoresAgregar").hide();
+        $("#wizardProveedoresNombrePartida").hide();
+
+        // Actualizar subtítulo
+        document.getElementById("wizardProveedoresSubtitulo").textContent = "Selecciona el proveedor ganador";
+
+        // Cargar opciones desde BD
+        $.get(urlObtenerOpcionesGanador, { idRequisicion: _idRequiCotizaciones }, function (opciones) {
+            wizardOpciones = opciones;
+            wizardIdGanador = 0;
+            wizardGanadorManual = false;
+
+            var $paso = $("#wizardPasoGanador");
+            var $divOpciones = $("#wizardGanadorOpciones");
+            $divOpciones.empty();
+
+            if (!opciones || !opciones.length) {
+                $divOpciones.html('<p style="color:#888;font-size:13px;font-style:italic;">Sin proveedores con precios registrados.</p>');
+            } else {
+                // Auto-seleccionar el sugerido (menor costo, viene primero del servidor)
+                wizardIdGanador = opciones[0].idProveedor;
+                wizardGanadorManual = false;
+
+                var fmt = function (v) {
+                    return v.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+                };
+
+                opciones.forEach(function (op) {
+                    var esSeleccionado = op.idProveedor === wizardIdGanador;
+                    var badge = op.esSugerido
+                        ? '<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 7px;border-radius:10px;margin-left:6px;">Menor costo</span>'
+                        : '';
+
+                    var $fila = $('<div>')
+                        .attr("data-id-proveedor", op.idProveedor)
+                        .css({
+                            display: "flex", alignItems: "center", gap: "10px",
+                            padding: "10px 14px", borderRadius: "8px", cursor: "pointer",
+                            border: esSeleccionado ? "2px solid #fe6291" : "1px solid var(--color-border-tertiary)",
+                            background: esSeleccionado ? "#fff0f5" : "var(--color-background-secondary)",
+                            marginBottom: "4px", transition: "all .15s"
+                        })
+                        .html(
+                            '<div style="display:flex;align-items:center;gap:6px;flex:1;">' +
+                            '<i class="fa-solid fa-' + (esSeleccionado ? 'circle-dot' : 'circle') +
+                            '" style="color:' + (esSeleccionado ? '#fe6291' : '#9ca3af') + ';font-size:15px;"></i>' +
+                            '<span style="font-size:13px;font-weight:500;">' + op.nombreProveedor + badge + '</span>' +
+                            '</div>' +
+                            '<div style="text-align:right;font-size:12px;color:var(--color-text-secondary);">' +
+                            '<div>Subtotal: ' + fmt(op.subtotal) + '</div>' +
+                            '<div>IVA: ' + fmt(op.iva) + '</div>' +
+                            '<div style="font-weight:600;color:var(--color-text-primary);">Total: ' + fmt(op.total) + '</div>' +
+                            '</div>'
+                        );
+
+                    $fila.on("click", function () {
+                        wizardIdGanador = op.idProveedor;
+                        wizardGanadorManual = !op.esSugerido;
+                        // Re-renderizar selección visual
+                        $divOpciones.find("[data-id-proveedor]").each(function () {
+                            var isThis = parseInt($(this).attr("data-id-proveedor")) === wizardIdGanador;
+                            $(this).css({
+                                border: isThis ? "2px solid #fe6291" : "1px solid var(--color-border-tertiary)",
+                                background: isThis ? "#fff0f5" : "var(--color-background-secondary)"
+                            });
+                            $(this).find("i").attr("class",
+                                "fa-solid fa-" + (isThis ? "circle-dot" : "circle"))
+                                .css("color", isThis ? "#fe6291" : "#9ca3af");
+                        });
+                    });
+
+                    $divOpciones.append($fila);
+                });
+            }
+
+            // Botón confirmar ganador
+            $paso.append(
+                $('<div style="margin-top:16px;text-align:right;">').append(
+                    $('<button type="button" class="btn boton-rosa" id="btnConfirmarGanador">')
+                        .html('<i class="fa-solid fa-trophy"></i> Confirmar ganador')
+                        .on("click", confirmarGanadorFinal)
+                )
+            );
+
+            $paso.show();
+        }).fail(function () {
+            Swal.fire({ icon: "error", title: "Error al cargar opciones de ganador." });
+        });
+    }
+
+    function confirmarGanadorFinal() {
+        if (!wizardIdGanador) {
+            Swal.fire({ icon: "warning", title: "Selecciona el proveedor ganador." });
+            return;
+        }
+        $.ajax({
+            url: urlGuardarGanador,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                idRequisicion: _idRequiCotizaciones,
+                idProveedor: wizardIdGanador,
+                seleccionManual: wizardGanadorManual
+            }),
+            success: function () {
+                window.cerrarSoloModalProveedores();
+                Swal.fire({
+                    icon: "success",
+                    title: "Proveedores y ganador guardados.",
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            },
+            error: function () {
+                Swal.fire({ icon: "error", title: "Error al guardar el ganador." });
+            }
+        });
     }
 
     // Llena SOLO el select de partidas de una fila específica (sin tocar las demás)
@@ -950,7 +1082,125 @@
     var wizardIdx = 0;         // índice de la partida activa
 
     function $modal() { return $("#modalProveedoresRequisicion"); }
-    function $contenedor() { return $("#modalProveedoresFilas"); }
+      function $contenedor() { return $("#modalProveedoresFilas"); }
+
+      function cargarOpcionesGanador() {
+          var $divOpciones = $("#wizardGanadorOpciones");
+          $divOpciones.empty();
+
+          var $sel = $("#selectGanadorManual");
+          if ($sel.data("select2")) $sel.select2("destroy");
+          $sel.html('<option value="">-- Seleccionar --</option>');
+
+          // Calcular totales por proveedor usando wizardDatos (lo que el usuario llenó)
+          var totalesPorProveedor = {};
+
+          wizardPartidas.forEach(function (partida, idxPartida) {
+              var filas = wizardDatos[idxPartida] || [];
+              filas.forEach(function (fila) {
+                  if (!fila.idProveedor || fila.idProveedor <= 0) return;
+                  var importe = parseFloat(String(fila.importe).replace(/,/g, "")) || 0;
+                  if (importe <= 0) return;
+
+                  var idProv = fila.idProveedor;
+                  if (!totalesPorProveedor[idProv]) {
+                      // Buscar nombre del proveedor en el catálogo
+                      var nombreProv = "";
+                      CATALOGO_PROVEEDORES_MODAL.forEach(function (c) {
+                          if (String(c.v) === String(idProv)) nombreProv = c.t;
+                      });
+                      totalesPorProveedor[idProv] = {
+                          idProveedor: idProv,
+                          nombreProveedor: nombreProv,
+                          subtotal: 0,
+                          iva: 0
+                      };
+                  }
+
+                  totalesPorProveedor[idProv].subtotal += importe;
+                  if (fila.iva) {
+                      totalesPorProveedor[idProv].iva += importe * 0.16;
+                  }
+              });
+          });
+
+          var opciones = Object.values(totalesPorProveedor).map(function (o) {
+              return {
+                  idProveedor: o.idProveedor,
+                  nombreProveedor: o.nombreProveedor,
+                  subtotal: o.subtotal,
+                  iva: o.iva,
+                  total: o.subtotal + o.iva,
+                  esSugerido: false
+              };
+          }).filter(function (o) { return o.total > 0; });
+
+          // Ordenar por total y marcar el más barato como sugerido
+          opciones.sort(function (a, b) { return a.total - b.total; });
+          if (opciones.length > 0) opciones[0].esSugerido = true;
+
+          if (!opciones.length) {
+              $divOpciones.html('<p style="color:#888;font-size:13px;font-style:italic;">Agrega precios para ver opciones.</p>');
+              return;
+          }
+
+          // Si el ganador actual ya no está en las opciones, resetear
+          var idsValidos = opciones.map(function (o) { return o.idProveedor; });
+          if (wizardIdGanador && idsValidos.indexOf(wizardIdGanador) === -1) {
+              wizardIdGanador = 0;
+              wizardGanadorManual = false;
+          }
+
+          // Si no hay ganador elegido, auto-seleccionar el sugerido
+          if (!wizardIdGanador) {
+              wizardIdGanador = opciones[0].idProveedor;
+              wizardGanadorManual = false;
+          }
+
+          var fmt = function (v) {
+              return v.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+          };
+
+          opciones.forEach(function (op) {
+              var esSeleccionado = op.idProveedor === wizardIdGanador;
+
+              var badge = op.esSugerido
+                  ? '<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 7px;border-radius:10px;margin-left:6px;">Menor costo</span>'
+                  : '';
+
+              var $fila = $('<div>')
+                  .css({
+                      display: "flex", alignItems: "center", gap: "10px",
+                      padding: "10px 14px", borderRadius: "8px", cursor: "pointer",
+                      border: esSeleccionado ? "2px solid #fe6291" : "1px solid var(--color-border-tertiary)",
+                      background: esSeleccionado ? "#fff0f5" : "var(--color-background-secondary)",
+                      marginBottom: "4px", transition: "all .15s"
+                  })
+                  .html(
+                      '<div style="display:flex;align-items:center;gap:6px;flex:1;">' +
+                      '<i class="fa-solid fa-' + (esSeleccionado ? 'circle-dot' : 'circle') +
+                      '" style="color:' + (esSeleccionado ? '#fe6291' : '#9ca3af') + ';font-size:15px;"></i>' +
+                      '<span style="font-size:13px;font-weight:500;">' + op.nombreProveedor + badge + '</span>' +
+                      '</div>' +
+                      '<div style="text-align:right;font-size:12px;color:var(--color-text-secondary);">' +
+                      '<div>Subtotal: ' + fmt(op.subtotal) + '</div>' +
+                      '<div>IVA: ' + fmt(op.iva) + '</div>' +
+                      '<div style="font-weight:600;color:var(--color-text-primary);">Total: ' + fmt(op.total) + '</div>' +
+                      '</div>'
+                  );
+
+              $fila.on("click", function () {
+                  wizardIdGanador = op.idProveedor;
+                  wizardGanadorManual = !op.esSugerido;
+                  cargarOpcionesGanador(); // re-renderizar con nueva selección
+              });
+
+              $divOpciones.append($fila);
+              $sel.append('<option value="' + op.idProveedor + '">' + op.nombreProveedor + '</option>');
+          });
+
+          $sel.select2({ dropdownParent: $modal(), width: "100%", language: "es" });
+      }
 
     // ── Helpers Select2 ──
     function buildOpcionesHtml() {
@@ -1097,6 +1347,8 @@
         }
 
         actualizarOpcionesProveedores();
+
+        $("#wizardPasoGanador").hide();
     }
 
     // ── Abrir el wizard: cargar partidas y cotizaciones previas ──
@@ -1106,12 +1358,22 @@
         wizardPartidas = [];
         wizardDatos = [];
         wizardIdx = 0;
+        $("#wizardPasoGanador").hide().find("#btnConfirmarGanador").remove();
+        $("#modalProveedoresFilas").show();
+        $("#btnModalProveedoresAgregar").show();
+        $("#wizardProveedoresNombrePartida").show();
+        $("#btnWizardSiguiente").show().html('Siguiente <i class="fa-solid fa-chevron-right"></i>');
+        $("#btnWizardAnterior").hide();
 
         // 1. Obtener partidas de la requisición
         $.get(urlObtenerPartidas, { idRequisicion: _idRequiCotizaciones }, function (partidas) {
             if (!partidas || !partidas.length) return;
             wizardPartidas = partidas;
             wizardDatos = partidas.map(function () { return []; });
+            wizardOpciones = [];
+            wizardIdGanador = 0;
+            wizardGanadorManual = false;
+            $("#wizardPasoGanador").hide();
 
             // 2. Obtener cotizaciones previas para precargar
             $.get(urlObtenerCotizaciones, { idRequisicion: _idRequiCotizaciones }, function (cotizaciones) {
@@ -1172,7 +1434,6 @@
             wizardIdx++;
             renderizarPartida(wizardIdx);
         } else {
-            // Última partida: construir payload y guardar
             var cotizaciones = [];
             wizardPartidas.forEach(function (partida, i) {
                 var filas = wizardDatos[i] || [];
@@ -1199,8 +1460,8 @@
                 contentType: "application/json",
                 data: JSON.stringify({ idRequisicion: _idRequiCotizaciones, cotizaciones: cotizaciones }),
                 success: function () {
-                    window.cerrarSoloModalProveedores();
-                    Swal.fire({ icon: "success", title: "Proveedores guardados.", timer: 2000, showConfirmButton: false });
+                    // Cotizaciones guardadas → ahora cargar opciones ganador desde BD
+                    mostrarPasoGanadorDesdeBD();
                 },
                 error: function () {
                     Swal.fire({ icon: "error", title: "Error al guardar los proveedores." });
@@ -1242,9 +1503,15 @@
     });
 
     // ── Limpiar select2 al cerrar ──
-    $(document).on("hidden.bs.modal", "#modalProveedoresRequisicion", function () {
-        destruirSelect2En($(this));
-    });
+      $(document).on("hidden.bs.modal", "#modalProveedoresRequisicion", function () {
+          destruirSelect2En($(this));
+          // Resetear paso ganador para la próxima apertura
+          $("#wizardPasoGanador").hide().find("#btnConfirmarGanador").remove();
+          $("#modalProveedoresFilas").show();
+          $("#btnModalProveedoresAgregar").show();
+          $("#wizardProveedoresNombrePartida").show();
+          $("#btnWizardSiguiente").show();
+      });
   })();
 
   $(document).on("mousedown", function (e) {

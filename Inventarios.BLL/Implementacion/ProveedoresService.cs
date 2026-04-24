@@ -18,13 +18,15 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryDetalle;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repositoryMovimiento;
         private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
+        private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
 
         public ProveedoresService(
             IGenericRepository<TblProvedor> repository,
             IGenericRepository<TblCotizacione> repositoryCotizaciones,
             IGenericRepository<TblRequisicionDetalle> repositoryDetalle,
             IGenericRepository<TblRequisicionDetalleMovimiento> repositoryMovimiento,
-            IGenericRepository<TblRequisicion> repositoryRequisicion
+            IGenericRepository<TblRequisicion> repositoryRequisicion,
+            IGenericRepository<TblProveedorGanador> repositoryGanador
         )
         {
             _repository = repository;
@@ -32,6 +34,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryDetalle = repositoryDetalle;
             _repositoryMovimiento = repositoryMovimiento;
             _repositoryRequisicion = repositoryRequisicion;
+            _repositoryGanador = repositoryGanador;
         }
 
         public async Task<List<ProveedoresDTO>> ObtenerProveedores()
@@ -149,6 +152,138 @@ namespace Inventario.BLL.Implementacion
                 Descripcion = r.Descripcion,
                 DescripcionDetallada = r.DescripcionDetallada
             }).ToListAsync();
+        }
+
+        public async Task<List<OpcionProveedorDTO>> ObtenerOpcionesGanador(int idRequisicion)
+        {
+            var queryDet = await _repositoryDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+            var detalles = await queryDet.ToListAsync();
+
+            var cantidadPorPartida = detalles.ToDictionary(
+                d => d.IdRequisicionDetalle,
+                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+
+            // ── Proyectar en BD (incluye join con proveedor) antes de ToListAsync ──
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => c.IdRequisicion == idRequisicion
+                  && c.IdRequiDetalle.HasValue
+                  && c.Importe.HasValue
+                  && c.IdProveedor.HasValue);
+
+            var filas = await queryCot
+                .Select(c => new
+                {
+                    c.IdProveedor,
+                    NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
+                    c.IdRequiDetalle,
+                    c.Importe,
+                    c.Iva
+                })
+                .ToListAsync();
+
+            // ── Agrupar en memoria (ya no hay navegación lazy que falle) ──
+            var opciones = filas
+                .GroupBy(c => new { c.IdProveedor, c.NombreProveedor })
+                .Select(g =>
+                {
+                    var subtotal = g.Sum(c =>
+                    {
+                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                        return c.Importe!.Value * cant;
+                    });
+                    var iva = g.Sum(c =>
+                    {
+                        if (c.Iva != true) return 0m;
+                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                        return c.Importe!.Value * cant * 0.16m;
+                    });
+                    return new OpcionProveedorDTO
+                    {
+                        IdProveedor = g.Key.IdProveedor ?? 0,
+                        NombreProveedor = g.Key.NombreProveedor ?? "",
+                        Subtotal = subtotal,
+                        Iva = iva,
+                        Total = subtotal + iva,
+                        EsSugerido = false
+                    };
+                })
+                .Where(o => o.IdProveedor > 0 && o.Total > 0)
+                .OrderBy(o => o.Total)
+                .ToList();
+
+            if (opciones.Any())
+                opciones.First().EsSugerido = true;
+
+            return opciones;
+        }
+
+        public async Task<bool> GuardarProveedorGanador(int idRequisicion, int idProveedor,
+            bool seleccionManual, int idUsuario)
+        {
+            // Eliminar ganador anterior si existe
+            var queryPrev = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
+            var previo = await queryPrev.FirstOrDefaultAsync();
+            if (previo != null)
+                await _repositoryGanador.Eliminar(previo);
+
+            // Calcular totales del proveedor elegido
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => c.IdRequisicion == idRequisicion
+                  && c.IdProveedor == idProveedor
+                  && c.IdRequiDetalle.HasValue
+                  && c.Importe.HasValue);
+            var cotizaciones = await queryCot.ToListAsync();
+
+            var queryDet = await _repositoryDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+            var detalles = await queryDet.ToListAsync();
+            var cantidadPorPartida = detalles.ToDictionary(
+                d => d.IdRequisicionDetalle,
+                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+
+            var subtotal = cotizaciones.Sum(c =>
+            {
+                var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                return c.Importe!.Value * cant;
+            });
+            var iva = cotizaciones.Sum(c =>
+            {
+                if (c.Iva != true) return 0m;
+                var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                return c.Importe!.Value * cant * 0.16m;
+            });
+
+            await _repositoryGanador.Crear(new TblProveedorGanador
+            {
+                IdRequisicion = idRequisicion,
+                IdProveedor = idProveedor,
+                Subtotal = subtotal,
+                Iva = iva,
+                Total = subtotal + iva,
+                SeleccionManual = seleccionManual,
+                IdUsuario = seleccionManual ? idUsuario : null,
+                FechaSeleccion = DateTime.Now
+            });
+
+            return true;
+        }
+
+        public async Task<ProveedorGanadorDTO?> ObtenerProveedorGanador(int idRequisicion)
+        {
+            var query = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
+            var ganador = await query.FirstOrDefaultAsync();
+            if (ganador == null) return null;
+
+            var proveedor = await _repository.Obtener(p => p.IdProvedor == ganador.IdProveedor);
+
+            return new ProveedorGanadorDTO
+            {
+                IdProveedor = ganador.IdProveedor,
+                NombreProveedor = proveedor?.NombreProvedor ?? "",
+                Subtotal = ganador.Subtotal ?? 0,
+                Iva = ganador.Iva ?? 0,
+                Total = ganador.Total ?? 0,
+                SeleccionManual = ganador.SeleccionManual
+            };
         }
     }
 }

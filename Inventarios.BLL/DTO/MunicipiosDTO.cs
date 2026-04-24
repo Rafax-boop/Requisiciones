@@ -40,4 +40,31 @@ namespace Inventario.BLL.DTO
         public int IdRequisicionDetalle { get; set; }
         public decimal CantidadRecibida { get; set; }
     }
+
+    public class ProveedorGanadorDTO
+    {
+        public int IdProveedor { get; set; }
+        public string NombreProveedor { get; set; }
+        public decimal Subtotal { get; set; }
+        public decimal Iva { get; set; }
+        public decimal Total { get; set; }
+        public bool SeleccionManual { get; set; }
+    }
+
+    // Para la respuesta al wizard (proveedores que cotizaron con sus totales)
+    public class OpcionProveedorDTO
+    {
+        public int IdProveedor { get; set; }
+        public string NombreProveedor { get; set; }
+        public decimal Subtotal { get; set; }
+        public decimal Iva { get; set; }
+        public decimal Total { get; set; }
+        public bool EsSugerido { get; set; } // true = menor costo
+    }
+
+    public class AtenderResultadoDTO
+    {
+        public bool Exito { get; set; }
+        public string? NumApi { get; set; }
+    }
 }

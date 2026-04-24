@@ -47,6 +47,9 @@ namespace Inventario.BLL.Implementacion
 
             var cotizaciones = await _cotizacionesService.ObtenerCotizaciones(idRequisicion);
 
+            var ganador = await _cotizacionesService.ObtenerProveedorGanador(idRequisicion);
+            var idProveedorGanado = ganador?.IdProveedor ?? 0;
+
             // Agrupa cotizaciones por IdPartida (IdRequiDetalle), luego por proveedor
             // Resultado: dict[idPartida] = lista de cotizaciones de ese artículo
             var cotsPorPartida = cotizaciones
@@ -57,8 +60,13 @@ namespace Inventario.BLL.Implementacion
             var proveedores = cotizaciones
                 .Select(c => new { c.IdProveedor, c.NombreProveedor })
                 .DistinctBy(p => p.IdProveedor)
+                .OrderBy(p => p.IdProveedor == idProveedorGanado ? 0 : 1)
                 .Take(3)
                 .ToList();
+
+            var indiceGanadorForzado = idProveedorGanado > 0
+                ? proveedores.FindIndex(p => p.IdProveedor == idProveedorGanado)
+                : -1;
 
             var filas = dto.Articulos?
                 .Select(a =>
@@ -106,7 +114,8 @@ namespace Inventario.BLL.Implementacion
                 departamento: dto.Departamento ?? "",
                 justificacion: dto.Justificacion ?? "",
                 filas: filas,
-                nombresProveedores: nombresProveedores);
+                nombresProveedores: nombresProveedores,
+                indiceGanadorForzado: indiceGanadorForzado);
 
             var nombreArchivo =
                 $"CuadroComparativo_{(dto.NumRequisicion ?? idRequisicion.ToString()).Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
@@ -122,7 +131,8 @@ namespace Inventario.BLL.Implementacion
             string departamento,
             string justificacion,
             List<CuadroComparativoFilaPdf> filas,
-            string[] nombresProveedores)
+            string[] nombresProveedores,
+            int indiceGanadorForzado = -1)
         {
             const decimal tasaIva = 0.16m;
 
@@ -147,14 +157,24 @@ namespace Inventario.BLL.Implementacion
             var totals = sumas.Select((s, i) => s + ivas[i]).ToArray();
 
             // Proveedor seleccionado: el de menor total (solo entre los que tienen datos)
-            var indiceGanador = -1;
-            var menorTotal = decimal.MaxValue;
-            for (var i = 0; i < 3; i++)
+            int indiceGanador;
+            if (indiceGanadorForzado >= 0 && indiceGanadorForzado < 3 && totals[indiceGanadorForzado] > 0)
             {
-                if (totals[i] > 0 && totals[i] < menorTotal)
+                // Usar el ganador seleccionado por el usuario
+                indiceGanador = indiceGanadorForzado;
+            }
+            else
+            {
+                // Fallback: menor total (si no hay ganador guardado o el índice no tiene datos)
+                indiceGanador = -1;
+                var menorTotal = decimal.MaxValue;
+                for (var i = 0; i < 3; i++)
                 {
-                    menorTotal = totals[i];
-                    indiceGanador = i;
+                    if (totals[i] > 0 && totals[i] < menorTotal)
+                    {
+                        menorTotal = totals[i];
+                        indiceGanador = i;
+                    }
                 }
             }
 
