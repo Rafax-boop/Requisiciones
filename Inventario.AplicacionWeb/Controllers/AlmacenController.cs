@@ -58,6 +58,9 @@ namespace Inventario.AplicacionWeb.Controllers
             var pedidosDto = await _almacenService.ListarPedidosEstatus7();
             var pedidos = _mapper.Map<List<VMRequisicionMaestra>>(pedidosDto);
 
+            var reqDocumentosDto = await _almacenService.ListarRequisicionesConDocumentos();
+            var reqDocumentos = _mapper.Map<List<VMRequisicionMaestra>>(reqDocumentosDto);
+
             var vm = new VMAlmacenIndex
             {
                 Requisiciones = requisiciones,
@@ -65,10 +68,33 @@ namespace Inventario.AplicacionWeb.Controllers
                 Estatus = estatus,
                 UnidadesMedida = unidadesMedida,
                 EntregasPendientes = entregasPendientes,
-                Pedidos = pedidos
+                Pedidos = pedidos,
+                RequisicionesConDocumentos = reqDocumentos
             };
 
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerDocumentos(int idRequisicion)
+        {
+            try
+            {
+                var documentosDto = await _almacenService.ObtenerDocumentosPorRequisicion(idRequisicion);
+                var documentos = documentosDto.Select(d => new VMDocumentoExpediente
+                {
+                    Nombre = d.Nombre,
+                    Tipo = d.Tipo,
+                    Ruta = d.Ruta,
+                    FechaSubida = d.FechaSubida?.ToString("dd/MM/yyyy HH:mm")
+                }).ToList();
+
+                return Json(new { ok = true, data = documentos });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, error = ex.Message });
+            }
         }
 
         /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
@@ -77,9 +103,18 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var requisicionesDto = await _almacenService.ListarRequisicionesAlmacen();
             var entregasDto = await _almacenService.ListarEntregasPendientes();
-            var requisiciones = requisicionesDto.Select(r => r.IdRequi).OrderBy(x => x).ToList();
-            var entregas = entregasDto.Select(e => e.IdRequisicion).OrderBy(x => x).ToList();
-            return Json(new { requisiciones, entregas, inventario = new List<int>() });
+            var pedidosDto = await _almacenService.ListarPedidosEstatus7();
+            var expedientesDto = await _almacenService.ListarRequisicionesConDocumentos();
+
+            var snapshot = new
+            {
+                requisiciones = requisicionesDto.Select(r => r.IdRequi).OrderBy(x => x).ToList(),
+                entregas = entregasDto.Select(e => e.IdRequisicion).OrderBy(x => x).ToList(),
+                pedidos = pedidosDto.Select(r => r.IdRequi).OrderBy(x => x).ToList(),
+                expedientes = expedientesDto.Select(r => r.IdRequi).OrderBy(x => x).ToList()
+            };
+
+            return Json(snapshot);
         }
 
         [HttpGet]

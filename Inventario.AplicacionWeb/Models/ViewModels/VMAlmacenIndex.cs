@@ -24,5 +24,10 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         /// Requisiciones en estatus 7 (Finalizado - En trámite de pago) listas para generar formato de entrada.
         /// </summary>
         public List<VMRequisicionMaestra> Pedidos { get; set; } = new();
+
+        /// <summary>
+        /// Requisiciones que tienen al menos un documento vinculado (formatos o registros de diseño).
+        /// </summary>
+        public List<VMRequisicionMaestra> RequisicionesConDocumentos { get; set; } = new();
     }
 }

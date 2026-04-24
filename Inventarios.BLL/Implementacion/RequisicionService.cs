@@ -96,7 +96,8 @@ namespace Inventario.BLL.Implementacion
                     UnidadMedida = item.UnidadMedida,
                     Descripcion = item.Descripcion,
                     DescripcionDetallada = item.DescripcionDetallada.ToUpper(),
-                    FechaRegistro = DateTime.Now.Date
+                    FechaRegistro = DateTime.Now.Date,
+                    // IdMunicipio = item.IdMunicipio > 0 ? item.IdMunicipio : null
                 };
                 listaArticulos.Add(detalle);
             }

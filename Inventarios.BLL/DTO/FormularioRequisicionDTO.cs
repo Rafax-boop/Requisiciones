@@ -42,6 +42,8 @@ namespace Inventario.BLL.DTO
         public string? DescripcionDetallada { get; set; }
         public DateTime? FechaRegistro { get; set; }
 
+        public int? IdMunicipio { get; set; }
+
         public string? TipoProgramacion { get; set; }
         public int? Llenado1 { get; set; }
         public int? Llenado2 { get; set; }

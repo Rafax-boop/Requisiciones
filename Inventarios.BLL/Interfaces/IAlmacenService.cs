@@ -10,6 +10,8 @@ namespace Inventario.BLL.Interfaces
         Task<List<string>> ObtenerEstatus();
         Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion);
         Task<List<RequisicionMaestraDTO>> ListarPedidosEstatus7();
+        Task<List<RequisicionMaestraDTO>> ListarRequisicionesConDocumentos();
+        Task<List<DocumentoExpedienteDTO>> ObtenerDocumentosPorRequisicion(int idRequisicion);
 
         // ─── Operaciones ─────────────────────────────────────────
         Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto);

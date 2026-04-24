@@ -472,16 +472,13 @@
                     if (result.isConfirmed) {
                         iniciarWizardProgramacion();
                     } else if (result.isDenied) {
-                        Swal.fire({
-                            title: "Se guardar\u00e1 la requisici\u00f3n",
-                            text: "La requisici\u00f3n se guardar\u00e1 sin programaci\u00f3n.",
-                            icon: "info",
-                            iconColor: "var(--rosa-400)",
-                            confirmButtonText: "Aceptar",
-                            confirmButtonColor: "var(--rosa-400)"
-                        }).then(function (r) {
-                            if (r.isConfirmed) enviarFormulario();
-                        });
+                        reindexarArticulos();
+                        bloquearSeccionArticulos();
+                        var btnC2 = document.getElementById('btnContinuar');
+                        var btnG2 = document.getElementById('btnGuardarFinal');
+                        if (btnC2) btnC2.style.display = 'none';
+                        if (btnG2) btnG2.style.display = '';
+                        preguntarMunicipios();
                     }
                 });
             });
@@ -854,8 +851,8 @@
     }
 
     function finalizarWizard(state) {
-        reindexarArticulos();        // ← asegura índices correctos
-        serializarProgramacion();    // ← inyecta los hidden
+        reindexarArticulos();
+        serializarProgramacion();
         programacionFinalizada = true;
         bloquearSeccionArticulos();
 
@@ -864,9 +861,137 @@
         if (btnC) btnC.style.display = 'none';
         if (btnG) btnG.style.display = '';
 
+        preguntarMunicipios();
+    }
+
+    // ── Wizard distribución por municipio ──────────────────────────────────
+    var municipioWizardDatos = {};   // { idArticulo: idMunicipio|"" }
+    var municipioWizardArticulos = [];
+    var municipioWizardIdx = 0;
+
+    function preguntarMunicipios() {
+        Swal.fire({
+            title: '¿Distribuir por municipio?',
+            text: 'Puedes asignar un municipio a cada partida de forma opcional.',
+            icon: 'question',
+            iconColor: 'var(--rosa-400)',
+            showDenyButton: true,
+            confirmButtonText: 'Sí',
+            denyButtonText: 'No, guardar',
+            confirmButtonColor: 'var(--rosa-400)',
+            denyButtonColor: 'var(--slate-500)'
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                iniciarWizardMunicipios();
+            } else {
+                mostrarExitoYEnviar();
+            }
+        });
+    }
+
+    function iniciarWizardMunicipios() {
+        // Leer los hidden-backup que crea bloquearSeccionArticulos (los selects ya están disabled)
+        municipioWizardArticulos = [];
+        $('#tablaArticulos tbody tr').each(function () {
+            var $row = $(this);
+            var idArticulo = $row.find('input[data-backup="1"]').val() || $row.find('.select-articulo').val();
+            var desc = $row.find('.desc-hidden').val() || 'Sin descripción';
+            if (idArticulo) municipioWizardArticulos.push({ idArticulo: idArticulo, descripcionDetallada: desc });
+        });
+        if (!municipioWizardArticulos.length) { mostrarExitoYEnviar(); return; }
+        municipioWizardDatos = {};
+        municipioWizardIdx = 0;
+
+        var modalEl = document.getElementById('modalMunicipiosWizard');
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+
+        // Inicializar select2 y renderizar cuando el modal ya esté visible
+        $(modalEl).one('shown.bs.modal', function () {
+            var $sel = $('#wizardMuniSelect');
+            if ($sel.data('select2')) $sel.select2('destroy');
+            $sel.select2({ dropdownParent: $(modalEl), width: '100%', language: 'es' });
+            renderizarPasoMunicipio(0);
+        });
+
+        // Esperar a que Swal cierre completamente antes de abrir el modal Bootstrap
+        // (de lo contrario los backdrops colisionan y el modal no se muestra)
+        setTimeout(function () { modal.show(); }, 200);
+    }
+
+    function renderizarPasoMunicipio(idx) {
+        var art = municipioWizardArticulos[idx];
+        var total = municipioWizardArticulos.length;
+
+        document.getElementById('wizardMuniSubtitulo').textContent = 'Partida ' + (idx + 1) + ' de ' + total;
+        document.getElementById('wizardMuniNombrePartida').textContent = art.descripcionDetallada || '';
+
+        var $sel = $('#wizardMuniSelect');
+        var val = municipioWizardDatos[art.idArticulo] || '';
+        if ($sel.data('select2')) {
+            $sel.val(val).trigger('change');
+        } else {
+            $sel.val(val);
+        }
+
+        document.getElementById('btnWizardMuniAnterior').style.display = idx > 0 ? '' : 'none';
+
+        var $btnSig = document.getElementById('btnWizardMuniSiguiente');
+        if (idx === total - 1) {
+            $btnSig.innerHTML = 'Guardar <i class="fa-solid fa-floppy-disk"></i>';
+        } else {
+            $btnSig.innerHTML = 'Siguiente <i class="fa-solid fa-chevron-right"></i>';
+        }
+    }
+
+    function guardarMunicipioActual() {
+        var art = municipioWizardArticulos[municipioWizardIdx];
+        municipioWizardDatos[art.idArticulo] = $('#wizardMuniSelect').val() || '';
+    }
+
+    document.getElementById('btnWizardMuniSiguiente') && document.getElementById('btnWizardMuniSiguiente').addEventListener('click', function () {
+        guardarMunicipioActual();
+        if (municipioWizardIdx < municipioWizardArticulos.length - 1) {
+            municipioWizardIdx++;
+            renderizarPasoMunicipio(municipioWizardIdx);
+        } else {
+            serializarMunicipios();
+            var modalEl = document.getElementById('modalMunicipiosWizard');
+            bootstrap.Modal.getInstance(modalEl).hide();
+            mostrarExitoYEnviar();
+        }
+    });
+
+    document.getElementById('btnWizardMuniAnterior') && document.getElementById('btnWizardMuniAnterior').addEventListener('click', function () {
+        guardarMunicipioActual();
+        municipioWizardIdx--;
+        renderizarPasoMunicipio(municipioWizardIdx);
+    });
+
+    function serializarMunicipios() {
+        document.querySelectorAll('.wizard-hidden-muni').forEach(function (el) { el.remove(); });
+        var form = document.querySelector('form');
+        $('#tablaArticulos tbody tr').each(function (i) {
+            var idArticulo = $(this).find('.select-articulo').val();
+            if (!idArticulo) return;
+            var idMuni = municipioWizardDatos[idArticulo];
+            if (!idMuni) return;
+
+            // COMENTADO: No guardar la distribución por municipio aún (DB no lista)
+            /*
+            var inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'Articulos[' + i + '].IdMunicipio';
+            inp.value = idMuni;
+            inp.className = 'wizard-hidden-muni';
+            form.appendChild(inp);
+            */
+        });
+    }
+
+    function mostrarExitoYEnviar() {
         Swal.fire({
             title: 'Programación completada',
-            text: 'Todos los artículos han sido distribuidos. Presione "Crear Requisición" para guardar.',
+            text: 'Presione "Crear Requisición" para guardar.',
             icon: 'success',
             iconColor: 'var(--rosa-400)',
             confirmButtonText: 'Entendido',

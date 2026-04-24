@@ -16,6 +16,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IUnitOfWork _uow;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IGenericRepository<TblFormato> _repoFormato;
+        private readonly IGenericRepository<TblRegistroDiseno> _repoRegistroDiseno;
 
         private const int ESTATUS_EN_ALMACEN = 9;
         private const int ESTATUS_APROBADA_ALMACEN = 4;
@@ -32,7 +33,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblBitacoraEstatus> repoBitacora,
             IUnitOfWork uow,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
-            IGenericRepository<TblFormato> repoFormato)
+            IGenericRepository<TblFormato> repoFormato,
+            IGenericRepository<TblRegistroDiseno> repoRegistroDiseno)
         {
             _repositoryRequisicion = requisicionRepository;
             _repoInventario = repoInventario;
@@ -41,6 +43,7 @@ namespace Inventario.BLL.Implementacion
             _uow = uow;
             _repoMovimiento = repoMovimiento;
             _repoFormato = repoFormato;
+            _repoRegistroDiseno = repoRegistroDiseno;
         }
 
         // ─────────────────────────────────────────────
@@ -156,13 +159,8 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
         }
 
-        /// <summary>
-        /// Lista las requisiciones que tienen artículos pendientes de entrega física
-        /// (movimientos tipo ENTREGA registrados al procesar, aún no confirmados).
-        /// </summary>
         public async Task<List<EntregaPendienteDTO>> ListarEntregasPendientes()
         {
-            // Movimientos de tipo ENTREGA que aún no han sido confirmados
             var movQuery = await _repoMovimiento.Consultar(
                 m => m.TipoMovimiento == "ENTREGA" && m.Confirmado != true);
 
@@ -172,7 +170,6 @@ namespace Inventario.BLL.Implementacion
                 .Include(m => m.IdRequisicionDetalleNavigation)
                 .ToListAsync();
 
-            // Agrupar por requisición
             var grupos = movimientos
                 .GroupBy(m => m.IdRequisicion)
                 .Select(g =>
@@ -204,14 +201,12 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<int> GenerarFormatoSalida(int idRequisicion, int idUsuario)
         {
-            // Si ya existe un formato sin archivo firmado para esta requisición, reutilizarlo
             var queryExistente = await _repoFormato.Consultar(
                 f => f.TipoFormato == "SALIDA" && f.IdRequisicion == idRequisicion && f.RutaArchivo == "PENDIENTE");
             var existente = await queryExistente.FirstOrDefaultAsync();
             if (existente != null)
                 return existente.NumeroFormato;
 
-            // Generar consecutivo
             var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "SALIDA");
             var listaFormatos = await queryFormatos.ToListAsync();
             var nuevoNumero = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
@@ -237,7 +232,6 @@ namespace Inventario.BLL.Implementacion
             await _uow.BeginTransactionAsync();
             try
             {
-                // Buscar el formato pendiente de esta requisición
                 var queryFormato = await _repoFormato.Consultar(
                     f => f.TipoFormato == "SALIDA" && f.IdRequisicion == idRequisicion && f.RutaArchivo == "PENDIENTE");
                 var formato = await queryFormato.FirstOrDefaultAsync()
@@ -487,7 +481,6 @@ namespace Inventario.BLL.Implementacion
                 var resumenEntregas = new List<string>();
                 var resumenCompras = new List<string>();
 
-                // ── Entregas: descontar stock y registrar movimiento (pendiente de confirmar) ──
                 foreach (var (idDetalle, cantAprobada) in listaEntregas)
                 {
                     if (cantAprobada <= 0) continue;
@@ -501,7 +494,6 @@ namespace Inventario.BLL.Implementacion
 
                     var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
-                    var unidad = (d.UnidadMedida ?? "").Trim();
 
                     if (string.IsNullOrWhiteSpace(clave))
                         throw new Exception($"El artículo '{desc}' no tiene clave registrada.");
@@ -512,8 +504,6 @@ namespace Inventario.BLL.Implementacion
                     if (inv.Existencia < cantAprobada)
                         throw new Exception($"Stock insuficiente para: {desc}. Disponible: {inv.Existencia}, aprobado: {cantAprobada}.");
 
-                    // Registrar movimiento de entrega — Confirmado = false hasta que almacén
-                    // haga la entrega física en el tab "A Entregar"
                     await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
                     {
                         IdRequisicion = idRequisicion,
@@ -529,7 +519,6 @@ namespace Inventario.BLL.Implementacion
                     resumenEntregas.Add($"{desc} x{cantAprobada}");
                 }
 
-                // ── Compras: solo registrar movimiento, sin tocar stock ──
                 foreach (var (idDetalle, cantComprar) in listaCompras)
                 {
                     if (!detallesById.TryGetValue(idDetalle, out var d))
@@ -552,11 +541,6 @@ namespace Inventario.BLL.Implementacion
                     resumenCompras.Add($"{(d.Descripcion ?? "").Trim()} x{cantComprar}");
                 }
 
-                // ── Determinar estatus final ──
-                // Con compras → estatus 11 (regresa a materiales para gestionar la compra)
-                // Solo entregas → la requisición queda en espera de confirmación de entrega física
-                //                 se usa estatus 9 temporalmente — el tab "A Entregar" la mostrará
-                //                 y al confirmar pasará a 12 (ENTREGADO)
                 int estatusFinal = listaCompras.Count > 0 ? ESTATUS_EN_COMPRA : ESTATUS_APROBADA_ALMACEN;
 
                 req.IdEstatus = estatusFinal;
@@ -578,16 +562,15 @@ namespace Inventario.BLL.Implementacion
                 throw;
             }
         }
+
         public async Task<int> GenerarFormatoEntrada(int idRequisicion, int idUsuario)
         {
-            // Reutilizar si ya existe un formato ENTRADA pendiente para esta requisición
             var queryExistente = await _repoFormato.Consultar(
                 f => f.TipoFormato == "ENTRADA" && f.IdRequisicion == idRequisicion && f.RutaArchivo == "PENDIENTE");
             var existente = await queryExistente.FirstOrDefaultAsync();
             if (existente != null)
                 return existente.NumeroFormato;
 
-            // Generar consecutivo
             var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "ENTRADA");
             var listaFormatos = await queryFormatos.ToListAsync();
             var nuevoNumero = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
@@ -638,9 +621,7 @@ namespace Inventario.BLL.Implementacion
             return partidas;
         }
 
-        public async Task GuardarBorradorIngreso(
-    int idRequisicion, int idUsuario,
-    List<CantidadRecibidaDTO> cantidades)
+        public async Task GuardarBorradorIngreso(int idRequisicion, int idUsuario, List<CantidadRecibidaDTO> cantidades)
         {
             if (cantidades == null || cantidades.Count == 0)
                 throw new Exception("Debe indicar al menos una cantidad recibida.");
@@ -651,7 +632,6 @@ namespace Inventario.BLL.Implementacion
             await _uow.BeginTransactionAsync();
             try
             {
-                // Eliminar borrador previo si existe (el usuario corrigió cantidades)
                 var borradorQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion
                       && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
@@ -660,7 +640,6 @@ namespace Inventario.BLL.Implementacion
                 foreach (var b in borradorPrevio)
                     await _repoMovimiento.Eliminar(b);
 
-                // Leer partidas de compra originales para tener CantidadOriginal y datos del artículo
                 var compraQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion
                       && m.TipoMovimiento == "COMPRA"
@@ -684,7 +663,6 @@ namespace Inventario.BLL.Implementacion
                     var cantSolicitada = movsDetalle.Sum(m => (decimal)m.CantidadMovimiento);
                     var cantRecibida = Math.Min(item.CantidadRecibida, cantSolicitada);
 
-                    // Solo guardar borrador si recibió algo (0 = no llegó, no genera movimiento)
                     if (cantRecibida <= 0) continue;
 
                     await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
@@ -735,7 +713,7 @@ namespace Inventario.BLL.Implementacion
                         ClaveMaterial = det?.IdArticuloNavigation?.Clave ?? "",
                         Descripcion = det?.Descripcion ?? "",
                         UnidadMedida = det?.UnidadMedida ?? "",
-                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento) // aquí es la real
+                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento)
                     };
                 })
                 .OrderBy(x => x.NumPartida)
@@ -743,13 +721,11 @@ namespace Inventario.BLL.Implementacion
                 .ToList();
         }
 
-        public async Task<bool> ConfirmarIngresoPedido(
-    int idRequisicion, int idUsuario, string rutaArchivoFirmado)
+        public async Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado)
         {
             await _uow.BeginTransactionAsync();
             try
             {
-                // ── Leer borrador ──
                 var borradorQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion
                       && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
@@ -761,7 +737,6 @@ namespace Inventario.BLL.Implementacion
                 if (!borradores.Any())
                     throw new Exception("No hay borrador guardado. Captura las cantidades recibidas primero.");
 
-                // ── Leer compras originales pendientes ──
                 var compraQuery = await _repoMovimiento.Consultar(
                     m => m.IdRequisicion == idRequisicion
                       && m.TipoMovimiento == "COMPRA"
@@ -778,7 +753,6 @@ namespace Inventario.BLL.Implementacion
                     .GroupBy(m => m.IdRequisicionDetalle)
                     .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.CantidadMovimiento));
 
-                // ── Cerrar formato de entrada (PENDIENTE → ruta real) ──
                 var fmtQuery = await _repoFormato.Consultar(
                     f => f.TipoFormato == "ENTRADA"
                       && f.IdRequisicion == idRequisicion
@@ -802,7 +776,6 @@ namespace Inventario.BLL.Implementacion
                     var cantRecibida = borradorPorDetalle.GetValueOrDefault(idDetalle, 0);
                     var cantFaltante = cantSolicitada - cantRecibida;
 
-                    // Marcar compras originales como confirmadas
                     foreach (var mov in movsOriginales)
                     {
                         mov.Confirmado = true;
@@ -811,7 +784,6 @@ namespace Inventario.BLL.Implementacion
                         await _repoMovimiento.Editar(mov);
                     }
 
-                    // Convertir borrador → movimiento ENTREGA real
                     if (cantRecibida > 0)
                     {
                         await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
@@ -823,12 +795,11 @@ namespace Inventario.BLL.Implementacion
                             CantidadMovimiento = (int)cantRecibida,
                             FechaMovimiento = DateTime.Now,
                             IdUsuario = idUsuario,
-                            Confirmado = false   // confirmará al hacer entrega física
+                            Confirmado = false
                         });
                         resumenEntregas.Add($"{desc} x{cantRecibida}");
                     }
 
-                    // Faltante → nuevo COMPRA pendiente (sigue en Pedidos)
                     if (cantFaltante > 0)
                     {
                         hayFaltante = true;
@@ -848,25 +819,20 @@ namespace Inventario.BLL.Implementacion
                     }
                 }
 
-                // Eliminar borradores (ya procesados)
                 foreach (var b in borradores)
                     await _repoMovimiento.Eliminar(b);
 
-                // ── Estatus final de la requisición ──
                 var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                           ?? throw new Exception("No se encontró la requisición.");
 
                 if (!hayFaltante)
                 {
-                    // Todo llegó → sale de Pedidos, va a A Entregar
-                    req.IdEstatus = ESTATUS_APROBADA_ALMACEN; // 4
+                    req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
                     req.FechaModificacion = DateTime.Now;
                     await _repositoryRequisicion.Editar(req);
                 }
-                // Si hay faltante → permanece en estatus 7 (sigue visible en Pedidos)
 
-                // ── Bitácora ──
-                var obs = new System.Text.StringBuilder("Almacén registró ingreso de material del proveedor.");
+                var obs = new StringBuilder("Almacén registró ingreso de material del proveedor.");
                 if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
                 if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
 
@@ -880,6 +846,62 @@ namespace Inventario.BLL.Implementacion
                 await _uow.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesConDocumentos()
+        {
+            var queryFormatos = await _repoFormato.Consultar();
+            var idsFormatos = await queryFormatos.Select(f => f.IdRequisicion).Distinct().ToListAsync();
+
+            var queryDisenos = await _repoRegistroDiseno.Consultar();
+            var idsDisenos = await queryDisenos.Select(d => d.IdRequisicion).Distinct().ToListAsync();
+
+            var idsTotales = idsFormatos.Concat(idsDisenos).Distinct().Where(id => id.HasValue).Select(id => id!.Value).ToList();
+
+            if (!idsTotales.Any()) return new List<RequisicionMaestraDTO>();
+
+            var queryReq = await _repositoryRequisicion.Consultar(r => idsTotales.Contains(r.IdRequisicion));
+            return await queryReq
+                .OrderByDescending(r => r.FechaModificacion)
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento,
+                    IdEstatus = r.IdEstatus ?? 0,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus,
+                    CantidadPartidas = r.TblRequisicionDetalles.Count
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<DocumentoExpedienteDTO>> ObtenerDocumentosPorRequisicion(int idRequisicion)
+        {
+            var resultado = new List<DocumentoExpedienteDTO>();
+
+            var queryFormatos = await _repoFormato.Consultar(f => f.IdRequisicion == idRequisicion && f.RutaArchivo != "PENDIENTE");
+            var formatos = await queryFormatos.ToListAsync();
+            resultado.AddRange(formatos.Select(f => new DocumentoExpedienteDTO
+            {
+                Nombre = $"Formato {f.TipoFormato} #{f.NumeroFormato}",
+                Tipo = f.TipoFormato,
+                Ruta = f.RutaArchivo,
+                FechaSubida = f.FechaFormato
+            }));
+
+            var queryDisenos = await _repoRegistroDiseno.Consultar(d => d.IdRequisicion == idRequisicion);
+            var disenos = await queryDisenos.ToListAsync();
+            resultado.AddRange(disenos.Select(d => new DocumentoExpedienteDTO
+            {
+                Nombre = d.Tipo ?? "Archivo Adjunto",
+                Tipo = "Adjunto",
+                Ruta = d.Ruta,
+                FechaSubida = d.FechaSubida
+            }));
+
+            return resultado.OrderByDescending(d => d.FechaSubida).ToList();
         }
     }
 }
