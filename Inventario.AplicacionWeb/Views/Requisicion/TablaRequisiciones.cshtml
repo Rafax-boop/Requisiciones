@@ -479,7 +479,7 @@
                                 <div class="timeline-container">
                                     <div class="p-3 text-center" style="border:1px solid #fecaca;border-radius:10px;background:#fef2f2;">
                                         <p class="mb-1" style="color:#b91c1c;font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> Requisición rechazada</p>
-                                        <p class="text-muted small mb-2">El folio ya no está en seguimiento activo.</p>
+                                        <p class="text-muted small mb-2">@(item.ComentarioRechazo ?? "Sin comentario")</p>
                                         <button type="button" class="btn btn-sm" style="border:1px solid #fecaca;background:white;color:#b91c1c;" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                             <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                         </button>

@@ -421,15 +421,15 @@
         var form = e.target;
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                title: '¿Seguro que quieres guardar?',
-                text: "Se guardarán los datos de la requisición.",
-                icon: 'question',
-                iconColor: 'var(--rosa-400)',
+                title: "\u00bfSeguro que quieres guardar?",
+                text: "Se guardar\u00e1n los datos de la requisici\u00f3n.",
+                icon: "question",
+                iconColor: "var(--rosa-400)",
                 showCancelButton: true,
-                confirmButtonColor: 'var(--rosa-400)',
-                cancelButtonColor: 'var(--slate-500)',
-                confirmButtonText: 'Sí, guardar',
-                cancelButtonText: 'No, cancelar'
+                confirmButtonColor: "var(--rosa-400)",
+                cancelButtonColor: "var(--slate-500)",
+                confirmButtonText: "S\u00ed, guardar",
+                cancelButtonText: "No, cancelar"
             }).then(function (result) {
                 if (result.isConfirmed) {
                     var loader = document.getElementById('page-loader');
@@ -459,26 +459,26 @@
                 }
 
                 Swal.fire({
-                    title: '¿Programar requisición?',
-                    icon: 'question',
-                    iconColor: 'var(--rosa-400)',
+                    title: "\u00bfProgramar requisici\u00f3n?",
+                    icon: "question",
+                    iconColor: "var(--rosa-400)",
                     showDenyButton: true,
                     showCancelButton: false,
-                    confirmButtonText: 'Sí',
-                    denyButtonText: 'No',
-                    confirmButtonColor: 'var(--rosa-400)',
-                    denyButtonColor: 'var(--slate-500)'
+                    confirmButtonText: "S\u00ed",
+                    denyButtonText: "No",
+                    confirmButtonColor: "var(--rosa-400)",
+                    denyButtonColor: "var(--slate-500)"
                 }).then(function (result) {
                     if (result.isConfirmed) {
                         iniciarWizardProgramacion();
                     } else if (result.isDenied) {
                         Swal.fire({
-                            title: 'Se guardará la requisición',
-                            text: 'La requisición se guardará sin programación.',
-                            icon: 'info',
-                            iconColor: 'var(--rosa-400)',
-                            confirmButtonText: 'Aceptar',
-                            confirmButtonColor: 'var(--rosa-400)'
+                            title: "Se guardar\u00e1 la requisici\u00f3n",
+                            text: "La requisici\u00f3n se guardar\u00e1 sin programaci\u00f3n.",
+                            icon: "info",
+                            iconColor: "var(--rosa-400)",
+                            confirmButtonText: "Aceptar",
+                            confirmButtonColor: "var(--rosa-400)"
                         }).then(function (r) {
                             if (r.isConfirmed) enviarFormulario();
                         });
@@ -523,20 +523,20 @@
         var html = construirHtmlPaso(art, preseleccionado);
 
         Swal.fire({
-            title: 'Artículo ' + art.numero + ' de ' + state.articulos.length,
+            title: "Art\u00edculo " + art.numero + " de " + state.articulos.length,
             html: html,
-            width: '95%',
-            customClass: { popup: 'wizard-popup' },
+            width: "95%",
+            customClass: { popup: "wizard-popup" },
             confirmButtonText: esUltimo
                 ? '<i class="fa-solid fa-check"></i> Finalizar'
                 : 'Siguiente <i class="fa-solid fa-arrow-right"></i>',
-            confirmButtonColor: 'var(--rosa-400)',
+            confirmButtonColor: "var(--rosa-400)",
             showDenyButton: true,
-            denyButtonText: '<i class="fa-solid fa-forward"></i> Omitir artículo',
-            denyButtonColor: 'var(--slate-500)',
+            denyButtonText: '<i class="fa-solid fa-forward"></i> Omitir art\u00edculo',
+            denyButtonColor: "var(--slate-500)",
             showCancelButton: true,
-            cancelButtonText: 'Cancelar',
-            cancelButtonColor: 'var(--slate-500)',
+            cancelButtonText: "Cancelar",
+            cancelButtonColor: "var(--slate-500)",
             allowOutsideClick: false,
             didOpen: function () {
                 configurarEventosPaso(art);
@@ -876,14 +876,14 @@
 
     window.eliminarFotoExistente = function (idFoto) {
         Swal.fire({
-            title: '¿Eliminar esta foto?',
-            text: 'Esta acción no se puede deshacer.',
-            icon: 'warning',
+            title: "\u00bfEliminar esta foto?",
+            text: "Esta acci\u00f3n no se puede deshacer.",
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#e53e3e',
-            cancelButtonColor: 'var(--slate-500)',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonColor: "#e53e3e",
+            cancelButtonColor: "var(--slate-500)",
+            confirmButtonText: "S\u00ed, eliminar",
+            cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (result.isConfirmed) {
                 $.post('/Servicios/EliminarFoto', { idFoto: idFoto }, function (res) {

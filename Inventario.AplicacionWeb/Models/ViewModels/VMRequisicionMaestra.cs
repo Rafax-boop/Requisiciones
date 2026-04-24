@@ -14,6 +14,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int DiasAsignado { get; set; }
         public string? NombreAsignado { get; set; }
         public bool? RequiServicio { get; set; }
+        public string? ComentarioRechazo { get; set; }
 
     }
 }

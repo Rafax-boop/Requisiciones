@@ -456,12 +456,12 @@
 
     window.enviarDocumentosAFinancieros = function () {
         Swal.fire({
-            title: "¿Enviar a financieros?",
-            text: "Se enviarán todos los documentos para revisión.",
+            title: "\u00bfEnviar a financieros?",
+            text: "Se enviar\u00e1n todos los documentos para revisi\u00f3n.",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#fe6291",
-            confirmButtonText: "Sí, enviar",
+            confirmButtonText: "S\u00ed, enviar",
             cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (!result.isConfirmed) return;
@@ -575,14 +575,14 @@
                 bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
                 Swal.fire({
                     icon: 'success',
-                    title: 'Enviada a almacén',
+                    title: 'Enviada a almac\u00e9n',
                     confirmButtonText: 'Aceptar',
                     confirmButtonColor: '#fe6291'
                 }).then(function () { location.reload(); });
             } else {
                 Swal.fire({
                     icon: 'error',
-                    title: 'No se pudo enviar a almacén',
+                    title: 'No se pudo enviar a almac\u00e9n',
                     text: res.mensaje || 'Error desconocido',
                     footer: res.detalle || '',
                     confirmButtonText: 'Aceptar',
@@ -605,12 +605,12 @@
                 bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
                 Swal.fire({
                     icon: 'success',
-                    title: 'Requisición rechazada',
+                    title: 'Requisici\u00f3n rechazada',
                     confirmButtonText: 'Aceptar',
                     confirmButtonColor: '#fe6291'
                 }).then(function () { location.reload(); });
             } else {
-                Swal.fire({ icon: 'error', title: 'No se pudo rechazar la requisición' });
+                Swal.fire({ icon: 'error', title: 'No se pudo rechazar la requisici\u00f3n' });
             }
         });
     };
@@ -618,7 +618,7 @@
     window.confirmarModificacion = function () {
         var observacion = document.getElementById('txtObservacionModificacion').value.trim();
         if (!observacion) {
-            Swal.fire({ icon: 'warning', title: 'Escribe las observaciones de modificación', confirmButtonText: 'Ok' });
+            Swal.fire({ icon: 'warning', title: 'Escribe las observaciones de modificaci\u00f3n', confirmButtonText: 'Ok' });
             return;
         }
 
@@ -627,10 +627,10 @@
                 bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
                 Swal.fire({
                     icon: 'success',
-                    title: 'Enviada a modificación'
+                    title: 'Enviada a modificaci\u00f3n'
                 }).then(function () { location.reload(); });
             } else {
-                Swal.fire({ icon: 'error', title: 'No se pudo enviar a modificación', text: res.mensaje || '' });
+                Swal.fire({ icon: 'error', title: 'No se pudo enviar a modificaci\u00f3n', text: res.mensaje || '' });
             }
         }).fail(function () {
             Swal.fire({ icon: 'error', title: 'Error al enviar la solicitud' });
@@ -677,11 +677,11 @@
         var tipoPrograma = $("#tipoProgramaSelect").find("option:selected").text().trim();
         var claveRegion = parseInt($("#municipio").val()) || 0;
 
-        if (!observaciones) { alert("Debe escribir una observación."); return; }
-        if (!idpp) { alert("Debe seleccionar una actividad."); return; }
-        if (!$("#ffSelect").val()) { alert("Debe seleccionar una fuente de financiamiento."); return; }
-        if (!$("#tipoProgramaSelect").val()) { alert("Debe seleccionar un tipo de programa."); return; }
-        if (!claveRegion) { alert("Debe seleccionar un municipio."); return; }
+        if (!observaciones) { Swal.fire({ icon: 'warning', title: 'Debe escribir una observaci\u00f3n.' }); return; }
+        if (!idpp) { Swal.fire({ icon: 'warning', title: 'Debe seleccionar una actividad.' }); return; }
+        if (!$("#ffSelect").val()) { Swal.fire({ icon: 'warning', title: 'Debe seleccionar una fuente de financiamiento.' }); return; }
+        if (!$("#tipoProgramaSelect").val()) { Swal.fire({ icon: 'warning', title: 'Debe seleccionar un tipo de programa.' }); return; }
+        if (!claveRegion) { Swal.fire({ icon: 'warning', title: 'Debe seleccionar un municipio.' }); return; }
 
         var cogsEditados = [];
         document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
@@ -742,13 +742,13 @@
                         location.reload();
                     },
                     error: function () {
-                        alert("La atención se guardó, pero hubo un error al subir los archivos.");
+                        Swal.fire({ icon: 'warning', title: 'La atenci\u00f3n se guard\u00f3, pero hubo un error al subir los archivos.' });
                         location.reload();
                     }
                 });
             },
             error: function () {
-                alert("Error al atender la requisición.");
+                Swal.fire({ icon: 'error', title: 'Error al atender la requisici\u00f3n.' });
             }
         });
     };
@@ -972,6 +972,60 @@
         });
     }
 
+    function actualizarOpcionesProveedores() {
+        var seleccionados = [];
+        $contenedor().find(".modal-proveedores-select").each(function () {
+            var val = $(this).val();
+            if (val) seleccionados.push(val);
+        });
+
+        $contenedor().find(".modal-proveedores-select").each(function () {
+            var $sel = $(this);
+            var currentVal = $sel.val();
+            
+            // Reconstruir opciones ocultando los seleccionados en otras filas
+            var newHtml = '<option value="">-- Seleccione proveedor --</option>';
+            if (CATALOGO_PROVEEDORES_MODAL) {
+                CATALOGO_PROVEEDORES_MODAL.forEach(function (c) {
+                    var strId = String(c.v);
+                    var isSelectedInOther = (strId !== String(currentVal) && seleccionados.indexOf(strId) !== -1);
+                    if (!isSelectedInOther) {
+                        newHtml += '<option value="' + c.v + '"' + (strId === String(currentVal) ? ' selected' : '') + '>' + c.t + '</option>';
+                    }
+                });
+            }
+            
+            // Comprobar si el innerHTML ha cambiado para evitar reinicializaciones innecesarias
+            // Validamos contando cuántos options tiene ahora vs los que tendría el nuevo HTML
+            var currentOptionsCount = $sel.find("option").length;
+            var newOptionsCount = (newHtml.match(/<option/g) || []).length;
+            
+            // También comprobamos si los values exactos cambiaron
+            var currentVals = [];
+            $sel.find("option").each(function() { currentVals.push($(this).val()); });
+            var newVals = [];
+            var match;
+            var regex = /value="([^"]*)"/g;
+            while ((match = regex.exec(newHtml)) !== null) {
+                newVals.push(match[1]);
+            }
+            
+            var changed = (currentVals.join(",") !== newVals.join(","));
+
+            if (changed) {
+                $sel.html(newHtml);
+                if ($sel.data("select2")) {
+                    $sel.select2("destroy");
+                    initSelect2($sel);
+                }
+            }
+        });
+    }
+
+    $(document).on("change", "#modalProveedoresFilas .modal-proveedores-select", function () {
+        actualizarOpcionesProveedores();
+    });
+
     // ── Guardar filas actuales al estado del wizard ──
     function guardarFilasActuales() {
         var filas = [];
@@ -1041,6 +1095,8 @@
         } else {
             $btnSiguiente.html('Siguiente <i class="fa-solid fa-chevron-right"></i>');
         }
+
+        actualizarOpcionesProveedores();
     }
 
     // ── Abrir el wizard: cargar partidas y cotizaciones previas ──
@@ -1084,6 +1140,32 @@
     // ── Botón Siguiente / Guardar ──
     $(document).on("click", "#btnWizardSiguiente", function () {
         guardarFilasActuales();
+        
+        // Validación: Prevenir proveedores duplicados en la partida actual
+        var filasActuales = wizardDatos[wizardIdx] || [];
+        var provsUnicos = [];
+        var hayDuplicado = false;
+        
+        for (var i = 0; i < filasActuales.length; i++) {
+            var provId = filasActuales[i].idProveedor;
+            if (provId && provId > 0) {
+                if (provsUnicos.indexOf(provId) !== -1) {
+                    hayDuplicado = true;
+                    break;
+                }
+                provsUnicos.push(provId);
+            }
+        }
+        
+        if (hayDuplicado) {
+            Swal.fire({
+                icon: "warning",
+                title: "Proveedor duplicado",
+                text: "No puedes seleccionar el mismo proveedor m\u00e1s de una vez para la misma partida.",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
 
         if (wizardIdx < wizardPartidas.length - 1) {
             // Avanzar a la siguiente partida
@@ -1145,6 +1227,7 @@
         var $sel = $nueva.find(".modal-proveedores-select");
         $sel.html(buildOpcionesHtml());
         initSelect2($sel);
+        actualizarOpcionesProveedores();
     });
 
     // ── Botón eliminar fila ──
@@ -1155,6 +1238,7 @@
         var $sel = $fila.find(".modal-proveedores-select");
         if ($sel.data("select2")) $sel.select2("destroy");
         $fila.remove();
+        actualizarOpcionesProveedores();
     });
 
     // ── Limpiar select2 al cerrar ──
@@ -1531,13 +1615,13 @@
 
     window.aceptarExpediente = function () {
         Swal.fire({
-            title: "¿Aceptar requisición?",
-            text: "Se enviará a proceso de pago.",
+            title: "\u00bfAceptar requisici\u00f3n?",
+            text: "Se enviar\u00e1 a proceso de pago.",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#fe6291",
             cancelButtonColor: "var(--slate-500)",
-            confirmButtonText: "Sí, aceptar",
+            confirmButtonText: "S\u00ed, aceptar",
             cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (!result.isConfirmed) return;
@@ -1560,7 +1644,7 @@
                     }).then(function () { location.reload(); });
                 },
                 error: function () {
-                    Swal.fire({ icon: "error", title: "Error al procesar la requisición." });
+                    Swal.fire({ icon: "error", title: "Error al procesar la requisici\u00f3n." });
                 }
             });
         });

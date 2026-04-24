@@ -305,13 +305,13 @@
     // ── Marcar como revisado ─────────────────────────────────────────────────
     window.marcarRevisado = function () {
         Swal.fire({
-            title: "¿Marcar como revisado?",
-            text: "Se registrará el visto bueno de esta requisición.",
+            title: "\u00bfMarcar como revisado?",
+            text: "Se registrar\u00e1 el visto bueno de esta requisici\u00f3n.",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#fe6291",
             cancelButtonColor: "var(--slate-500)",
-            confirmButtonText: "Sí, marcar",
+            confirmButtonText: "S\u00ed, marcar",
             cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (!result.isConfirmed) return;
@@ -323,12 +323,12 @@
                 success: function () {
                     bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
                     Swal.fire({
-                        icon: "success", title: "Requisición marcada como revisada",
+                        icon: "success", title: "Requisici\u00f3n marcada como revisada",
                         timer: 2000, showConfirmButton: false
                     }).then(function () { location.reload(); });
                 },
                 error: function () {
-                    Swal.fire({ icon: "error", title: "Error al registrar la revisión." });
+                    Swal.fire({ icon: "error", title: "Error al registrar la revisi\u00f3n." });
                 }
             });
         });

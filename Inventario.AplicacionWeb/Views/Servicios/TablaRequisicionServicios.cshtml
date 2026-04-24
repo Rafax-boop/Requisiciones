@@ -81,7 +81,10 @@
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
+        @if (!User.IsInRole("1"))
+        {
+            <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
+        }
     </nav>
 
     @{
@@ -497,6 +500,8 @@
     </div>
 
     <!-- Pestaña Requisiciones verificadas -->
+    @if (!User.IsInRole("1"))
+    {
     <div id="tab-verificadas" class="almacen-tab-panel">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesVerificadas">
@@ -548,6 +553,7 @@
             <div id="paginacionVerificadas" class="almacen-paginacion"></div>
         </div>
     </div>
+    }
 </div>
 
 <!-- Modal expediente completo (solo tab verificadas) -->
