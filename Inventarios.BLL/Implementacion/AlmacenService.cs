@@ -913,13 +913,21 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesConDocumentos()
         {
-            var queryFormatos = await _repoFormato.Consultar();
-            var idsFormatos = await queryFormatos.Select(f => f.IdRequisicion).Distinct().ToListAsync();
+            // Solo requisiciones con formato de entrada o salida ya subido (no pendiente).
+            // Los diseños/adjuntos (TblRegistroDiseno) no son criterio de expediente.
+            // Si en el futuro se requiere incluir diseños, descomentar el bloque siguiente y
+            // reemplazar idsTotales por: idsFormatos.Concat(idsDisenos).Distinct()...
+            //
+            // var queryDisenos = await _repoRegistroDiseno.Consultar();
+            // var idsDisenos = await queryDisenos.Select(d => d.IdRequisicion).Distinct().ToListAsync();
 
-            var queryDisenos = await _repoRegistroDiseno.Consultar();
-            var idsDisenos = await queryDisenos.Select(d => d.IdRequisicion).Distinct().ToListAsync();
-
-            var idsTotales = idsFormatos.Concat(idsDisenos).Distinct().Where(id => id.HasValue).Select(id => id!.Value).ToList();
+            var queryFormatos = await _repoFormato.Consultar(f => f.RutaArchivo != "PENDIENTE");
+            var idsTotales = await queryFormatos
+                .Select(f => f.IdRequisicion)
+                .Distinct()
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToListAsync();
 
             if (!idsTotales.Any()) return new List<RequisicionMaestraDTO>();
 
@@ -954,15 +962,18 @@ namespace Inventario.BLL.Implementacion
                 FechaSubida = f.FechaFormato
             }));
 
-            var queryDisenos = await _repoRegistroDiseno.Consultar(d => d.IdRequisicion == idRequisicion);
-            var disenos = await queryDisenos.ToListAsync();
-            resultado.AddRange(disenos.Select(d => new DocumentoExpedienteDTO
-            {
-                Nombre = d.Tipo ?? "Archivo Adjunto",
-                Tipo = "Adjunto",
-                Ruta = d.Ruta,
-                FechaSubida = d.FechaSubida
-            }));
+            // Los diseños/adjuntos (TblRegistroDiseno) no se incluyen en el expediente de almacén.
+            // Si en el futuro se necesitan mostrar, descomentar:
+            //
+            // var queryDisenos = await _repoRegistroDiseno.Consultar(d => d.IdRequisicion == idRequisicion);
+            // var disenos = await queryDisenos.ToListAsync();
+            // resultado.AddRange(disenos.Select(d => new DocumentoExpedienteDTO
+            // {
+            //     Nombre = d.Tipo ?? "Archivo Adjunto",
+            //     Tipo = "Adjunto",
+            //     Ruta = d.Ruta,
+            //     FechaSubida = d.FechaSubida
+            // }));
 
             return resultado.OrderByDescending(d => d.FechaSubida).ToList();
         }
