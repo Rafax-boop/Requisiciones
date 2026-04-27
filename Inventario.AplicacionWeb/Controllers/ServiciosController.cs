@@ -327,6 +327,16 @@ namespace Inventario.AplicacionWeb.Controllers
             return Ok();
         }
 
+        [HttpPost]
+        public async Task<IActionResult> FinalizarRequisicion([FromBody] FinalizarRequiVM modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var resultado = await _requisicionesService.FinalizarRequisicion(
+                modelo.IdRequisicion, modelo.Observaciones, idUsuario);
+
+            return Json(new { success = resultado });
+        }
+
         /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>
         [HttpGet]
         public async Task<IActionResult> SnapshotIdsPorTab()

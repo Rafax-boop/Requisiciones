@@ -54,6 +54,9 @@
     var urlGuardarGanador = container
         ? container.getAttribute("data-url-guardar-ganador") : "";
 
+    var urlFinalizar = container
+        ? container.getAttribute("data-url-finalizar") : "";
+
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
         { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
@@ -607,6 +610,56 @@
                     }).then(function () { location.reload(); });
                 }
             });
+        });
+    };
+
+    var _idRequiFinalizar = null;
+
+    window.abrirModalFinalizar = function (idRequi) {
+        _idRequiFinalizar = idRequi;
+        document.getElementById("txtObservacionesFinalizar").value = "";
+
+        var el = document.getElementById("modalFinalizar");
+        var instancia = bootstrap.Modal.getInstance(el);
+        if (instancia) {
+            instancia.show();
+        } else {
+            new bootstrap.Modal(el, {
+                backdrop: false,
+                keyboard: true
+            }).show();
+        }
+    };
+
+    window.confirmarFinalizar = function () {
+        var obs = document.getElementById("txtObservacionesFinalizar").value.trim();
+        if (!obs) {
+            Swal.fire({ icon: "warning", title: "Escribe una observación de cierre.", confirmButtonColor: "#fe6291" });
+            return;
+        }
+
+        $.ajax({
+            url: urlFinalizar,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ idRequisicion: _idRequiFinalizar, observaciones: obs }),
+            success: function (res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalFinalizar")).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Requisición finalizada",
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(function () { location.reload(); });
+                } else {
+                    Swal.fire({ icon: "error", title: "No se pudo finalizar la requisición." });
+                }
+            },
+            error: function () {
+                Swal.fire({ icon: "error", title: "Error al procesar la solicitud." });
+            }
         });
     };
 

@@ -943,6 +943,27 @@ namespace Inventario.BLL.Implementacion
             return true;
         }
 
+        public async Task<bool> FinalizarRequisicion(int idRequisicion, string observaciones, int idUsuario)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null) return false;
+
+            requisicion.IdEstatus = 12;
+            requisicion.FechaModificacion = DateTime.Now;
+            await _repositoryRequisicion.Editar(requisicion);
+
+            await _repositoryBitacora.Crear(new TblBitacoraEstatus
+            {
+                IdRequisicion = idRequisicion,
+                IdEstatus = 12,
+                FechaEstatus = DateTime.Now,
+                Observacion = observaciones,
+                IdUsuario = idUsuario
+            });
+
+            return true;
+        }
+
         private string GenerarSelloDigital()
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
