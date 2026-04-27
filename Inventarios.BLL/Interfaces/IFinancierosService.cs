@@ -21,5 +21,9 @@ namespace Inventario.BLL.Interfaces
         Task<byte[]> GenerarTablaApiAsync(TablaApiEditableDTO modelo);
         Task GuardarHistorialTablaApiAsync(TablaApiEditableDTO modelo, int idUsuario, string? observacion = null);
         Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiAsync(int idRequisicion);
+
+        // pedido
+        Task<PedidoVistaDTO> ObtenerPedidoEditableAsync(int idRequisicion);
+        Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath);
     }
 }

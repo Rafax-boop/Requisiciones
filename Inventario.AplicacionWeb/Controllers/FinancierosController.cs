@@ -3,6 +3,7 @@ using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMunicipioServie _municipioService;
         private readonly IAlmacenService _almacenService;
         private readonly ILogger<FinancierosController> _logger;
+        private readonly IWebHostEnvironment _env;
 
 
         public FinancierosController(IMapper mapper,
@@ -28,7 +30,8 @@ namespace Inventario.AplicacionWeb.Controllers
             IProgramaPresupuestarioService programaPresupuestarioService,
             IMunicipioServie municipioService,
             IAlmacenService almacenService,
-            ILogger<FinancierosController> logger)
+            ILogger<FinancierosController> logger,
+            IWebHostEnvironment env)
         {
             _mapper = mapper;
             _financierosService = financierosService;
@@ -37,6 +40,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _municipioService = municipioService;
             _almacenService = almacenService;
             _logger = logger;
+            _env = env;
         }
 
         [HttpGet]
@@ -226,6 +230,37 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 _logger?.LogError(ex, "Error obteniendo historial Tabla API para requisición {Id}", idRequisicion);
                 return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditarPedidoCompra(int idRequisicion)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerPedidoEditableAsync(idRequisicion);
+                return View(modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error cargando pedido editable para requisición {Id}", idRequisicion);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GenerarPedidoPdf([FromForm] PedidoVistaDTO form)
+        {
+            try
+            {
+                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath);
+                var nombre = $"Pedido_{form.IdRequisicion}_{DateTime.Now:yyyyMMdd}.pdf";
+                return File(bytes, "application/pdf", nombre);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error generando PDF de pedido para requisición {Id}", form.IdRequisicion);
+                return StatusCode(500, $"Error al generar el PDF: {ex.Message}");
             }
         }
 

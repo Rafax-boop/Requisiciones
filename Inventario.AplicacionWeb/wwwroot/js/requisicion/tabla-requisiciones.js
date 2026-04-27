@@ -1435,7 +1435,8 @@
 
     window.verExpediente = function (idRequi) {
         expedienteActual = idRequi;
-        
+        window._expedienteActualGlobal = idRequi;
+
         // Limpiar
         document.getElementById("expObservaciones").value = "";
         document.getElementById("expArchivosBase").innerHTML = "";

@@ -31,7 +31,9 @@
      data-url-descargar-cuadro-comparativo="@Url.Action("DescargarCuadroComparativo", "Requisicion")"
      data-url-guardar-cotizaciones="@Url.Action("GuardarCotizaciones", "Requisicion")"
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
-     data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")">
+     data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")"
+     data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
+     data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -666,6 +668,13 @@
                     <div id="expGrupoTablaApi" style="margin-bottom:12px;"></div>
                     <div id="expGrupoNumeroApi"></div>
                 </div>
+                <!-- Botón pedido -->
+                <div style="margin-top:16px; text-align:left;">
+                    <button type="button" class="btn boton-gris" onclick="(function(){ var id=window._expedienteActualGlobal; if(!id){alert('Abre un expediente primero.');return;} window.open('@Url.Action("EditarPedidoCompra","Financieros")'+'?idRequisicion='+id,'_blank'); })()">
+                        <i class="fa-solid fa-file-invoice"></i> Editar Pedido de Compra
+                    </button>
+                </div>
+
                 <div id="expDocumentosProveedor" style="margin-top:20px;">
                     <hr />
                     <p style="font-weight:600; margin-bottom:4px;">
@@ -681,10 +690,12 @@
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Modal ver requisición (misma estructura que Requisición y Almacén) -->
 <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
