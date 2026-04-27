@@ -37,7 +37,8 @@
      data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
      data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")"
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
-     data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")">
+     data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
+     data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -669,10 +670,17 @@
                     <div id="expGrupoNumeroApi"></div>
                 </div>
                 <!-- Botón pedido -->
-                <div style="margin-top:16px; text-align:left;">
+                <div style="margin-top:16px; text-align:left; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; width: 100%;">
                     <button type="button" class="btn boton-gris" onclick="(function(){ var id=window._expedienteActualGlobal; if(!id){alert('Abre un expediente primero.');return;} window.open('@Url.Action("EditarPedidoCompra","Financieros")'+'?idRequisicion='+id,'_blank'); })()">
                         <i class="fa-solid fa-file-invoice"></i> Editar Pedido de Compra
                     </button>
+                    
+                    <div class="formulario-input" style="width: 100%; max-width: 400px; margin-top: 4px;">
+                        <label style="font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 8px; display: block;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Documento de Pedido (opcional)
+                        </label>
+                        <input type="file" id="inputSubirPedido" class="input-file-rosa" />
+                    </div>
                 </div>
 
                 <div id="expDocumentosProveedor" style="margin-top:20px;">

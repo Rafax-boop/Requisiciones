@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -106,7 +106,7 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicionDetalle.CrearRango(listaArticulos);
 
-            // Guardar programación si algún artículo la trae
+            // Guardar programaciÃ³n si algÃºn artÃ­culo la trae
             var listaProgramacion = new List<TblArticulosProgramado>();
 
             for (int i = 0; i < modelo.Articulos.Count; i++)
@@ -115,7 +115,7 @@ namespace Inventario.BLL.Implementacion
 
                 if (string.IsNullOrEmpty(item.TipoProgramacion)) continue;
 
-                var detalle = listaArticulos[i]; // ← mismo índice, siempre correcto
+                var detalle = listaArticulos[i]; // â† mismo Ã­ndice, siempre correcto
 
                 var prog = new TblArticulosProgramado
                 {
@@ -143,7 +143,7 @@ namespace Inventario.BLL.Implementacion
             if (listaProgramacion.Any())
                 await _repositoryProgramacion.CrearRango(listaProgramacion);
 
-            // Guardar distribución por municipio
+            // Guardar distribuciÃ³n por municipio
             var listaMunicipios = new List<TblRequisicionDetalleMunicipio>();
 
             for (int i = 0; i < modelo.Articulos.Count; i++)
@@ -250,7 +250,7 @@ namespace Inventario.BLL.Implementacion
                 m => m.IdRequisicion == idMaestro);
             var movimientos = await queryMovimientos.ToListAsync();
 
-            // Para cada partida, el movimiento más relevante (último por fecha)
+            // Para cada partida, el movimiento mÃ¡s relevante (Ãºltimo por fecha)
             var movimientoPorPartida = movimientos
                 .GroupBy(m => m.IdRequisicionDetalle)
                 .ToDictionary(
@@ -275,7 +275,7 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
-            // Calcular EstatusPartida por cada artículo
+            // Calcular EstatusPartida por cada artÃ­culo
             bool requiEntregada = maestra?.IdEstatus == 12;
             foreach (var art in lista)
             {
@@ -338,7 +338,7 @@ namespace Inventario.BLL.Implementacion
 
             var querySIAF = await _repositoryDisenos.Consultar(
                 f => f.IdRequisicion == idMaestro && f.Tipo == "SIAF");
-            var archivosSiaf = await querySIAF  // ← querySIAF, no queryCuadro
+            var archivosSiaf = await querySIAF  // â† querySIAF, no queryCuadro
                 .Select(f => new ArchivoAtencionDTO
                 {
                     Ruta = f.Ruta,
@@ -467,13 +467,13 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicion.Editar(requisicion);
 
-            // Eliminar artículos anteriores
+            // Eliminar artÃ­culos anteriores
             var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
             var detallesActuales = await queryDetalles.ToListAsync();
             foreach (var detalle in detallesActuales)
                 await _repositoryRequisicionDetalle.Eliminar(detalle);
 
-            // Insertar los nuevos artículos 
+            // Insertar los nuevos artÃ­culos 
             var nuevosDetalles = modelo.Articulos.Select(item => new TblRequisicionDetalle
             {
                 IdRequisicion = idRequisicion,
@@ -493,7 +493,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = requisicion.IdRequisicion,
                 IdEstatus = requisicion.IdEstatus,
                 FechaEstatus = DateTime.Now,
-                Observacion = "ModificaciónRequisiciones",
+                Observacion = "ModificaciÃ³nRequisiciones",
                 IdUsuario = idUsuario
             };
             var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
@@ -671,7 +671,7 @@ namespace Inventario.BLL.Implementacion
                 else
                     state = "active";
 
-                string date = "—", time = "—";
+                string date = "â€”", time = "â€”";
                 if (ev.FechaEstatus.HasValue)
                 {
                     var dt = ev.FechaEstatus.Value;
@@ -684,21 +684,21 @@ namespace Inventario.BLL.Implementacion
                     Dept = nombresEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}"),
                     Date = date,
                     State = state,
-                    By = ev.Usuario ?? "—",
+                    By = ev.Usuario ?? "â€”",
                     Time = time,
                     Action = ev.Observacion ?? "",
                     Comment = ev.Observacion ?? ""
                 });
             }
 
-            // Paso sintético si la bitácora no refleja el estatus vigente
+            // Paso sintÃ©tico si la bitÃ¡cora no refleja el estatus vigente
             if (idEstatusActual > 0 && (eventos.Count == 0 || eventos.Last().IdEstatus != idEstatusActual))
             {
                 string synState = EstatusFlow.EsTerminalNegativo(idEstatusActual) ? "cancelled"
                     : EstatusFlow.TerminalPositivos.Contains(idEstatusActual) ? "completed"
                     : "active";
 
-                string synDate = "—", synTime = "—";
+                string synDate = "â€”", synTime = "â€”";
                 if (requisicion.FechaModificacion.HasValue)
                 {
                     var dt = requisicion.FechaModificacion.Value;
@@ -711,7 +711,7 @@ namespace Inventario.BLL.Implementacion
                     Dept = nombresEstatus.GetValueOrDefault(idEstatusActual, $"Estatus {idEstatusActual}"),
                     Date = synDate,
                     State = synState,
-                    By = "—",
+                    By = "â€”",
                     Time = synTime,
                     Action = "",
                     Comment = ""
@@ -735,7 +735,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = requisicion.IdRequisicion,
                 IdEstatus = 9,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Enviada a Almacén",
+                Observacion = "Enviada a AlmacÃ©n",
                 IdUsuario = idUsuario
             };
             await _repositoryBitacora.Crear(bitacora);
@@ -751,7 +751,7 @@ namespace Inventario.BLL.Implementacion
                     .Obtener(r => r.IdRequisicion == idRequisicion);
                 if (requisicion == null) return false;
 
-                requisicion.IdEstatus = 3; // REQUISICION MODIFICACIÓN
+                requisicion.IdEstatus = 3; // REQUISICION MODIFICACIÃ“N
                 requisicion.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 
@@ -794,7 +794,7 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath)
         {
-            var carpeta = Path.Combine(webRootPath, "uploads", "diseños", idRequisicion.ToString());
+            var carpeta = Path.Combine(webRootPath, "uploads", "diseÃ±os", idRequisicion.ToString());
             Directory.CreateDirectory(carpeta);
 
             foreach (var foto in fotos)
@@ -810,7 +810,7 @@ namespace Inventario.BLL.Implementacion
                 await _repositoryDisenos.Crear(new TblRegistroDiseno
                 {
                     IdRequisicion = idRequisicion,
-                    Ruta = $"/uploads/diseños/{idRequisicion}/{nombreArchivo}",
+                    Ruta = $"/uploads/diseÃ±os/{idRequisicion}/{nombreArchivo}",
                     FechaSubida = DateTime.Now,
                     Tipo = "diseno"
                 });
@@ -894,7 +894,7 @@ namespace Inventario.BLL.Implementacion
             using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
                 await archivo.CopyToAsync(stream);
 
-            // Eliminar versión anterior del mismo tipo si existe
+            // Eliminar versiÃ³n anterior del mismo tipo si existe
             var queryPrev = await _repositoryDisenos.Consultar(f =>
                 f.IdRequisicion == idRequisicion && f.Tipo == $"proveedor_{tipoDocumento}");
             var previos = await queryPrev.ToListAsync();
@@ -924,10 +924,15 @@ namespace Inventario.BLL.Implementacion
             }).ToListAsync();
         }
 
-        public async Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario)
+        public async Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario, IFormFile archivoPedido, string webRootPath)
         {
             var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
             if (requisicion == null) return false;
+
+            if (archivoPedido != null)
+            {
+                await SubirDocumentoPedido(idRequisicion, archivoPedido, webRootPath);
+            }
 
             requisicion.IdEstatus = 17;
             requisicion.FechaModificacion = DateTime.Now;
@@ -938,7 +943,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = idRequisicion,
                 IdEstatus = 17,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Documentos del proveedor enviados a revisión",
+                Observacion = "Documentos del proveedor enviados a revisiÃ³n",
                 IdUsuario = idUsuario
             });
 
@@ -996,5 +1001,28 @@ namespace Inventario.BLL.Implementacion
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
             return BitConverter.ToString(bytes).Replace("-", "");
         }
+    
+        public async Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath)
+        {
+            if (archivo == null || archivo.Length == 0) return false;
+
+            var carpeta = Path.Combine(webRootPath, "uploads", "PedidoCompra", idRequisicion.ToString());
+            Directory.CreateDirectory(carpeta);
+
+            var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+            using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+                await archivo.CopyToAsync(stream);
+
+            await _repositoryDisenos.Crear(new TblRegistroDiseno
+            {
+                IdRequisicion = idRequisicion,
+                Ruta = $"/uploads/PedidoCompra/{idRequisicion}/{nombre}",
+                FechaSubida = DateTime.Now,
+                Tipo = "pedido_compra"
+            });
+
+            return true;
+        }
     }
 }
+

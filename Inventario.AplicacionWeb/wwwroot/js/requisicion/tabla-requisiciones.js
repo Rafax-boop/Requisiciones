@@ -57,6 +57,9 @@
     var urlFinalizar = container
         ? container.getAttribute("data-url-finalizar") : "";
 
+    var urlSubirDocumentoPedido = container
+        ? container.getAttribute("data-url-subir-documento-pedido") : "";
+
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
         { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
@@ -598,6 +601,10 @@
     };
 
     window.enviarDocumentosAFinancieros = function () {
+        var idRequi = window._expedienteActualGlobal;
+        var archivoInput = document.getElementById('inputSubirPedido');
+        var archivo = archivoInput ? archivoInput.files[0] : null;
+
         Swal.fire({
             title: "\u00bfEnviar a financieros?",
             text: "Se enviar\u00e1n todos los documentos para revisi\u00f3n.",
@@ -608,14 +615,38 @@
             cancelButtonText: "Cancelar"
         }).then(function (result) {
             if (!result.isConfirmed) return;
-            $.post(urlEnviarFinancierosDocs, { idRequisicion: expedienteActual }, function (res) {
-                if (res.success) {
-                    bootstrap.Modal.getInstance(
-                        document.getElementById("modalExpediente")).hide();
-                    Swal.fire({
-                        icon: "success", title: "Enviado a financieros",
-                        timer: 2000, showConfirmButton: false
-                    }).then(function () { location.reload(); });
+
+            var formData = new FormData();
+            formData.append("idRequisicion", idRequi);
+            if (archivo) {
+                formData.append("archivo", archivo);
+            }
+
+            Swal.fire({
+                title: 'Enviando...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: urlEnviarFinancierosDocs,
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        bootstrap.Modal.getInstance(document.getElementById("modalExpediente")).hide();
+                        Swal.fire({
+                            icon: "success", title: "Enviado a financieros",
+                            timer: 2000, showConfirmButton: false
+                        }).then(function () { location.reload(); });
+                    }
+                },
+                error: function () {
+                    Swal.fire({ icon: "error", title: "Error al enviar a financieros" });
                 }
             });
         });

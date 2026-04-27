@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,7 +27,7 @@ namespace Inventario.BLL.Interfaces
         Task<bool> AceptarExpediente(int idRequisicion, int idUsuario);
         Task<bool> FinalizarRequisicion(int idRequisicion, string observaciones, int idUsuario);
 
-        //metodos para las iamgenes de los dise�os
+        //metodos para las iamgenes de los diseños
         Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
         Task<List<string>> ObtenerFotosRequisicion(int idRequisicion);
         Task<bool> EliminarFotoRequisicion(int idFoto);
@@ -46,9 +46,12 @@ namespace Inventario.BLL.Interfaces
 
         Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion);
 
-        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario);
+        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario, IFormFile archivoPedido, string webRootPath);
 
         Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
             List<string> docsObservados, int idUsuario);
+
+        Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath);
     }
 }
+

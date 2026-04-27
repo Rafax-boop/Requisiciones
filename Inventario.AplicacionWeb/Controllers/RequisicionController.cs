@@ -462,10 +462,10 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> EnviarAFinancierosConDocs([FromForm] int idRequisicion)
+        public async Task<IActionResult> EnviarAFinancierosConDocs([FromForm] int idRequisicion, IFormFile archivo)
         {
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var ok = await _requisicionService.EnviarAFinancierosConDocs(idRequisicion, idUsuario);
+            var ok = await _requisicionService.EnviarAFinancierosConDocs(idRequisicion, idUsuario, archivo, _webHostEnvironment.WebRootPath);
             return Ok(new { success = ok });
         }
 
@@ -554,6 +554,13 @@ namespace Inventario.AplicacionWeb.Controllers
             var ok = await _proveedoresService.GuardarProveedorGanador(
                 modelo.IdRequisicion, modelo.IdProveedor, modelo.SeleccionManual, idUsuario);
             return Ok(new { success = ok });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion, IFormFile archivo)
+        {
+            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath);
+            return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
         }
     }
 }

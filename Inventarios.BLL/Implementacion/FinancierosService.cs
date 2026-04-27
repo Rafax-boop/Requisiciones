@@ -1675,6 +1675,125 @@ namespace Inventario.BLL.Implementacion
                 .Add(dirParrafo));
             doc.Add(tblPie);
 
+            // ── SEGUNDA HOJA: CLÁUSULAS ───────────────────────────────────
+            doc.Add(new AreaBreak(iText.Layout.Properties.AreaBreakType.NEXT_PAGE));
+
+            var darkText = new DeviceRgb(30, 30, 30);
+            var grayText = new DeviceRgb(80, 80, 80);
+            var rosaH    = PdfApiEstiloRequi.RosaAcento;
+
+            Paragraph TituloClausula(string txt) =>
+                new Paragraph(txt)
+                    .SetFont(bold).SetFontSize(7f).SetFontColor(rosaH)
+                    .SetMarginTop(5f).SetMarginBottom(1f);
+
+            Paragraph Clausula(string num, string texto) =>
+                new Paragraph()
+                    .Add(new Text(num + " ").SetFont(bold).SetFontColor(darkText))
+                    .Add(new Text(texto).SetFont(regular).SetFontColor(darkText))
+                    .SetFontSize(5.6f).SetMultipliedLeading(1.25f).SetMarginBottom(2f);
+
+            // Encabezado de cláusulas
+            var tblClauH = new Table(UnitValue.CreatePercentArray(new float[] { 100f }))
+                .UseAllAvailableWidth();
+            tblClauH.AddCell(new Cell().SetBorder(borde)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(5f)
+                .Add(new Paragraph("CLÁUSULAS PARA RECEPCIÓN Y TRÁMITE DE PEDIDOS")
+                    .SetFont(bold).SetFontSize(9f).SetFontColor(rosaH)
+                    .SetTextAlignment(TextAlignment.CENTER)));
+            doc.Add(tblClauH);
+            doc.Add(new Paragraph(" ").SetFontSize(2f));
+
+            // Cuerpo: 2 columnas
+            var tblBody = new Table(UnitValue.CreatePercentArray(new float[] { 50f, 50f }))
+                .UseAllAvailableWidth();
+
+            // ── Columna izquierda ─────────────────────────────────────────
+            var colIzq = new Cell().SetBorder(Border.NO_BORDER).SetPadding(0f).SetPaddingRight(5f);
+
+            colIzq.Add(TituloClausula("1.  DEL PEDIDO"));
+            colIzq.Add(Clausula("1.1.", "Este pedido se basa en la lista de precios aprobados, en poder del Sistema DIF Estatal o la cotización presentada por el proveedor."));
+            colIzq.Add(Clausula("1.2.", "El proveedor acepta el presente pedido y se compromete a surtirlo en el plazo estipulado, por lo que cualquier aclaración sobre el contenido del mismo deberá efectuarse por escrito ante la Jefatura del Sistema DIF Estatal que haya tramitado la adquisición en un plazo máximo de tres días hábiles cuando se trate de artículos nacionales y diez días hábiles para artículos de importación directa y de importación adquiridos en el país, después de la fecha de recepción del pedido, transcurrido ese lapso ESTE SE CONSIDERA DEFINITIVAMENTE ACEPTADO."));
+            colIzq.Add(Clausula("1.3.", "El Sistema DIF Estatal podrá cancelar este pedido total o parcialmente, si el proveedor no cumple con las condiciones establecidas en el mismo; en ambos casos, se hará efectiva la garantía de cumplimiento otorgada por el proveedor."));
+            colIzq.Add(Clausula("1.4.", "Este pedido no es válido si presenta tachaduras, correcciones y/o alteraciones."));
+            colIzq.Add(Clausula("1.5.", "Los gastos por conceptos de empaque, flete y acarreo, invariablemente correrán por cuenta del proveedor, con excepción de aquellos casos en que expresamente se establezcan en el pedido, que correrán a cargo del Sistema DIF Estatal."));
+            colIzq.Add(Clausula("1.6.", "Todos los impuestos y derechos, tanto federales como estatales o municipales, de cualquier otra naturaleza, serán a cargo del proveedor, con excepción del Impuesto al Valor Agregado."));
+            colIzq.Add(Clausula("1.7.", "El proveedor se obliga a dar las facilidades necesarias para que las dependencias del Sector Público Federal, Estatal y Municipal ejerzan las funciones que les concede la Ley de Adquisiciones, Arrendamientos y Servicios del Sector Público y su Reglamento, así como la Ley de Adquisiciones, Arrendamientos y Servicios del Sector Público Estatal y Municipal."));
+            colIzq.Add(Clausula("1.8.", "El proveedor, para el cumplimiento de las obligaciones pactadas en el presente pedido, presentará garantía de cumplimiento, la cual, sólo podrá constituirse mediante fianza, cheque certificado o de caja o hipoteca por el 10% del monto total contratado, a favor del Gobierno del Estado de Puebla a través de la Secretaría de Planeación y Finanzas."));
+            colIzq.Add(Clausula("1.9.", "Si el pedido es modificado por las partes, en términos de los artículos 112 Ley de Adquisiciones, Arrendamientos y Servicios del Sector Público Estatal y Municipal y/o 52 Ley de Adquisiciones, Arrendamientos y Servicios del Sector Público Federal, el proveedor se compromete a ampliar, disminuir o bien a modificar la garantía otorgada, según corresponda."));
+
+            colIzq.Add(TituloClausula("2.  DE LA GARANTÍA DE CALIDAD Y DE LA INSPECCIÓN"));
+            colIzq.Add(Clausula("2.1.", "El proveedor deberá garantizar la calidad de los productos ofrecidos y se obliga a su reposición, si al ser usados no corresponde a las especificaciones técnicas consignadas en el pedido."));
+            colIzq.Add(Clausula("2.2.", "El Sistema DIF Estatal a través de Control de Calidad, efectuará pruebas sobre la calidad de los artículos, pudiendo rechazar aquellos que no reúnan las especificaciones requeridas."));
+            colIzq.Add(Clausula("2.3.", "Independientemente de las pruebas que realice Control de Calidad, el proveedor responderá de los vicios ocultos que presenten los equipos, bienes y materiales entregados."));
+
+            tblBody.AddCell(colIzq);
+
+            // ── Columna derecha ───────────────────────────────────────────
+            var colDer = new Cell().SetBorder(Border.NO_BORDER).SetPadding(0f).SetPaddingLeft(5f);
+
+            colDer.Add(TituloClausula("3.  DE LA ENTREGA DE LOS ARTÍCULOS"));
+            colDer.Add(Clausula("3.1.", "El proveedor acepta el presente pedido y se compromete a la entrega de cada uno de los bienes señalados, por la(s) cantidad(es) detallada(s), en el lugar y periodo indicado y con las especificaciones requeridas. El incumplimiento en los plazos de entrega o en las cantidades solicitadas será motivo de aplicación de una pena convencional consistente en la cantidad que corresponda a razón del 0.7% sobre el importe total de lo incumplido. Para efecto de la aplicación de esta sanción se tomará como fecha de entrega la indicada en el presente pedido."));
+            colDer.Add(Clausula("3.2.", "La cancelación total o parcial de la(s) partida(s) adjudicada(s) en el presente pedido, será motivo de la aplicación de una pena convencional a razón del 10% sobre el importe total de la(s) partida(s) no entregada(s)."));
+            colDer.Add(Clausula("3.3.", "Cuando el proveedor no pueda surtir los artículos solicitados en la fecha convenida por caso fortuito o fuerza mayor plenamente justificada, siempre y cuando no haya contribuido a ello, podrá solicitar por escrito una ampliación al plazo de entrega fijado; en la inteligencia que de concederse el plazo solicitado y este no surte el pedido, la sanción mencionada en el punto anterior se aplicará desde la fecha inicialmente estipulada."));
+            colDer.Add(Clausula("3.4.", "Sólo podrán entregarse artículos distintos o que se consideren equivalentes a los estipulados en los pedidos, con autorización previa y por escrito del Sistema DIF Estatal."));
+            colDer.Add(Clausula("3.5.", "Los bienes entregados que no cumplan con los requisitos y especificaciones solicitadas, serán sustituidos por el proveedor en un plazo de 48 horas, contadas a partir de que le sea notificado el bien que se encuentre con las deficiencias."));
+
+            colDer.Add(TituloClausula("4.  DE LA FACTURACIÓN."));
+            colDer.Add(Clausula("4.1.", "La(s) factura(s) deberá(n) describir los artículos y la misma redacción del pedido, mostrar claramente el número de pedido y el número de requisición."));
+            colDer.Add(Clausula("4.2.", "La(s) factura(s) deberá(n) cumplir con los requisitos fiscales previstos en los artículos 29 y 29A del Código Fiscal de la Federación, acompañada(s) de los documento(s) que ampare el ingreso de los bienes en el almacén general del Sistema DIF Estatal, el cual contendrá sello y firma de recepción a entera satisfacción."));
+
+            colDer.Add(TituloClausula("5.  DE LA FORMA DE PAGO."));
+            colDer.Add(Clausula("5.1.", "El pago se realizará posterior a la entrega de los bienes recibidos a entera satisfacción, de acuerdo a lo siguiente:"));
+            colDer.Add(new Paragraph("(   )  Tratándose de contratos fijos, dentro de los 30 días naturales siguientes a la presentación de la factura correspondiente.")
+                .SetFont(regular).SetFontSize(5.6f).SetFontColor(darkText).SetMultipliedLeading(1.25f).SetMarginBottom(2f));
+            colDer.Add(new Paragraph("(   )  Tratándose de contratos abiertos, dentro de los 30 días naturales siguientes a la presentación de la factura correspondiente a cada pedido que realice el Sistema DIF Estatal al proveedor.")
+                .SetFont(regular).SetFontSize(5.6f).SetFontColor(darkText).SetMultipliedLeading(1.25f).SetMarginBottom(2f));
+            colDer.Add(new Paragraph("(   )  A mes vencido, dentro de los 30 días naturales siguientes a la presentación de la factura correspondiente.")
+                .SetFont(regular).SetFontSize(5.6f).SetFontColor(darkText).SetMultipliedLeading(1.25f).SetMarginBottom(2f));
+
+            colDer.Add(TituloClausula("6.  DEL PAGO DE DERECHOS."));
+            colDer.Add(Clausula("6.1.", "Con fundamento en el artículo 36 fracción V, de la Ley de Ingresos del Estado de Puebla, para el Ejercicio Fiscal 2025, este organismo de asistencia social procederá a retener al proveedor adjudicado el 5 al millar sobre el subtotal por cada factura generada."));
+
+            tblBody.AddCell(colDer);
+            doc.Add(tblBody);
+
+            // ── Caja de obligación ────────────────────────────────────────
+            doc.Add(new Paragraph(" ").SetFontSize(4f));
+            var tblOblig = new Table(UnitValue.CreatePercentArray(new float[] { 100f })).UseAllAvailableWidth();
+            tblOblig.AddCell(new Cell().SetBorder(borde).SetPadding(6f)
+                .Add(new Paragraph("EL PROVEEDOR SE OBLIGA A ENTREGAR LOS BIENES EN LOS TÉRMINOS PACTADOS EN ESTE PEDIDO Y SUJETA A LAS DISPOSICIONES DE LA LEY DE ADQUISICIONES, ARRENDAMIENTOS Y SERVICIOS DEL SECTOR PÚBLICO ESTATAL Y MUNICIPAL Y/O LEY DE ADQUISICIONES, ARRENDAMIENTOS Y SERVICIOS DEL SECTOR PÚBLICO.")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(darkText).SetTextAlignment(TextAlignment.CENTER)));
+            doc.Add(tblOblig);
+
+            // ── Datos del representante ───────────────────────────────────
+            doc.Add(new Paragraph(" ").SetFontSize(3f));
+            var tblRep = new Table(UnitValue.CreatePercentArray(new float[] { 50f, 50f })).UseAllAvailableWidth();
+            tblRep.AddCell(new Cell().SetBorder(borde).SetPadding(5f).SetMinHeight(18f)
+                .Add(new Paragraph("NOMBRE DEL REPRESENTANTE").SetFont(bold).SetFontSize(6f).SetFontColor(grayText)));
+            tblRep.AddCell(new Cell().SetBorder(borde).SetPadding(5f).SetMinHeight(18f)
+                .Add(new Paragraph("CARGO").SetFont(bold).SetFontSize(6f).SetFontColor(grayText)));
+            tblRep.AddCell(new Cell().SetBorder(borde).SetPadding(5f).SetMinHeight(18f)
+                .Add(new Paragraph("TELÉFONO").SetFont(bold).SetFontSize(6f).SetFontColor(grayText)));
+            tblRep.AddCell(new Cell().SetBorder(borde).SetPadding(5f).SetMinHeight(18f)
+                .Add(new Paragraph("FECHA").SetFont(bold).SetFontSize(6f).SetFontColor(grayText)));
+            doc.Add(tblRep);
+
+            // ── Firma ─────────────────────────────────────────────────────
+            doc.Add(new Paragraph(" ").SetFontSize(4f));
+            var tblFirma = new Table(UnitValue.CreatePercentArray(new float[] { 100f })).UseAllAvailableWidth();
+            tblFirma.AddCell(new Cell().SetBorder(borde).SetPadding(8f).SetMinHeight(55f)
+                .SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.BOTTOM)
+                .Add(new Paragraph("FIRMA").SetFont(bold).SetFontSize(6.5f).SetFontColor(grayText)));
+            doc.Add(tblFirma);
+
+            doc.Add(new Paragraph(" ").SetFontSize(4f));
+            var tblAcredita = new Table(UnitValue.CreatePercentArray(new float[] { 100f })).UseAllAvailableWidth();
+            tblAcredita.AddCell(new Cell().SetBorder(borde).SetPadding(6f)
+                .Add(new Paragraph("EL REPRESENTANTE ACREDITA SU PODER PARA FIRMAR EL PEDIDO DE LA SIGUIENTE MANERA.")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(darkText)));
+            doc.Add(tblAcredita);
+
             doc.Close();
             return ms.ToArray();
         }
