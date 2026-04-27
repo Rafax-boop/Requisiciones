@@ -87,6 +87,8 @@ public partial class TblRequisicion
 
     public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();
 
+    public virtual ICollection<TblRequisicionDetalleMunicipio> TblRequisicionDetalleMunicipios { get; set; } = new List<TblRequisicionDetalleMunicipio>();
+
     public virtual ICollection<TblRequisicionDetalle> TblRequisicionDetalles { get; set; } = new List<TblRequisicionDetalle>();
 
     public virtual ICollection<TblTablaApiHistorial> TblTablaApiHistorials { get; set; } = new List<TblTablaApiHistorial>();

@@ -58,5 +58,7 @@ namespace Inventario.BLL.DTO
         public int? Llenado11 { get; set; }
         public int? Llenado12 { get; set; }
         public int? Mes { get; set; }
+
+        public List<MunicipioItemDTO>? Municipios { get; set; }
     }
 }

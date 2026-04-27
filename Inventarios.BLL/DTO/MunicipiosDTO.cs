@@ -12,6 +12,12 @@ namespace Inventario.BLL.DTO
         public string Municipio { get; set; }
     }
 
+    public class MunicipioItemDTO
+    {
+        public int IdMunicipio { get; set; }
+        public decimal Cantidad { get; set; }
+    }
+
     public class ProveedoresDTO
     {
         public int Id { get; set; }

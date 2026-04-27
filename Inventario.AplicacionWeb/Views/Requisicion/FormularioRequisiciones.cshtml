@@ -221,20 +221,29 @@
                 </div>
             </div>
             <div class="modal-body modal-body-premium">
-                <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 1rem;"></p>
-                <div class="formulario-input">
-                    <label>Municipio (opcional)</label>
-                    <select id="wizardMuniSelect" class="form-select select2" title="Municipio">
-                        <option value="">-- Sin municipio --</option>
-                        @if (ViewBag.ListaMunicipios != null)
-                        {
-                            foreach (var m in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.ListaMunicipios)
-                            {
-                                <option value="@m.Value">@m.Text</option>
-                            }
-                        }
-                    </select>
+                <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 0.5rem;"></p>
+
+                <!-- Indicador de cantidad -->
+                <div id="wizardMuniCantidadInfo" style="font-size:12px; margin-bottom:1rem; color:var(--slate-500,#64748b);">
+                    Cantidad requerida: <strong id="wizardMuniCantidadReq">0</strong> &nbsp;|&nbsp;
+                    Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
                 </div>
+
+                <!-- Tabla de distribución -->
+                <table class="table table-bordered table-sm" id="wizardMuniTabla">
+                    <thead>
+                        <tr>
+                            <th style="width:60%">Municipio</th>
+                            <th style="width:30%">Cantidad</th>
+                            <th style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="wizardMuniTbody"></tbody>
+                </table>
+
+                <button type="button" class="btn boton-gris btn-sm mt-1" id="btnWizardMuniAgregarFila">
+                    <i class="fa-solid fa-plus"></i> Agregar municipio
+                </button>
             </div>
             <div class="modal-footer" style="justify-content:space-between;">
                 <button type="button" class="btn boton-gris" id="btnWizardMuniAnterior" style="display:none;">
@@ -259,6 +268,14 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script>
+    window.municipiosOpciones = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        ((List<SelectListItem>)ViewBag.ListaMunicipios).Select(m => new {
+            id = m.Value,
+            nombre = m.Text
+        })
+    ));
+</script>
     <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>
     @if (modoEdicion && Model.Articulos != null && Model.Articulos.Any())
     {

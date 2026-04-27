@@ -120,7 +120,14 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var dto = await _usuarioService.ObtenerDatosDepartamento(idUsuario);
             var vm = _mapper.Map<VMRequiForm>(dto);
+            ViewBag.UsaFlujoContinuar = true;
 
+            var municipios = await _municipioService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Municipio
+            }).ToList();
             return View(vm);
         }
 
@@ -318,6 +325,16 @@ namespace Inventario.AplicacionWeb.Controllers
             var resultado = await _requisicionesService.AceptarExpediente(modelo.IdRequisicion, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FinalizarRequisicion([FromBody] FinalizarRequiVM modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var resultado = await _requisicionesService.FinalizarRequisicion(
+                modelo.IdRequisicion, modelo.Observaciones, idUsuario);
+
+            return Json(new { success = resultado });
         }
 
         /// <summary>IDs por pestaña para notificaciones (sondeo en cliente).</summary>

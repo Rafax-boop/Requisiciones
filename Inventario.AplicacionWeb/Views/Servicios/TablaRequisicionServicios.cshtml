@@ -33,7 +33,8 @@
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
      data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")"
      data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
-     data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")">
+     data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")"
+     data-url-finalizar="@Url.Action("FinalizarRequisicion", "Servicios")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -334,6 +335,16 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
+                                    @if (User.IsInRole("6") || User.IsInRole("7"))  // ajusta los roles que pueden finalizar
+                                    {
+                                        if (item.IdEstatus == 7)
+                                        {
+                                            <button class="btn-accion" title="Confirmar entrega"
+                                                    onclick="abrirModalFinalizar(@item.IdRequi)">
+                                                <i class="fa-solid fa-circle-check"></i>
+                                            </button>
+                                        }
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -556,6 +567,40 @@
         </div>
     </div>
     }
+
+    <!-- Modal Finalizar Requisición -->
+    <div class="modal" id="modalFinalizar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:460px;">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium">Confirmar entrega</h5>
+                        <p class="modal-subtitulo-premium">Registrar finalización de la requisición</p>
+                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="modal-body modal-body-premium">
+                    <div class="formulario-input">
+                        <label>Observaciones de cierre</label>
+                        <textarea id="txtObservacionesFinalizar" class="form-control" rows="4"
+                                  placeholder="Describe la entrega o añade notas de cierre..."></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1.25rem;">
+                        <button type="button" class="btn boton-gris"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn boton-rosa"
+                                onclick="confirmarFinalizar()">
+                            <i class="fa-solid fa-circle-check"></i> Confirmar entrega
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal expediente completo (solo tab verificadas) -->

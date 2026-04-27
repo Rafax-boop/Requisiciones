@@ -196,6 +196,53 @@
               placeholder="Escribe la descripción detallada aquí..."></textarea>
 </div>
 
+<!-- Modal wizard distribución por municipio -->
+<div class="modal fade" id="modalMunicipiosWizard" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Distribución por municipio</h5>
+                    <p class="modal-subtitulo-premium" id="wizardMuniSubtitulo">Partida 1 de 1</p>
+                </div>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 0.5rem;"></p>
+
+                <!-- Indicador de cantidad -->
+                <div id="wizardMuniCantidadInfo" style="font-size:12px; margin-bottom:1rem; color:var(--slate-500,#64748b);">
+                    Cantidad requerida: <strong id="wizardMuniCantidadReq">0</strong> &nbsp;|&nbsp;
+                    Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
+                </div>
+
+                <!-- Tabla de distribución -->
+                <table class="table table-bordered table-sm" id="wizardMuniTabla">
+                    <thead>
+                        <tr>
+                            <th style="width:60%">Municipio</th>
+                            <th style="width:30%">Cantidad</th>
+                            <th style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="wizardMuniTbody"></tbody>
+                </table>
+
+                <button type="button" class="btn boton-gris btn-sm mt-1" id="btnWizardMuniAgregarFila">
+                    <i class="fa-solid fa-plus"></i> Agregar municipio
+                </button>
+            </div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <button type="button" class="btn boton-gris" id="btnWizardMuniAnterior" style="display:none;">
+                    <i class="fa-solid fa-chevron-left"></i> Anterior
+                </button>
+                <button type="button" class="btn boton-rosa" id="btnWizardMuniSiguiente">
+                    Siguiente <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Mismo lightbox que Presupuesto / tablas / expediente -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
@@ -206,6 +253,14 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script>
+    window.municipiosOpciones = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        ((List<SelectListItem>)ViewBag.ListaMunicipios).Select(m => new {
+            id = m.Value,
+            nombre = m.Text
+        })
+    ));
+</script>
     <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>
 
     @if (modoEdicion && Model.Articulos != null && Model.Articulos.Any())

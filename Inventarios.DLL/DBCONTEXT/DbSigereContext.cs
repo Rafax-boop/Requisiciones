@@ -50,6 +50,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; }
 
+    public virtual DbSet<TblRequisicionDetalleMunicipio> TblRequisicionDetalleMunicipios { get; set; }
+
     public virtual DbSet<TblRol> TblRols { get; set; }
 
     public virtual DbSet<TblTablaApiHistorial> TblTablaApiHistorials { get; set; }
@@ -249,8 +251,6 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.NombreRegion).HasMaxLength(50);
-
-            entity.Ignore(e => e.TblRequisicionDetalles);
         });
 
         modelBuilder.Entity<TblPartidaPresupuestal>(entity =>
@@ -428,10 +428,6 @@ public partial class DbSigereContext : DbContext
 
             entity.ToTable("TblRequisicionDetalle");
 
-            // Ignorar por ahora ya que la columna no existe en la DB
-            entity.Ignore(e => e.IdMunicipio);
-            entity.Ignore(e => e.IdMunicipioNavigation);
-
             entity.Property(e => e.Cantidad).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(150)
@@ -447,12 +443,6 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdArticuloNavigation).WithMany(p => p.TblRequisicionDetalles)
                 .HasForeignKey(d => d.IdArticulo)
                 .HasConstraintName("FK_TblRequisicionDetalle_tblArticulos");
-
-            /*
-            entity.HasOne(d => d.IdMunicipioNavigation).WithMany(p => p.TblRequisicionDetalles)
-                .HasForeignKey(d => d.IdMunicipio)
-                .HasConstraintName("FK_TblRequisicionDetalle_TblMunicipio");
-            */
 
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalles)
                 .HasForeignKey(d => d.IdRequisicion)
@@ -490,6 +480,33 @@ public partial class DbSigereContext : DbContext
                 .HasForeignKey(d => d.IdRequisicionDetalle)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Movimiento_Detalle");
+        });
+
+        modelBuilder.Entity<TblRequisicionDetalleMunicipio>(entity =>
+        {
+            entity.HasKey(e => e.IdDetalleMunicipio).HasName("PK__TblRequi__2EEA9C5E8FCB48C6");
+
+            entity.ToTable("TblRequisicionDetalleMunicipio");
+
+            entity.Property(e => e.Cantidad).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.FechaRegistro)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.IdMunicipioNavigation).WithMany(p => p.TblRequisicionDetalleMunicipios)
+                .HasForeignKey(d => d.IdMunicipio)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DetalleMunicipio_Municipio");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRequisicionDetalleMunicipios)
+                .HasForeignKey(d => d.IdRequisicion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DetalleMunicipio_Requisicion");
+
+            entity.HasOne(d => d.IdRequisicionDetalleNavigation).WithMany(p => p.TblRequisicionDetalleMunicipios)
+                .HasForeignKey(d => d.IdRequisicionDetalle)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DetalleMunicipio_Detalle");
         });
 
         modelBuilder.Entity<TblRol>(entity =>
