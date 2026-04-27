@@ -427,6 +427,8 @@
             }
 
             // Botón confirmar ganador
+            $paso.find("#btnConfirmarGanador").closest("div").remove(); // ← FIX 1
+
             $paso.append(
                 $('<div style="margin-top:16px;text-align:right;">').append(
                     $('<button type="button" class="btn boton-rosa" id="btnConfirmarGanador">')
@@ -438,6 +440,12 @@
             $paso.show();
         }).fail(function () {
             Swal.fire({ icon: "error", title: "Error al cargar opciones de ganador." });
+            // ← FIX 2: restaurar navegación para no dejar al usuario atrapado
+            $("#btnWizardSiguiente").show();
+            $("#btnWizardAnterior").show();
+            $("#modalProveedoresFilas").show();
+            $("#btnModalProveedoresAgregar").show();
+            $("#wizardProveedoresNombrePartida").show();
         });
     }
 
