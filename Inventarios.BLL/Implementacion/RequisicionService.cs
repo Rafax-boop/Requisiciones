@@ -247,15 +247,21 @@ namespace Inventario.BLL.Implementacion
             var maestra = await queryMaestra.FirstOrDefaultAsync();
 
             var queryMovimientos = await _repoMovimiento.Consultar(
-                m => m.IdRequisicion == idMaestro && m.TipoMovimiento == "COMPRA");
-            var idsParaCompra = await queryMovimientos
-                .Select(m => m.IdRequisicionDetalle)
-                .Distinct()
-                .ToListAsync();
+                m => m.IdRequisicion == idMaestro);
+            var movimientos = await queryMovimientos.ToListAsync();
 
-            var query = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idMaestro);
-            if (idsParaCompra.Any())
-                query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
+            // Para cada partida, el movimiento más relevante (último por fecha)
+            var movimientoPorPartida = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(m => m.FechaMovimiento).First()
+                );
+
+            // Traer TODAS las partidas sin filtrar
+            var query = await _repositoryRequisicionDetalle
+                .Consultar(r => r.IdRequisicion == idMaestro);
+
             var lista = await query
                 .Select(r => new DetalleArticuloDTO
                 {
@@ -268,6 +274,27 @@ namespace Inventario.BLL.Implementacion
                     DescripcionDetallada = r.DescripcionDetallada
                 })
                 .ToListAsync();
+
+            // Calcular EstatusPartida por cada artículo
+            bool requiEntregada = maestra?.IdEstatus == 12;
+            foreach (var art in lista)
+            {
+                if (movimientoPorPartida.TryGetValue(art.IdRequisicionDetalle, out var mov))
+                {
+                    art.EstatusPartida = mov.TipoMovimiento switch
+                    {
+                        "COMPRA" => (mov.Confirmado.GetValueOrDefault()) ? "Entregado" : "En compra",
+                        "ENTREGA" => (mov.Confirmado.GetValueOrDefault()) ? "Entregado" : "En entrega",
+                        _ => "En compra"
+                    };
+                }
+                else
+                {
+                    art.EstatusPartida = requiEntregada ? "Entregado"
+                        : maestra?.IdEstatus == 7 ? "En entrega"
+                        : "En compra";
+                }
+            }
 
             List<string> fotos = new();
             if (maestra?.TipoServicio == "Servicio Impresion")

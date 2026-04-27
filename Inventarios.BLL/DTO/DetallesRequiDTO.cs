@@ -36,7 +36,7 @@ namespace Inventario.BLL.DTO
         public string? UnidadMedida { get; set; }
         public string? Descripcion { get; set; }
         public string? DescripcionDetallada { get; set; }
-
+        public string? EstatusPartida { get; set; }
         public string? TipoProgramacion { get; set; }
         public int? Llenado1 { get; set; }
         public int? Llenado2 { get; set; }

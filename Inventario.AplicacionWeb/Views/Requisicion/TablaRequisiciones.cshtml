@@ -101,8 +101,8 @@
         var numColsReq = 8;
         if (User.IsInRole("4")) numColsReq++;
         if (User.IsInRole("3") || User.IsInRole("4")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 4 && r.IdEstatus != 5).ToList();
-        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 4).ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
     }
@@ -793,6 +793,7 @@
                                 <th>Unidad Medida</th>
                                 <th>Descripción</th>
                                 <th>Descripción Detallada</th>
+                                <th>Estatus</th>
                                 <th>COG Editable</th>
                             </tr>
                         </thead>

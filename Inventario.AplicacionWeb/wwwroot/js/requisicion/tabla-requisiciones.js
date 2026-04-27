@@ -1627,9 +1627,25 @@
                         : textoCompleto || "Sin descripción...";
                     var tieneTexto = textoCompleto ? "tiene-texto" : "";
                     var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
+
+                    // Badge de estatus por partida
+                    var estatusPartida = item.estatusPartida || "";
+                    var coloresBadge = {
+                        "En compra": { bg: "#dbeafe", color: "#1d4ed8" },
+                        "En entrega": { bg: "#fef9c3", color: "#854d0e" },
+                        "Entregado": { bg: "#dcfce7", color: "#166534" }
+                    };
+                    var badge = coloresBadge[estatusPartida]
+                        ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
+                        'background:' + coloresBadge[estatusPartida].bg + ';' +
+                        'color:' + coloresBadge[estatusPartida].color + ';font-weight:600;">' +
+                        estatusPartida + '</span>'
+                        : "";
+
                     var tdCog = esDonativo
                         ? '<td><select class="select-cog-editable" style="width:120px;"></select></td>'
                         : "";
+
                     contenido +=
                         "<tr>" +
                         "<td>" + (item.numPartida || "") + "</td>" +
@@ -1639,6 +1655,7 @@
                         '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
                         '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
                         '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        '<td style="text-align:center">' + badge + '</td>' +
                         tdCog +
                         "</tr>";
                 });
