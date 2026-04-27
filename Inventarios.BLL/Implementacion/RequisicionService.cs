@@ -22,7 +22,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRegistroDiseno> _repositoryDisenos;
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
-        private readonly IGenericRepository<TblCotizacione> _repositoryCotizaciones;
+        private readonly IGenericRepository<TblRequisicionDetalleMunicipio> _repoMunicipiosDetalle;
         private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
@@ -34,7 +34,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblRegistroDiseno> repositoryDisenos,
             IGenericRepository<TblArticulosProgramado> repositoryProgramacion,
             IUnitOfWork unitOfWork,
-            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
+            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -46,6 +47,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryProgramacion = repositoryProgramacion;
             _unitOfWork = unitOfWork;
             _repoMovimiento = repoMovimiento;
+            _repoMunicipiosDetalle = repoMunicipiosDetalle;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -140,6 +142,33 @@ namespace Inventario.BLL.Implementacion
 
             if (listaProgramacion.Any())
                 await _repositoryProgramacion.CrearRango(listaProgramacion);
+
+            // Guardar distribución por municipio
+            var listaMunicipios = new List<TblRequisicionDetalleMunicipio>();
+
+            for (int i = 0; i < modelo.Articulos.Count; i++)
+            {
+                var item = modelo.Articulos[i];
+                if (item.Municipios == null || !item.Municipios.Any()) continue;
+
+                var detalle = listaArticulos[i];
+
+                foreach (var muni in item.Municipios)
+                {
+                    if (muni.IdMunicipio <= 0) continue;
+                    listaMunicipios.Add(new TblRequisicionDetalleMunicipio
+                    {
+                        IdRequisicion = requiCreada.IdRequisicion,
+                        IdRequisicionDetalle = detalle.IdRequisicionDetalle,
+                        IdMunicipio = muni.IdMunicipio,
+                        Cantidad = muni.Cantidad,
+                        FechaRegistro = DateTime.Now
+                    });
+                }
+            }
+
+            if (listaMunicipios.Any())
+                await _repoMunicipiosDetalle.CrearRango(listaMunicipios);
 
             return requiCreada;
         }

@@ -120,7 +120,14 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var dto = await _usuarioService.ObtenerDatosDepartamento(idUsuario);
             var vm = _mapper.Map<VMRequiForm>(dto);
+            ViewBag.UsaFlujoContinuar = true;
 
+            var municipios = await _municipioService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Municipio
+            }).ToList();
             return View(vm);
         }
 

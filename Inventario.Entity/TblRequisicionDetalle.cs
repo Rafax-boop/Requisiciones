@@ -27,10 +27,6 @@ public partial class TblRequisicionDetalle
 
     public bool? Activo { get; set; }
 
-    public int? IdMunicipio { get; set; }
-
-    public virtual TblMunicipio? IdMunicipioNavigation { get; set; }
-
     public virtual TblArticulo? IdArticuloNavigation { get; set; }
 
     public virtual TblRequisicion IdRequisicionNavigation { get; set; } = null!;
@@ -40,4 +36,6 @@ public partial class TblRequisicionDetalle
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 
     public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();
+
+    public virtual ICollection<TblRequisicionDetalleMunicipio> TblRequisicionDetalleMunicipios { get; set; } = new List<TblRequisicionDetalleMunicipio>();
 }

@@ -865,9 +865,10 @@
     }
 
     // ── Wizard distribución por municipio ──────────────────────────────────
-    var municipioWizardDatos = {};   // { idArticulo: idMunicipio|"" }
+    var municipioWizardDatos = {};   // { idArticulo: [ {idMunicipio, cantidad}, ... ] }
     var municipioWizardArticulos = [];
     var municipioWizardIdx = 0;
+    var _opcionesMuniHtml = '';
 
     function preguntarMunicipios() {
         Swal.fire({
@@ -890,65 +891,76 @@
     }
 
     function iniciarWizardMunicipios() {
-        // Leer los hidden-backup que crea bloquearSeccionArticulos (los selects ya están disabled)
         municipioWizardArticulos = [];
         $('#tablaArticulos tbody tr').each(function () {
             var $row = $(this);
-            var idArticulo = $row.find('input[data-backup="1"]').val() || $row.find('.select-articulo').val();
+            var idArticulo = $row.find('input[data-backup="1"]').val()
+                || $row.find('.select-articulo').val();
             var desc = $row.find('.desc-hidden').val() || 'Sin descripción';
-            if (idArticulo) municipioWizardArticulos.push({ idArticulo: idArticulo, descripcionDetallada: desc });
+            var cantidad = parseFloat($row.find('.cantidad-input').val()) || 0;
+            if (idArticulo) municipioWizardArticulos.push({
+                idArticulo: idArticulo,
+                descripcionDetallada: desc,
+                cantidad: cantidad
+            });
         });
+
+        // ← agrega este log para confirmar
+        console.log('municipioWizardArticulos:', municipioWizardArticulos);
+
         if (!municipioWizardArticulos.length) { mostrarExitoYEnviar(); return; }
+
         municipioWizardDatos = {};
         municipioWizardIdx = 0;
+        _opcionesMuniHtml = '<option value="">— Seleccione —</option>' +
+            (window.municipiosOpciones || []).map(function (m) {
+                return '<option value="' + m.id + '">' + m.nombre + '</option>';
+            }).join('');
 
         var modalEl = document.getElementById('modalMunicipiosWizard');
-        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        if (!modalEl) {
+            console.error('modalMunicipiosWizard no encontrado en el DOM');
+            mostrarExitoYEnviar();
+            return;
+        }
 
-        // Inicializar select2 y renderizar cuando el modal ya esté visible
+        // ← registrar listeners aquí, no al cargar el script
+        var btnSig = document.getElementById('btnWizardMuniSiguiente');
+        var btnAnt = document.getElementById('btnWizardMuniAnterior');
+        var btnAgregar = document.getElementById('btnWizardMuniAgregarFila');
+
+        // Clonar para limpiar listeners previos
+        if (btnSig) {
+            var nuevoSig = btnSig.cloneNode(true);
+            btnSig.parentNode.replaceChild(nuevoSig, btnSig);
+            nuevoSig.addEventListener('click', onClickSiguienteMunicipio);
+        }
+        if (btnAnt) {
+            var nuevoAnt = btnAnt.cloneNode(true);
+            btnAnt.parentNode.replaceChild(nuevoAnt, btnAnt);
+            nuevoAnt.addEventListener('click', onClickAnteriorMunicipio);
+        }
+
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         $(modalEl).one('shown.bs.modal', function () {
-            var $sel = $('#wizardMuniSelect');
-            if ($sel.data('select2')) $sel.select2('destroy');
-            $sel.select2({ dropdownParent: $(modalEl), width: '100%', language: 'es' });
+            if (btnAgregar) {
+                btnAgregar.addEventListener('click', function () {
+                    agregarFilaMunicipio();
+                    actualizarTotalMunicipio(municipioWizardArticulos[municipioWizardIdx].cantidad);
+                });
+            }
             renderizarPasoMunicipio(0);
         });
 
-        // Esperar a que Swal cierre completamente antes de abrir el modal Bootstrap
-        // (de lo contrario los backdrops colisionan y el modal no se muestra)
         setTimeout(function () { modal.show(); }, 200);
     }
 
-    function renderizarPasoMunicipio(idx) {
-        var art = municipioWizardArticulos[idx];
-        var total = municipioWizardArticulos.length;
-
-        document.getElementById('wizardMuniSubtitulo').textContent = 'Partida ' + (idx + 1) + ' de ' + total;
-        document.getElementById('wizardMuniNombrePartida').textContent = art.descripcionDetallada || '';
-
-        var $sel = $('#wizardMuniSelect');
-        var val = municipioWizardDatos[art.idArticulo] || '';
-        if ($sel.data('select2')) {
-            $sel.val(val).trigger('change');
-        } else {
-            $sel.val(val);
+    function onClickSiguienteMunicipio() {
+        var val = validarMunicipioActual();
+        if (!val.valido) {
+            Swal.fire({ icon: 'warning', title: 'Cantidades incorrectas', text: val.mensaje, confirmButtonColor: 'var(--rosa-400)' });
+            return;
         }
-
-        document.getElementById('btnWizardMuniAnterior').style.display = idx > 0 ? '' : 'none';
-
-        var $btnSig = document.getElementById('btnWizardMuniSiguiente');
-        if (idx === total - 1) {
-            $btnSig.innerHTML = 'Guardar <i class="fa-solid fa-floppy-disk"></i>';
-        } else {
-            $btnSig.innerHTML = 'Siguiente <i class="fa-solid fa-chevron-right"></i>';
-        }
-    }
-
-    function guardarMunicipioActual() {
-        var art = municipioWizardArticulos[municipioWizardIdx];
-        municipioWizardDatos[art.idArticulo] = $('#wizardMuniSelect').val() || '';
-    }
-
-    document.getElementById('btnWizardMuniSiguiente') && document.getElementById('btnWizardMuniSiguiente').addEventListener('click', function () {
         guardarMunicipioActual();
         if (municipioWizardIdx < municipioWizardArticulos.length - 1) {
             municipioWizardIdx++;
@@ -959,13 +971,127 @@
             bootstrap.Modal.getInstance(modalEl).hide();
             mostrarExitoYEnviar();
         }
-    });
+    }
 
-    document.getElementById('btnWizardMuniAnterior') && document.getElementById('btnWizardMuniAnterior').addEventListener('click', function () {
+    function onClickAnteriorMunicipio() {
         guardarMunicipioActual();
         municipioWizardIdx--;
         renderizarPasoMunicipio(municipioWizardIdx);
-    });
+    }
+
+    function renderizarPasoMunicipio(idx) {
+        var art = municipioWizardArticulos[idx];
+        var total = municipioWizardArticulos.length;
+
+        document.getElementById('wizardMuniSubtitulo').textContent = 'Partida ' + (idx + 1) + ' de ' + total;
+        document.getElementById('wizardMuniNombrePartida').textContent = art.descripcionDetallada || '';
+        document.getElementById('wizardMuniCantidadReq').textContent = art.cantidad;
+
+        var tbody = document.getElementById('wizardMuniTbody');
+        tbody.innerHTML = '';
+
+        var filas = municipioWizardDatos[art.idArticulo] || [];
+        if (filas.length === 0) {
+            agregarFilaMunicipio();
+        } else {
+            filas.forEach(function (f) {
+                agregarFilaMunicipio(f.idMunicipio, f.cantidad);
+            });
+        }
+
+        actualizarTotalMunicipio(art.cantidad);
+
+        document.getElementById('btnWizardMuniAnterior').style.display = idx > 0 ? '' : 'none';
+
+        var btnSig = document.getElementById('btnWizardMuniSiguiente');
+        btnSig.innerHTML = idx === total - 1
+            ? 'Guardar <i class="fa-solid fa-floppy-disk"></i>'
+            : 'Siguiente <i class="fa-solid fa-chevron-right"></i>';
+    }
+
+    function agregarFilaMunicipio(idMuniVal, cantidadVal) {
+        var tbody = document.getElementById('wizardMuniTbody');
+        var tr = document.createElement('tr');
+
+        var tdSelect = document.createElement('td');
+        var select = document.createElement('select');
+        select.className = 'form-select form-select-sm muni-fila-select';
+        select.innerHTML = _opcionesMuniHtml;
+        if (idMuniVal) select.value = idMuniVal;
+        tdSelect.appendChild(select);
+        tr.appendChild(tdSelect);
+
+        var tdCantidad = document.createElement('td');
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '1';
+        input.className = 'form-control form-control-sm muni-fila-cantidad';
+        input.value = cantidadVal !== undefined ? cantidadVal : '';
+        input.placeholder = '0';
+        input.addEventListener('input', function () {
+            actualizarTotalMunicipio(municipioWizardArticulos[municipioWizardIdx].cantidad);
+        });
+        tdCantidad.appendChild(input);
+        tr.appendChild(tdCantidad);
+
+        var tdElim = document.createElement('td');
+        tdElim.className = 'text-center';
+        var btnElim = document.createElement('button');
+        btnElim.type = 'button';
+        btnElim.className = 'btn btn-danger btn-sm';
+        btnElim.innerHTML = '<i class="fa-solid fa-circle-minus"></i>';
+        btnElim.addEventListener('click', function () {
+            tr.remove();
+            actualizarTotalMunicipio(municipioWizardArticulos[municipioWizardIdx].cantidad);
+        });
+        tdElim.appendChild(btnElim);
+        tr.appendChild(tdElim);
+
+        tbody.appendChild(tr);
+    }
+
+    function actualizarTotalMunicipio(cantidadRequerida) {
+        var total = 0;
+        document.querySelectorAll('#wizardMuniTbody .muni-fila-cantidad').forEach(function (inp) {
+            total += parseFloat(inp.value) || 0;
+        });
+        var el = document.getElementById('wizardMuniCantidadAsig');
+        el.textContent = total;
+        el.style.color = Math.abs(total - cantidadRequerida) < 0.01 ? '#22c55e' : '#ef4444';
+    }
+
+    function guardarMunicipioActual() {
+        var art = municipioWizardArticulos[municipioWizardIdx];
+        var filas = [];
+        document.querySelectorAll('#wizardMuniTbody tr').forEach(function (tr) {
+            var sel = tr.querySelector('.muni-fila-select');
+            var inp = tr.querySelector('.muni-fila-cantidad');
+            if (sel && sel.value) {
+                filas.push({ idMunicipio: sel.value, cantidad: parseFloat(inp.value) || 0 });
+            }
+        });
+        municipioWizardDatos[art.idArticulo] = filas;
+    }
+
+    function validarMunicipioActual() {
+        var art = municipioWizardArticulos[municipioWizardIdx];
+        var total = 0;
+        var hayFilas = false;
+        document.querySelectorAll('#wizardMuniTbody tr').forEach(function (tr) {
+            var sel = tr.querySelector('.muni-fila-select');
+            var inp = tr.querySelector('.muni-fila-cantidad');
+            if (sel && sel.value) {
+                hayFilas = true;
+                total += parseFloat(inp.value) || 0;
+            }
+        });
+        if (!hayFilas) return { valido: true };
+        if (Math.abs(total - art.cantidad) > 0.01) {
+            return { valido: false, mensaje: 'La suma (' + total + ') debe ser igual a la cantidad requerida (' + art.cantidad + ').' };
+        }
+        return { valido: true };
+    }
 
     function serializarMunicipios() {
         document.querySelectorAll('.wizard-hidden-muni').forEach(function (el) { el.remove(); });
@@ -973,18 +1099,20 @@
         $('#tablaArticulos tbody tr').each(function (i) {
             var idArticulo = $(this).find('.select-articulo').val();
             if (!idArticulo) return;
-            var idMuni = municipioWizardDatos[idArticulo];
-            if (!idMuni) return;
-
-            // COMENTADO: No guardar la distribución por municipio aún (DB no lista)
-            /*
-            var inp = document.createElement('input');
-            inp.type = 'hidden';
-            inp.name = 'Articulos[' + i + '].IdMunicipio';
-            inp.value = idMuni;
-            inp.className = 'wizard-hidden-muni';
-            form.appendChild(inp);
-            */
+            var filas = municipioWizardDatos[idArticulo];
+            if (!filas || !filas.length) return;
+            filas.forEach(function (f, j) {
+                function addHidden(name, value) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = name;
+                    inp.value = value || '';
+                    inp.className = 'wizard-hidden-muni';
+                    form.appendChild(inp);
+                }
+                addHidden('Articulos[' + i + '].Municipios[' + j + '].IdMunicipio', f.idMunicipio);
+                addHidden('Articulos[' + i + '].Municipios[' + j + '].Cantidad', f.cantidad);
+            });
         });
     }
 
