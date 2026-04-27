@@ -1305,5 +1305,378 @@ namespace Inventario.BLL.Implementacion
 
             return await query.ToListAsync();
         }
+
+        // ════════════════════════════════════════════════════════════════
+        // PEDIDO
+        // ════════════════════════════════════════════════════════════════
+
+        public async Task<PedidoVistaDTO> ObtenerPedidoEditableAsync(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
+                ?? throw new Exception($"No se encontró la requisición {idRequisicion}.");
+
+            string nombreDepartamento = "";
+            if (requisicion.IdDepartamento.HasValue)
+            {
+                var depto = await _repoDepartamento.Obtener(d => d.IdDepartamento == requisicion.IdDepartamento.Value);
+                nombreDepartamento = depto?.NombreDepartamento ?? "";
+            }
+
+            var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
+            var detalles = await queryDet
+                .Select(d => new
+                {
+                    d.IdRequisicionDetalle,
+                    d.Descripcion,
+                    d.Cantidad,
+                    d.UnidadMedida,
+                    Clave = d.IdArticuloNavigation != null ? d.IdArticuloNavigation.Clave : null,
+                    ClaveMaterial = d.IdArticuloNavigation != null ? (int?)d.IdArticuloNavigation.ClaveMaterial : null
+                })
+                .ToListAsync();
+
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => c.IdRequisicion == idRequisicion && c.IdRequiDetalle.HasValue && c.Importe.HasValue);
+            var cotizaciones = await queryCot
+                .Select(c => new
+                {
+                    c.IdProveedor,
+                    c.IdRequiDetalle,
+                    c.Importe,
+                    c.Iva,
+                    ProvNombre = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.NombreProvedor : "",
+                    ProvDireccion = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Direccion : "",
+                    ProvRfc = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Rfc : ""
+                })
+                .ToListAsync();
+
+            var cantidadPorPartida = detalles.ToDictionary(
+                d => d.IdRequisicionDetalle,
+                d => d.Cantidad ?? 1m);
+
+            var totalPorProveedor = cotizaciones
+                .Where(c => c.IdProveedor.HasValue)
+                .GroupBy(c => c.IdProveedor!.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(c =>
+                    {
+                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                        var precio = c.Importe!.Value * cant;
+                        return c.Iva == true ? precio * 1.16m : precio;
+                    }));
+
+            var idGanador = totalPorProveedor
+                .Where(kv => kv.Value > 0)
+                .OrderBy(kv => kv.Value)
+                .Select(kv => (int?)kv.Key)
+                .FirstOrDefault();
+
+            var provGanador = idGanador.HasValue
+                ? cotizaciones.FirstOrDefault(c => c.IdProveedor == idGanador)
+                : null;
+
+            var cotGanadora = cotizaciones
+                .Where(c => c.IdProveedor == idGanador && c.IdRequiDetalle.HasValue)
+                .GroupBy(c => c.IdRequiDetalle!.Value)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var dto = new PedidoVistaDTO
+            {
+                IdRequisicion = idRequisicion,
+                NumRequisicion = requisicion.NumRequisicion ?? "",
+                ProveedorNombre = provGanador?.ProvNombre ?? "",
+                ProveedorDireccion = provGanador?.ProvDireccion ?? "",
+                ProveedorRfc = provGanador?.ProvRfc ?? "",
+                Departamento = nombreDepartamento,
+                Responsable = requisicion.NomResponsableDepartamento ?? "",
+                LugarEntrega = requisicion.LugarEntrega ?? "",
+                PartidaPresupuestal = requisicion.IdPp?.ToString() ?? ""
+            };
+
+            for (int i = 0; i < detalles.Count; i++)
+            {
+                var det = detalles[i];
+                cotGanadora.TryGetValue(det.IdRequisicionDetalle, out var cot);
+                dto.Partidas.Add(new PedidoPartidaVistaDTO
+                {
+                    Numero = i + 1,
+                    Clave = det.Clave ?? det.ClaveMaterial?.ToString() ?? "",
+                    Descripcion = det.Descripcion ?? "",
+                    Cantidad = det.Cantidad ?? 1m,
+                    UnidadMedida = det.UnidadMedida ?? "",
+                    PrecioUnitario = cot?.Importe ?? 0m,
+                    TieneIva = cot?.Iva ?? false
+                });
+            }
+
+            // Precalcular totales para que la vista los muestre por defecto
+            decimal sumaInicial = dto.Partidas.Sum(p => p.PrecioUnitario * p.Cantidad);
+            decimal ivaInicial = sumaInicial * 0.16m;
+            decimal subtotalInicial = sumaInicial + ivaInicial;
+            decimal retencionInicial = subtotalInicial * 0.005m;
+            dto.Suma = sumaInicial;
+            dto.Iva = ivaInicial;
+            dto.Descuento = 0m;
+            dto.Subtotal = subtotalInicial;
+            dto.Retencion = retencionInicial;
+            dto.Total = subtotalInicial - retencionInicial;
+
+            return dto;
+        }
+
+        public async Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath)
+        {
+            var vista = await ObtenerPedidoEditableAsync(form.IdRequisicion);
+            vista.NumeroPedido = form.NumeroPedido;
+            vista.TiempoEntrega = form.TiempoEntrega;
+            vista.CondicionesPago = form.CondicionesPago;
+
+            // Usar totales editados por el usuario
+            decimal suma       = form.Suma;
+            decimal iva        = form.Iva;
+            decimal descuento  = form.Descuento;
+            decimal subtotal   = form.Subtotal;
+            decimal retencion  = form.Retencion;
+            decimal total      = form.Total;
+
+            var MX = new System.Globalization.CultureInfo("es-MX");
+            string Fmt(decimal v) => v.ToString("C2", MX);
+
+            var ms = new MemoryStream();
+            using var pdfWriter = new PdfWriter(ms);
+            using var pdfDoc = new PdfDocument(pdfWriter);
+            var doc = new Document(pdfDoc, PageSize.LETTER);
+            doc.SetMargins(18f, 22f, 18f, 22f);
+
+            var bold    = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+            var regular = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+
+            var borde     = new SolidBorder(PdfApiEstiloRequi.Borde, 0.85f);
+            var bordeGris = new SolidBorder(new DeviceRgb(203, 213, 225), 0.75f);
+
+            // ── helpers ──────────────────────────────────────────────────────
+            Cell CHead(string txt, int cs = 1, int rs = 1, TextAlignment al = TextAlignment.LEFT) =>
+                new Cell(rs, cs)
+                    .SetBorder(borde).SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                    .SetPadding(4f).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetTextAlignment(al)
+                    .Add(new Paragraph(S(txt)).SetFont(bold).SetFontSize(6.6f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla));
+
+            Cell CVal(string txt, int cs = 1, int rs = 1, TextAlignment al = TextAlignment.LEFT,
+                      bool negrita = false, float sz = 6.8f) =>
+                new Cell(rs, cs)
+                    .SetBorder(borde).SetPadding(4f)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetTextAlignment(al)
+                    .Add(new Paragraph(S(txt)).SetFont(negrita ? bold : regular).SetFontSize(sz)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal));
+
+            Cell CVacia(int cs = 1, int rs = 1, float h = 14f) =>
+                new Cell(rs, cs).SetHeight(h).SetPadding(0f).SetBorder(borde)
+                    .SetBackgroundColor(ColorConstants.WHITE);
+
+            // ── ENCABEZADO INSTITUCIONAL (logos + título) ─────────────────
+            var tblHeader = new Table(UnitValue.CreatePercentArray(new float[] { 18f, 64f, 18f }))
+                .UseAllAvailableWidth().SetBorder(borde);
+
+            var celdaIzq = new Cell().SetBorder(borde)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetTextAlignment(TextAlignment.CENTER).SetPadding(5f);
+            var rutaIzq = System.IO.Path.Combine(webRootPath, "img", "corazon.png");
+            if (System.IO.File.Exists(rutaIzq))
+                celdaIzq.Add(new Image(ImageDataFactory.Create(rutaIzq)).ScaleToFit(88f, 40f)
+                    .SetHorizontalAlignment(HorizontalAlignment.CENTER));
+            else
+                celdaIzq.Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(10f));
+            tblHeader.AddCell(celdaIzq);
+
+            var celdaCentro = new Cell().SetBorder(borde)
+                .SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(5f);
+            celdaCentro.Add(new Paragraph("SISTEMA PARA EL DESARROLLO INTEGRAL DE LA FAMILIA DEL ESTADO DE PUEBLA")
+                .SetFont(bold).SetFontSize(7f).SetFontColor(PdfApiEstiloRequi.TextoInstitucional));
+            celdaCentro.Add(new Paragraph("DIRECCIÓN DE ADMINISTRACIÓN Y FINANZAS")
+                .SetFont(bold).SetFontSize(6.5f).SetFontColor(PdfApiEstiloRequi.TextoInstitucional));
+            celdaCentro.Add(new Paragraph("DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES")
+                .SetFont(bold).SetFontSize(6.5f).SetFontColor(PdfApiEstiloRequi.TextoInstitucional));
+            celdaCentro.Add(new Paragraph($"PEDIDO DE COMPRA  Nº: {S(vista.NumeroPedido)}")
+                .SetFont(bold).SetFontSize(10f).SetFontColor(PdfApiEstiloRequi.RosaAcento).SetMarginTop(4f));
+            tblHeader.AddCell(celdaCentro);
+
+            var celdaDer = new Cell().SetBorder(borde)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetTextAlignment(TextAlignment.CENTER).SetPadding(5f);
+            var rutaDer = System.IO.Path.Combine(webRootPath, "img", "familias-dif-rosa.png");
+            if (System.IO.File.Exists(rutaDer))
+                celdaDer.Add(new Image(ImageDataFactory.Create(rutaDer)).ScaleToFit(92f, 40f)
+                    .SetHorizontalAlignment(HorizontalAlignment.CENTER));
+            else
+                celdaDer.Add(new Paragraph("Familias").SetFont(bold).SetFontSize(10f));
+            tblHeader.AddCell(celdaDer);
+            doc.Add(tblHeader);
+            doc.Add(new Paragraph(" ").SetMarginTop(3f));
+
+            // ── ENCABEZADO DATOS (proveedor / depto) ─────────────────────
+            var tblEnc = new Table(UnitValue.CreatePercentArray(new float[] { 22f, 28f, 22f, 28f }))
+                .UseAllAvailableWidth();
+
+            tblEnc.AddCell(CHead("PROVEEDOR ADJUDICADO", rs: 2, al: TextAlignment.CENTER));
+            tblEnc.AddCell(CVal(vista.ProveedorNombre, rs: 2, al: TextAlignment.CENTER, negrita: true));
+            tblEnc.AddCell(CHead("DEPARTAMENTO SOLICITANTE"));
+            tblEnc.AddCell(CVal(vista.Departamento, negrita: true));
+
+            tblEnc.AddCell(CHead("RESPONSABLE"));
+            tblEnc.AddCell(CVal(vista.Responsable));
+
+            tblEnc.AddCell(CHead("DIRECCIÓN", rs: 2));
+            tblEnc.AddCell(CVal(vista.ProveedorDireccion, rs: 2));
+            tblEnc.AddCell(CHead("LUGAR DE ENTREGA"));
+            tblEnc.AddCell(CVal(vista.LugarEntrega));
+
+            tblEnc.AddCell(CHead("TIEMPO DE ENTREGA"));
+            tblEnc.AddCell(CVal(vista.TiempoEntrega));
+
+            tblEnc.AddCell(CHead("R.F.C."));
+            tblEnc.AddCell(CVal(vista.ProveedorRfc));
+            tblEnc.AddCell(CHead("CONDICIONES DE PAGO"));
+            tblEnc.AddCell(CVal(vista.CondicionesPago));
+            doc.Add(tblEnc);
+
+            // ── PARTIDA PRESUPUESTAL ──────────────────────────────────────
+            var amarillo = new DeviceRgb(255, 250, 200);
+            var tblPP = new Table(UnitValue.CreatePercentArray(new float[] { 50f, 50f })).UseAllAvailableWidth();
+            tblPP.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(amarillo).SetPadding(4f)
+                .Add(new Paragraph($"PARTIDA PRESUPUESTAL: {S(vista.PartidaPresupuestal)}")
+                    .SetFont(bold).SetFontSize(7f).SetFontColor(new DeviceRgb(120, 80, 0))));
+            tblPP.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(amarillo).SetPadding(4f)
+                .Add(new Paragraph("USO: PARA USO DEL DEPARTAMENTO SOLICITANTE.")
+                    .SetFont(regular).SetFontSize(7f).SetFontColor(new DeviceRgb(120, 80, 0))));
+            doc.Add(tblPP);
+            doc.Add(new Paragraph(" ").SetMarginTop(2f));
+
+            // ── TABLA DE ARTÍCULOS ────────────────────────────────────────
+            var tblArt = new Table(UnitValue.CreatePercentArray(new float[] { 6f, 10f, 38f, 9f, 9f, 14f, 14f }))
+                .UseAllAvailableWidth();
+
+            foreach (var h in new[] { "No.", "CLAVE", "DESCRIPCIÓN", "CANTIDAD", "UNIDAD", "PRECIO UNITARIO", "PRECIO TOTAL" })
+                tblArt.AddHeaderCell(new Cell().SetBorder(borde)
+                    .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetPadding(4f)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetTextAlignment(TextAlignment.CENTER)
+                    .Add(new Paragraph(h).SetFont(bold).SetFontSize(6.2f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+
+            int minFilas = Math.Max(10, vista.Partidas.Count + 2);
+            for (int i = 0; i < minFilas; i++)
+            {
+                var bg = (i % 2 == 1) ? PdfApiEstiloRequi.FondoEncabezadoTabla : ColorConstants.WHITE;
+                if (i < vista.Partidas.Count)
+                {
+                    var p = vista.Partidas[i];
+                    decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                    tblArt.AddCell(CVal(p.Numero.ToString(), al: TextAlignment.CENTER));
+                    tblArt.AddCell(CVal(p.Clave));
+                    tblArt.AddCell(CVal(p.Descripcion));
+                    tblArt.AddCell(CVal(p.Cantidad.ToString("N0"), al: TextAlignment.CENTER));
+                    tblArt.AddCell(CVal(p.UnidadMedida, al: TextAlignment.CENTER));
+                    tblArt.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bg).SetPadding(4f)
+                        .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .Add(new Paragraph(Fmt(p.PrecioUnitario)).SetFont(regular).SetFontSize(6.8f)
+                            .SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
+                    tblArt.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bg).SetPadding(4f)
+                        .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .Add(new Paragraph(Fmt(precioTotal)).SetFont(bold).SetFontSize(6.8f)
+                            .SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
+                }
+                else
+                {
+                    for (int c = 0; c < 6; c++) tblArt.AddCell(CVacia());
+                    tblArt.AddCell(new Cell().SetHeight(14f).SetBorder(borde).SetBackgroundColor(bg).SetPadding(4f)
+                        .SetTextAlignment(TextAlignment.RIGHT)
+                        .Add(new Paragraph("").SetFont(regular).SetFontSize(6.8f)));
+                }
+            }
+            doc.Add(tblArt);
+
+            // ── TOTALES ───────────────────────────────────────────────────
+            var tblTot = new Table(UnitValue.CreatePercentArray(new float[] { 70f, 18f, 12f }))
+                .UseAllAvailableWidth();
+
+            // Celda vacía izquierda que ocupa todas las filas de totales
+            tblTot.AddCell(new Cell(6, 1).SetBorder(borde).SetBackgroundColor(ColorConstants.WHITE));
+
+            var totalesFilas = new (string Label, string Valor, bool esTotal)[]
+            {
+                ("SUMA",             Fmt(suma),      false),
+                ("I.V.A. 16%",       Fmt(iva),       false),
+                ("DESCUENTO",        Fmt(descuento), false),
+                ("SUBTOTAL",         Fmt(subtotal),  false),
+                ("RET. 5 AL MILLAR", Fmt(retencion), false),
+                ("TOTAL",            Fmt(total),     true)
+            };
+
+            foreach (var (lbl, val, esTotal) in totalesFilas)
+            {
+                var bgTotal = esTotal ? PdfApiEstiloRequi.RosaAcento : PdfApiEstiloRequi.FondoEncabezadoTabla;
+                var fgTotal = esTotal ? ColorConstants.WHITE : PdfApiEstiloRequi.TextoEncabezadoTabla;
+                var bgVal   = esTotal ? new DeviceRgb(255, 235, 240) : ColorConstants.WHITE;
+                tblTot.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bgTotal).SetPadding(4f)
+                    .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .Add(new Paragraph(lbl).SetFont(bold).SetFontSize(6.6f).SetFontColor(fgTotal)));
+                tblTot.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bgVal).SetPadding(4f)
+                    .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .Add(new Paragraph(val).SetFont(bold).SetFontSize(7f)
+                        .SetFontColor(esTotal ? PdfApiEstiloRequi.RosaAcento : PdfApiEstiloRequi.TextoPrincipal)));
+            }
+            doc.Add(tblTot);
+            doc.Add(new Paragraph(" ").SetMarginTop(4f));
+
+            // ── FIRMAS ────────────────────────────────────────────────────
+            var tblFirmas = new Table(UnitValue.CreatePercentArray(new float[] { 25f, 25f, 25f, 25f }))
+                .UseAllAvailableWidth();
+            var firmantes = new (string Cargo, string Nombre)[]
+            {
+                ("JEFE DE SECCIÓN DE ADQUISICIONES", "C. ROGER ROJAS PÉREZ"),
+                ("JEFA DE DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES", "C. MARIA GABRIELA OLIVARES ROBLES"),
+                ("DIRECTOR DE ADMINISTRACIÓN Y FINANZAS", "C. MARCOS MATAMOROS MORENO"),
+                ("RECIBÍ ORIGINAL", "PROVEEDOR")
+            };
+            foreach (var (cargo, nombre) in firmantes)
+            {
+                tblFirmas.AddCell(new Cell().SetBorder(borde).SetMinHeight(70f)
+                    .SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.TOP).SetPadding(5f)
+                    .Add(new Paragraph(cargo).SetFont(bold).SetFontSize(5.8f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoSecundario))
+                    .Add(new Paragraph("\n\n\n").SetFontSize(8f))
+                    .Add(new Paragraph(nombre).SetFont(bold).SetFontSize(6.2f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
+            }
+            doc.Add(tblFirmas);
+
+            // ── PIE DE PÁGINA ─────────────────────────────────────────────
+            doc.Add(new Paragraph(" ").SetMarginTop(4f));
+            var tblPie = new Table(UnitValue.CreatePercentArray(new float[] { 65f, 35f }))
+                .UseAllAvailableWidth();
+            var condiciones = new[]
+            {
+                "1. ENTREGAR LOS MATERIALES CONTENIDOS EN ESTE PEDIDO, DIRECTAMENTE AL ALMACÉN DIF SALVO INSTRUCCIONES EN CONTRARIO CON REMISIÓN/FACTURA EN 3 EJEMPLARES ENTREGANDO UNA COPIA EN LA SECCIÓN DE ADQUISICIONES.",
+                "2. PRESENTAR A REVISIÓN EN EL DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES, FACTURA ORIGINAL DEL PEDIDO Y SELLADO POR EL SOLICITANTE.",
+                "3. LOS PEDIDOS DEBEN ENTREGARSE A ENTERA SATISFACCIÓN DEL SOLICITANTE."
+            };
+            var parrafo = new Paragraph();
+            foreach (var c in condiciones)
+                parrafo.Add(new Text(c + "\n").SetFont(regular).SetFontSize(5.5f)
+                    .SetFontColor(PdfApiEstiloRequi.TextoPrincipal));
+            tblPie.AddCell(new Cell().SetBorder(borde).SetPadding(5f).Add(parrafo));
+
+            var dirParrafo = new Paragraph()
+                .Add(new Text("AV. REFORMA 1305 • CENTRO HISTÓRICO\nPUEBLA, PUE. C.P. 72000\nTEL: (222) 229-5200\n")
+                    .SetFont(regular).SetFontSize(6f).SetFontColor(new DeviceRgb(0, 70, 180)))
+                .Add(new Text("PEDIDO ORIGINAL").SetFont(bold).SetFontSize(7.5f)
+                    .SetFontColor(PdfApiEstiloRequi.RosaAcento));
+            tblPie.AddCell(new Cell().SetBorder(borde).SetPadding(6f)
+                .SetTextAlignment(TextAlignment.CENTER).SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .Add(dirParrafo));
+            doc.Add(tblPie);
+
+            doc.Close();
+            return ms.ToArray();
+        }
     }
 }

@@ -1,0 +1,271 @@
+@using Inventario.BLL.DTO
+@model PedidoVistaDTO
+@{
+    ViewData["Title"] = "Pedido de Compra";
+    var MX = new System.Globalization.CultureInfo("es-MX");
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/componentes/form-comun.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/financieros/editar-tabla-api.css" asp-append-version="true" />
+    <style>
+        .pedido-readonly { background: #f1f5f9 !important; color: #64748b; cursor: not-allowed; }
+        .pedido-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 18px; }
+        .pedido-section-title { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .pedido-grid-wrap { overflow-x: auto; }
+        .pedido-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .pedido-table th { background: #f8fafc; color: #475569; font-weight: 700; text-align: center; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 12px; }
+        .pedido-table td { padding: 6px 10px; border: 1px solid #e2e8f0; }
+        .pedido-table td.num { text-align: center; }
+        .pedido-table td.monto { text-align: right; font-variant-numeric: tabular-nums; }
+        .totales-wrap { display: flex; justify-content: flex-end; margin-top: 0; }
+        .totales-table { border-collapse: collapse; min-width: 360px; }
+        .totales-table td { padding: 6px 14px; border: 1px solid #e2e8f0; font-size: 13px; }
+        .totales-table .lbl { background: #f8fafc; font-weight: 700; color: #475569; text-align: right; min-width: 160px; }
+        .totales-table .val input { text-align: right; width: 130px; font-variant-numeric: tabular-nums; }
+        .totales-table tr.fila-total .lbl { background: #ffe4ed; color: #e11d48; }
+        .totales-table tr.fila-total .val input { font-weight: 700; color: #e11d48; border-color: #fda4af; }
+        .acciones-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; }
+    </style>
+}
+
+@section Scripts {
+<script>
+(function () {
+    var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+
+    function parsear(id) {
+        var v = document.getElementById(id)?.value ?? "0";
+        v = v.replace(/\$/g, "").replace(/,/g, "").trim();
+        return parseFloat(v) || 0;
+    }
+
+    function fmt(n) { return MX.format(n); }
+
+    function recalcular() {
+        var suma = parsear("totSuma");
+        var iva = suma * 0.16;
+        var desc = parsear("totDescuento");
+        var subtotal = suma + iva - desc;
+        var ret = subtotal * 0.005;
+        var tot = subtotal - ret;
+
+        document.getElementById("totIva").value = fmt(iva);
+        document.getElementById("totSubtotal").value = fmt(subtotal);
+        document.getElementById("totRetencion").value = fmt(ret);
+        document.getElementById("totTotal").value = fmt(tot);
+
+        // sincronizar hiddens para el POST
+        document.getElementById("hSuma").value = suma;
+        document.getElementById("hIva").value = iva;
+        document.getElementById("hDescuento").value = desc;
+        document.getElementById("hSubtotal").value = subtotal;
+        document.getElementById("hRetencion").value = ret;
+        document.getElementById("hTotal").value = tot;
+    }
+
+    document.getElementById("totSuma")?.addEventListener("change", recalcular);
+    document.getElementById("totDescuento")?.addEventListener("change", recalcular);
+
+    recalcular();
+})();
+</script>
+}
+
+<div class="mt-3 container tabla-api-editor-page">
+    <div class="info-requisicion">
+        <div class="fantasma"></div>
+        <div class="container-info">
+            <p class="info-titulo mt-3">Pedido de Compra</p>
+        </div>
+        <div class="requisicion-info">
+            <div class="requisicion">
+                <p class="info-body">Requisición:</p>
+                <label class="info-body">@Model.NumRequisicion</label>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="GenerarPedidoPdf" asp-controller="Financieros" method="post" target="_blank" class="no-loader">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdRequisicion" />
+        <input type="hidden" asp-for="ProveedorNombre" />
+        <input type="hidden" asp-for="ProveedorDireccion" />
+        <input type="hidden" asp-for="ProveedorRfc" />
+        <input type="hidden" asp-for="Departamento" />
+        <input type="hidden" asp-for="Responsable" />
+        <input type="hidden" asp-for="LugarEntrega" />
+        <input type="hidden" asp-for="PartidaPresupuestal" />
+        @for (int i = 0; i < Model.Partidas.Count; i++)
+        {
+            <input type="hidden" name="Partidas[@i].Numero" value="@Model.Partidas[i].Numero" />
+            <input type="hidden" name="Partidas[@i].Clave" value="@Model.Partidas[i].Clave" />
+            <input type="hidden" name="Partidas[@i].Descripcion" value="@Model.Partidas[i].Descripcion" />
+            <input type="hidden" name="Partidas[@i].Cantidad" value="@Model.Partidas[i].Cantidad" />
+            <input type="hidden" name="Partidas[@i].UnidadMedida" value="@Model.Partidas[i].UnidadMedida" />
+            <input type="hidden" name="Partidas[@i].PrecioUnitario" value="@Model.Partidas[i].PrecioUnitario" />
+            <input type="hidden" name="Partidas[@i].TieneIva" value="@Model.Partidas[i].TieneIva" />
+        }
+        <!-- Totales hiddens para POST -->
+        <input type="hidden" id="hSuma" name="Suma" value="@Model.Suma" />
+        <input type="hidden" id="hIva" name="Iva" value="@Model.Iva" />
+        <input type="hidden" id="hDescuento" name="Descuento" value="@Model.Descuento" />
+        <input type="hidden" id="hSubtotal" name="Subtotal" value="@Model.Subtotal" />
+        <input type="hidden" id="hRetencion" name="Retencion" value="@Model.Retencion" />
+        <input type="hidden" id="hTotal" name="Total" value="@Model.Total" />
+
+        <!-- Proveedor ganador (solo lectura) -->
+        <div class="pedido-section">
+            <p class="pedido-section-title"><i class="fa-solid fa-store"></i> Proveedor adjudicado</p>
+            <div class="container-formulario">
+                <div class="seccion-1">
+                    <div class="formulario-input">
+                        <label>Nombre del proveedor</label>
+                        <input type="text" value="@Model.ProveedorNombre" class="pedido-readonly" readonly />
+                    </div>
+                    <div class="formulario-input">
+                        <label>R.F.C.</label>
+                        <input type="text" value="@Model.ProveedorRfc" class="pedido-readonly" readonly />
+                    </div>
+                </div>
+                <div class="seccion-2">
+                    <div class="formulario-input">
+                        <label>Dirección</label>
+                        <input type="text" value="@Model.ProveedorDireccion" class="pedido-readonly" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del pedido (editables) -->
+        <div class="pedido-section">
+            <p class="pedido-section-title"><i class="fa-solid fa-file-invoice"></i> Datos del pedido</p>
+            <div class="container-formulario">
+                <div class="seccion-1">
+                    <div class="formulario-input">
+                        <label>Departamento solicitante</label>
+                        <input type="text" value="@Model.Departamento" class="pedido-readonly" readonly />
+                    </div>
+                    <div class="formulario-input">
+                        <label>Responsable</label>
+                        <input type="text" value="@Model.Responsable" class="pedido-readonly" readonly />
+                    </div>
+                    <div class="formulario-input">
+                        <label>Lugar de entrega</label>
+                        <input type="text" value="@Model.LugarEntrega" class="pedido-readonly" readonly />
+                    </div>
+                </div>
+                <div class="seccion-2">
+                    <div class="formulario-input">
+                        <label>Nº de Pedido</label>
+                        <input asp-for="NumeroPedido" type="text" placeholder="Dejar vacío si no aplica" />
+                    </div>
+                    <div class="formulario-input">
+                        <label>Tiempo de entrega</label>
+                        <input asp-for="TiempoEntrega" type="text" />
+                    </div>
+                    <div class="formulario-input">
+                        <label>Condiciones de pago</label>
+                        <input asp-for="CondicionesPago" type="text" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de artículos -->
+        <div class="pedido-section">
+            <p class="pedido-section-title"><i class="fa-solid fa-box"></i> Artículos del pedido</p>
+            <div class="pedido-grid-wrap">
+                <table class="pedido-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Clave</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Unidad</th>
+                            <th>Precio unitario</th>
+                            <th>Precio total</th>
+                            <th>IVA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Partidas)
+                        {
+                            decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                            <tr>
+                                <td class="num">@p.Numero</td>
+                                <td>@p.Clave</td>
+                                <td>@p.Descripcion</td>
+                                <td class="num">@p.Cantidad.ToString("N0")</td>
+                                <td class="num">@p.UnidadMedida</td>
+                                <td class="monto">@p.PrecioUnitario.ToString("C2", MX)</td>
+                                <td class="monto">@precioTotal.ToString("C2", MX)</td>
+                                <td class="num">@(p.TieneIva ? "Sí" : "No")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totales editables -->
+            <div class="totales-wrap" style="margin-top:16px;">
+                <table class="totales-table">
+                    <tr>
+                        <td class="lbl">SUMA</td>
+                        <td class="val">
+                            <input type="text" id="totSuma" class="form-control form-control-sm"
+                                   value="@Model.Suma.ToString("C2", MX)" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">I.V.A. 16%</td>
+                        <td class="val">
+                            <input type="text" id="totIva" class="form-control form-control-sm pedido-readonly"
+                                   value="@Model.Iva.ToString("C2", MX)" readonly />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">DESCUENTO</td>
+                        <td class="val">
+                            <input type="text" id="totDescuento" class="form-control form-control-sm"
+                                   value="@Model.Descuento.ToString("C2", MX)" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">SUBTOTAL</td>
+                        <td class="val">
+                            <input type="text" id="totSubtotal" class="form-control form-control-sm pedido-readonly"
+                                   value="@Model.Subtotal.ToString("C2", MX)" readonly />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">RET. 5 AL MILLAR</td>
+                        <td class="val">
+                            <input type="text" id="totRetencion" class="form-control form-control-sm pedido-readonly"
+                                   value="@Model.Retencion.ToString("C2", MX)" readonly />
+                        </td>
+                    </tr>
+                    <tr class="fila-total">
+                        <td class="lbl">TOTAL</td>
+                        <td class="val">
+                            <input type="text" id="totTotal" class="form-control form-control-sm pedido-readonly"
+                                   value="@Model.Total.ToString("C2", MX)" readonly />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="acciones-bar">
+            <button type="button" class="btn boton-gris btn-lg" onclick="history.back()">
+                <i class="fa-solid fa-arrow-left"></i> Volver
+            </button>
+            <button type="submit" class="btn boton-rosa btn-lg">
+                <i class="fa-solid fa-print"></i> Guardar e Imprimir
+            </button>
+        </div>
+    </form>
+</div>

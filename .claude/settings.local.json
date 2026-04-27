@@ -5,7 +5,8 @@
       "Bash(xargs head *)",
       "Bash(xargs -I {} basename {})",
       "Bash(sed -n '565,572p' \"c:/Users/Oscar-PC/Desktop/Requisiciones/Inventario.AplicacionWeb/wwwroot/js/requisicion/tabla-requisiciones.js\")",
-      "Bash(sed -n '1429,1435p' \"c:/Users/Oscar-PC/Desktop/Requisiciones/Inventario.AplicacionWeb/wwwroot/js/requisicion/tabla-requisiciones.js\")"
+      "Bash(sed -n '1429,1435p' \"c:/Users/Oscar-PC/Desktop/Requisiciones/Inventario.AplicacionWeb/wwwroot/js/requisicion/tabla-requisiciones.js\")",
+      "Bash(dotnet build *)"
     ]
   }
 }
