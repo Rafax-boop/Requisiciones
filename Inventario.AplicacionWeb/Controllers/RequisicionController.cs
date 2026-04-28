@@ -174,6 +174,9 @@ namespace Inventario.AplicacionWeb.Controllers
             if (dto == null)
                 return NotFound();
 
+            var distribucionMunicipios = await _requisicionService.ObtenerDistribucionMunicipiosPorRequisicion(id);
+            var municipios = await _municipioService.ObtenerMunicipios();
+
             var vm = new VMRequiForm
             {
                 IdRequiMaestra = id,
@@ -214,9 +217,14 @@ namespace Inventario.AplicacionWeb.Controllers
                     Llenado10 = a.Llenado10,
                     Llenado11 = a.Llenado11,
                     Llenado12 = a.Llenado12,
-                    Mes = a.Mes
+                    Mes = a.Mes,
+                    Municipios = distribucionMunicipios.TryGetValue(a.IdRequisicionDetalle, out var muni)
+                        ? muni
+                        : new List<MunicipioItemDTO>()
                 }).ToList()
             };
+
+            ViewBag.ListaMunicipios = municipios;
 
             return View("RequisicionParaPdf", vm);
         }
