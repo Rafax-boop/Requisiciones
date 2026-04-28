@@ -149,11 +149,13 @@ namespace Inventario.BLL.Implementacion
                 .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
             if (requisicion == null) return new AtenderResultadoDTO { Exito = false };
 
-            var numApi = await GenerarNumeroApiAsync(); // ← guardarlo aquí
+            var numApi = await GenerarNumeroApiAsync();
+            var numPedido = await GenerarNumeroPedidoAsync();
 
             requisicion.IdEstatus = 15;
             requisicion.FechaModificacion = DateTime.Now;
-            requisicion.NumApi = numApi;               // ← usar variable
+            requisicion.NumApi = numApi;
+            requisicion.NumPedido = numPedido;
 
             await _repositoryRequisicion.Editar(requisicion);
 
@@ -169,7 +171,7 @@ namespace Inventario.BLL.Implementacion
             await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
             await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
 
-            return new AtenderResultadoDTO { Exito = true, NumApi = numApi };
+            return new AtenderResultadoDTO { Exito = true, NumApi = numApi, NumPedido = numPedido };
         }
 
         public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario)
@@ -1219,6 +1221,38 @@ namespace Inventario.BLL.Implementacion
             return $"API-{siguiente:D4}/{sufAno}";
         }
 
+        private async Task<string> GenerarNumeroPedidoAsync()
+        {
+            int anioActual = DateTime.Now.Year;
+            string sufAno = (anioActual % 100).ToString("D2");
+
+            string prefijo = "PED-";
+            string terminacion = $"/{sufAno}";
+
+            var query = await _repositoryRequisicion.Consultar(r =>
+                r.NumPedido != null &&
+                r.NumPedido.StartsWith(prefijo) &&
+                r.NumPedido.EndsWith(terminacion));
+
+            var registros = await query.Select(r => r.NumPedido).ToListAsync();
+
+            int maxConsecutivo = 0;
+            foreach (var numPedido in registros)
+            {
+                var inicio = prefijo.Length;
+                var fin = numPedido!.Length - terminacion.Length;
+
+                if (fin > inicio)
+                {
+                    var parteNumerica = numPedido.Substring(inicio, fin - inicio);
+                    if (int.TryParse(parteNumerica, out int num) && num > maxConsecutivo)
+                        maxConsecutivo = num;
+                }
+            }
+
+            return $"PED-{(maxConsecutivo + 1):D4}/{sufAno}";
+        }
+
         // DESPUÉS: jala el ganador guardado en BD
         private async Task<Dictionary<int, (decimal PrecioUnitario, decimal Cantidad, bool? IVA)>>
             ObtenerCotizacionConCantidadAsync(int idRequisicion)
@@ -1354,23 +1388,32 @@ namespace Inventario.BLL.Implementacion
                 d => d.IdRequisicionDetalle,
                 d => d.Cantidad ?? 1m);
 
-            var totalPorProveedor = cotizaciones
-                .Where(c => c.IdProveedor.HasValue)
-                .GroupBy(c => c.IdProveedor!.Value)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Sum(c =>
-                    {
-                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
-                        var precio = c.Importe!.Value * cant;
-                        return c.Iva == true ? precio * 1.16m : precio;
-                    }));
+            // ── Jalar el proveedor ganador desde BD (mismo criterio que ObtenerCotizacionConCantidadAsync) ──
+            var queryGanador = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
+            var ganador = await queryGanador.FirstOrDefaultAsync();
+            int? idGanador = ganador?.IdProveedor;
 
-            var idGanador = totalPorProveedor
-                .Where(kv => kv.Value > 0)
-                .OrderBy(kv => kv.Value)
-                .Select(kv => (int?)kv.Key)
-                .FirstOrDefault();
+            // Fallback: si no hay registro en TblProveedorGanador, usar el de menor total
+            if (idGanador == null || idGanador <= 0)
+            {
+                var totalPorProveedor = cotizaciones
+                    .Where(c => c.IdProveedor.HasValue)
+                    .GroupBy(c => c.IdProveedor!.Value)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(c =>
+                        {
+                            var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                            var precio = c.Importe!.Value * cant;
+                            return c.Iva == true ? precio * 1.16m : precio;
+                        }));
+
+                idGanador = totalPorProveedor
+                    .Where(kv => kv.Value > 0)
+                    .OrderBy(kv => kv.Value)
+                    .Select(kv => (int?)kv.Key)
+                    .FirstOrDefault();
+            }
 
             var provGanador = idGanador.HasValue
                 ? cotizaciones.FirstOrDefault(c => c.IdProveedor == idGanador)
@@ -1630,9 +1673,13 @@ namespace Inventario.BLL.Implementacion
             // ── FIRMAS ────────────────────────────────────────────────────
             var tblFirmas = new Table(UnitValue.CreatePercentArray(new float[] { 25f, 25f, 25f, 25f }))
                 .UseAllAvailableWidth();
+            var esServicio = (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == form.IdRequisicion))?.RequiServicio ?? false;
+
             var firmantes = new (string Cargo, string Nombre)[]
             {
-                ("JEFE DE SECCIÓN DE ADQUISICIONES", "C. ROGER ROJAS PÉREZ"),
+                esServicio
+                    ? ("JEFE DE SECCIÓN DE SERVICIOS", "C. MOISÉS")
+                    : ("JEFE DE SECCIÓN DE ADQUISICIONES", "C. ROGER ROJAS PÉREZ"),
                 ("JEFA DE DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES", "C. MARIA GABRIELA OLIVARES ROBLES"),
                 ("DIRECTOR DE ADMINISTRACIÓN Y FINANZAS", "C. MARCOS MATAMOROS MORENO"),
                 ("RECIBÍ ORIGINAL", "PROVEEDOR")

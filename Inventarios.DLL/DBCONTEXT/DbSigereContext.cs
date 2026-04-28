@@ -379,6 +379,9 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NumApi)
                 .HasMaxLength(15)
                 .IsUnicode(false);
+            entity.Property(e => e.NumPedido)
+                .HasMaxLength(15)
+                .IsUnicode(false);
             entity.Property(e => e.NumRequisicion)
                 .HasMaxLength(15)
                 .IsUnicode(false);

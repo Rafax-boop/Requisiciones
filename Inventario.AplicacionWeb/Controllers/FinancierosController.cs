@@ -135,7 +135,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var resultado = await _financierosService.AtenderRequisicion(modelo, idUsuario);
             if (!resultado.Exito) return BadRequest();
-            return Ok(new { success = true, numApi = resultado.NumApi });
+            return Ok(new { success = true, numApi = resultado.NumApi, numPedido = resultado.NumPedido });
         }
 
         [HttpPost]

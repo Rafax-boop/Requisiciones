@@ -61,6 +61,8 @@ public partial class TblRequisicion
 
     public string? NumApi { get; set; }
 
+    public string? NumPedido { get; set; }
+
     public virtual TblMunicipio? ClaveRegionNavigation { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }

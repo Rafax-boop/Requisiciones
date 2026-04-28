@@ -72,5 +72,6 @@ namespace Inventario.BLL.DTO
     {
         public bool Exito { get; set; }
         public string? NumApi { get; set; }
+        public string? NumPedido { get; set; }
     }
 }
