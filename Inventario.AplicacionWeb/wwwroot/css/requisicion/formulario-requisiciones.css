@@ -1507,3 +1507,35 @@
     margin-top: 15px;
   }
 }
+
+/* ── Tabla de artículos distribuidos ── */
+.pdf-tabla-distribuidos {
+  margin-top: 12px;
+}
+
+.pdf-tabla-distribuidos thead th:nth-child(1) {
+  width: 8%;
+  text-align: center;
+}
+
+.pdf-tabla-distribuidos thead th:nth-child(2) {
+  width: 30%;
+}
+
+.pdf-tabla-distribuidos thead th:nth-child(3) {
+  width: 45%;
+}
+
+.pdf-tabla-distribuidos thead th:nth-child(4) {
+  width: 17%;
+  text-align: center;
+}
+
+.pdf-tabla-distribuidos td:nth-child(1) {
+  text-align: center;
+}
+
+.pdf-tabla-distribuidos td:nth-child(4) {
+  text-align: center;
+  font-weight: 500;
+}

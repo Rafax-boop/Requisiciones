@@ -1023,6 +1023,29 @@ namespace Inventario.BLL.Implementacion
 
             return true;
         }
+
+        public async Task<Dictionary<int, List<MunicipioItemDTO>>> ObtenerDistribucionMunicipiosPorRequisicion(int idRequisicion)
+        {
+            var query = await _repoMunicipiosDetalle.Consultar(
+                m => m.IdRequisicion == idRequisicion);
+
+            var municipios = await query
+                .Include(m => m.IdMunicipioNavigation)
+                .ToListAsync();
+
+            var distribucion = municipios
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(m => new MunicipioItemDTO
+                    {
+                        IdMunicipio = m.IdMunicipio,
+                        Cantidad = m.Cantidad
+                    }).ToList()
+                );
+
+            return distribucion;
+        }
     }
 }
 

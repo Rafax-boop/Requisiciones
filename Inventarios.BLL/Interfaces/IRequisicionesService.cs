@@ -52,6 +52,8 @@ namespace Inventario.BLL.Interfaces
             List<string> docsObservados, int idUsuario);
 
         Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath);
+
+        Task<Dictionary<int, List<MunicipioItemDTO>>> ObtenerDistribucionMunicipiosPorRequisicion(int idRequisicion);
     }
 }
 
