@@ -1059,8 +1059,8 @@
                                         arch.tipo + ' • ' + arch.fechaSubida +
                                     '</div>' +
                                 '</div>' +
-                                '<a href="' + arch.ruta + '" download class="btn btn-sm boton-rosa" style="margin-left: 10px; white-space: nowrap;">' +
-                                    '<i class="fa-solid fa-download"></i> Descargar' +
+                                '<a href="' + arch.ruta + '" download style="margin-left: 10px; white-space: nowrap; padding: 4px 8px; font-size: 11px; color: #666; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; display: inline-block; transition: all 0.2s; background: #f8f8f8;" onmouseover="this.style.background=\'#efefef\'; this.style.color=\'#333\';" onmouseout="this.style.background=\'#f8f8f8\'; this.style.color=\'#666\'">' +
+                                    '<i class="fa-solid fa-download" style="font-size: 9px; margin-right: 4px;"></i>Descargar' +
                                 '</a>' +
                             '</div>' +
                         '</li>';
