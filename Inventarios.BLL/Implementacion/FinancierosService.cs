@@ -1428,6 +1428,7 @@ namespace Inventario.BLL.Implementacion
             {
                 IdRequisicion = idRequisicion,
                 NumRequisicion = requisicion.NumRequisicion ?? "",
+                NumeroPedido = requisicion.NumPedido ?? "",
                 ProveedorNombre = provGanador?.ProvNombre ?? "",
                 ProveedorDireccion = provGanador?.ProvDireccion ?? "",
                 ProveedorRfc = provGanador?.ProvRfc ?? "",

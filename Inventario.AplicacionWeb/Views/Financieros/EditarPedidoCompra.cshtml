@@ -97,6 +97,7 @@
         <input type="hidden" asp-for="Responsable" />
         <input type="hidden" asp-for="LugarEntrega" />
         <input type="hidden" asp-for="PartidaPresupuestal" />
+        <input type="hidden" asp-for="NumeroPedido" />
         @for (int i = 0; i < Model.Partidas.Count; i++)
         {
             <input type="hidden" name="Partidas[@i].Numero" value="@Model.Partidas[i].Numero" />
@@ -159,7 +160,7 @@
                 <div class="seccion-2">
                     <div class="formulario-input">
                         <label>Nº de Pedido</label>
-                        <input asp-for="NumeroPedido" type="text" placeholder="Dejar vacío si no aplica" />
+                        <input type="text" value="@Model.NumeroPedido" class="pedido-readonly" readonly />
                     </div>
                     <div class="formulario-input">
                         <label>Tiempo de entrega</label>

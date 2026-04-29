@@ -4,6 +4,7 @@ namespace Inventario.BLL.DTO
     {
         public int IdRequisicion { get; set; }
         public string NumRequisicion { get; set; } = "";
+        public string NumPedido { get; set; } = "";
         public string ProveedorNombre { get; set; } = "";
         public string ProveedorDireccion { get; set; } = "";
         public string ProveedorRfc { get; set; } = "";
