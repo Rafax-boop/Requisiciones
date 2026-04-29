@@ -488,6 +488,35 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicionDetalle.CrearRango(nuevosDetalles);
 
+            // Eliminar municipios anteriores y reinsertar con los nuevos IdRequisicionDetalle
+            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => m.IdRequisicion == idRequisicion);
+            var municipiosActuales = await queryMunis.ToListAsync();
+            foreach (var muni in municipiosActuales)
+                await _repoMunicipiosDetalle.Eliminar(muni);
+
+            var listaMunicipios = new List<TblRequisicionDetalleMunicipio>();
+            for (int i = 0; i < modelo.Articulos.Count; i++)
+            {
+                var item = modelo.Articulos[i];
+                if (item.Municipios == null || !item.Municipios.Any()) continue;
+
+                var detalle = nuevosDetalles[i];
+                foreach (var muniItem in item.Municipios)
+                {
+                    if (muniItem.IdMunicipio <= 0) continue;
+                    listaMunicipios.Add(new TblRequisicionDetalleMunicipio
+                    {
+                        IdRequisicion = idRequisicion,
+                        IdRequisicionDetalle = detalle.IdRequisicionDetalle,
+                        IdMunicipio = muniItem.IdMunicipio,
+                        Cantidad = muniItem.Cantidad,
+                        FechaRegistro = DateTime.Now
+                    });
+                }
+            }
+            if (listaMunicipios.Any())
+                await _repoMunicipiosDetalle.CrearRango(listaMunicipios);
+
             var bitacora = new TblBitacoraEstatus
             {
                 IdRequisicion = requisicion.IdRequisicion,
