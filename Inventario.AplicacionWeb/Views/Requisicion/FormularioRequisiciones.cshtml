@@ -220,30 +220,52 @@
                     <p class="modal-subtitulo-premium" id="wizardMuniSubtitulo">Partida 1 de 1</p>
                 </div>
             </div>
+            <style>
+                .municipios-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; }
+                .municipios-section-title { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+                .municipios-info { font-size: 12px; margin-bottom: 16px; color: #64748b; display: flex; gap: 24px; }
+                .municipios-info strong { color: #334155; font-weight: 600; }
+                .municipios-grid-wrap { overflow-x: auto; margin-bottom: 16px; }
+                .municipios-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                .municipios-table th { background: #f8fafc; color: #475569; font-weight: 700; text-align: center; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 12px; }
+                .municipios-table th:first-child { text-align: left; }
+                .municipios-table td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: middle; }
+                .municipios-table td:first-child { font-weight: 500; color: #1a1a1a; }
+                .municipios-input { width: 100% !important; padding: 6px 10px !important; border: 1.5px solid #cbd5e1 !important; border-radius: 6px !important; font-size: 13px !important; font-weight: 500 !important; color: #334155 !important; background: #f8fafc !important; outline: none !important; transition: all 0.3s ease !important; text-align: center !important; }
+                .municipios-input:focus { border-color: #ec4081 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08) !important; }
+                .municipios-table .btn-delete { background: none; border: 1.5px solid #fecaca; color: #ef4444; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+                .municipios-table .btn-delete:hover { background: #fef2f2; border-color: #fca5a5; }
+            </style>
             <div class="modal-body modal-body-premium">
-                <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 0.5rem;"></p>
+                <div class="municipios-section">
+                    <div class="municipios-section-title"><i class="fa-solid fa-map-location-dot"></i> Distribución de cantidad por municipio</div>
 
-                <!-- Indicador de cantidad -->
-                <div id="wizardMuniCantidadInfo" style="font-size:12px; margin-bottom:1rem; color:var(--slate-500,#64748b);">
-                    Cantidad requerida: <strong id="wizardMuniCantidadReq">0</strong> &nbsp;|&nbsp;
-                    Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
+                    <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:#1a1a1a; margin:0 0 12px;"></p>
+
+                    <!-- Indicador de cantidad -->
+                    <div class="municipios-info" id="wizardMuniCantidadInfo">
+                        Cantidad requerida: <strong id="wizardMuniCantidadReq">0</strong>
+                        Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
+                    </div>
+
+                    <!-- Tabla de distribución -->
+                    <div class="municipios-grid-wrap">
+                        <table class="municipios-table" id="wizardMuniTabla">
+                            <thead>
+                                <tr>
+                                    <th>Municipio</th>
+                                    <th>Cantidad</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="wizardMuniTbody"></tbody>
+                        </table>
+                    </div>
+
+                    <button type="button" class="btn boton-gris btn-sm" id="btnWizardMuniAgregarFila">
+                        <i class="fa-solid fa-plus"></i> Agregar municipio
+                    </button>
                 </div>
-
-                <!-- Tabla de distribución -->
-                <table class="table table-bordered table-sm" id="wizardMuniTabla">
-                    <thead>
-                        <tr>
-                            <th style="width:60%">Municipio</th>
-                            <th style="width:30%">Cantidad</th>
-                            <th style="width:10%"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="wizardMuniTbody"></tbody>
-                </table>
-
-                <button type="button" class="btn boton-gris btn-sm mt-1" id="btnWizardMuniAgregarFila">
-                    <i class="fa-solid fa-plus"></i> Agregar municipio
-                </button>
             </div>
             <div class="modal-footer" style="justify-content:space-between;">
                 <button type="button" class="btn boton-gris" id="btnWizardMuniAnterior" style="display:none;">

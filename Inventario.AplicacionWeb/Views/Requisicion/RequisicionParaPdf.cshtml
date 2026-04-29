@@ -1,6 +1,7 @@
 @model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
 @using System.Linq
 @using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.BLL.DTO
 @{
     Layout = null;
     var fechaTexto = Model.FechaEmision.HasValue ? Model.FechaEmision.Value.Day.ToString("D2") + "-" +
@@ -346,6 +347,40 @@ Model.FechaEmision.Value.Month.ToString("D2") + "-" + Model.FechaEmision.Value.Y
                                         <td>@PdfQty(a.Llenado12)</td>
                                         <td class="pdf-tabla-col-total">@PdfTotalMeses(a)</td>
                                     </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    @if (conProgramacion.Any())
+                    {
+                        <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Artículos distribuidos por municipio</p>
+                        <table class="pdf-tabla pdf-tabla-distribuidos">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Descripción</th>
+                                    <th>Municipio</th>
+                                    <th>Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var nDistribuidos = 0; }
+                                @foreach (var a in conProgramacion.Where(x => x.Municipios != null && x.Municipios.Any()))
+                                {
+                                    foreach (var m in a.Municipios)
+                                    {
+                                        nDistribuidos++;
+                                        var muniInfo = ((List<MunicipiosDTO>)ViewBag.ListaMunicipios)
+                                            .FirstOrDefault(x => x.Id == m.IdMunicipio);
+                                        var nombreMunicipio = muniInfo != null ? muniInfo.Municipio : $"ID {m.IdMunicipio}";
+                                        <tr>
+                                            <td>@nDistribuidos</td>
+                                            <td>@(a.DescripcionDetallada ?? "—")</td>
+                                            <td>@nombreMunicipio</td>
+                                            <td>@m.Cantidad</td>
+                                        </tr>
+                                    }
                                 }
                             </tbody>
                         </table>

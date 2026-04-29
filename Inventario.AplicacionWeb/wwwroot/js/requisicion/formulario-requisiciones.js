@@ -1015,7 +1015,7 @@
 
         var tdSelect = document.createElement('td');
         var select = document.createElement('select');
-        select.className = 'form-select form-select-sm muni-fila-select';
+        select.className = 'form-select form-select-sm muni-fila-select municipios-input';
         select.innerHTML = _opcionesMuniHtml;
         if (idMuniVal) select.value = idMuniVal;
         tdSelect.appendChild(select);
@@ -1026,7 +1026,7 @@
         input.type = 'number';
         input.min = '0';
         input.step = '1';
-        input.className = 'form-control form-control-sm muni-fila-cantidad';
+        input.className = 'form-control form-control-sm muni-fila-cantidad municipios-input';
         input.value = cantidadVal !== undefined ? cantidadVal : '';
         input.placeholder = '0';
         input.addEventListener('input', function () {
@@ -1039,7 +1039,7 @@
         tdElim.className = 'text-center';
         var btnElim = document.createElement('button');
         btnElim.type = 'button';
-        btnElim.className = 'btn btn-danger btn-sm';
+        btnElim.className = 'btn-delete';
         btnElim.innerHTML = '<i class="fa-solid fa-circle-minus"></i>';
         btnElim.addEventListener('click', function () {
             tr.remove();
