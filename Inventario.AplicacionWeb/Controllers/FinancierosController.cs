@@ -331,9 +331,34 @@ namespace Inventario.AplicacionWeb.Controllers
                 tipo = a.Tipo,
                 ruta = a.Ruta,
                 fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
-                nombreArchivo = Path.GetFileName(a.Ruta)
+                nombreArchivo = GenerarNombreArchivoCorto(a.Tipo, idRequisicion, a.Ruta)
             }).ToList();
             return Json(resultado);
+        }
+
+        private string GenerarNombreArchivoCorto(string tipo, int idRequisicion, string ruta)
+        {
+            var extension = Path.GetExtension(ruta);
+            var tipoAbreviado = ObtenerAbreviaturaTipo(tipo);
+            return $"Requi-{idRequisicion}-{tipoAbreviado}{extension}";
+        }
+
+        private string ObtenerAbreviaturaTipo(string tipo)
+        {
+            if (string.IsNullOrEmpty(tipo)) return "Doc";
+
+            return tipo.ToLower() switch
+            {
+                var t when t.Contains("transferencia") => "Transf",
+                var t when t.Contains("cfdi") => "CFDI",
+                var t when t.Contains("memo") || t.Contains("pago") => "Memo",
+                var t when t.Contains("domicilio") => "CompDom",
+                var t when t.Contains("acta") => "Acta",
+                var t when t.Contains("factura") => "Fact",
+                var t when t.Contains("pedido") => "Pedido",
+                var t when t.Contains("cotizacion") || t.Contains("cotización") => "Cotiz",
+                _ => tipo.Replace("proveedor_", "").Substring(0, Math.Min(5, tipo.Length))
+            };
         }
     }
 }
