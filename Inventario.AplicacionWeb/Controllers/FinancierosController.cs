@@ -16,6 +16,7 @@ namespace Inventario.AplicacionWeb.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IFinancierosService _financierosService;
+        private readonly IRequisicionesService _requisicionesService;
         private readonly IUsuarioService _usuarioService;
         private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
         private readonly IMunicipioServie _municipioService;
@@ -26,6 +27,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
         public FinancierosController(IMapper mapper,
             IFinancierosService financierosService,
+            IRequisicionesService requisicionesService,
             IUsuarioService usuarioService,
             IProgramaPresupuestarioService programaPresupuestarioService,
             IMunicipioServie municipioService,
@@ -35,6 +37,7 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             _mapper = mapper;
             _financierosService = financierosService;
+            _requisicionesService = requisicionesService;
             _usuarioService = usuarioService;
             _programaPresupuestarioService = programaPresupuestarioService;
             _municipioService = municipioService;
@@ -297,6 +300,51 @@ namespace Inventario.AplicacionWeb.Controllers
             var procesopago = listaDTO.Where(r => r.IdEstatus == 17).Select(r => r.IdRequi).ToList();
 
             return Json(new { principal, autorizadas, rechazadas, procesopago });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerRequisicionesConArchivos()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (!string.IsNullOrEmpty(idDeptoClaim) && int.TryParse(idDeptoClaim, out int idDepartamento))
+            {
+                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(idDepartamento, false);
+            }
+            else
+            {
+                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(null, false);
+            }
+
+            var requisiciones = listaDTO.Select(r => new
+            {
+                idRequi = r.IdRequi,
+                numRequi = r.NumRequi,
+                fechaEmision = r.FechaEmision.ToString(),
+                departamento = r.Departamento,
+                responsable = r.Responsable,
+                cantidadPartidas = r.CantidadPartidas,
+                estatus = r.Estatus
+            }).ToList();
+
+            return Json(new { requisiciones });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerTodosLosArchivos(int idRequisicion)
+        {
+            var archivos = await _requisicionesService.ObtenerTodosLosArchivosDeRequisicion(idRequisicion);
+            var resultado = archivos.Select(a => new
+            {
+                id = a.Id,
+                tipo = a.Tipo,
+                ruta = a.Ruta,
+                fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
+                nombreArchivo = Path.GetFileName(a.Ruta)
+            }).ToList();
+            return Json(resultado);
         }
     }
 }

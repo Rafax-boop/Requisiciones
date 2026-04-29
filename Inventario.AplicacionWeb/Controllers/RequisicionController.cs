@@ -570,5 +570,56 @@ namespace Inventario.AplicacionWeb.Controllers
             var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath);
             return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
         }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerRequisicionesConArchivos()
+        {
+            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+            if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
+                return Json(new { requisiciones = new List<object>() });
+
+            var idUsuarioClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Json(new { requisiciones = new List<object>() });
+
+            List<RequisicionMaestraDTO> listaDTO;
+
+            if (User.IsInRole("7"))
+            {
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false, idUsuario);
+            }
+            else
+            {
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false);
+            }
+
+            var requisiciones = listaDTO.Select(r => new
+            {
+                idRequi = r.IdRequi,
+                numRequi = r.NumRequi,
+                fechaEmision = r.FechaEmision.ToString(),
+                departamento = r.Departamento,
+                responsable = r.Responsable,
+                cantidadPartidas = r.CantidadPartidas,
+                estatus = r.Estatus
+            }).ToList();
+
+            return Json(new { requisiciones });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerTodosLosArchivos(int idRequisicion)
+        {
+            var archivos = await _requisicionService.ObtenerTodosLosArchivosDeRequisicion(idRequisicion);
+            var resultado = archivos.Select(a => new
+            {
+                id = a.Id,
+                tipo = a.Tipo,
+                ruta = a.Ruta,
+                fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
+                nombreArchivo = Path.GetFileName(a.Ruta)
+            }).ToList();
+            return Json(resultado);
+        }
     }
 }

@@ -27,7 +27,9 @@
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Requisicion")"
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
-     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")">
+     data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
+     data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
+     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -72,6 +74,10 @@
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="procesopago">En proceso de pago</button>
+        @if (!User.IsInRole("1"))
+        {
+            <button type="button" class="almacen-tabs-btn" data-tab="documentos">Requisiciones con documentos</button>
+        }
     </nav>
 
     @{
@@ -540,6 +546,40 @@
             <div id="paginacionProcesoPago" class="almacen-paginacion"></div>
         </div>
     </div>
+
+    <!-- Pestaña Requisiciones con documentos -->
+    @if (!User.IsInRole("1"))
+    {
+        <div id="tab-documentos" class="almacen-tab-panel">
+            <div class="container-formulario tabla-container">
+                <table class="tabla-requisiciones" id="tablaRequisicionesDocumentos">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Folio</th>
+                            <th>Fecha de emisión</th>
+                            <th>Departamento</th>
+                            <th>Responsable</th>
+                            <th style="text-align:center">Partida(s)</th>
+                            <th>Estado</th>
+                            <th style="text-align:center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDocumentos">
+                        <tr>
+                            <td colspan="8" class="text-center" style="padding: 2rem;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite;"></i>
+                                    Cargando requisiciones...
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="paginacionDocumentos" class="almacen-paginacion"></div>
+            </div>
+        </div>
+    }
 
 </div>
 

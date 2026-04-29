@@ -60,6 +60,11 @@
     var urlSubirDocumentoPedido = container
         ? container.getAttribute("data-url-subir-documento-pedido") : "";
 
+    var urlObtenerArchivos = container
+        ? container.getAttribute("data-url-obtener-archivos") : "";
+    var urlObtenerTodosArchivos = container
+        ? container.getAttribute("data-url-obtener-todos-archivos") : "";
+
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
         { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
@@ -1012,12 +1017,130 @@
     verDetalle(idMaestro, "atender");
   };
 
+  function cargarRequisicionesConDocumentos() {
+    const tbodyDocumentos = document.getElementById("tbodyDocumentos");
+    if (!tbodyDocumentos) return;
+
+    fetch(urlObtenerArchivos, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "same-origin"
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data || !data.requisiciones || data.requisiciones.length === 0) {
+          tbodyDocumentos.innerHTML =
+            '<tr class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones con documentos</td></tr>';
+          return;
+        }
+
+        tbodyDocumentos.innerHTML = "";
+        data.requisiciones.forEach((item, idx) => {
+          const tr = document.createElement("tr");
+          tr.className = "fila-requi";
+          tr.setAttribute("data-requi-id", item.idRequi);
+          tr.innerHTML = `
+            <td style="text-align:center">${idx + 1}</td>
+            <td>${item.numRequi}</td>
+            <td>${item.fechaEmision}</td>
+            <td>${item.departamento}</td>
+            <td>${item.responsable}</td>
+            <td style="text-align:center">${item.cantidadPartidas}</td>
+            <td>${item.estatus}</td>
+            <td style="text-align:center">
+              <button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicion(${item.idRequi})">
+                <i class="fa-solid fa-file"></i>
+              </button>
+            </td>
+          `;
+          tbodyDocumentos.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("Error cargando requisiciones con documentos:", err);
+        tbodyDocumentos.innerHTML =
+          '<tr class="fila-vacia"><td colspan="8" class="text-center">Error al cargar los datos</td></tr>';
+      });
+  }
+
+  window.verArchivosRequisicion = function (idRequisicion) {
+    fetch(urlObtenerTodosArchivos + "?idRequisicion=" + idRequisicion, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "same-origin"
+    })
+      .then(r => r.json())
+      .then(archivos => {
+        if (!archivos || archivos.length === 0) {
+          alert("Esta requisición no tiene archivos vinculados");
+          return;
+        }
+
+        let html = "<ul style='list-style: none; padding: 0;'>";
+        archivos.forEach(arch => {
+          const nombre = arch.nombreArchivo || arch.ruta.split("/").pop();
+          html += `
+            <li style="padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+              <span>
+                <i class="fa-solid fa-file"></i> ${nombre}
+                <br><small style="color: #888;">${arch.tipo} - ${arch.fechaSubida}</small>
+              </span>
+              <a href="${arch.ruta}" target="_blank" class="btn btn-sm boton-rosa" style="margin-left: 10px;">
+                <i class="fa-solid fa-download"></i> Descargar
+              </a>
+            </li>
+          `;
+        });
+        html += "</ul>";
+
+        const modal = document.createElement("div");
+        modal.className = "modal fade";
+        modal.setAttribute("tabindex", "-1");
+        modal.setAttribute("role", "dialog");
+        modal.innerHTML = `
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content modal-premium">
+              <div class="modal-header modal-header-premium">
+                <div>
+                  <h5 class="modal-title modal-titulo-premium">Archivos de la Requisición</h5>
+                  <p class="modal-subtitulo-premium">Requisición #${idRequisicion}</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="modal-body modal-body-premium">
+                ${html}
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+
+        modal.addEventListener("hidden.bs.modal", () => {
+          modal.remove();
+        });
+      })
+      .catch(err => {
+        console.error("Error cargando archivos:", err);
+        alert("Error al cargar los archivos");
+      });
+  };
+
   if (modoTabs && container) {
     var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
     var tabPanels = container.querySelectorAll(".almacen-tab-panel");
     tabBtns.forEach(function (btn) {
       btn.addEventListener("click", function () {
         var tab = this.getAttribute("data-tab");
+
+        // Cargar datos del tab de documentos si es necesario
+        if (tab === "documentos" && urlObtenerArchivos) {
+          cargarRequisicionesConDocumentos();
+        }
 
         var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
         if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {

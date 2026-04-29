@@ -1084,6 +1084,50 @@ namespace Inventario.BLL.Implementacion
 
             return distribucion;
         }
+
+        public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConArchivos(int? idDepartamento, bool servicio, int? idUsuarioMat = null)
+        {
+            var query = await _repositoryRequisicion.Consultar(r => r.RequiServicio == servicio);
+
+            if (idDepartamento.HasValue)
+                query = query.Where(r => r.IdDepartamento == idDepartamento.Value);
+
+            if (idUsuarioMat.HasValue)
+                query = query.Where(r => r.IdUsuarioMat == idUsuarioMat.Value);
+
+            var archivoIds = await _repositoryDisenos.Consultar(a => true);
+            var idsConArchivos = await archivoIds.Select(a => a.IdRequisicion).Distinct().ToListAsync();
+
+            var resultado = await query
+                .Where(r => idsConArchivos.Contains(r.IdRequisicion))
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    FechaModificacion = r.FechaModificacion,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento,
+                    IdEstatus = r.IdEstatus ?? 0,
+                    Estatus = r.IdEstatusNavigation.NombreEstatus,
+                    CantidadPartidas = r.TblRequisicionDetalles.Count,
+                    DiasAsignado = r.TblBitacoraEstatuses
+                        .Where(b => b.IdEstatus == 2)
+                        .OrderByDescending(b => b.FechaEstatus)
+                        .Select(b => (DateTime.Now - (b.FechaEstatus ?? DateTime.Now)).Days)
+                        .FirstOrDefault(),
+                    NombreAsignado = r.IdUsuarioMatNavigation != null ? r.IdUsuarioMatNavigation.Usuario : null
+                })
+                .ToListAsync();
+
+            return resultado;
+        }
+
+        public async Task<List<TblRegistroDiseno>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion)
+        {
+            var query = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
+            return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
+        }
     }
 }
 

@@ -37,7 +37,9 @@
      data-url-finalizar="@Url.Action("FinalizarRequisicion", "Servicios")"
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
      data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
-     data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")">
+     data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")"
+     data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Servicios")"
+     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Servicios")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -90,6 +92,7 @@
         @if (!User.IsInRole("1"))
         {
             <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
+            <button type="button" class="almacen-tabs-btn" data-tab="documentos">Requisiciones con documentos</button>
         }
     </nav>
 
@@ -567,6 +570,37 @@
                 </tbody>
             </table>
             <div id="paginacionVerificadas" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
+    <!-- Pestaña Requisiciones con documentos -->
+    <div id="tab-documentos" class="almacen-tab-panel">
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaRequisicionesDocumentos">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Fecha de emisión</th>
+                        <th>Departamento</th>
+                        <th>Responsable</th>
+                        <th style="text-align:center">Partida(s)</th>
+                        <th>Estado</th>
+                        <th style="text-align:center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyDocumentos">
+                    <tr>
+                        <td colspan="8" class="text-center" style="padding: 2rem;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite;"></i>
+                                Cargando requisiciones...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="paginacionDocumentos" class="almacen-paginacion"></div>
         </div>
     </div>
     }
