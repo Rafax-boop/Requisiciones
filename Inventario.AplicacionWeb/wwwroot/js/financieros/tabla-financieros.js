@@ -25,6 +25,10 @@
         ? container.getAttribute("data-url-obtener-docs-proveedor") : "";
     var urlRebotarDocumentos = container
         ? container.getAttribute("data-url-rebotar-documentos") : "";
+    var urlObtenerArchivos = container
+        ? container.getAttribute("data-url-obtener-archivos") : "";
+    var urlObtenerTodosArchivos = container
+        ? container.getAttribute("data-url-obtener-todos-archivos") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -979,12 +983,198 @@
     }
 
     // ── Tabs ────────────────────────────────────────────────────────────────
+    function cargarRequisicionesConDocumentos() {
+        var tbodyDocumentos = document.getElementById("tbodyDocumentos");
+        if (!tbodyDocumentos) return;
+
+        fetch(urlObtenerArchivos, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.requisiciones || data.requisiciones.length === 0) {
+                    tbodyDocumentos.innerHTML =
+                        '<tr class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones con documentos</td></tr>';
+                    return;
+                }
+                tbodyDocumentos.innerHTML = "";
+                data.requisiciones.forEach(function (item, idx) {
+                    var tr = document.createElement("tr");
+                    tr.className = "fila-requi";
+                    tr.setAttribute("data-requi-id", item.idRequi);
+                    tr.innerHTML =
+                        '<td style="text-align:center">' + (idx + 1) + '</td>' +
+                        '<td>' + item.numRequi + '</td>' +
+                        '<td>' + item.fechaEmision + '</td>' +
+                        '<td>' + item.departamento + '</td>' +
+                        '<td>' + item.responsable + '</td>' +
+                        '<td style="text-align:center">' + item.cantidadPartidas + '</td>' +
+                        '<td>' + item.estatus + '</td>' +
+                        '<td style="text-align:center">' +
+                            '<button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicionFin(' + item.idRequi + ')">' +
+                                '<i class="fa-solid fa-file"></i>' +
+                            '</button>' +
+                        '</td>';
+                    tbodyDocumentos.appendChild(tr);
+                });
+            })
+            .catch(function (err) {
+                console.error("Error cargando requisiciones con documentos:", err);
+                tbodyDocumentos.innerHTML =
+                    '<tr class="fila-vacia"><td colspan="8" class="text-center">Error al cargar los datos</td></tr>';
+            });
+    }
+
+    window.verArchivosRequisicionFin = function (idRequisicion) {
+        fetch(urlObtenerTodosArchivos + "?idRequisicion=" + idRequisicion, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (archivos) {
+                if (!archivos || archivos.length === 0) {
+                    alert("Esta requisición no tiene archivos vinculados");
+                    return;
+                }
+
+                var archivoActual = archivos[0];
+                var esImagen = /\.(jpg|jpeg|png|gif|webp)$/i.test(archivoActual.nombreArchivo);
+                var esPdf = /\.pdf$/i.test(archivoActual.nombreArchivo);
+
+                var listaHtml = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                archivos.forEach(function (arch, idx) {
+                    var nombre = arch.nombreArchivo || arch.ruta.split("/").pop();
+                    var activo = idx === 0 ? "activo" : "";
+                    listaHtml +=
+                        '<li class="archivo-item ' + activo + '" data-archivo="' + arch.ruta + '" data-nombre="' + nombre + '" data-tipo="' + arch.tipo + '" data-fecha="' + arch.fechaSubida + '" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s;">' +
+                            '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+                                '<div style="flex: 1;">' +
+                                    '<div style="font-weight: 500; color: #333;">' +
+                                        '<i class="fa-solid fa-file"></i> ' + nombre +
+                                    '</div>' +
+                                    '<div style="font-size: 0.85rem; color: #888; margin-top: 4px;">' +
+                                        arch.tipo + ' • ' + arch.fechaSubida +
+                                    '</div>' +
+                                '</div>' +
+                                '<a href="' + arch.ruta + '" download class="btn btn-sm boton-rosa" style="margin-left: 10px; white-space: nowrap;">' +
+                                    '<i class="fa-solid fa-download"></i> Descargar' +
+                                '</a>' +
+                            '</div>' +
+                        '</li>';
+                });
+                listaHtml += '</ul>';
+
+                var previewHtml = '';
+                if (esPdf) {
+                    previewHtml = '<iframe src="' + archivoActual.ruta + '" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>';
+                } else if (esImagen) {
+                    previewHtml = '<img src="' + archivoActual.ruta + '" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />';
+                } else {
+                    previewHtml = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;">' +
+                        '<div style="text-align: center; color: #999;">' +
+                            '<i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>' +
+                            '<p>No hay vista previa disponible</p>' +
+                            '<p style="font-size: 0.9rem;">Descarga el archivo para verlo</p>' +
+                        '</div>' +
+                    '</div>';
+                }
+
+                var modal = document.createElement("div");
+                modal.className = "modal fade";
+                modal.setAttribute("tabindex", "-1");
+                modal.setAttribute("aria-hidden", "true");
+                modal.innerHTML =
+                    '<div class="modal-dialog modal-xl modal-dialog-centered">' +
+                        '<div class="modal-content modal-premium">' +
+                            '<div class="modal-header modal-header-premium">' +
+                                '<div>' +
+                                    '<h5 class="modal-title modal-titulo-premium">Archivos de la Requisición</h5>' +
+                                    '<p class="modal-subtitulo-premium">Visualiza y descarga los documentos adjuntos</p>' +
+                                '</div>' +
+                                '<button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">' +
+                                    '<i class="fa-solid fa-xmark"></i>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body modal-body-premium" style="padding: 0;">' +
+                                '<div style="display: flex; height: 600px;">' +
+                                    '<div style="flex: 1; overflow-y: auto; border-right: 1px solid #e0e0e0; background: #fafafa;">' +
+                                        '<div style="padding: 0;">' + listaHtml + '</div>' +
+                                    '</div>' +
+                                    '<div style="flex: 2; padding: 20px; display: flex; align-items: center; justify-content: center; background: white;" id="previewContainer">' +
+                                        previewHtml +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(modal);
+
+                var bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+
+                var archivoItems = modal.querySelectorAll(".archivo-item");
+                archivoItems.forEach(function (item) {
+                    item.addEventListener("click", function () {
+                        archivoItems.forEach(function (it) { it.classList.remove("activo"); });
+                        this.classList.add("activo");
+
+                        var ruta = this.getAttribute("data-archivo");
+                        var nombre = this.getAttribute("data-nombre");
+                        var esImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(nombre);
+                        var isPdf = /\.pdf$/i.test(nombre);
+
+                        var container = document.getElementById("previewContainer");
+                        var nuevoPreview = '';
+                        if (isPdf) {
+                            nuevoPreview = '<iframe src="' + ruta + '" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>';
+                        } else if (esImg) {
+                            nuevoPreview = '<img src="' + ruta + '" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />';
+                        } else {
+                            nuevoPreview = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;">' +
+                                '<div style="text-align: center; color: #999;">' +
+                                    '<i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>' +
+                                    '<p>No hay vista previa disponible</p>' +
+                                    '<p style="font-size: 0.9rem;">Descarga el archivo para verlo</p>' +
+                                '</div>' +
+                            '</div>';
+                        }
+                        container.innerHTML = nuevoPreview;
+                    });
+
+                    item.addEventListener("mouseover", function () {
+                        if (!this.classList.contains("activo")) {
+                            this.style.backgroundColor = "#f0f0f0";
+                        }
+                    });
+
+                    item.addEventListener("mouseout", function () {
+                        if (!this.classList.contains("activo")) {
+                            this.style.backgroundColor = "transparent";
+                        }
+                    });
+                });
+
+                modal.addEventListener("hidden.bs.modal", function () { modal.remove(); });
+            })
+            .catch(function (err) {
+                console.error("Error cargando archivos:", err);
+                alert("Error al cargar los archivos");
+            });
+    };
+
     if (modoTabs && container) {
         var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
         var tabPanels = container.querySelectorAll(".almacen-tab-panel");
         tabBtns.forEach(function (btn) {
             btn.addEventListener("click", function () {
                 var tab = this.getAttribute("data-tab");
+
+                if (tab === "documentos" && urlObtenerArchivos) {
+                    cargarRequisicionesConDocumentos();
+                }
 
                 var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
                 if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {

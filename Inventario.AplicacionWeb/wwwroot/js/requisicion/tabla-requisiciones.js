@@ -1076,41 +1076,70 @@
           return;
         }
 
-        let html = "<ul style='list-style: none; padding: 0;'>";
-        archivos.forEach(arch => {
+        const archivoActual = archivos[0];
+        const esImagen = /\.(jpg|jpeg|png|gif|webp)$/i.test(archivoActual.nombreArchivo);
+        const esPdf = /\.pdf$/i.test(archivoActual.nombreArchivo);
+
+        let listaHtml = '<ul style="list-style: none; padding: 0; margin: 0;">';
+        archivos.forEach((arch, idx) => {
           const nombre = arch.nombreArchivo || arch.ruta.split("/").pop();
-          html += `
-            <li style="padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-              <span>
-                <i class="fa-solid fa-file"></i> ${nombre}
-                <br><small style="color: #888;">${arch.tipo} - ${arch.fechaSubida}</small>
-              </span>
-              <a href="${arch.ruta}" target="_blank" class="btn btn-sm boton-rosa" style="margin-left: 10px;">
-                <i class="fa-solid fa-download"></i> Descargar
-              </a>
+          const activo = idx === 0 ? "activo" : "";
+          listaHtml += `
+            <li class="archivo-item ${activo}" data-archivo="${arch.ruta}" data-nombre="${nombre}" data-tipo="${arch.tipo}" data-fecha="${arch.fechaSubida}" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                  <div style="font-weight: 500; color: #333;"><i class="fa-solid fa-file"></i> ${nombre}</div>
+                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} • ${arch.fechaSubida}</div>
+                </div>
+                <a href="${arch.ruta}" download class="btn btn-sm boton-rosa" style="margin-left: 10px; white-space: nowrap;">
+                  <i class="fa-solid fa-download"></i> Descargar
+                </a>
+              </div>
             </li>
           `;
         });
-        html += "</ul>";
+        listaHtml += '</ul>';
+
+        let previewHtml = '';
+        if (esPdf) {
+          previewHtml = `<iframe src="${archivoActual.ruta}" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>`;
+        } else if (esImagen) {
+          previewHtml = `<img src="${archivoActual.ruta}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />`;
+        } else {
+          previewHtml = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;">
+            <div style="text-align: center; color: #999;">
+              <i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
+              <p>No hay vista previa disponible</p>
+              <p style="font-size: 0.9rem;">Descarga el archivo para verlo</p>
+            </div>
+          </div>`;
+        }
 
         const modal = document.createElement("div");
         modal.className = "modal fade";
         modal.setAttribute("tabindex", "-1");
-        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-hidden", "true");
         modal.innerHTML = `
-          <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content modal-premium">
               <div class="modal-header modal-header-premium">
                 <div>
                   <h5 class="modal-title modal-titulo-premium">Archivos de la Requisición</h5>
-                  <p class="modal-subtitulo-premium">Requisición #${idRequisicion}</p>
+                  <p class="modal-subtitulo-premium">Visualiza y descarga los documentos adjuntos</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
-              <div class="modal-body modal-body-premium">
-                ${html}
+              <div class="modal-body modal-body-premium" style="padding: 0;">
+                <div style="display: flex; height: 600px;">
+                  <div style="flex: 1; overflow-y: auto; border-right: 1px solid #e0e0e0; background: #fafafa;">
+                    <div style="padding: 0;">${listaHtml}</div>
+                  </div>
+                  <div style="flex: 2; padding: 20px; display: flex; align-items: center; justify-content: center; background: white;" id="previewContainer">
+                    ${previewHtml}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1119,6 +1148,48 @@
 
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
+
+        const archivoItems = modal.querySelectorAll(".archivo-item");
+        archivoItems.forEach(item => {
+          item.addEventListener("click", function() {
+            archivoItems.forEach(it => it.classList.remove("activo"));
+            this.classList.add("activo");
+
+            const ruta = this.getAttribute("data-archivo");
+            const nombre = this.getAttribute("data-nombre");
+            const esImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(nombre);
+            const isPdf = /\.pdf$/i.test(nombre);
+
+            const container = document.getElementById("previewContainer");
+            let nuevoPreview = '';
+            if (isPdf) {
+              nuevoPreview = `<iframe src="${ruta}" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>`;
+            } else if (esImg) {
+              nuevoPreview = `<img src="${ruta}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />`;
+            } else {
+              nuevoPreview = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;">
+                <div style="text-align: center; color: #999;">
+                  <i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
+                  <p>No hay vista previa disponible</p>
+                  <p style="font-size: 0.9rem;">Descarga el archivo para verlo</p>
+                </div>
+              </div>`;
+            }
+            container.innerHTML = nuevoPreview;
+          });
+
+          item.addEventListener("mouseover", function() {
+            if (!this.classList.contains("activo")) {
+              this.style.backgroundColor = "#f0f0f0";
+            }
+          });
+
+          item.addEventListener("mouseout", function() {
+            if (!this.classList.contains("activo")) {
+              this.style.backgroundColor = "transparent";
+            }
+          });
+        });
 
         modal.addEventListener("hidden.bs.modal", () => {
           modal.remove();

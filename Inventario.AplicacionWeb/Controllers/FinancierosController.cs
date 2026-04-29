@@ -305,18 +305,7 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<JsonResult> ObtenerRequisicionesConArchivos()
         {
-            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-
-            List<RequisicionMaestraDTO> listaDTO;
-
-            if (!string.IsNullOrEmpty(idDeptoClaim) && int.TryParse(idDeptoClaim, out int idDepartamento))
-            {
-                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(idDepartamento, false);
-            }
-            else
-            {
-                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(null, false);
-            }
+            var listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivosTodos(null);
 
             var requisiciones = listaDTO.Select(r => new
             {

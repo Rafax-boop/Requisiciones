@@ -8,7 +8,15 @@
       "Bash(sed -n '1429,1435p' \"c:/Users/Oscar-PC/Desktop/Requisiciones/Inventario.AplicacionWeb/wwwroot/js/requisicion/tabla-requisiciones.js\")",
       "Bash(dotnet build *)",
       "Bash(pkill -f \"dotnet\\\\|Inventario.AplicacionWeb\")",
-      "PowerShell(Stop-Process -Id 26668 -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Id 26668 -Force -ErrorAction SilentlyContinue)",
+      "Bash(grep -i \"visualizar\\\\|comentad\\\\|//.*documento\")",
+      "Bash(grep -E \"\\\\.\\(cshtml|cs\\)$\")",
+      "PowerShell(head -30)",
+      "Bash(grep -r \"documentos ligados\\\\|archivos ligados\\\\|//.*documentos\\\\|//.*archivos\" \"c:\\\\Users\\\\Oscar-PC\\\\Desktop\\\\Requisiciones\\\\Inventario.AplicacionWeb\\\\Views\")",
+      "Bash(dotnet run *)",
+      "Bash(curl -s http://localhost:5000/Requisicion/TablaRequisiciones)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
