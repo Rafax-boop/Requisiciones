@@ -79,7 +79,7 @@
         if (User.IsInRole("8")) numColsReq++;
         if (User.IsInRole("9") || User.IsInRole("8")) numColsReq++;
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).ToList();
-        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 15).ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesProcesoPago = Model.Requisiciones.Where(r => r.IdEstatus == 17).ToList();
     }
@@ -646,6 +646,7 @@
                     <div id="expFinGrupoSiaf" style="margin-bottom:12px;"></div>
                     <div id="expFinGrupoTablaApi" style="margin-bottom:12px;"></div>
                     <div id="expFinGrupoNumeroApi"></div>
+                    <div id="expFinGrupoPedidoCompra" style="margin-top:12px;"></div>
                 </div>
 
                 <!-- Documentos del proveedor -->

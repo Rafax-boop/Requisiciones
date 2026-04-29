@@ -1820,6 +1820,10 @@
         document.getElementById("expGrupoTablaApi").innerHTML = "";
         document.getElementById("expGrupoNumeroApi").innerHTML = "";
         document.getElementById("expArchivosFinancieros").style.display = "none";
+        document.getElementById("expGrupoPedidoCompra").innerHTML = "";
+        document.getElementById("pedidoSinArchivo").style.display = "none";
+        document.getElementById("pedidoModoEdicion").style.display = "none";
+        document.getElementById("pedidoModoReadonly").style.display = "none";
         document.getElementById("expGaleriaFotos").innerHTML = "";
         document.getElementById("expSeccionFotos").style.display = "none";
         document.getElementById("tablaExpedienteBody").innerHTML = "";
@@ -1985,6 +1989,37 @@
             $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
                 renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual);
             });
+
+            // ── Sección Pedido de Compra ──────────────────────────────────────────
+            (function () {
+                var idEstatus = data.idEstatus || 0;
+                var pedidoCompra = data.archivosPedidoCompra || [];
+
+                // Estatus 15 (autorizada) o 18 (rebotada): modo edición
+                if (idEstatus === 15) {
+                    document.getElementById("pedidoModoEdicion").style.display = "flex";
+                    document.getElementById("pedidoModoReadonly").style.display = "none";
+                    // Limpiar el input por si quedó algo de una apertura anterior
+                    var inputPedido = document.getElementById("inputSubirPedido");
+                    if (inputPedido) inputPedido.value = "";
+                } else {
+                    // Cualquier otro estatus (17, etc.): solo lectura
+                    document.getElementById("pedidoModoEdicion").style.display = "none";
+                    document.getElementById("pedidoModoReadonly").style.display = "block";
+
+                    var elGrupo = document.getElementById("expGrupoPedidoCompra");
+                    if (pedidoCompra.length && window.ModalAdjuntos) {
+                        elGrupo.innerHTML = window.ModalAdjuntos.renderGrupoHtml(
+                            "Documento de pedido", pedidoCompra
+                        );
+                        window.ModalAdjuntos.enlazarEventosContenedor(elGrupo);
+                        document.getElementById("pedidoSinArchivo").style.display = "none";
+                    } else {
+                        elGrupo.innerHTML = "";
+                        document.getElementById("pedidoSinArchivo").style.display = "block";
+                    }
+                }
+            })();
 
             new bootstrap.Modal(document.getElementById("modalExpediente")).show();
         });

@@ -557,6 +557,7 @@
         document.getElementById("expFinGrupoSiaf").innerHTML = "";
         document.getElementById("expFinGrupoTablaApi").innerHTML = "";
         document.getElementById("expFinGrupoNumeroApi").innerHTML = "";
+        document.getElementById("expFinGrupoPedidoCompra").innerHTML = "";
         document.getElementById("expFinArchivosFinancieros").style.display = "none";
         document.getElementById("expFinGaleriaFotos").innerHTML = "";
         document.getElementById("expFinSeccionFotos").style.display = "none";
@@ -676,15 +677,16 @@
             (function () {
                 var siaf = data.archivosSiaf || [];
                 var tablaApi = data.archivosTablaApi || [];
+                var pedidoCompra = data.archivosPedidoCompra || [];
                 var numApi = data.numeroApi || null;
-                if (!siaf.length && !tablaApi.length && !numApi) return;
+                if (!siaf.length && !tablaApi.length && !numApi && !pedidoCompra.length) return;
 
                 document.getElementById("expFinArchivosFinancieros").style.display = "block";
 
                 function rgf(elId, titulo, archivos) {
                     var el = document.getElementById(elId);
                     if (!archivos.length) { el.innerHTML = ""; return; }
-                    
+
                     if (window.ModalAdjuntos) {
                         el.innerHTML = window.ModalAdjuntos.renderGrupoHtml(titulo, archivos);
                         window.ModalAdjuntos.enlazarEventosContenedor(el);
@@ -701,6 +703,9 @@
                         + '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">'
                         + '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + '</span>';
                 }
+
+                // NUEVO: pedido de compra
+                rgf("expFinGrupoPedidoCompra", "Pedido de Compra", pedidoCompra);
             })();
 
             $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {

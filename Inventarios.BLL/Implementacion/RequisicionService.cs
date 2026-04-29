@@ -353,6 +353,14 @@ namespace Inventario.BLL.Implementacion
                     Ruta = f.Ruta,
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
+            var queryPedido = await _repositoryDisenos.Consultar(
+                f => f.IdRequisicion == idMaestro && f.Tipo == "pedido_compra");
+            var archivosPedidos = await queryPedido
+                .Select(f => new ArchivoAtencionDTO
+                {
+                    Ruta = f.Ruta,
+                    NombreArchivo = Path.GetFileName(f.Ruta)
+                }).ToListAsync();
 
             return new DetallesRequiDTO
             {
@@ -370,6 +378,7 @@ namespace Inventario.BLL.Implementacion
                 Observaciones = observacion,
                 ArchivosSiaf = archivosSiaf,
                 ArchivosTablaApi = archivosTablaApi,
+                ArchivosPedidoCompra = archivosPedidos,
                 IdEstatus = maestra?.IdEstatus ?? 0,
                 NumeroApi = maestra?.NumApi
             };
