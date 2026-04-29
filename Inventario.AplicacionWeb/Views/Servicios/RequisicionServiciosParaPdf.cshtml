@@ -186,7 +186,7 @@
 
         </div>
 
-        @if (hayMensualProg || hayAnualProg)
+        @if (hayMensualProg || hayAnualProg || Model.Articulos?.Any(x => x.Municipios != null && x.Municipios.Any()) == true)
         {
         <div class="pdf-hoja-programacion">
             <div class="pdf-encabezado pdf-encabezado--hoja2">
@@ -301,7 +301,7 @@
                         </table>
                     }
 
-                    @if (conProgramacion.Any())
+                    @if (Model.Articulos?.Any(x => x.Municipios != null && x.Municipios.Any()) == true)
                     {
                         <p class="pdf-tabla-titulo pdf-tabla-subtitulo">Artículos distribuidos por municipio</p>
                         <table class="pdf-tabla pdf-tabla-distribuidos">
@@ -315,7 +315,7 @@
                             </thead>
                             <tbody>
                                 @{ var nDistribuidos = 0; }
-                                @foreach (var a in conProgramacion.Where(x => x.Municipios != null && x.Municipios.Any()))
+                                @foreach (var a in Model.Articulos.Where(x => x.Municipios != null && x.Municipios.Any()))
                                 {
                                     foreach (var m in a.Municipios)
                                     {
