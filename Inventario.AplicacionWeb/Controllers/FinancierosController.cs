@@ -221,16 +221,15 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> HistorialTablaApi(int idRequisicion)
         {
-            try
+            var requi = await _requisicionesService.ObtenerRequisicionCompletaPorId(idRequisicion);
+            var vm = new HistorialDocumentosVM
             {
-                var historial = await _financierosService.ObtenerHistorialTablaApiAsync(idRequisicion);
-                return View(historial);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error obteniendo historial Tabla API para requisición {Id}", idRequisicion);
-                return RedirectToAction(nameof(TablaFinancieros));
-            }
+                IdRequisicion = idRequisicion,
+                NumRequisicion = requi?.NumRequisicion ?? "",
+                HistorialTablaApi = await _financierosService.ObtenerHistorialTablaApiAsync(idRequisicion),
+                HistorialPedido = await _financierosService.ObtenerHistorialPedidoAsync(idRequisicion)
+            };
+            return View(vm);
         }
 
         [HttpGet]
@@ -254,6 +253,17 @@ namespace Inventario.AplicacionWeb.Controllers
             try
             {
                 var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath);
+
+                // ── NUEVO: guardar historial igual que Tabla API ──────────────
+                int idUsuario = int.Parse(
+                    User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                await _financierosService.GuardarHistorialPedidoAsync(
+                    form,
+                    idUsuario,
+                    observacion: $"Pedido PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
+                // ─────────────────────────────────────────────────────────────
+
                 var nombre = $"Pedido_{form.IdRequisicion}_{DateTime.Now:yyyyMMdd}.pdf";
                 return File(bytes, "application/pdf", nombre);
             }

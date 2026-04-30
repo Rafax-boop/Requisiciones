@@ -116,4 +116,12 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdProveedor { get; set; }
         public bool SeleccionManual { get; set; }
     }
+
+    public class HistorialDocumentosVM
+    {
+        public int IdRequisicion { get; set; }
+        public string NumRequisicion { get; set; } = "";
+        public List<TablaApiHistorialDTO> HistorialTablaApi { get; set; } = new();
+        public List<PedidoHistorialDTO> HistorialPedido { get; set; } = new();
+    }
 }

@@ -25,5 +25,7 @@ namespace Inventario.BLL.Interfaces
         // pedido
         Task<PedidoVistaDTO> ObtenerPedidoEditableAsync(int idRequisicion);
         Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath);
+        Task GuardarHistorialPedidoAsync(PedidoVistaDTO modelo, int idUsuario, string? observacion = null);
+        Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoAsync(int idRequisicion);
     }
 }

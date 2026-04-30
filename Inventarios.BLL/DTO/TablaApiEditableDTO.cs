@@ -43,4 +43,14 @@ namespace Inventario.BLL.DTO
         public string? Observacion { get; set; }
         public TablaApiEditableDTO? Modelo { get; set; }
     }
+
+    public class PedidoHistorialDTO
+    {
+        public int IdHistorial { get; set; }
+        public int IdRequisicion { get; set; }
+        public DateTime? FechaGeneracion { get; set; }
+        public string NombreUsuario { get; set; } = "";
+        public string? Observacion { get; set; }
+        public PedidoVistaDTO? Modelo { get; set; }
+    }
 }

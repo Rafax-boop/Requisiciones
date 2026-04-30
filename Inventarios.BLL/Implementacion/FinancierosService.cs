@@ -1365,7 +1365,9 @@ namespace Inventario.BLL.Implementacion
                     d.Cantidad,
                     d.UnidadMedida,
                     Clave = d.IdArticuloNavigation != null ? d.IdArticuloNavigation.Clave : null,
-                    ClaveMaterial = d.IdArticuloNavigation != null ? (int?)d.IdArticuloNavigation.ClaveMaterial : null
+                    ClaveMaterial = d.IdArticuloNavigation != null ? (int?)d.IdArticuloNavigation.ClaveMaterial : null,
+                    d.CogEditable,
+                    d.NumPartida
                 })
                 .ToListAsync();
 
@@ -1388,12 +1390,10 @@ namespace Inventario.BLL.Implementacion
                 d => d.IdRequisicionDetalle,
                 d => d.Cantidad ?? 1m);
 
-            // ── Jalar el proveedor ganador desde BD (mismo criterio que ObtenerCotizacionConCantidadAsync) ──
             var queryGanador = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
             var ganador = await queryGanador.FirstOrDefaultAsync();
             int? idGanador = ganador?.IdProveedor;
 
-            // Fallback: si no hay registro en TblProveedorGanador, usar el de menor total
             if (idGanador == null || idGanador <= 0)
             {
                 var totalPorProveedor = cotizaciones
@@ -1424,6 +1424,47 @@ namespace Inventario.BLL.Implementacion
                 .GroupBy(c => c.IdRequiDetalle!.Value)
                 .ToDictionary(g => g.Key, g => g.First());
 
+            // ── NUEVO: cargar importes autorizados del último historial TablaAPI ──────
+            // Mapeamos por posición ordinal (índice 0-based) para evitar colisiones
+            // cuando dos partidas comparten el mismo ObjetoGasto.
+            var importesAutorizadosPorIndice = new Dictionary<int, decimal>();
+            try
+            {
+                var queryHist = await _repoHistorial.Consultar(
+                    h => h.IdRequisicion == idRequisicion
+                      && (h.Observacion == null || h.Observacion != "Pedido"));
+
+                var ultimaTablaApi = await queryHist
+                    .OrderByDescending(h => h.FechaGeneracion)
+                    .FirstOrDefaultAsync();
+
+                if (ultimaTablaApi != null && !string.IsNullOrEmpty(ultimaTablaApi.DatosJson))
+                {
+                    var tablaApiDto = System.Text.Json.JsonSerializer
+                        .Deserialize<TablaApiEditableDTO>(ultimaTablaApi.DatosJson);
+
+                    if (tablaApiDto?.Partidas != null)
+                    {
+                        for (int idx = 0; idx < tablaApiDto.Partidas.Count; idx++)
+                        {
+                            var partida = tablaApiDto.Partidas[idx];
+                            var importeStr = (partida.ImporteAutorizado ?? "")
+                                .Replace("$", "").Replace(",", "").Trim();
+
+                            if (decimal.TryParse(importeStr,
+                                    System.Globalization.NumberStyles.Any,
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    out var totalConIva) && totalConIva > 0)
+                            {
+                                importesAutorizadosPorIndice[idx] = totalConIva;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* si falla, usa precios del proveedor ganador sin modificar */ }
+            // ── FIN NUEVO ─────────────────────────────────────────────────────────────
+
             var dto = new PedidoVistaDTO
             {
                 IdRequisicion = idRequisicion,
@@ -1442,19 +1483,39 @@ namespace Inventario.BLL.Implementacion
             {
                 var det = detalles[i];
                 cotGanadora.TryGetValue(det.IdRequisicionDetalle, out var cot);
+
+                bool tieneIva = cot?.Iva ?? false;
+                decimal cantidad = det.Cantidad ?? 1m;
+                decimal precioUnitario = cot?.Importe ?? 0m;   // precio del proveedor (sin IVA)
+
+                // ── NUEVO: si el analista capturó un importe autorizado, lo usa ──────
+                if (importesAutorizadosPorIndice.TryGetValue(i, out var totalAutorizadoConIva))
+                {
+                    // totalAutorizadoConIva = precio_unitario × cantidad × 1.16
+                    // → precio_unitario = totalAutorizadoConIva / 1.16 / cantidad
+                    decimal totalSinIva = tieneIva
+                        ? totalAutorizadoConIva / 1.16m
+                        : totalAutorizadoConIva;
+
+                    precioUnitario = cantidad > 0
+                        ? Math.Round(totalSinIva / cantidad, 2)
+                        : precioUnitario;
+                }
+                // ── FIN NUEVO ─────────────────────────────────────────────────────────
+
                 dto.Partidas.Add(new PedidoPartidaVistaDTO
                 {
                     Numero = i + 1,
                     Clave = det.Clave ?? det.ClaveMaterial?.ToString() ?? "",
                     Descripcion = det.Descripcion ?? "",
-                    Cantidad = det.Cantidad ?? 1m,
+                    Cantidad = cantidad,
                     UnidadMedida = det.UnidadMedida ?? "",
-                    PrecioUnitario = cot?.Importe ?? 0m,
-                    TieneIva = cot?.Iva ?? false
+                    PrecioUnitario = precioUnitario,
+                    TieneIva = tieneIva
                 });
             }
 
-            // Precalcular totales para que la vista los muestre por defecto
+            // Precalcular totales
             decimal sumaInicial = dto.Partidas.Sum(p => p.PrecioUnitario * p.Cantidad);
             decimal ivaInicial = sumaInicial * 0.16m;
             decimal subtotalInicial = sumaInicial + ivaInicial;
@@ -1844,6 +1905,60 @@ namespace Inventario.BLL.Implementacion
 
             doc.Close();
             return ms.ToArray();
+        }
+
+        public async Task GuardarHistorialPedidoAsync(
+    PedidoVistaDTO modelo,
+    int idUsuario,
+    string? observacion = null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(modelo, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var registro = new TblTablaApiHistorial
+            {
+                IdRequisicion = modelo.IdRequisicion,
+                IdUsuario = idUsuario,
+                FechaGeneracion = DateTime.Now,
+                DatosJson = json,
+                Observacion = observacion ?? "Pedido"
+            };
+
+            await _repoHistorial.Crear(registro);
+        }
+
+        public async Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoAsync(int idRequisicion)
+        {
+            var query = await _repoHistorial.Consultar(
+                h => h.IdRequisicion == idRequisicion && h.Observacion == "Pedido");
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdRequisicion,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            return lista.Select(h => new PedidoHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = h.IdRequisicion,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                                .Deserialize<PedidoVistaDTO>(h.DatosJson)
+            }).ToList();
         }
     }
 }

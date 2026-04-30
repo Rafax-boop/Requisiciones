@@ -322,6 +322,11 @@
                                     <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
+                                    <a class="btn btn-accion"
+                                           href="@Url.Action("HistorialTablaApi", "Financieros", new { idRequisicion = item.IdRequi })"
+                                           title="Ver histórico Tabla API">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
