@@ -30,7 +30,7 @@ namespace Inventario.BLL.DTO
 
     public class PedidoPartidaVistaDTO
     {
-        public int Numero { get; set; }
+        public string Numero { get; set; } = "";
         public string Clave { get; set; } = "";
         public string Descripcion { get; set; } = "";
         public decimal Cantidad { get; set; }

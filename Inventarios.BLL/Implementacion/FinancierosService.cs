@@ -936,7 +936,9 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiAsync(int idRequisicion)
         {
-            var query = await _repoHistorial.Consultar(h => h.IdRequisicion == idRequisicion);
+            var query = await _repoHistorial.Consultar(
+                h => h.IdRequisicion == idRequisicion
+                  && (h.Observacion == null || !h.Observacion.StartsWith("Pedido")));
 
             var lista = await query
                 .OrderByDescending(h => h.FechaGeneracion)
@@ -952,6 +954,12 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
             return lista.Select(h => new TablaApiHistorialDTO
             {
                 IdHistorial = h.IdHistorial,
@@ -960,7 +968,7 @@ namespace Inventario.BLL.Implementacion
                 NombreUsuario = h.NombreUsuario,
                 Observacion = h.Observacion,
                 Modelo = System.Text.Json.JsonSerializer
-                                        .Deserialize<TablaApiEditableDTO>(h.DatosJson)
+                        .Deserialize<TablaApiEditableDTO>(h.DatosJson, opciones)
             }).ToList();
         }
 
@@ -1505,7 +1513,7 @@ namespace Inventario.BLL.Implementacion
 
                 dto.Partidas.Add(new PedidoPartidaVistaDTO
                 {
-                    Numero = i + 1,
+                    Numero = (i + 1).ToString(),
                     Clave = det.Clave ?? det.ClaveMaterial?.ToString() ?? "",
                     Descripcion = det.Descripcion ?? "",
                     Cantidad = cantidad,
@@ -1675,7 +1683,7 @@ namespace Inventario.BLL.Implementacion
                 {
                     var p = vista.Partidas[i];
                     decimal precioTotal = p.PrecioUnitario * p.Cantidad;
-                    tblArt.AddCell(CVal(p.Numero.ToString(), al: TextAlignment.CENTER));
+                    tblArt.AddCell(CVal(p.Numero, al: TextAlignment.CENTER));
                     tblArt.AddCell(CVal(p.Clave));
                     tblArt.AddCell(CVal(p.Descripcion));
                     tblArt.AddCell(CVal(p.Cantidad.ToString("N0"), al: TextAlignment.CENTER));
@@ -1933,7 +1941,9 @@ namespace Inventario.BLL.Implementacion
         public async Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoAsync(int idRequisicion)
         {
             var query = await _repoHistorial.Consultar(
-                h => h.IdRequisicion == idRequisicion && h.Observacion == "Pedido");
+                h => h.IdRequisicion == idRequisicion
+                  && h.Observacion != null
+                  && h.Observacion.StartsWith("Pedido"));
 
             var lista = await query
                 .OrderByDescending(h => h.FechaGeneracion)
@@ -1949,6 +1959,12 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
             return lista.Select(h => new PedidoHistorialDTO
             {
                 IdHistorial = h.IdHistorial,
@@ -1957,7 +1973,7 @@ namespace Inventario.BLL.Implementacion
                 NombreUsuario = h.NombreUsuario,
                 Observacion = h.Observacion,
                 Modelo = System.Text.Json.JsonSerializer
-                                .Deserialize<PedidoVistaDTO>(h.DatosJson)
+                .Deserialize<PedidoVistaDTO>(h.DatosJson, opciones)
             }).ToList();
         }
     }

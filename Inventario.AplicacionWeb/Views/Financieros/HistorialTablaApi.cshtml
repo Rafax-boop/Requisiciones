@@ -1,212 +1,159 @@
-﻿@model List<Inventario.BLL.DTO.TablaApiHistorialDTO>
+﻿@model Inventario.AplicacionWeb.Models.ViewModels.HistorialDocumentosVM
 @{
-    ViewData["Title"] = "Histórico Tabla API";
-    var requisicionNum = Model.FirstOrDefault()?.Modelo?.NumeroRequisicion ?? "—";
+    ViewData["Title"] = "Histórico de Documentos";
+    var numReq = Model.NumRequisicion ?? "—";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/componentes/form-comun.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/financieros/editar-tabla-api.css" asp-append-version="true" />
+    <style>
+        .tab-hist-btns {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0;
+        }
+        .tab-hist-btn {
+            padding: 8px 20px;
+            border: none;
+            background: none;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab-hist-btn.activo {
+            color: #ff2d6f;
+            border-color: #ff2d6f;
+        }
+        .tab-hist-panel { display: none; }
+        .tab-hist-panel.activo { display: block; }
+    </style>
 }
 
 <div class="mt-3 container tabla-api-editor-page">
     <div class="info-requisicion">
         <div class="fantasma"></div>
         <div class="container-info">
-            <p class="info-titulo mt-3">Histórico Tabla API</p>
+            <p class="info-titulo mt-3">Histórico de Documentos</p>
         </div>
         <div class="requisicion-info">
             <div class="requisicion">
                 <p class="info-body">Requisición:</p>
-                <label class="info-body">@requisicionNum</label>
+                <label class="info-body">@numReq</label>
             </div>
         </div>
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="container-formulario mt-4">
-            <p class="text-center text-muted">No hay versiones generadas para esta requisición.</p>
-        </div>
-    }
-    else
-    {
-        <!-- Lista de versiones -->
-        <div class="container-formulario mt-3">
-            <div class="seccion-completa">
-                <div class="table-responsive-container">
-                    <table class="tabla-api-editor-grid">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Fecha generación</th>
-                                <th>Usuario</th>
-                                <th>Observación</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int i = 0; i < Model.Count; i++)
-                            {
-                                var h = Model[i];
+    <div class="container-formulario mt-3">
+        <div class="seccion-completa">
+
+            <!-- Tabs -->
+            <div class="tab-hist-btns">
+                <button class="tab-hist-btn activo" id="btnTabApi" onclick="cambiarTab('api')">
+                    <i class="fa-solid fa-table"></i> Tabla API
+                    (@Model.HistorialTablaApi.Count)
+                </button>
+                <button class="tab-hist-btn" id="btnTabPedido" onclick="cambiarTab('pedido')">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Pedido de Compra
+                    (@Model.HistorialPedido.Count)
+                </button>
+            </div>
+
+            <!-- Panel Tabla API -->
+            <div class="tab-hist-panel activo" id="panelApi">
+                @if (!Model.HistorialTablaApi.Any())
+                {
+                    <p class="text-center text-muted">No hay versiones generadas para esta requisición.</p>
+                }
+                else
+                {
+                    <div class="table-responsive-container">
+                        <table class="tabla-api-editor-grid">
+                            <thead>
                                 <tr>
-                                    <td>@(i + 1)</td>
-                                    <td>@h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td>@h.NombreUsuario</td>
-                                    <td>@(h.Observacion ?? "—")</td>
-                                    <td>
-                                        <button class="btn boton-rosa btn-sm"
-                                                onclick="verDetalle(@h.IdHistorial)"
-                                                title="Ver detalle">
-                                            <i class="bi bi-eye"></i> Ver
-                                        </button>
-                                    </td>
+                                    <th>#</th>
+                                    <th>Fecha generación</th>
+                                    <th>Usuario</th>
+                                    <th>Observación</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modales de detalle por versión -->
-        @foreach (var h in Model)
-        {
-            var m = h.Modelo;
-            if (m == null) continue;
-
-            <div class="modal fade" id="modal-@h.IdHistorial" tabindex="-1">
-                <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                Versión del @h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")
-                                — @h.NombreUsuario
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-
-                            <!-- Datos generales -->
-                            <div class="container-formulario">
-                                <div class="seccion-1">
-                                    <div class="formulario-input">
-                                        <label>Fecha de elaboración</label>
-                                        <input type="text" value="@m.FechaElaboracion" readonly />
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Ejercicio</label>
-                                        <input type="text" value="@m.Ejercicio" readonly />
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Área solicitante (clave)</label>
-                                        <input type="text" value="@m.AreaSolicitanteClave" readonly />
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Área solicitante (nombre)</label>
-                                        <input type="text" value="@m.AreaSolicitanteNombre" readonly />
-                                    </div>
-                                </div>
-                                <div class="seccion-2">
-                                    <div class="formulario-input">
-                                        <label>Número de requisición</label>
-                                        <input type="text" value="@m.NumeroRequisicion" readonly />
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Oficio suficiencia / autorización</label>
-                                        <input type="text" value="@m.OficioSuficiencia" readonly />
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Contrato asociado</label>
-                                        <input type="text" value="@m.ContratoAsociado" readonly />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="container-formulario">
-                                <div class="seccion-completa">
-                                    <div class="formulario-input">
-                                        <label>Descripción del bien o servicio</label>
-                                        <textarea rows="2" readonly>@m.DescripcionBienServicio</textarea>
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Justificación</label>
-                                        <textarea rows="2" readonly>@m.Justificacion</textarea>
-                                    </div>
-                                    <div class="formulario-input">
-                                        <label>Comentarios</label>
-                                        <textarea rows="2" readonly>@m.Comentarios</textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Partidas -->
-                            <div class="container-formulario">
-                                <div class="seccion-completa">
-                                    <h6 class="text-center mb-2">Partidas</h6>
-                                    <div class="table-responsive-container">
-                                        <table class="tabla-api-editor-grid">
-                                            <thead>
-                                                <tr>
-                                                    <th>No.</th>
-                                                    <th>UA</th>
-                                                    <th>Clave municipio</th>
-                                                    <th>Importe solicitado</th>
-                                                    <th>Fuente</th>
-                                                    <th>PP</th>
-                                                    <th>Componente</th>
-                                                    <th>Actividad</th>
-                                                    <th>Objeto del gasto</th>
-                                                    <th>Importe autorizado</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var p in m.Partidas)
-                                                {
-                                                    <tr>
-                                                        <td>@p.Numero</td>
-                                                        <td>@p.Ua</td>
-                                                        <td>@p.ClaveMunicipio</td>
-                                                        <td>@p.ImporteSolicitado</td>
-                                                        <td>@p.FuenteFinanciamiento</td>
-                                                        <td>@p.Pp</td>
-                                                        <td>@p.Componente</td>
-                                                        <td>@p.Actividad</td>
-                                                        <td>@p.ObjetoGasto</td>
-                                                        <td>@p.ImporteAutorizado</td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Totales -->
-                            <div class="container-formulario">
-                                <div class="seccion-1">
-                                    <div class="formulario-input">
-                                        <label>Total solicitado</label>
-                                        <input type="text" value="@m.TotalSolicitado" readonly />
-                                    </div>
-                                </div>
-                                <div class="seccion-2">
-                                    <div class="formulario-input">
-                                        <label>Total autorizado</label>
-                                        <input type="text" value="@m.TotalAutorizado" readonly />
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cerrar</button>
-                        </div>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.HistorialTablaApi.Count; i++)
+                                {
+                                    var h = Model.HistorialTablaApi[i];
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td>@h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@h.NombreUsuario</td>
+                                        <td>@(h.Observacion ?? "—")</td>
+                                        <td>
+                                            <button class="btn boton-rosa btn-sm"
+                                                    onclick="verDetalleApi(@h.IdHistorial)"
+                                                    title="Ver detalle">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
-                </div>
+                }
             </div>
-        }
-    }
+
+            <!-- Panel Pedido de Compra -->
+            <div class="tab-hist-panel" id="panelPedido">
+                @if (!Model.HistorialPedido.Any())
+                {
+                    <p class="text-center text-muted">No hay pedidos generados para esta requisición.</p>
+                }
+                else
+                {
+                    <div class="table-responsive-container">
+                        <table class="tabla-api-editor-grid">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha generación</th>
+                                    <th>Usuario</th>
+                                    <th>Nº Pedido</th>
+                                    <th>Proveedor</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.HistorialPedido.Count; i++)
+                                {
+                                    var h = Model.HistorialPedido[i];
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td>@h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@h.NombreUsuario</td>
+                                        <td>@(h.Modelo?.NumeroPedido ?? "—")</td>
+                                        <td>@(h.Modelo?.ProveedorNombre ?? "—")</td>
+                                        <td>
+                                            <button class="btn boton-rosa btn-sm"
+                                                    onclick="verDetallePedido(@h.IdHistorial)"
+                                                    title="Ver detalle">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
 
     <!-- Volver -->
     <div class="container-formulario mt-4">
@@ -216,11 +163,318 @@
     </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALES TABLA API                                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+@foreach (var h in Model.HistorialTablaApi)
+{
+    var m = h.Modelo;
+    if (m == null) continue;
+
+    <div class="modal fade" id="modal-api-@h.IdHistorial" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Tabla API — @h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")
+                        — @h.NombreUsuario
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Fecha de elaboración</label>
+                                <input type="text" value="@m.FechaElaboracion" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Ejercicio</label>
+                                <input type="text" value="@m.Ejercicio" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Área solicitante (clave)</label>
+                                <input type="text" value="@m.AreaSolicitanteClave" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Área solicitante (nombre)</label>
+                                <input type="text" value="@m.AreaSolicitanteNombre" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Número de requisición</label>
+                                <input type="text" value="@m.NumeroRequisicion" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Oficio suficiencia / autorización</label>
+                                <input type="text" value="@m.OficioSuficiencia" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Contrato asociado</label>
+                                <input type="text" value="@m.ContratoAsociado" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container-formulario">
+                        <div class="seccion-completa">
+                            <div class="formulario-input">
+                                <label>Descripción del bien o servicio</label>
+                                <textarea rows="2" readonly>@m.DescripcionBienServicio</textarea>
+                            </div>
+                            <div class="formulario-input">
+                                <label>Justificación</label>
+                                <textarea rows="2" readonly>@m.Justificacion</textarea>
+                            </div>
+                            <div class="formulario-input">
+                                <label>Comentarios</label>
+                                <textarea rows="2" readonly>@m.Comentarios</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container-formulario">
+                        <div class="seccion-completa">
+                            <h6 class="text-center mb-2">Partidas</h6>
+                            <div class="table-responsive-container">
+                                <table class="tabla-api-editor-grid">
+                                    <thead>
+                                        <tr>
+                                            <th>No.</th>
+                                            <th>UA</th>
+                                            <th>Clave municipio</th>
+                                            <th>Importe solicitado</th>
+                                            <th>Fuente</th>
+                                            <th>PP</th>
+                                            <th>Componente</th>
+                                            <th>Actividad</th>
+                                            <th>Objeto del gasto</th>
+                                            <th>Importe autorizado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var p in m.Partidas)
+                                        {
+                                            <tr>
+                                                <td>@p.Numero</td>
+                                                <td>@p.Ua</td>
+                                                <td>@p.ClaveMunicipio</td>
+                                                <td>@p.ImporteSolicitado</td>
+                                                <td>@p.FuenteFinanciamiento</td>
+                                                <td>@p.Pp</td>
+                                                <td>@p.Componente</td>
+                                                <td>@p.Actividad</td>
+                                                <td>@p.ObjetoGasto</td>
+                                                <td>@p.ImporteAutorizado</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Total solicitado</label>
+                                <input type="text" value="@m.TotalSolicitado" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Total autorizado</label>
+                                <input type="text" value="@m.TotalAutorizado" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALES PEDIDO DE COMPRA                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+@foreach (var h in Model.HistorialPedido)
+{
+    var m = h.Modelo;
+    if (m == null) continue;
+    var MX = new System.Globalization.CultureInfo("es-MX");
+
+    <div class="modal fade" id="modal-pedido-@h.IdHistorial" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Pedido de Compra — @h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm")
+                        — @h.NombreUsuario
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Proveedor -->
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Proveedor adjudicado</label>
+                                <input type="text" value="@m.ProveedorNombre" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>R.F.C.</label>
+                                <input type="text" value="@m.ProveedorRfc" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Dirección</label>
+                                <input type="text" value="@m.ProveedorDireccion" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos del pedido -->
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Nº de Pedido</label>
+                                <input type="text" value="@m.NumeroPedido" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Departamento solicitante</label>
+                                <input type="text" value="@m.Departamento" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Responsable</label>
+                                <input type="text" value="@m.Responsable" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Lugar de entrega</label>
+                                <input type="text" value="@m.LugarEntrega" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Tiempo de entrega</label>
+                                <input type="text" value="@m.TiempoEntrega" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Condiciones de pago</label>
+                                <input type="text" value="@m.CondicionesPago" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Artículos -->
+                    <div class="container-formulario">
+                        <div class="seccion-completa">
+                            <h6 class="text-center mb-2">Artículos</h6>
+                            <div class="table-responsive-container">
+                                <table class="tabla-api-editor-grid">
+                                    <thead>
+                                        <tr>
+                                            <th>No.</th>
+                                            <th>Clave</th>
+                                            <th>Descripción</th>
+                                            <th>Cantidad</th>
+                                            <th>Unidad</th>
+                                            <th>Precio unitario</th>
+                                            <th>Precio total</th>
+                                            <th>IVA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var p in m.Partidas)
+                                        {
+                                            decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                                            <tr>
+                                                <td>@p.Numero</td>
+                                                <td>@p.Clave</td>
+                                                <td>@p.Descripcion</td>
+                                                <td>@p.Cantidad.ToString("N0")</td>
+                                                <td>@p.UnidadMedida</td>
+                                                <td>@p.PrecioUnitario.ToString("C2", MX)</td>
+                                                <td>@precioTotal.ToString("C2", MX)</td>
+                                                <td>@(p.TieneIva ? "Sí" : "No")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Totales -->
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Suma</label>
+                                <input type="text" value="@m.Suma.ToString("C2", MX)" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>I.V.A. 16%</label>
+                                <input type="text" value="@m.Iva.ToString("C2", MX)" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Descuento</label>
+                                <input type="text" value="@m.Descuento.ToString("C2", MX)" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Subtotal</label>
+                                <input type="text" value="@m.Subtotal.ToString("C2", MX)" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Ret. 5 al millar</label>
+                                <input type="text" value="@m.Retencion.ToString("C2", MX)" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Total</label>
+                                <input type="text" value="@m.Total.ToString("C2", MX)" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
-        function verDetalle(idHistorial) {
-            const modal = new bootstrap.Modal(document.getElementById('modal-' + idHistorial));
-            modal.show();
-        }
+        (function () {
+
+            window.cambiarTab = function (tab) {
+                var esApi = tab === 'api';
+                document.getElementById('btnTabApi').className    = 'tab-hist-btn' + (esApi  ? ' activo' : '');
+                document.getElementById('btnTabPedido').className = 'tab-hist-btn' + (!esApi ? ' activo' : '');
+                document.getElementById('panelApi').classList.toggle('activo', esApi);
+                document.getElementById('panelPedido').classList.toggle('activo', !esApi);
+            };
+
+            window.verDetalleApi = function (id) {
+                new bootstrap.Modal(document.getElementById('modal-api-' + id)).show();
+            };
+
+            window.verDetallePedido = function (id) {
+                new bootstrap.Modal(document.getElementById('modal-pedido-' + id)).show();
+            };
+
+        })();
     </script>
 }
