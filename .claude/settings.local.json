@@ -16,7 +16,8 @@
       "Bash(dotnet run *)",
       "Bash(curl -s http://localhost:5000/Requisicion/TablaRequisiciones)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git update-index *)"
     ]
   }
 }

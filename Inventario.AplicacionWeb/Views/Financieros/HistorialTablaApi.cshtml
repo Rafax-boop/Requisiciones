@@ -1,4 +1,4 @@
-﻿@model Inventario.AplicacionWeb.Models.ViewModels.HistorialDocumentosVM
+@model Inventario.AplicacionWeb.Models.ViewModels.HistorialDocumentosVM
 @{
     ViewData["Title"] = "Histórico de Documentos";
     var numReq = Model.NumRequisicion ?? "—";
@@ -6,32 +6,98 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/componentes/form-comun.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/financieros/editar-tabla-api.css" asp-append-version="true" />
     <style>
         .tab-hist-btns {
             display: flex;
-            gap: 8px;
-            margin-bottom: 18px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 0;
+            gap: 6px;
+            margin-bottom: 22px;
+            border-bottom: 2px solid var(--slate-200);
+            padding: 0 4px;
         }
         .tab-hist-btn {
-            padding: 8px 20px;
+            padding: 12px 22px;
             border: none;
-            background: none;
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
+            background: transparent;
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--slate-500);
             cursor: pointer;
             border-bottom: 3px solid transparent;
             margin-bottom: -2px;
+            transition: all .25s var(--ease-premium);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
+        .tab-hist-btn i { font-size: 14px; }
+        .tab-hist-btn:hover { color: var(--rosa-400); }
         .tab-hist-btn.activo {
-            color: #ff2d6f;
-            border-color: #ff2d6f;
+            color: var(--rosa-500);
+            border-color: var(--rosa-500);
         }
-        .tab-hist-panel { display: none; }
+        .tab-hist-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            border-radius: 999px;
+            background: var(--slate-100);
+            color: var(--slate-600);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .tab-hist-btn.activo .tab-hist-count {
+            background: var(--rosa-100);
+            color: var(--rosa-500);
+        }
+        .tab-hist-panel { display: none; animation: fadeIn .25s ease; }
         .tab-hist-panel.activo { display: block; }
+        @@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        .hist-empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--slate-500);
+            font-size: 14px;
+        }
+        .hist-empty i {
+            display: block;
+            font-size: 38px;
+            color: var(--slate-300);
+            margin-bottom: 10px;
+        }
+
+        /* Scroll horizontal para tablas dentro de los modales */
+        .modal .table-responsive-container {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal .tabla-api-editor-grid {
+            min-width: 1100px;
+        }
+        .modal-body-premium { overflow-x: hidden; }
+
+        /* Sub-encabezados dentro de los modales */
+        .hist-modal-section-title {
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--rosa-500);
+            margin: 4px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--rosa-100);
+        }
     </style>
 }
 
@@ -52,23 +118,26 @@
     <div class="container-formulario mt-3">
         <div class="seccion-completa">
 
-            <!-- Tabs -->
             <div class="tab-hist-btns">
-                <button class="tab-hist-btn activo" id="btnTabApi" onclick="cambiarTab('api')">
-                    <i class="fa-solid fa-table"></i> Tabla API
-                    (@Model.HistorialTablaApi.Count)
+                <button type="button" class="tab-hist-btn activo" id="btnTabApi" onclick="cambiarTab('api')">
+                    <i class="fa-solid fa-table"></i>
+                    <span>Tabla API</span>
+                    <span class="tab-hist-count">@Model.HistorialTablaApi.Count</span>
                 </button>
-                <button class="tab-hist-btn" id="btnTabPedido" onclick="cambiarTab('pedido')">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> Pedido de Compra
-                    (@Model.HistorialPedido.Count)
+                <button type="button" class="tab-hist-btn" id="btnTabPedido" onclick="cambiarTab('pedido')">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Pedido de Compra</span>
+                    <span class="tab-hist-count">@Model.HistorialPedido.Count</span>
                 </button>
             </div>
 
-            <!-- Panel Tabla API -->
             <div class="tab-hist-panel activo" id="panelApi">
                 @if (!Model.HistorialTablaApi.Any())
                 {
-                    <p class="text-center text-muted">No hay versiones generadas para esta requisición.</p>
+                    <div class="hist-empty">
+                        <i class="fa-solid fa-folder-open"></i>
+                        No hay versiones generadas para esta requisición.
+                    </div>
                 }
                 else
                 {
@@ -80,7 +149,7 @@
                                     <th>Fecha generación</th>
                                     <th>Usuario</th>
                                     <th>Observación</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,11 +161,11 @@
                                         <td>@h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
                                         <td>@h.NombreUsuario</td>
                                         <td>@(h.Observacion ?? "—")</td>
-                                        <td>
-                                            <button class="btn boton-rosa btn-sm"
+                                        <td class="text-center">
+                                            <button type="button" class="btn boton-rosa btn-sm"
                                                     onclick="verDetalleApi(@h.IdHistorial)"
                                                     title="Ver detalle">
-                                                <i class="bi bi-eye"></i> Ver
+                                                <i class="fa-solid fa-eye"></i> Ver
                                             </button>
                                         </td>
                                     </tr>
@@ -107,11 +176,13 @@
                 }
             </div>
 
-            <!-- Panel Pedido de Compra -->
             <div class="tab-hist-panel" id="panelPedido">
                 @if (!Model.HistorialPedido.Any())
                 {
-                    <p class="text-center text-muted">No hay pedidos generados para esta requisición.</p>
+                    <div class="hist-empty">
+                        <i class="fa-solid fa-folder-open"></i>
+                        No hay pedidos generados para esta requisición.
+                    </div>
                 }
                 else
                 {
@@ -124,7 +195,7 @@
                                     <th>Usuario</th>
                                     <th>Nº Pedido</th>
                                     <th>Proveedor</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -137,11 +208,11 @@
                                         <td>@h.NombreUsuario</td>
                                         <td>@(h.Modelo?.NumeroPedido ?? "—")</td>
                                         <td>@(h.Modelo?.ProveedorNombre ?? "—")</td>
-                                        <td>
-                                            <button class="btn boton-rosa btn-sm"
+                                        <td class="text-center">
+                                            <button type="button" class="btn boton-rosa btn-sm"
                                                     onclick="verDetallePedido(@h.IdHistorial)"
                                                     title="Ver detalle">
-                                                <i class="bi bi-eye"></i> Ver
+                                                <i class="fa-solid fa-eye"></i> Ver
                                             </button>
                                         </td>
                                     </tr>
@@ -155,10 +226,11 @@
         </div>
     </div>
 
-    <!-- Volver -->
     <div class="container-formulario mt-4">
         <div class="seccion-completa text-center editor-actions">
-            <a class="btn boton-gris btn-lg" href="@Url.Action("TablaFinancieros", "Financieros")">Volver</a>
+            <a class="btn boton-gris btn-lg" href="@Url.Action("TablaFinancieros", "Financieros")">
+                <i class="fa-solid fa-arrow-left"></i> Volver
+            </a>
         </div>
     </div>
 </div>
@@ -172,18 +244,25 @@
     var m = h.Modelo;
     if (m == null) continue;
 
-    <div class="modal fade" id="modal-api-@h.IdHistorial" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        Tabla API — @h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")
-                        — @h.NombreUsuario
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="modal-api-@h.IdHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium">
+                            <i class="fa-solid fa-table"></i> Tabla API
+                        </h5>
+                        <p class="modal-subtitulo-premium">
+                            @h.FechaGeneracion.ToString("dd/MM/yyyy HH:mm") · @h.NombreUsuario
+                        </p>
+                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body modal-body-premium">
 
+                    <p class="hist-modal-section-title">Datos generales</p>
                     <div class="container-formulario">
                         <div class="seccion-1">
                             <div class="formulario-input">
@@ -219,6 +298,7 @@
                         </div>
                     </div>
 
+                    <p class="hist-modal-section-title">Descripción y justificación</p>
                     <div class="container-formulario">
                         <div class="seccion-completa">
                             <div class="formulario-input">
@@ -236,9 +316,9 @@
                         </div>
                     </div>
 
+                    <p class="hist-modal-section-title">Partidas</p>
                     <div class="container-formulario">
                         <div class="seccion-completa">
-                            <h6 class="text-center mb-2">Partidas</h6>
                             <div class="table-responsive-container">
                                 <table class="tabla-api-editor-grid">
                                     <thead>
@@ -277,6 +357,7 @@
                         </div>
                     </div>
 
+                    <p class="hist-modal-section-title">Totales</p>
                     <div class="container-formulario">
                         <div class="seccion-1">
                             <div class="formulario-input">
@@ -311,19 +392,25 @@
     if (m == null) continue;
     var MX = new System.Globalization.CultureInfo("es-MX");
 
-    <div class="modal fade" id="modal-pedido-@h.IdHistorial" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        Pedido de Compra — @h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm")
-                        — @h.NombreUsuario
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="modal-pedido-@h.IdHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Pedido de Compra
+                        </h5>
+                        <p class="modal-subtitulo-premium">
+                            @h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm") · @h.NombreUsuario
+                        </p>
+                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body modal-body-premium">
 
-                    <!-- Proveedor -->
+                    <p class="hist-modal-section-title">Proveedor</p>
                     <div class="container-formulario">
                         <div class="seccion-1">
                             <div class="formulario-input">
@@ -343,7 +430,7 @@
                         </div>
                     </div>
 
-                    <!-- Datos del pedido -->
+                    <p class="hist-modal-section-title">Datos del pedido</p>
                     <div class="container-formulario">
                         <div class="seccion-1">
                             <div class="formulario-input">
@@ -375,10 +462,9 @@
                         </div>
                     </div>
 
-                    <!-- Artículos -->
+                    <p class="hist-modal-section-title">Artículos</p>
                     <div class="container-formulario">
                         <div class="seccion-completa">
-                            <h6 class="text-center mb-2">Artículos</h6>
                             <div class="table-responsive-container">
                                 <table class="tabla-api-editor-grid">
                                     <thead>
@@ -414,7 +500,7 @@
                         </div>
                     </div>
 
-                    <!-- Totales -->
+                    <p class="hist-modal-section-title">Totales</p>
                     <div class="container-formulario">
                         <div class="seccion-1">
                             <div class="formulario-input">
@@ -461,8 +547,8 @@
 
             window.cambiarTab = function (tab) {
                 var esApi = tab === 'api';
-                document.getElementById('btnTabApi').className    = 'tab-hist-btn' + (esApi  ? ' activo' : '');
-                document.getElementById('btnTabPedido').className = 'tab-hist-btn' + (!esApi ? ' activo' : '');
+                document.getElementById('btnTabApi').classList.toggle('activo', esApi);
+                document.getElementById('btnTabPedido').classList.toggle('activo', !esApi);
                 document.getElementById('panelApi').classList.toggle('activo', esApi);
                 document.getElementById('panelPedido').classList.toggle('activo', !esApi);
             };
