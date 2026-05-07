@@ -16,7 +16,9 @@ namespace Inventario.BLL.Implementacion
         private readonly IUnitOfWork _uow;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IGenericRepository<TblFormato> _repoFormato;
+        private readonly IEmailService _emailService;
         private readonly IGenericRepository<TblRegistroDiseno> _repoRegistroDiseno;
+        private readonly IGenericRepository<TblUsuario> _repoUsuario;
 
         private const int ESTATUS_EN_ALMACEN = 9;
         private const int ESTATUS_APROBADA_ALMACEN = 4;
@@ -34,7 +36,9 @@ namespace Inventario.BLL.Implementacion
             IUnitOfWork uow,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
             IGenericRepository<TblFormato> repoFormato,
-            IGenericRepository<TblRegistroDiseno> repoRegistroDiseno)
+            IGenericRepository<TblRegistroDiseno> repoRegistroDiseno,
+            IEmailService emailService,
+            IGenericRepository<TblUsuario> repoUsuario)
         {
             _repositoryRequisicion = requisicionRepository;
             _repoInventario = repoInventario;
@@ -44,6 +48,8 @@ namespace Inventario.BLL.Implementacion
             _repoMovimiento = repoMovimiento;
             _repoFormato = repoFormato;
             _repoRegistroDiseno = repoRegistroDiseno;
+            _emailService = emailService;
+            _repoUsuario = repoUsuario;
         }
 
         // ─────────────────────────────────────────────
@@ -515,6 +521,8 @@ namespace Inventario.BLL.Implementacion
 
                     var clave = (d.IdArticuloNavigation?.Clave ?? "").Trim();
                     var desc = (d.Descripcion ?? "").Trim();
+                    var unidad = (d.UnidadMedida ?? "").Trim();
+                    var cantRecibida = cantAprobada;
 
                     if (string.IsNullOrWhiteSpace(clave))
                         throw new Exception($"El artículo '{desc}' no tiene clave registrada.");
@@ -537,7 +545,7 @@ namespace Inventario.BLL.Implementacion
                         Confirmado = false
                     });
 
-                    resumenEntregas.Add($"{desc} x{cantAprobada}");
+                    resumenEntregas.Add($"{desc} — {cantAprobada} {unidad}");
                 }
 
                 foreach (var (idDetalle, cantComprar) in listaCompras)
@@ -573,6 +581,31 @@ namespace Inventario.BLL.Implementacion
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, estatusFinal, idUsuario, obs.ToString());
+
+                if (resumenEntregas.Count > 0)
+                {
+                    // Ajusta req.CorreoResponsable al campo real de tu entidad
+                    var correo = req.IdUsuarioNavigation.Correo ?? "";
+                    if (!string.IsNullOrWhiteSpace(correo))
+                    {
+                        try
+                        {
+                            await _emailService.NotificarProductosListosEntregaAsync(
+                                correo,
+                                req.NumRequisicion ?? "",
+                                req.IdDepartamentoNavigation?.NombreDepartamento ?? "",
+                                req.NomResponsableDepartamento ?? "",
+                                resumenEntregas,
+                                resumenCompras);
+                        }
+                        catch (Exception exMail)
+                        {
+                            // El correo nunca debe tumbar la transacción principal
+                            // Puedes loggear aquí con ILogger si lo tienes inyectado
+                            _ = exMail;
+                        }
+                    }
+                }
 
                 await _uow.CommitAsync();
                 return true;
@@ -830,7 +863,7 @@ namespace Inventario.BLL.Implementacion
                             IdUsuario = idUsuario,
                             Confirmado = false
                         });
-                        resumenEntregas.Add($"{desc} x{cantRecibida}");
+                        resumenEntregas.Add($"{desc} — {cantRecibida} {unidad}");
 
                         // ── Actualizar o crear en inventario ──
                         if (!string.IsNullOrWhiteSpace(clave))
@@ -900,6 +933,17 @@ namespace Inventario.BLL.Implementacion
                 if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
 
                 await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 7, idUsuario, obs.ToString());
+
+                var usuario = await _repoUsuario.Obtener(u => u.IdUsuario == req.IdUsuario);
+                var correoResponsable = usuario?.Correo ?? "";
+                if (!string.IsNullOrWhiteSpace(correoResponsable))
+                {
+                    await _emailService.NotificarPedidoRecibidoParcialAsync(
+                        correoResponsable,
+                        req.NumRequisicion ?? "",
+                        resumenEntregas,
+                        resumenFaltantes);
+                }
 
                 await _uow.CommitAsync();
                 return true;

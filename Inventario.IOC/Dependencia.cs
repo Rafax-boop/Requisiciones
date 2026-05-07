@@ -34,6 +34,7 @@ namespace Inventario.IOC
             services.AddScoped<IFinancierosService, FinancierosService>();
             services.AddScoped<IDAFService, DAFService>();
             services.AddScoped<IProveedoresService, ProveedoresService>();
+            services.AddScoped<IEmailService, EmailService>();
         }
     }
 }
