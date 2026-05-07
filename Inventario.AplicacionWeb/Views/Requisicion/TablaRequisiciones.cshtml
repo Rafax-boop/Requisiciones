@@ -709,17 +709,34 @@
                     <div id="expGrupoTablaApi" style="margin-bottom:12px;"></div>
                     <div id="expGrupoNumeroApi"></div>
                 </div>
-                <!-- Botón pedido -->
-                <div style="margin-top:16px; text-align:left; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; width: 100%;">
-                    <button type="button" class="btn boton-gris" onclick="(function(){ var id=window._expedienteActualGlobal; if(!id){alert('Abre un expediente primero.');return;} window.open('@Url.Action("EditarPedidoCompra","Financieros")'+'?idRequisicion='+id,'_blank'); })()">
-                        <i class="fa-solid fa-file-invoice"></i> Editar Pedido de Compra
-                    </button>
-                    
-                    <div class="formulario-input" style="width: 100%; max-width: 400px; margin-top: 4px;">
-                        <label style="font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 8px; display: block;">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Documento de Pedido
-                        </label>
-                        <input type="file" id="inputSubirPedido" class="input-file-rosa" />
+                <!-- Sección pedido de compra (editable o readonly según estatus) -->
+                <div id="seccionPedidoCompra" style="margin-top:16px;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:10px;">
+                        <i class="fa-solid fa-file-invoice"></i> Pedido de Compra
+                    </p>
+
+                    <!-- Modo edición (estatus 15 y 18) -->
+                    <div id="pedidoModoEdicion" style="display:none; flex-direction:column; gap:10px; align-items:flex-start; width:100%;">
+                        <button type="button" class="btn boton-gris"
+                                onclick="(function(){ var id=window._expedienteActualGlobal; if(!id){alert('Abre un expediente primero.');return;} window.open('@Url.Action("EditarPedidoCompra", "Financieros")'+'?idRequisicion='+id,'_blank'); })()">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar Pedido de Compra
+                        </button>
+                        <div class="formulario-input" style="width:100%; max-width:400px; margin-top:4px;">
+                            <label style="font-size:13px; font-weight:600; color:var(--slate-600); margin-bottom:8px; display:block;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Subir documento de pedido
+                            </label>
+                            <input type="file" id="inputSubirPedido" class="input-file-rosa" />
+                        </div>
+                    </div>
+
+                    <!-- Modo solo lectura (estatus 17+): muestra el archivo ya subido -->
+                    <div id="pedidoModoReadonly" style="display:none;">
+                        <div id="expGrupoPedidoCompra"></div>
+                        <p id="pedidoSinArchivo"
+                               style="display:none; font-size:13px; font-style:italic; color:var(--color-text-secondary);">
+                            Sin documento de pedido subido.
+                        </p>
                     </div>
                 </div>
 
