@@ -16,6 +16,8 @@ public partial class DbSigereContext : DbContext
     {
     }
 
+    public virtual DbSet<TblAdjudicacion> TblAdjudicacions { get; set; }
+
     public virtual DbSet<TblArticulo> TblArticulos { get; set; }
 
     public virtual DbSet<TblArticulosProgramado> TblArticulosProgramados { get; set; }
@@ -64,6 +66,15 @@ public partial class DbSigereContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<TblAdjudicacion>(entity =>
+        {
+            entity.ToTable("TblAdjudicacion");
+
+            entity.Property(e => e.MontoMax).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.MontoMin).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Tipo).HasMaxLength(500);
+        });
+
         modelBuilder.Entity<TblArticulo>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__tblArtic__3214EC07CBCDD3F4");
@@ -407,6 +418,10 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.UsoEspecifico).IsUnicode(false);
+
+            entity.HasOne(d => d.IdAdjudicacionNavigation).WithMany(p => p.TblRequisicions)
+                .HasForeignKey(d => d.IdAdjudicacion)
+                .HasConstraintName("FK_tblRequisicion_TblAdjudicacion");
 
             entity.HasOne(d => d.IdDepartamentoNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdDepartamento)

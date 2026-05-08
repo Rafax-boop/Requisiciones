@@ -45,6 +45,8 @@ public partial class TblRequisicion
 
     public string? Hash { get; set; }
 
+    public int? IdAdjudicacion { get; set; }
+
     public int? IdPp { get; set; }
 
     public string? Ff { get; set; }
@@ -60,6 +62,8 @@ public partial class TblRequisicion
     public string? NumApi { get; set; }
 
     public string? NumPedido { get; set; }
+
+    public virtual TblAdjudicacion? IdAdjudicacionNavigation { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
 

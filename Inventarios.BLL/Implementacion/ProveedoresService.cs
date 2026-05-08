@@ -19,6 +19,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repositoryMovimiento;
         private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
         private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
+        private readonly IGenericRepository<TblAdjudicacion> _repositoryAdquisicion;
 
         public ProveedoresService(
             IGenericRepository<TblProvedor> repository,
@@ -26,7 +27,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblRequisicionDetalle> repositoryDetalle,
             IGenericRepository<TblRequisicionDetalleMovimiento> repositoryMovimiento,
             IGenericRepository<TblRequisicion> repositoryRequisicion,
-            IGenericRepository<TblProveedorGanador> repositoryGanador
+            IGenericRepository<TblProveedorGanador> repositoryGanador,
+            IGenericRepository<TblAdjudicacion> repositoryAdquisicion
         )
         {
             _repository = repository;
@@ -35,6 +37,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryMovimiento = repositoryMovimiento;
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryGanador = repositoryGanador;
+            _repositoryAdquisicion = repositoryAdquisicion;
         }
 
         public async Task<List<ProveedoresDTO>> ObtenerProveedores()
@@ -297,6 +300,23 @@ namespace Inventario.BLL.Implementacion
                 previo.FechaSeleccion = DateTime.Now;
 
                 await _repositoryGanador.Editar(previo);
+            }
+
+            // Buscar el tipo de adquisición según el subtotal (sin IVA)
+            var queryAdq = await _repositoryAdquisicion.Consultar(
+                a => a.Activo == true
+                  && a.MontoMin <= subtotal
+                  && subtotal < a.MontoMax);
+            var tipoAdq = await queryAdq.FirstOrDefaultAsync();
+
+            // Actualizar la requisición con el IdAdquisicion encontrado
+            var queryReq = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idRequisicion);
+            var requisicion = await queryReq.FirstOrDefaultAsync();
+
+            if (requisicion != null && tipoAdq != null)
+            {
+                requisicion.IdAdjudicacion = tipoAdq.Id;
+                await _repositoryRequisicion.Editar(requisicion);
             }
 
             return true;
