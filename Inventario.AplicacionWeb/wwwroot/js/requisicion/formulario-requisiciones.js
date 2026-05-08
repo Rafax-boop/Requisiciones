@@ -219,7 +219,7 @@
       "</td>",
       '<td><input type="number" name="Articulos[' +
         index +
-        '].Cantidad" class="form-control cantidad-input" min="1" value="' +
+        '].Cantidad" class="form-control cantidad-input" min="1" step="1" inputmode="numeric" value="' +
         (art.cantidad || 1) +
         '" required /></td>',
       '<td class="descripcion-detallada-cell"><div class="desc-wrapper">',
@@ -303,7 +303,7 @@
       "</td>",
       '<td><input type="number" name="Articulos[' +
         index +
-        '].Cantidad" class="form-control cantidad-input" min="1" value="1" required /></td>',
+        '].Cantidad" class="form-control cantidad-input" min="1" step="1" inputmode="numeric" value="1" required /></td>',
       '<td class="descripcion-detallada-cell"><div class="desc-wrapper">',
       '<div class="desc-preview" onclick="expandirDesc(this)"><span class="desc-texto-preview">Sin descripción...</span><i class="fa-solid fa-pen-to-square desc-icon"></i></div>',
       '<input type="hidden" name="Articulos[' +
@@ -436,8 +436,15 @@
   });
 
   $("#tablaArticulos").on("input", ".cantidad-input", function () {
+    this.value = this.value.replace(/\D/g, "");
     var index = $(this).data("index");
     if (typeof calcularSubtotal === "function") calcularSubtotal(index);
+  });
+
+  $("#tablaArticulos").on("keydown", ".cantidad-input", function (e) {
+    if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+      e.preventDefault();
+    }
   });
 
   var _descWrapperActivo = null;
@@ -1274,6 +1281,7 @@
     var btnSig = document.getElementById("btnWizardMuniSiguiente");
     var btnAnt = document.getElementById("btnWizardMuniAnterior");
     var btnAgregar = document.getElementById("btnWizardMuniAgregarFila");
+    var btnCancelar = document.getElementById("btnWizardMuniCancelar");
 
     // Clonar para limpiar listeners previos
     if (btnSig) {
@@ -1285,6 +1293,11 @@
       var nuevoAnt = btnAnt.cloneNode(true);
       btnAnt.parentNode.replaceChild(nuevoAnt, btnAnt);
       nuevoAnt.addEventListener("click", onClickAnteriorMunicipio);
+    }
+    if (btnCancelar) {
+      var nuevoCancelar = btnCancelar.cloneNode(true);
+      btnCancelar.parentNode.replaceChild(nuevoCancelar, btnCancelar);
+      nuevoCancelar.addEventListener("click", onClickCancelarMunicipio);
     }
 
     var modal =
@@ -1333,6 +1346,14 @@
     guardarMunicipioActual();
     municipioWizardIdx--;
     renderizarPasoMunicipio(municipioWizardIdx);
+  }
+
+  function onClickCancelarMunicipio() {
+    var modalEl = document.getElementById("modalMunicipiosWizard");
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) {
+      modal.hide();
+    }
   }
 
   function renderizarPasoMunicipio(idx) {

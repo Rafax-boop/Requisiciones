@@ -29,7 +29,8 @@
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
-     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Financieros")">
+     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Financieros")"
+     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -657,8 +658,8 @@
                         <thead>
                             <tr>
                                 <th>Nº Partida</th>
-                                <th>Cantidad</th>
-                                <th>Unidad Medida</th>
+                                <th style="width:100px;">Cantidad</th>
+                                <th style="width:135px;">Unidad Medida</th>
                                 <th>Descripción</th>
                                 <th>Descripción Detallada</th>
                             </tr>
@@ -809,10 +810,10 @@
                     <table class="tabla-requisiciones" id="tablaModalDetalle">
                         <thead>
                             <tr>
-                                <th>Nº Partida</th>
-                                <th>Cantidad</th>
-                                <th>Unidad Medida</th>
-                                <th>Descripción</th>
+                                <th style="width:120px;">Nº Partida</th>
+                                <th style="width:100px;">Cantidad</th>
+                                <th style="width:135px;">Unidad Medida</th>
+                                <th style="width:150px;">Descripción</th>
                                 <th>Descripción Detallada</th>
                             </tr>
                         </thead>
@@ -970,7 +971,7 @@
 
 <!-- Modal ver cotizaciones (solo lectura) -->
 <div class="modal" id="modalVerCotizaciones" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-dialog modal-dialog-centered modal-detalle-requisicion">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
@@ -982,8 +983,7 @@
                 </button>
             </div>
             <div class="modal-body modal-body-premium">
-                <div id="listaCotizacionesModal"
-                     style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
+                <div id="listaCotizacionesModal" style="display:flex;flex-direction:column;gap:16px;min-height:60px;">
                 </div>
             </div>
         </div>
@@ -1038,6 +1038,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
     <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/financieros/tabla-financieros.js" asp-append-version="true"></script>
 

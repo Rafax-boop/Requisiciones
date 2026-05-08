@@ -25,4 +25,11 @@ namespace Inventario.BLL.DTO
         public string? NumApi { get; set; }
         public string? NumPedido { get; set; }
     }
+
+    public class DescargaArchivosRequisicionDTO
+    {
+        public string? NumRequisicion { get; set; }
+        public string? NumApi { get; set; }
+        public string? NumPedido { get; set; }
+    }
 }

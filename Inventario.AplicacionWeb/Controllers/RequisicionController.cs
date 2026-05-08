@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.IO.Compression;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
@@ -637,6 +638,92 @@ namespace Inventario.AplicacionWeb.Controllers
                 nombreArchivo = Path.GetFileName(a.Ruta)
             }).ToList();
             return Json(resultado);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarTodosLosArchivosZip(int idRequisicion)
+        {
+            var archivos = await _requisicionService.ObtenerTodosLosArchivosDeRequisicion(idRequisicion);
+            if (archivos == null || archivos.Count == 0)
+                return NotFound("No hay archivos para descargar.");
+
+            var datosRequisicion = await _requisicionService.ObtenerDatosDescargaArchivos(idRequisicion);
+            if (datosRequisicion == null)
+                return NotFound("No se encontró la requisición.");
+
+            using var zipStream = new MemoryStream();
+            using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var nombresUsados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var archivo in archivos)
+                {
+                    if (string.IsNullOrWhiteSpace(archivo.Ruta))
+                        continue;
+
+                    var rutaRelativa = archivo.Ruta
+                        .TrimStart('~', '/')
+                        .Replace('/', Path.DirectorySeparatorChar);
+                    var rutaFisica = Path.Combine(_webHostEnvironment.WebRootPath, rutaRelativa);
+
+                    if (!System.IO.File.Exists(rutaFisica))
+                        continue;
+
+                    var nombreOriginal = Path.GetFileName(archivo.Ruta);
+                    var nombreEntrada = ObtenerNombreZipDisponible(nombreOriginal, nombresUsados);
+                    var entrada = zip.CreateEntry(nombreEntrada, CompressionLevel.Fastest);
+
+                    await using var entryStream = entrada.Open();
+                    await using var fileStream = new FileStream(rutaFisica, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    await fileStream.CopyToAsync(entryStream);
+                }
+            }
+
+            if (zipStream.Length == 0)
+                return NotFound("No se encontraron archivos físicos para descargar.");
+
+            zipStream.Position = 0;
+            var nombreZip = ConstruirNombreZip(datosRequisicion);
+            return File(zipStream.ToArray(), "application/zip", nombreZip);
+        }
+
+        private static string ConstruirNombreZip(DescargaArchivosRequisicionDTO datos)
+        {
+            var partes = new[]
+            {
+                LimpiarSegmentoNombreArchivo(datos.NumRequisicion, "SIN-REQUISICION"),
+                LimpiarSegmentoNombreArchivo(datos.NumApi, "SIN-API"),
+                LimpiarSegmentoNombreArchivo(datos.NumPedido, "SIN-PEDIDO")
+            };
+
+            return string.Join("_", partes) + ".zip";
+        }
+
+        private static string LimpiarSegmentoNombreArchivo(string? valor, string valorPorDefecto)
+        {
+            var texto = string.IsNullOrWhiteSpace(valor) ? valorPorDefecto : valor.Trim();
+            foreach (var invalido in Path.GetInvalidFileNameChars())
+                texto = texto.Replace(invalido, '-');
+
+            return string.IsNullOrWhiteSpace(texto) ? valorPorDefecto : texto;
+        }
+
+        private static string ObtenerNombreZipDisponible(string nombreOriginal, HashSet<string> nombresUsados)
+        {
+            var baseNombre = string.IsNullOrWhiteSpace(nombreOriginal)
+                ? "archivo"
+                : Path.GetFileNameWithoutExtension(nombreOriginal);
+            var extension = Path.GetExtension(nombreOriginal);
+            var candidato = $"{baseNombre}{extension}";
+            var indice = 2;
+
+            while (!nombresUsados.Add(candidato))
+            {
+                candidato = $"{baseNombre}_{indice}{extension}";
+                indice++;
+            }
+
+            return candidato;
         }
     }
 }

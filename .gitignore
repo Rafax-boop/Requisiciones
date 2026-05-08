@@ -1,4 +1,8 @@
 .vs/
+.build-temp/
+.tmp-build-web/
+.dotnet/
+.dotnet_home/
 
 [Bb]in/
 [Oo]bj/
