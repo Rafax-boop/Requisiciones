@@ -3402,8 +3402,6 @@
           .prop("selected", true);
         $("#expTipoPrograma").trigger("change");
       }
-      if (data.claveRegion)
-        $("#expMunicipio").val(data.claveRegion).trigger("change");
 
       // Cotizaciones / cuadro
       (function () {
