@@ -211,11 +211,33 @@
   transform: translateY(5px);
   transition: opacity 0.15s var(--ease-premium),
     transform 0.15s var(--ease-premium);
-  max-width: 1000px !important;
+  max-width: 1300px !important;
   width: 90% !important;
 }
 
 .modal.show .modal-dialog {
   opacity: 1;
   transform: translateY(0);
+}
+
+.modal-gestionar-requisicion {
+  max-width: 700px !important;
+}
+
+.modal-premium-compacta {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.modal-proveedores-requisicion {
+  max-width: 1400px !important;
+}
+
+.modal-detalle-requisicion {
+  max-width: 1400px !important;
+}
+
+.modal-premium-ancha {
+  max-width: 1400px;
+  margin: 0 auto;
 }

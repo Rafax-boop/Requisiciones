@@ -337,6 +337,8 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.FechaSeleccion).HasColumnType("datetime");
             entity.Property(e => e.Iva).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Justificacion)
+                .IsUnicode(false);
             entity.Property(e => e.Subtotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 2)");
         });

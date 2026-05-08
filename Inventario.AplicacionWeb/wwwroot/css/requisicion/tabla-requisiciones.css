@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   📋 TABLA REQUISICIONES
+   TABLA REQUISICIONES
 ══════════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────
@@ -202,12 +202,12 @@
 
 /* Fila nueva (notificación de llegada) */
 .tabla-requisiciones tbody tr.fila-nueva td {
-  background-color: #fffde7 !important; /* Amarillo pastel claro */
+  background-color: #fffde7 !important; 
   transition: background-color 0.8s ease-out;
 }
 
 .tabla-requisiciones tbody tr.fila-nueva:hover td {
-  background-color: #fff9c4 !important; /* Un poco más oscuro en hover */
+  background-color: #fff9c4 !important; 
 }
 
 /* Al abrir la pestaña: la requi nueva parpadea ~2 s y luego se normaliza */
@@ -1051,8 +1051,7 @@
 }
 
 /* ──────────────────────────────────────────
-   CHECKBOX ESTILO BULLET (modal Atender)
-   Solo estilo, misma lógica (id chkRequiereModificacion)
+   CHECKBOX ESTILO BULLET 
 ────────────────────────────────────────── */
 .atender-opcion {
   display: flex;

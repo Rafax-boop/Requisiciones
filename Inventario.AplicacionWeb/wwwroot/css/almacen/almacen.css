@@ -1,6 +1,5 @@
 /* ══════════════════════════════════════════════
-   ALMACÉN — Estilos específicos de la vista
-   (Reutiliza tabla-requi-*, tabla-requisiciones, modal-premium, stat-card, etc.)
+   ALMACÉN )
  ══════════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────
@@ -82,7 +81,6 @@
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* Ocultar contador de notificación (tiene prioridad sobre display:flex del badge) */
 .badge-almacen-tab.badge-almacen-tab--oculto {
     display: none !important;
     visibility: hidden !important;
@@ -90,7 +88,7 @@
 }
 
 /* ──────────────────────────────────────────
-   CONTENIDO POR PESTAÑA (mostrar/ocultar)
+   CONTENIDO POR PESTAÑA
 ────────────────────────────────────────── */
 .almacen-tab-panel {
     display: none;
@@ -100,7 +98,7 @@
     display: block;
 }
 
-/* Stats en pestaña Requisiciones (reutiliza .stat-card de home; opcional ajuste de margen) */
+/* Stats en pestaña Requisiciones */
 .almacen-stats {
     display: flex;
     gap: 16px;
@@ -108,12 +106,10 @@
     flex-wrap: wrap;
 }
 
-/* Select2 en filtros Estado e Inventario (Unidad de medida) */
 .filtro-grupo .select2-container {
     width: 100% !important;
 }
 
-/* Botón clear del filtro Unidad de medida: fuera a la derecha, icono FA X roja con sombra */
 .filtro-grupo-unidad .select2-container {
     width: 100% !important;
 }
@@ -166,6 +162,12 @@
     border-top: 1px solid var(--slate-100);
     background: var(--slate-50);
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+#paginacionRequisiciones {
+    position: sticky;
+    left: 0;
+    z-index: 2;
 }
 
 .almacen-paginacion-info {
@@ -258,7 +260,7 @@
     color: var(--rosa-500);
 }
 
-/* Pie del modal — botones de acción premium */
+/* Pie del modal — botones de acción */
 .almacen-modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -551,7 +553,6 @@
     margin-bottom: 12px;
 }
 
-/* Toasts (opcional, para futura funcionalidad) */
 #almacen-toasts {
     position: fixed;
     top: 80px;

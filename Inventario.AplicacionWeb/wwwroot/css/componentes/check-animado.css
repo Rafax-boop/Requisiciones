@@ -1,0 +1,188 @@
+.check-animado {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.check-animado:not(.check-animado--choice) {
+    width: 26px;
+    height: 26px;
+}
+
+.check-animado__input {
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.check-animado__bullet {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: 3px solid var(--slate-300);
+    border-radius: 50%;
+    background: white;
+    transition: border-color 0.3s var(--ease-premium);
+}
+
+.check-animado__bullet::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--slate-300);
+    transition: background 0.3s var(--ease-premium);
+}
+
+.check-animado__input:checked + .check-animado__bullet {
+    border-color: var(--rosa-400);
+    animation: explode 0.35s;
+}
+
+.check-animado__input:checked + .check-animado__bullet::after {
+    background: var(--rosa-400);
+}
+
+.check-animado__line {
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background-color: var(--rosa-400);
+    opacity: 0;
+}
+
+.check-animado__line.zero {
+    left: 7px;
+    top: -18px;
+    transform: translateY(17px);
+    width: 2px;
+    height: 8px;
+}
+
+.check-animado__line.one {
+    right: -6px;
+    top: -9px;
+    transform: rotate(-55deg) translate(-9px);
+}
+
+.check-animado__line.two {
+    right: -17px;
+    top: 8px;
+    transform: translate(-9px);
+}
+
+.check-animado__line.three {
+    right: -6px;
+    top: 28px;
+    transform: rotate(55deg) translate(-9px);
+}
+
+.check-animado__line.four {
+    left: -6px;
+    top: -9px;
+    transform: rotate(55deg) translate(9px);
+}
+
+.check-animado__line.five {
+    left: -17px;
+    top: 8px;
+    transform: translate(9px);
+}
+
+.check-animado__line.six {
+    left: -6px;
+    top: 28px;
+    transform: rotate(-55deg) translate(9px);
+}
+
+.check-animado__line.seven {
+    left: 7px;
+    bottom: -18px;
+    transform: translateY(-17px);
+    width: 2px;
+    height: 8px;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.zero {
+    animation: drop-zero 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.one {
+    animation: drop-one 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.two {
+    animation: drop-two 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.three {
+    animation: drop-three 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.four {
+    animation: drop-four 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.five {
+    animation: drop-five 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.six {
+    animation: drop-six 0.9s 0.1s forwards;
+}
+
+.check-animado__input:checked + .check-animado__bullet .check-animado__line.seven {
+    animation: drop-seven 0.9s 0.1s forwards;
+}
+
+.check-animado--choice {
+    gap: 10px;
+    padding: 12px 24px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    transition: all 0.3s var(--ease-premium);
+    font-family: var(--font-display) !important;
+    font-size: 13px !important;
+    font-weight: 600;
+    color: var(--slate-500);
+    letter-spacing: 0.5px;
+    background: var(--slate-50);
+    text-transform: none !important;
+}
+
+.check-animado--choice:hover {
+    border-color: var(--rosa-200);
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.check-animado--choice:has(.check-animado__input:checked) {
+    border-color: var(--rosa-400);
+    background: var(--rosa-50);
+    color: var(--rosa-500);
+    box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+}
+
+.check-animado--choice .check-animado__input {
+    width: 100%;
+    height: 30px;
+    left: 0;
+    top: calc(50% - 15px);
+    inset: auto;
+}
+
+.check-animado--choice .check-animado__text {
+    color: inherit;
+}

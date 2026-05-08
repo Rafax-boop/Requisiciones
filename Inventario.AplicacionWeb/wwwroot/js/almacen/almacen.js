@@ -722,9 +722,12 @@
           inputDisabled +
           " /></td>";
         html +=
-          '<td style="text-align:center"><input type="checkbox" class="almacen-chk-compra" data-detalle="' +
-          idDetalle +
-          '" style="width:18px;height:18px;cursor:pointer;" /></td>';
+          '<td style="text-align:center">' +
+          window.crearCheckAnimado({
+            inputClass: "almacen-chk-compra",
+            attrs: 'data-detalle="' + idDetalle + '"',
+          }) +
+          "</td>";
         html +=
           '<td><input type="number" class="input-app almacen-cant-compra" min="1" step="1" value="' +
           cantCompraDefault +
@@ -1080,10 +1083,11 @@
 
       html += '<tr data-id-mov="' + idMov + '">';
       html += '<td style="text-align:center;">';
-      html +=
-        '<input type="checkbox" class="chk-entrega-articulo" data-id-mov="' +
-        idMov +
-        '" style="width:16px;height:16px;cursor:pointer;" checked />';
+      html += window.crearCheckAnimado({
+        inputClass: "chk-entrega-articulo",
+        checked: true,
+        attrs: 'data-id-mov="' + idMov + '"',
+      });
       html += "</td>";
       html += "<td>" + desc + "</td>";
       html +=

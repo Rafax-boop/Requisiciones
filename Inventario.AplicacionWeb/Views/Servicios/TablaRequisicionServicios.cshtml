@@ -103,7 +103,7 @@
         var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -217,23 +217,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -365,23 +365,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(faseA >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esModA ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esModA ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -643,7 +643,7 @@
 <!-- Modal expediente completo (solo tab verificadas) -->
 <div class="modal" id="modalExpediente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+        <div class="modal-content modal-premium modal-premium-compacta">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium">Expediente de Requisición</h5>
@@ -807,8 +807,8 @@
 
 <!-- Modal ver requisición (misma estructura que Requisición y Almacén) -->
 <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-detalle-requisicion">
+        <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
@@ -957,8 +957,8 @@
 
 <div class="modal" id="modalProveedoresRequisicion" tabindex="-1" aria-labelledby="modalProveedoresRequisicionLabel"
      aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-proveedores-requisicion">
+        <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores por partida</h5>
@@ -1055,8 +1055,8 @@
 </div>
 
 <div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-dialog-centered modal-gestionar-requisicion">
+        <div class="modal-content modal-premium modal-premium-compacta">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium">Gestionar requisición</h5>

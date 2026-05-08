@@ -497,8 +497,10 @@
                         <thead>
                             <tr>
                                 <th style="width:40px;">
-                                    <input type="checkbox" id="chkEntregaTodos" title="Seleccionar todos"
-                                           style="width:16px;height:16px;cursor:pointer;" />
+                                    @await Html.PartialAsync("_CheckAnimado", new VMCheckAnimado {
+                                        Id = "chkEntregaTodos",
+                                        Title = "Seleccionar todos"
+                                    })
                                 </th>
                                 <th>Material</th>
                                 <th style="text-align:center">Cantidad</th>

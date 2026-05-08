@@ -35,6 +35,7 @@
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
      data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")"
      data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
+     data-url-obtener-ganador="@Url.Action("ObtenerProveedorGanador", "Requisicion")"
      data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")"
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
      data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
@@ -224,23 +225,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -360,23 +361,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(faseA >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esModA ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esModA ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -602,7 +603,7 @@
 <!-- Modal expediente completo (solo tab verificadas) -->
 <div class="modal" id="modalExpediente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+        <div class="modal-content modal-premium modal-premium-compacta">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium">Expediente de Requisición</h5>
@@ -799,8 +800,8 @@
 }
 
 <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-detalle-requisicion">
+        <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
@@ -947,12 +948,12 @@
 
 <div class="modal" id="modalProveedoresRequisicion" tabindex="-1" aria-labelledby="modalProveedoresRequisicionLabel"
      aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-proveedores-requisicion">
+        <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores por partida</h5>
-                    <p class="modal-subtitulo-premium" id="wizardProveedoresSubtitulo">Partida 1 de 1</p>
+                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Cotizaciones por proveedor</h5>
+                    <p class="modal-subtitulo-premium" id="wizardProveedoresSubtitulo">Proveedor 1 de 1</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
@@ -961,10 +962,35 @@
             <div class="modal-body modal-body-premium modal-proveedores-cuerpo">
 
                 <!-- Nombre de la partida activa -->
-                <p id="wizardProveedoresNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 1rem;"></p>
+                <div id="wizardProveedorActual">
+                    <div class="formulario-input" style="margin-bottom:16px;">
+                        <label>Proveedor</label>
+                        <select id="wizardProveedorSelect" class="form-select select2" title="Proveedor">
+                            <option value="">-- Seleccione proveedor --</option>
+                            @foreach (var act in Model.ListaProveedores)
+                            {
+                                <option value="@act.Value">@act.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="table-responsive-container" style="margin-bottom:16px;">
+                        <table class="tabla-requisiciones" id="tablaWizardProveedorPartidas">
+                            <thead>
+                                <tr>
+                                    <th style="width:90px;">Partida</th>
+                                    <th>Descripción</th>
+                                    <th style="width:160px;">Precio</th>
+                                    <th style="width:120px;">IVA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wizardProveedorPartidasBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
                 <!-- Filas de proveedor + precio para la partida activa -->
-                <div id="modalProveedoresFilas" class="modal-proveedores-lista"></div>
+                <div id="modalProveedoresFilas" class="modal-proveedores-lista" style="display:none;"></div>
 
                 <!-- Botón agregar fila -->
                 <div class="modal-proveedores-agregar-wrap">
@@ -1030,12 +1056,13 @@
                         <!-- Se llena dinámicamente -->
                     </div>
 
-                    <div id="wizardGanadorCambio" style="display:none; margin-top:8px;">
+                    <div id="wizardGanadorJustificacionWrap" style="display:none; margin-top:12px;">
                         <div class="formulario-input">
-                            <label>Selecciona otro proveedor:</label>
-                            <select id="selectGanadorManual" class="form-select select2">
-                                <option value="">-- Seleccionar --</option>
-                            </select>
+                            <label>Justificación de selección manual</label>
+                            <textarea id="wizardGanadorJustificacion"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="Escribe por qué se eligió este proveedor y no el de menor costo..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -1045,8 +1072,8 @@
 </div>
 
 <div class="modal" id="modalAsignar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content modal-premium">
+    <div class="modal-dialog modal-dialog-centered modal-gestionar-requisicion">
+        <div class="modal-content modal-premium modal-premium-compacta">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium">Gestionar requisición</h5>

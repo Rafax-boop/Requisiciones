@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   🔍 SELECT2 
+ SELECT2 
 ══════════════════════════════════════════════ */
 
 /* Contenedor principal */
@@ -55,8 +55,7 @@
 }
 
 /* ──────────────────────────────────────────
-   DROPDOWN — La lista que se despliega
-   z-index alto para que quede encima de modales (Bootstrap ~1055)
+   DROPDOWN 
 ────────────────────────────────────────── */
 .select2-dropdown {
     z-index: 1060 !important;

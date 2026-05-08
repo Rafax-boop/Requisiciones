@@ -85,12 +85,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public IFormFile? FormatoSalidaFirmado { get; set; }
     }
 
-    public class GuardarCotizacionesRequest
-    {
-        public int IdRequisicion { get; set; }
-        public List<CotizacionDTO> Cotizaciones { get; set; } = new();
-    }
-
     public class RegistrarIngresoPedidoRequest
     {
         public int IdRequisicion { get; set; }
@@ -108,13 +102,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
     {
         public int IdRequisicion { get; set; }
         public IFormFile? FormatoEntradaFirmado { get; set; }
-    }
-
-    public class GuardarGanadorRequest
-    {
-        public int IdRequisicion { get; set; }
-        public int IdProveedor { get; set; }
-        public bool SeleccionManual { get; set; }
     }
 
     public class HistorialDocumentosVM
