@@ -98,7 +98,10 @@ namespace Inventario.BLL.Implementacion
                 Importe = c.Importe ?? 0,
                 NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
                 IdPartida = c.IdRequiDetalle,
+                NumPartida = c.IdRequiDetalleNavigation.NumPartida,
                 NombrePartida = c.IdRequiDetalleNavigation.DescripcionDetallada,
+                Descripcion = c.IdRequiDetalleNavigation.Descripcion,
+                DescripcionDetallada = c.IdRequiDetalleNavigation.DescripcionDetallada,
                 IVA = c.Iva
             }).ToListAsync();
         }
@@ -129,7 +132,9 @@ namespace Inventario.BLL.Implementacion
             {
                 IdRequiDetalle = c.IdRequisicionDetalle,
                 NumPartida = c.NumPartida,
-                NombrePartida = c.DescripcionDetallada
+                NombrePartida = c.DescripcionDetallada,
+                Descripcion = c.Descripcion,
+                DescripcionDetallada = c.DescripcionDetallada
             }).ToListAsync();
         }
 

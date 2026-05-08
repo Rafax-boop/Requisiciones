@@ -12,7 +12,10 @@ namespace Inventario.BLL.DTO
         public decimal Importe { get; set; }
         public string NombreProveedor { get; set; }
         public int? IdPartida { get; set; }
+        public int? NumPartida { get; set; }
         public string NombrePartida { get; set; }
+        public string Descripcion { get; set; }
+        public string DescripcionDetallada { get; set; }
         public bool? IVA { get; set; }
     }
 
@@ -21,6 +24,8 @@ namespace Inventario.BLL.DTO
         public int IdRequiDetalle { get; set; }
         public int? NumPartida { get; set; }
         public string NombrePartida { get; set; }
+        public string Descripcion { get; set; }
+        public string DescripcionDetallada { get; set; }
     }
 
     public class ProveedorGanadorDTO

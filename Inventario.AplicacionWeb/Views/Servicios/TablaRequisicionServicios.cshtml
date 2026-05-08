@@ -39,7 +39,8 @@
      data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
      data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")"
      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Servicios")"
-     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Servicios")">
+     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Servicios")"
+     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -1233,6 +1234,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
     <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
 

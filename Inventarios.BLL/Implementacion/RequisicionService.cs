@@ -1161,6 +1161,20 @@ namespace Inventario.BLL.Implementacion
             var query = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
             return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
         }
+
+        public async Task<DescargaArchivosRequisicionDTO?> ObtenerDatosDescargaArchivos(int idRequisicion)
+        {
+            var query = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idRequisicion);
+
+            return await query
+                .Select(r => new DescargaArchivosRequisicionDTO
+                {
+                    NumRequisicion = r.NumRequisicion,
+                    NumApi = r.NumApi,
+                    NumPedido = r.NumPedido
+                })
+                .FirstOrDefaultAsync();
+        }
     }
 }
 

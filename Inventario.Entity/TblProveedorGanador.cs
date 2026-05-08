@@ -22,6 +22,4 @@ public partial class TblProveedorGanador
     public int? IdUsuario { get; set; }
 
     public DateTime? FechaSeleccion { get; set; }
-
-    public string? Justificacion { get; set; }
 }

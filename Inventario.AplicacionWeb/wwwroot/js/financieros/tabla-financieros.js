@@ -29,6 +29,8 @@
         ? container.getAttribute("data-url-obtener-archivos") : "";
     var urlObtenerTodosArchivos = container
         ? container.getAttribute("data-url-obtener-todos-archivos") : "";
+    var urlDescargarTodosArchivosZip = container
+        ? container.getAttribute("data-url-descargar-todos-archivos-zip") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -491,57 +493,98 @@
             var lista = document.getElementById("listaCotizacionesModal");
             lista.innerHTML = "";
 
+            function esc(valor) {
+                return String(valor || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
             if (!data || !data.length) {
                 lista.innerHTML =
                     '<p style="color:var(--color-text-secondary);font-style:italic;font-size:13px;">' +
                     'Sin cotizaciones registradas.</p>';
             } else {
-                // Agrupar por partida
-                var porPartida = {};
+                // Agrupar por proveedor
+                var porProveedor = {};
                 data.forEach(function (c) {
-                    var key = c.idPartida || 0;
-                    var label = c.nombrePartida || "Partida #" + key;
-                    if (!porPartida[key]) porPartida[key] = { label: label, items: [] };
-                    porPartida[key].items.push(c);
+                    var key = c.idProveedor || 0;
+                    if (!porProveedor[key]) {
+                        porProveedor[key] = {
+                            nombreProveedor: c.nombreProveedor || ("Proveedor #" + key),
+                            items: []
+                        };
+                    }
+                    porProveedor[key].items.push(c);
                 });
 
-                Object.keys(porPartida).forEach(function (key) {
-                    var grupo = porPartida[key];
+                Object.keys(porProveedor).forEach(function (key) {
+                    var grupo = porProveedor[key];
+                    var bloque = document.createElement("div");
+                    bloque.style.cssText =
+                        "padding:18px 20px;background:white;border:1px solid var(--slate-200);" +
+                        "border-radius:var(--radius-md);box-shadow:var(--shadow-sm);";
 
-                    // Encabezado de partida
-                    var header = document.createElement("div");
-                    header.style.cssText =
-                        "font-size:12px;font-weight:600;color:var(--color-text-secondary);" +
-                        "text-transform:uppercase;letter-spacing:.04em;" +
-                        "padding:8px 4px 4px;border-bottom:1px solid var(--color-border-tertiary);" +
-                        "margin-bottom:4px;" +
-                        (Object.keys(porPartida).indexOf(key) > 0 ? "margin-top:12px;" : "");
-                    header.innerHTML =
-                        '<i class="fa-solid fa-tag" style="margin-right:5px;font-size:10px;"></i>' +
-                        grupo.label;
-                    lista.appendChild(header);
+                    var titulo = document.createElement("div");
+                    titulo.style.cssText =
+                        "display:flex;align-items:center;gap:8px;margin-bottom:14px;" +
+                        "padding-bottom:10px;border-bottom:1px solid var(--slate-200);";
+                    titulo.innerHTML =
+                        '<i class="fa-solid fa-building-user" style="color:var(--rosa-400);font-size:14px;"></i>' +
+                        '<span style="font-family:var(--font-display);font-size:12px;font-weight:700;' +
+                        'letter-spacing:.08em;text-transform:uppercase;color:var(--slate-500);">Proveedor</span>' +
+                        '<span style="font-family:var(--font-body);font-size:15px;font-weight:600;color:var(--slate-800);">' +
+                        esc(grupo.nombreProveedor) +
+                        '</span>';
+                    bloque.appendChild(titulo);
 
-                    // Filas de proveedores de esa partida
+                    var tablaWrap = document.createElement("div");
+                    tablaWrap.className = "table-responsive-container";
+
+                    var filas = "";
                     grupo.items.forEach(function (c, i) {
                         var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
                             style: "currency", currency: "MXN"
                         });
-                        var fila = document.createElement("div");
-                        fila.style.cssText =
-                            "display:flex;align-items:center;gap:12px;padding:8px 14px;" +
-                            "border-radius:8px;border:1px solid var(--color-border-tertiary);" +
-                            "background:var(--color-background-secondary);margin-bottom:4px;";
-                        fila.innerHTML =
-                            '<span style="font-size:12px;color:var(--color-text-secondary);' +
-                            'min-width:20px;text-align:center;">#' + (i + 1) + '</span>' +
-                            '<span style="flex:1;font-size:13px;font-weight:500;">' +
-                            (c.nombreProveedor || "Proveedor #" + c.idProveedor) +
-                            '</span>' +
-                            '<span style="font-size:13px;color:var(--color-text-success);font-weight:500;">' +
-                            importe +
-                            '</span>';
-                        lista.appendChild(fila);
+                        var descripcionDetallada = c.descripcionDetallada || c.nombrePartida || "";
+                        var descripcionDetalladaCorta = descripcionDetallada.length > 28
+                            ? descripcionDetallada.substring(0, 28) + "…"
+                            : (descripcionDetallada || "Sin descripción...");
+                        var tieneTexto = descripcionDetallada ? " tiene-texto" : "";
+
+                        filas +=
+                            "<tr>" +
+                            "<td>" + esc(c.numPartida || (i + 1)) + "</td>" +
+                            "<td><strong>" + esc(c.descripcion || "") + "</strong></td>" +
+                            '<td><div class="desc-preview-modal" style="width:430px; min-width:430px; max-width:430px;" data-full="' +
+                            esc(descripcionDetallada) +
+                            '" onclick="verDescDetalleModal(this)">' +
+                            '<span class="desc-texto-preview' + tieneTexto + '">' +
+                            esc(descripcionDetalladaCorta) +
+                            '</span><i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                            '<td style="text-align:right; color:var(--color-text-success); font-weight:600;">' + importe + "</td>" +
+                            '<td style="text-align:center;">' + (c.iva ? "Sí" : "No") + "</td>" +
+                            "</tr>";
                     });
+
+                    tablaWrap.innerHTML =
+                        '<table class="tabla-requisiciones">' +
+                        "<thead>" +
+                        "<tr>" +
+                        '<th style="width:90px;">Partida</th>' +
+                        "<th>Descripción</th>" +
+                        "<th>Descripción detallada</th>" +
+                        '<th style="width:160px; text-align:right;">Precio</th>' +
+                        '<th style="width:100px; text-align:center;">IVA</th>' +
+                        "</tr>" +
+                        "</thead>" +
+                        "<tbody>" + filas + "</tbody>" +
+                        "</table>";
+
+                    bloque.appendChild(tablaWrap);
+                    lista.appendChild(bloque);
                 });
             }
 
@@ -793,8 +836,7 @@
                     Swal.fire({
                         icon: "success",
                         title: "Requisición finalizada",
-                        timer: 2000,
-                        showConfirmButton: false
+                        confirmButtonText: "Aceptar"
                     }).then(function () { location.reload(); });
                 },
                 error: function () {
@@ -864,8 +906,7 @@
                     Swal.fire({
                         icon: "success",
                         title: "Documentos regresados al analista",
-                        timer: 2000,
-                        showConfirmButton: false
+                        confirmButtonText: "Aceptar"
                     }).then(function () { location.reload(); });
                 }
             },
@@ -1025,6 +1066,15 @@
     }
 
     window.verArchivosRequisicionFin = function (idRequisicion) {
+        if (window.DocumentosRequisicionModal) {
+            window.DocumentosRequisicionModal.open({
+                idRequisicion: idRequisicion,
+                fetchUrl: urlObtenerTodosArchivos,
+                downloadZipUrl: urlDescargarTodosArchivosZip
+            });
+            return;
+        }
+
         fetch(urlObtenerTodosArchivos + "?idRequisicion=" + idRequisicion, {
             method: "GET",
             headers: { Accept: "application/json" },

@@ -88,6 +88,9 @@
   var urlObtenerTodosArchivos = container
     ? container.getAttribute("data-url-obtener-todos-archivos")
     : "";
+  var urlDescargarTodosArchivosZip = container
+    ? container.getAttribute("data-url-descargar-todos-archivos-zip")
+    : "";
 
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -108,6 +111,48 @@
 
   var CACHE_PARTIDAS = [];
   var CACHE_PARTIDAS_REQUI = null;
+
+  function actualizarEstadoProveedoresSeleccionados(tieneCotizaciones) {
+    var mensaje = document.getElementById("estadoProveedoresSeleccionados");
+    var textoBoton = document.getElementById("textoBtnProveedores");
+    var btnCuadro = document.getElementById("btnDescargarCuadroComparativo");
+
+    if (mensaje) {
+      mensaje.style.display = tieneCotizaciones ? "block" : "none";
+    }
+
+    if (textoBoton) {
+      textoBoton.textContent = tieneCotizaciones
+        ? "Editar proveedores"
+        : "Seleccionar Proveedores";
+    }
+
+    if (btnCuadro) {
+      btnCuadro.disabled = !tieneCotizaciones;
+      btnCuadro.title = tieneCotizaciones
+        ? "Descargar cuadro comparativo"
+        : "Disponible cuando se hayan seleccionado los proveedores";
+    }
+  }
+
+  function cargarEstadoProveedoresSeleccionados(idRequisicion) {
+    if (!idRequisicion || !urlObtenerCotizaciones) {
+      actualizarEstadoProveedoresSeleccionados(false);
+      return;
+    }
+
+    $.get(
+      urlObtenerCotizaciones,
+      { idRequisicion: idRequisicion },
+      function (cotizaciones) {
+        actualizarEstadoProveedoresSeleccionados(
+          !!(cotizaciones && cotizaciones.length),
+        );
+      },
+    ).fail(function () {
+      actualizarEstadoProveedoresSeleccionados(false);
+    });
+  }
 
   var fechaSeleccionada = "";
 
@@ -1326,6 +1371,15 @@
   }
 
   window.verArchivosRequisicion = function (idRequisicion) {
+    if (window.DocumentosRequisicionModal) {
+      window.DocumentosRequisicionModal.open({
+        idRequisicion: idRequisicion,
+        fetchUrl: urlObtenerTodosArchivos,
+        downloadZipUrl: urlDescargarTodosArchivosZip,
+      });
+      return;
+    }
+
     fetch(urlObtenerTodosArchivos + "?idRequisicion=" + idRequisicion, {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -1404,6 +1458,12 @@
                     ${previewHtml}
                   </div>
                 </div>
+              </div>
+              <div class="modal-footer" style="justify-content: flex-end;">
+                <a href="${urlDescargarTodosArchivosZip}?idRequisicion=${encodeURIComponent(idRequisicion)}"
+                   class="btn boton-rosa">
+                  <i class="fa-solid fa-file-zipper"></i> Descarga masiva
+                </a>
               </div>
             </div>
           </div>
@@ -1586,6 +1646,18 @@
   };
 
   window.descargarCuadroComparativo = function () {
+    var btnCuadro = document.getElementById("btnDescargarCuadroComparativo");
+    if (btnCuadro && btnCuadro.disabled) {
+      Swal.fire({
+        icon: "warning",
+        title: "Selecciona los proveedores primero",
+        text: "Guarda las cotizaciones para habilitar el cuadro comparativo.",
+        confirmButtonText: "Ok",
+        confirmButtonColor: "#fe6291",
+      });
+      return;
+    }
+
     if (!requisicionActual) {
       Swal.fire({
         icon: "warning",
@@ -2153,6 +2225,7 @@
             cotizaciones: cotizaciones,
           }),
           success: function () {
+            actualizarEstadoProveedoresSeleccionados(true);
             // Cotizaciones guardadas → ahora cargar opciones ganador desde BD
             mostrarPasoGanadorDesdeBD();
           },
@@ -2375,7 +2448,20 @@
         };
 
         var numeroPartida = partida.numPartida || idx + 1;
-        var descripcion = partida.nombrePartida || "";
+        var descripcion = partida.descripcion || "";
+        var descripcionDetallada =
+          partida.descripcionDetallada || partida.nombrePartida || "";
+        var descripcionDetalladaCorta =
+          descripcionDetallada.length > 28
+            ? descripcionDetallada.substring(0, 28) + "…"
+            : descripcionDetallada || "Sin descripción...";
+        var tieneDescripcionDetallada = descripcionDetallada
+          ? "tiene-texto"
+          : "";
+        var descripcionDetalladaEscapada = descripcionDetallada.replace(
+          /"/g,
+          "&quot;",
+        );
         var html =
           '<tr data-id-partida="' +
           partida.idRequiDetalle +
@@ -2384,7 +2470,20 @@
           numeroPartida +
           "</td>" +
           '<td class="wizard-proveedor-desc-partida">' +
+          "<strong>" +
           descripcion +
+          "</strong>" +
+          "</td>" +
+          '<td class="wizard-proveedor-desc-detallada-partida">' +
+          '<div class="desc-preview-modal" style="width:430px; min-width:430px; max-width:430px;" data-full="' +
+          descripcionDetalladaEscapada +
+          '" onclick="verDescDetalleModal(this)">' +
+          '<span class="desc-texto-preview ' +
+          tieneDescripcionDetallada +
+          '">' +
+          descripcionDetalladaCorta +
+          "</span>" +
+          '<i class="fa-solid fa-eye desc-icon"></i></div>' +
           "</td>" +
           '<td><input type="text" class="form-control wizard-proveedor-precio" ' +
           'inputmode="decimal" placeholder="0.00" autocomplete="off" value="' +
@@ -2871,6 +2970,7 @@
           cotizaciones: cotizaciones,
         }),
         success: function () {
+          actualizarEstadoProveedoresSeleccionados(true);
           mostrarPasoGanador();
         },
         error: function (xhr) {
@@ -2942,6 +3042,7 @@
     var seccionFotosDetalle = document.getElementById("seccionFotosDetalle");
     if (galeriaFotosDetalle) galeriaFotosDetalle.innerHTML = "";
     if (seccionFotosDetalle) seccionFotosDetalle.style.display = "none";
+    actualizarEstadoProveedoresSeleccionados(false);
 
     // Mostrar/ocultar secciones de atender ANTES del $.get (esto no depende de data)
     const seccionesAtender = document.querySelectorAll(".seccionAtender");
@@ -2955,6 +3056,7 @@
     if (!obtenerDetallesUrl) return;
 
     $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+      cargarEstadoProveedoresSeleccionados(idMaestro);
       var articulos = data.articulos || [];
       var esDonativo = data.donativo === true;
 
@@ -3288,16 +3390,20 @@
         })
         .prop("disabled", true);
 
-            if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
-            if (data.ff) {
-                $("#expFf").val(data.ff).trigger("change");
-            }
-            if (data.tipoPrograma) {
-                $("#expTipoPrograma option").filter(function () {
-                    return $(this).text().trim() === data.tipoPrograma;
-                }).prop("selected", true);
-                $("#expTipoPrograma").trigger("change");
-            }
+      if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
+      if (data.ff) {
+        $("#expFf").val(data.ff).trigger("change");
+      }
+      if (data.tipoPrograma) {
+        $("#expTipoPrograma option")
+          .filter(function () {
+            return $(this).text().trim() === data.tipoPrograma;
+          })
+          .prop("selected", true);
+        $("#expTipoPrograma").trigger("change");
+      }
+      if (data.claveRegion)
+        $("#expMunicipio").val(data.claveRegion).trigger("change");
 
       // Cotizaciones / cuadro
       (function () {
