@@ -22,6 +22,7 @@ namespace Inventario.BLL.DTO
     {
         public string Numero { get; set; } = "";
         public string Ua { get; set; } = "";
+        public string Region { get; set; } = "";
         public string ClaveMunicipio { get; set; } = "";
         public string ImporteSolicitado { get; set; } = "";
         public string FuenteFinanciamiento { get; set; } = "";

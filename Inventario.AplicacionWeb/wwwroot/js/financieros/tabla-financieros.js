@@ -431,7 +431,6 @@
                     $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
                     $("#tipoProgramaSelect").trigger("change");
                 }
-                if (data.claveRegion) $("#municipio").val(data.claveRegion).trigger("change");
 
                 // --- CAMBIO AQUÍ: Deshabilitar campos y cargar archivos para AMBOS modos ---
                 $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
@@ -640,7 +639,6 @@
                 }).prop("selected", true);
                 $("#expFinTipoPrograma").trigger("change");
             }
-            if (data.claveRegion) $("#expFinMunicipio").val(data.claveRegion).trigger("change");
 
             // Cotizaciones / cuadro
             (function () {

@@ -13,7 +13,6 @@ namespace Inventario.BLL.DTO
         public int? IdPp { get; set; }
         public string? Ff { get; set; }
         public string? TipoPrograma { get; set; }
-        public int? ClaveRegion { get; set; }
         public string? Observaciones { get; set; }
         public int IdEstatus { get; set; }
         public List<ArchivoAtencionDTO> ArchivosSiaf { get; set; } = new();

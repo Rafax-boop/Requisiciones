@@ -1120,12 +1120,11 @@
       .getElementById("txtObservaciones")
       .value.trim();
     var idpp = parseInt($("#actividadSeleccionada").val()) || 0;
-    var ff = $("#ffSelect").find("option:selected").text().trim();
+      var ff = $("#ffSelect").val() || "";
     var tipoPrograma = $("#tipoProgramaSelect")
       .find("option:selected")
       .text()
       .trim();
-    var claveRegion = parseInt($("#municipio").val()) || 0;
 
     if (!observaciones) {
       Swal.fire({
@@ -1152,10 +1151,6 @@
       });
       return;
     }
-    if (!claveRegion) {
-      Swal.fire({ icon: "warning", title: "Debe seleccionar un municipio." });
-      return;
-    }
 
     var cogsEditados = [];
     document.querySelectorAll("#tablaDetalle tr").forEach(function (tr) {
@@ -1180,7 +1175,6 @@
         IdPp: idpp,
         FF: ff,
         TipoPrograma: tipoPrograma,
-        ClaveRegion: claveRegion,
       }),
       success: function () {
         var inputCot = document.getElementById("inputCotizaciones");
@@ -3125,7 +3119,7 @@
           $("#actividadSeleccionada").val(data.idPp).trigger("change");
         }
         if (data.ff) {
-            $("#expFf").val(data.ff).trigger("change");
+            $("#ffSelect").val(data.ff).trigger("change");
         }
         if (data.tipoPrograma) {
           $("#tipoProgramaSelect option")
@@ -3134,9 +3128,6 @@
             })
             .prop("selected", true);
           $("#tipoProgramaSelect").trigger("change");
-        }
-        if (data.claveRegion) {
-          $("#municipio").val(data.claveRegion).trigger("change");
         }
 
         // Si es readonly: deshabilitar todo y mostrar archivos
@@ -3307,7 +3298,6 @@
                 }).prop("selected", true);
                 $("#expTipoPrograma").trigger("change");
             }
-            if (data.claveRegion) $("#expMunicipio").val(data.claveRegion).trigger("change");
 
       // Cotizaciones / cuadro
       (function () {

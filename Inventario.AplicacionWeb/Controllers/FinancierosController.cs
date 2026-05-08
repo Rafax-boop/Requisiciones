@@ -95,14 +95,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 {
                     Value = f.Clave,
                     Text = f.Nombre
-                }).ToList(),
-
-                ListaMunicipios = municipios.Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Nombre
-                }).ToList(),
-                Estatus = estatus
+                }).ToList()
             };
 
             return View(vm);

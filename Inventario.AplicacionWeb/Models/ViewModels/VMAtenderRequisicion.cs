@@ -8,7 +8,6 @@
         public int IdPP { get; set; }
         public string? FF { get; set; }
         public string? TipoPrograma { get; set; }
-        public int ClaveRegion { get; set; }
         public int? NumeroApi { get; set; }
         public List<IFormFile>? DocSiaf { get; set; }
         public List<IFormFile>? TablaApi { get; set; }

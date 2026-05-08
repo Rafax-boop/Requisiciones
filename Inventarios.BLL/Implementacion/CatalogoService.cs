@@ -50,7 +50,7 @@ namespace Inventario.BLL.Implementacion
                 .Select(p => new CatalogoDTO
                 {
                     Clave = p.Clave,
-                    Nombre = p.FuenteFinanciamiento
+                    Nombre = p.Clave + " " + p.FuenteFinanciamiento
                 })
                 .Distinct()
                 .ToListAsync();

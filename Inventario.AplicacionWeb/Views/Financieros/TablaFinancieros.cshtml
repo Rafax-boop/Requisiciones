@@ -638,18 +638,6 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="formulario-input">
-                            <label>Municipio:</label>
-                            <select id="expFinMunicipio" class="form-select select2" disabled>
-                                <option value="">--</option>
-                                @foreach (var m in Model.ListaMunicipios)
-                                {
-                                    <option value="@m.Value">@m.Text</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="table-responsive-container">
@@ -786,18 +774,6 @@
                                 <option value="">-- Selecciona el Tipo de Programa --</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="formulario-input">
-                            <label>Municipio:</label>
-                            <select id="municipio" class="form-select select2">
-                                <option value="">-- Selecciona municipio --</option>
-                                @foreach (var act in Model.ListaMunicipios)
-                                {
-                                    <option value="@act.Value">@act.Text</option>
-                                }
                             </select>
                         </div>
                     </div>

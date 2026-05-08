@@ -46,6 +46,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblTablaApiHistorial> _repoHistorial;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
+        private readonly IGenericRepository<TblRequisicionDetalleMunicipio> _repoMunicipiosDetalle;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -56,7 +57,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblCotizacione> repositoryCotizaciones,
             IGenericRepository<TblTablaApiHistorial> repoHistorial,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
-            IGenericRepository<TblProveedorGanador> repositoryGanador)
+            IGenericRepository<TblProveedorGanador> repositoryGanador,
+            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
@@ -67,6 +69,7 @@ namespace Inventario.BLL.Implementacion
             _repoHistorial = repoHistorial;
             _repoMovimiento = repoMovimiento;
             _repositoryGanador = repositoryGanador;
+            _repoMunicipiosDetalle = repoMunicipiosDetalle;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -486,8 +489,9 @@ namespace Inventario.BLL.Implementacion
 
                     tblPart.AddCell(CeldaBlanca((i + 1).ToString(), fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.IdDepartamento?.ToString()), fondoFila: bg));
-                    tblPart.AddCell(CeldaBlanca(S(requisicion.ClaveRegion?.ToString()), fondoFila: bg));
-                    tblPart.AddCell(CeldaBlanca(importeStr, fondoFila: bg));              // ← antes CeldaVacia
+                    tblPart.AddCell(CeldaBlanca("", fondoFila: bg));  // Region — sin municipio aquí
+                    tblPart.AddCell(CeldaBlanca("", fondoFila: bg));  // ClaveMunicipio
+                    tblPart.AddCell(CeldaBlanca(importeStr, fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.Ff), fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(S(requisicion.IdPp?.ToString()), fondoFila: bg));
                     tblPart.AddCell(CeldaVacia(11f, bg));
@@ -497,7 +501,7 @@ namespace Inventario.BLL.Implementacion
                 }
                 else
                 {
-                    for (int c = 0; c < 10; c++)
+                    for (int c = 0; c < 11; c++)
                         tblPart.AddCell(CeldaVacia(10f, bg));
                 }
             }
@@ -661,25 +665,56 @@ namespace Inventario.BLL.Implementacion
                 TotalAutorizado = "$"
             };
 
+            // Cargar municipios por partida para esta requisición
+            var queryMunis = await _repoMunicipiosDetalle.Consultar(
+                m => m.IdRequisicion == idRequisicion);
+            var municipiosPorPartida = await queryMunis
+                .Include(m => m.IdMunicipioNavigation)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g => g.ToList());
+
             foreach (var d in detalles)
             {
-                var importeStr = importePorPartida.TryGetValue(d.IdRequisicionDetalle, out var imp)
-                        ? FormatearImporte(imp)
-                        : "";
+                var importeTotal = importePorPartida.TryGetValue(d.IdRequisicionDetalle, out var imp) ? imp : 0m;
+                var cantidadTotalDetalle = d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m;
 
-                modelo.Partidas.Add(new TablaApiPartidaEditableDTO
+                municipiosPorPartida.TryGetValue(d.IdRequisicionDetalle, out var municipios);
+                var listaMunicipios = (municipios != null && municipios.Any())
+                    ? municipios
+                    : new List<TblRequisicionDetalleMunicipio>
+                      {
+              new TblRequisicionDetalleMunicipio
+              {
+                  IdMunicipio = 0,
+                  Cantidad = cantidadTotalDetalle,
+                  IdMunicipioNavigation = null
+              }
+                      };
+
+                foreach (var muni in listaMunicipios)
                 {
-                    Numero = (modelo.Partidas.Count + 1).ToString(),
-                    Ua = S(requisicion.IdDepartamento?.ToString()),
-                    ClaveMunicipio = S(requisicion.ClaveRegion?.ToString()),
-                    ImporteSolicitado = importeStr,
-                    FuenteFinanciamiento = S(requisicion.Ff),
-                    Pp = S(requisicion.IdPp?.ToString()),
-                    Componente = "",
-                    Actividad = "",
-                    ObjetoGasto = S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString()),
-                    ImporteAutorizado = ""
-                });
+                    var proporcion = cantidadTotalDetalle > 0
+                        ? muni.Cantidad / cantidadTotalDetalle
+                        : 0m;
+                    var importeMuni = importeTotal * proporcion;
+
+                    modelo.Partidas.Add(new TablaApiPartidaEditableDTO
+                    {
+                        Numero = (modelo.Partidas.Count + 1).ToString(),
+                        Ua = S(requisicion.IdDepartamento?.ToString()),
+                        Region = S(muni.IdMunicipioNavigation?.ClaveRegion),
+                        ClaveMunicipio = muni.IdMunicipio > 0 ? muni.IdMunicipio.ToString() : "",
+                        ImporteSolicitado = importeMuni > 0 ? FormatearImporte(importeMuni) : "",
+                        FuenteFinanciamiento = S(requisicion.Ff),
+                        Pp = S(requisicion.IdPp?.ToString()),
+                        Componente = "",
+                        Actividad = "",
+                        ObjetoGasto = S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString()),
+                        ImporteAutorizado = ""
+                    });
+                }
             }
 
             return modelo;
@@ -790,9 +825,9 @@ namespace Inventario.BLL.Implementacion
             doc.Add(tblBien);
             doc.Add(new Paragraph("").SetMarginBottom(3f));
 
-            var colWidths = new float[] { 20f, 26f, 36f, 52f, 50f, 30f, 42f, 36f, 40f, 50f };
+            var colWidths = new float[] { 18f, 24f, 32f, 32f, 48f, 46f, 28f, 38f, 34f, 38f, 46f };
             var tblPart = new Table(UnitValue.CreatePointArray(colWidths)).UseAllAvailableWidth();
-            tblPart.AddHeaderCell(new Cell(1, 4)
+            tblPart.AddHeaderCell(new Cell(1, 5)
                 .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
                 .SetTextAlignment(TextAlignment.CENTER).SetPadding(4f)
                 .SetBorder(bordeCelda)
@@ -804,7 +839,7 @@ namespace Inventario.BLL.Implementacion
                 .SetBorder(bordeCelda)
                 .Add(new Paragraph("AUTORIZACIÓN LA SECCIÓN DE PROGRAMACIÓN PRESUPUESTAL Y FINANCIERA")
                     .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
-            var colTitles = new[] { "No.", "UA", "CLAVE\nMUNICIPIO", "IMPORTE\nSOLICITADO", "FUENTE DE\nFINANCIAMIENTO", "PP", "COMPONENTE", "ACTIVIDAD", "OBJETO\nDEL GASTO", "IMPORTE\nAUTORIZADO" };
+            var colTitles = new[] { "No.", "UA", "REGIÓN", "CLAVE\nMUNICIPIO", "IMPORTE\nSOLICITADO", "FUENTE DE\nFINANCIAMIENTO", "PP", "COMPONENTE", "ACTIVIDAD", "OBJETO\nDEL GASTO", "IMPORTE\nAUTORIZADO" };
             foreach (var h in colTitles) tblPart.AddHeaderCell(CeldaGris(h, size: 5.25f, textoEstiloColumna: true).SetHeight(18f));
 
             int numFilas = Math.Max(8, modelo.Partidas.Count + 1);
@@ -816,6 +851,7 @@ namespace Inventario.BLL.Implementacion
                     var d = modelo.Partidas[i];
                     tblPart.AddCell(CeldaBlanca(d.Numero, fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(d.Ua, fondoFila: bg));
+                    tblPart.AddCell(CeldaBlanca(d.Region, fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(d.ClaveMunicipio, fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(d.ImporteSolicitado, fondoFila: bg));
                     tblPart.AddCell(CeldaBlanca(d.FuenteFinanciamiento, fondoFila: bg));
@@ -827,7 +863,7 @@ namespace Inventario.BLL.Implementacion
                 }
                 else
                 {
-                    for (int c = 0; c < 10; c++) tblPart.AddCell(CeldaVacia(10f, bg));
+                    for (int c = 0; c < 11; c++) tblPart.AddCell(CeldaVacia(10f, bg));
                 }
             }
             doc.Add(tblPart);
@@ -1172,6 +1208,7 @@ namespace Inventario.BLL.Implementacion
             {
                 p.Numero = Z(p.Numero);
                 p.Ua = Z(p.Ua);
+                p.Region = Z(p.Region);
                 p.ClaveMunicipio = Z(p.ClaveMunicipio);
                 p.ImporteSolicitado = Z(p.ImporteSolicitado);
                 p.FuenteFinanciamiento = Z(p.FuenteFinanciamiento);

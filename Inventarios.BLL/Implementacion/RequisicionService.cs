@@ -370,7 +370,6 @@ namespace Inventario.BLL.Implementacion
                 IdPp = maestra?.IdPp,
                 Ff = maestra?.Ff,
                 TipoPrograma = maestra?.TipoPrograma,
-                ClaveRegion = maestra?.ClaveRegion,
                 Articulos = lista,
                 Cotizaciones = cotizaciones,
                 CuadroComparativo = cuadro,
@@ -604,7 +603,6 @@ namespace Inventario.BLL.Implementacion
                 requisicion.IdPp = modelo.IdPP;
                 requisicion.Ff = modelo.FF;
                 requisicion.TipoPrograma = modelo.TipoPrograma;
-                requisicion.ClaveRegion = modelo.ClaveRegion;
                 requisicion.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(requisicion);
 

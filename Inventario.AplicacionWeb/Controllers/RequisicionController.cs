@@ -128,12 +128,6 @@ namespace Inventario.AplicacionWeb.Controllers
                     Text = f.Nombre
                 }).ToList(),
 
-                ListaMunicipios = municipios.Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Nombre
-                }).ToList(),
-
                 ListaProveedores = proveedores.Select(p => new SelectListItem
                 {
                     Value = p.Id.ToString(),

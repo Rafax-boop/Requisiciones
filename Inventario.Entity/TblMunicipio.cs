@@ -14,6 +14,4 @@ public partial class TblMunicipio
     public string? NombreMunicipios { get; set; }
 
     public virtual ICollection<TblRequisicionDetalleMunicipio> TblRequisicionDetalleMunicipios { get; set; } = new List<TblRequisicionDetalleMunicipio>();
-
-    public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 }

@@ -19,8 +19,6 @@ public partial class TblProveedorGanador
 
     public bool SeleccionManual { get; set; }
 
-    public string? Justificacion { get; set; }
-
     public int? IdUsuario { get; set; }
 
     public DateTime? FechaSeleccion { get; set; }
