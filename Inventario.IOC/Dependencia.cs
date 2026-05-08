@@ -29,10 +29,8 @@ namespace Inventario.IOC
             services.AddScoped<ICuadroComparativoPdfService, CuadroComparativoPdfService>();
             services.AddScoped<IArticulosService, ArticulosService>();
             services.AddScoped<IAlmacenService, AlmacenService>();
-            services.AddScoped<IMunicipioServie, MunicipioService>();
-            services.AddScoped<IProgramaPresupuestarioService, ProgramaPresupuestarioService>();
+            services.AddScoped<ICatalogoService, CatalogoService>();
             services.AddScoped<IFinancierosService, FinancierosService>();
-            services.AddScoped<IDAFService, DAFService>();
             services.AddScoped<IProveedoresService, ProveedoresService>();
             services.AddScoped<IEmailService, EmailService>();
         }

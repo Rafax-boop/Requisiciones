@@ -18,8 +18,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IRequisicionesService _requisicionesService;
         private readonly IArticulosService _articulosService;
         private readonly IAlmacenService _almacenService;
-        private readonly IProgramaPresupuestarioService _programaService;
-        private readonly IMunicipioServie _municipioService;
+        private readonly ICatalogoService _catalogoService;
         private readonly IProveedoresService _proveedorService;
         private readonly IWebHostEnvironment _env;
 
@@ -29,8 +28,7 @@ namespace Inventario.AplicacionWeb.Controllers
             IRequisicionesService requisicionesService,
             IArticulosService articulosService,
             IAlmacenService almacenService,
-            IMunicipioServie municipioService,
-            IProgramaPresupuestarioService programaService,
+            ICatalogoService catalogoService,
             IProveedoresService proveedorService,
             IWebHostEnvironment env
         )
@@ -40,8 +38,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _requisicionesService = requisicionesService;
             _articulosService = articulosService;
             _almacenService = almacenService;
-            _municipioService = municipioService;
-            _programaService = programaService;
+            _catalogoService = catalogoService;
             _proveedorService = proveedorService;
             _env = env;
         }
@@ -75,10 +72,10 @@ namespace Inventario.AplicacionWeb.Controllers
 
             listaDTO = listaDTO.OrderBy(r => r.FechaModificacion).ToList();
 
-            var actividades = await _programaService
+            var actividades = await _catalogoService
                 .ObtenerActividades();
-
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var fuentesFinanciamiento = await _catalogoService.ObtenerFuentesFinanciamiento();
+            var municipios = await _catalogoService.ObtenerMunicipios();
             var proveedores = await _proveedorService.ObtenerProveedores();
             var estatus = await _almacenService.ObtenerEstatus();
 
@@ -89,13 +86,19 @@ namespace Inventario.AplicacionWeb.Controllers
                 ListaActividades = actividades.Select(a => new SelectListItem
                 {
                     Value = a.Id.ToString(),
-                    Text = a.DescripcionActividad
+                    Text = a.Nombre
+                }).ToList(),
+
+                ListaFuentesFinanciamiento = fuentesFinanciamiento.Select(f => new SelectListItem
+                {
+                    Value = f.Clave,
+                    Text = f.Nombre
                 }).ToList(),
 
                 ListaMunicipios = municipios.Select(m => new SelectListItem
                 {
                     Value = m.Id.ToString(),
-                    Text = m.Municipio
+                    Text = m.Nombre
                 }).ToList(),
 
                 ListaProveedores = proveedores.Select(p => new SelectListItem
@@ -122,11 +125,11 @@ namespace Inventario.AplicacionWeb.Controllers
             var vm = _mapper.Map<VMRequiForm>(dto);
             ViewBag.UsaFlujoContinuar = true;
 
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var municipios = await _catalogoService.ObtenerMunicipios();
             ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
             {
                 Value = m.Id.ToString(),
-                Text = m.Municipio
+                Text = m.Nombre
             }).ToList();
             return View(vm);
         }
@@ -257,7 +260,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 return NotFound();
 
             var distribucionMunicipios = await _requisicionesService.ObtenerDistribucionMunicipiosPorRequisicion(id);
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var municipios = await _catalogoService.ObtenerMunicipios();
 
             var vm = new VMRequiForm
             {

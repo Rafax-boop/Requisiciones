@@ -19,8 +19,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IMapper _mapper;
         private readonly IArticulosService _articulosService;
         private readonly IUsuarioService _usuarioService;
-        private readonly IMunicipioServie _municipioService;
-        private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
+        private readonly ICatalogoService _catalogoService;
         private readonly IAlmacenService _almacenService;
         private readonly IProveedoresService _proveedoresService;
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -30,8 +29,7 @@ namespace Inventario.AplicacionWeb.Controllers
             IRequisicionesService requisicionesService,
             IMapper mapper, IArticulosService articulosService,
             IUsuarioService usuarioService,
-            IMunicipioServie municipioService,
-            IProgramaPresupuestarioService programaPresupuestarioService,
+            ICatalogoService catalogoService,
             IAlmacenService almacenService,
             IWebHostEnvironment webHostEnvironment,
             ICuadroComparativoPdfService cuadroComparativoPdfService,
@@ -42,8 +40,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _mapper = mapper;
             _articulosService = articulosService;
             _usuarioService = usuarioService;
-            _programaPresupuestarioService = programaPresupuestarioService;
-            _municipioService = municipioService;
+            _catalogoService = catalogoService;
             _almacenService = almacenService;
             _proveedoresService = proveedoresService;
             _webHostEnvironment = webHostEnvironment;
@@ -68,11 +65,11 @@ namespace Inventario.AplicacionWeb.Controllers
 
             ViewBag.UsaFlujoContinuar = true;
 
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var municipios = await _catalogoService.ObtenerMunicipios();
             ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
             {
                 Value = m.Id.ToString(),
-                Text = m.Municipio
+                Text = m.Nombre
             }).ToList();
 
             return View(vm);
@@ -108,10 +105,10 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ThenBy(r => r.IdRequi)
                 .ToList();
 
-            var actividades = await _programaPresupuestarioService
+            var actividades = await _catalogoService
                 .ObtenerActividades();
-
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var fuentesFinanciamiento = await _catalogoService.ObtenerFuentesFinanciamiento();
+            var municipios = await _catalogoService.ObtenerMunicipios();
             var proveedores = await _proveedoresService.ObtenerProveedores();
             var estatus = await _almacenService.ObtenerEstatus();
 
@@ -122,13 +119,19 @@ namespace Inventario.AplicacionWeb.Controllers
                 ListaActividades = actividades.Select(a => new SelectListItem
                 {
                     Value = a.Id.ToString(),
-                    Text = a.DescripcionActividad
+                    Text = a.Nombre
+                }).ToList(),
+                
+                ListaFuentesFinanciamiento = fuentesFinanciamiento.Select(f => new SelectListItem
+                {
+                    Value = f.Clave,
+                    Text = f.Nombre
                 }).ToList(),
 
                 ListaMunicipios = municipios.Select(m => new SelectListItem
                 {
                     Value = m.Id.ToString(),
-                    Text = m.Municipio
+                    Text = m.Nombre
                 }).ToList(),
 
                 ListaProveedores = proveedores.Select(p => new SelectListItem
@@ -175,7 +178,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 return NotFound();
 
             var distribucionMunicipios = await _requisicionService.ObtenerDistribucionMunicipiosPorRequisicion(id);
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var municipios = await _catalogoService.ObtenerMunicipios();
 
             var vm = new VMRequiForm
             {

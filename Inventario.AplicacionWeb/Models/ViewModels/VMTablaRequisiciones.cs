@@ -7,6 +7,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public List<VMRequisicionMaestra> Requisiciones { get; set; }
 
         public List<SelectListItem> ListaActividades { get; set; }
+        public List<SelectListItem> ListaFuentesFinanciamiento { get; set; }
 
         public List<SelectListItem> ListaMunicipios { get; set; }
 

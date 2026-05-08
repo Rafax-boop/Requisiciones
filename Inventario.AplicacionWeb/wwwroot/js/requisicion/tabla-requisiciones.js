@@ -1950,10 +1950,7 @@
                     $("#actividadSeleccionada").val(data.idPp).trigger("change");
                 }
                 if (data.ff) {
-                    $("#ffSelect option").filter(function () {
-                        return $(this).text().trim() === data.ff;
-                    }).prop("selected", true);
-                    $("#ffSelect").trigger("change");
+                    $("#ffSelect").val(data.ff).trigger("change");
                 }
                 if (data.tipoPrograma) {
                     $("#tipoProgramaSelect option").filter(function () {
@@ -2088,10 +2085,7 @@
 
             if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
             if (data.ff) {
-                $("#expFf option").filter(function () {
-                    return $(this).text().trim() === data.ff;
-                }).prop("selected", true);
-                $("#expFf").trigger("change");
+                $("#ffSelect").val(data.ff).trigger("change");
             }
             if (data.tipoPrograma) {
                 $("#expTipoPrograma option").filter(function () {

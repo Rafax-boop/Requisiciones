@@ -18,8 +18,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IFinancierosService _financierosService;
         private readonly IRequisicionesService _requisicionesService;
         private readonly IUsuarioService _usuarioService;
-        private readonly IProgramaPresupuestarioService _programaPresupuestarioService;
-        private readonly IMunicipioServie _municipioService;
+        private readonly ICatalogoService _catalogoService;
         private readonly IAlmacenService _almacenService;
         private readonly ILogger<FinancierosController> _logger;
         private readonly IWebHostEnvironment _env;
@@ -29,8 +28,7 @@ namespace Inventario.AplicacionWeb.Controllers
             IFinancierosService financierosService,
             IRequisicionesService requisicionesService,
             IUsuarioService usuarioService,
-            IProgramaPresupuestarioService programaPresupuestarioService,
-            IMunicipioServie municipioService,
+            ICatalogoService catalogoService,
             IAlmacenService almacenService,
             ILogger<FinancierosController> logger,
             IWebHostEnvironment env)
@@ -39,8 +37,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _financierosService = financierosService;
             _requisicionesService = requisicionesService;
             _usuarioService = usuarioService;
-            _programaPresupuestarioService = programaPresupuestarioService;
-            _municipioService = municipioService;
+            _catalogoService = catalogoService;
             _almacenService = almacenService;
             _logger = logger;
             _env = env;
@@ -78,10 +75,10 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ThenBy(r => r.IdRequi)
                 .ToList();
 
-            var actividades = await _programaPresupuestarioService
+            var actividades = await _catalogoService
                 .ObtenerActividades();
-
-            var municipios = await _municipioService.ObtenerMunicipios();
+            var fuentesFinanciamiento = await _catalogoService.ObtenerFuentesFinanciamiento();
+            var municipios = await _catalogoService.ObtenerMunicipios();
             var estatus = await _almacenService.ObtenerEstatus();
 
             var vm = new VMTablaRequisiciones
@@ -91,13 +88,19 @@ namespace Inventario.AplicacionWeb.Controllers
                 ListaActividades = actividades.Select(a => new SelectListItem
                 {
                     Value = a.Id.ToString(),
-                    Text = a.DescripcionActividad
+                    Text = a.Nombre
+                }).ToList(),
+
+                ListaFuentesFinanciamiento = fuentesFinanciamiento.Select(f => new SelectListItem
+                {
+                    Value = f.Clave,
+                    Text = f.Nombre
                 }).ToList(),
 
                 ListaMunicipios = municipios.Select(m => new SelectListItem
                 {
                     Value = m.Id.ToString(),
-                    Text = m.Municipio
+                    Text = m.Nombre
                 }).ToList(),
                 Estatus = estatus
             };

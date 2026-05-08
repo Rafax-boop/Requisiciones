@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace Inventario.BLL.DTO
 {
-    public class ActividadDTO
+    public class CatalogoDTO
     {
         public int Id { get; set; }
-        public string DescripcionActividad { get; set; }
+        public string Clave { get; set; }
+        public string Nombre { get; set; }
     }
 }

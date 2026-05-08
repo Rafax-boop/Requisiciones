@@ -30,6 +30,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblFormato> TblFormatos { get; set; }
 
+    public virtual DbSet<TblFuentesFinanciamiento> TblFuentesFinanciamientos { get; set; }
+
     public virtual DbSet<TblInventario> TblInventarios { get; set; }
 
     public virtual DbSet<TblMunicipio> TblMunicipios { get; set; }
@@ -220,6 +222,16 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblFormatos)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_Formato_Requisicion");
+        });
+
+        modelBuilder.Entity<TblFuentesFinanciamiento>(entity =>
+        {
+            entity.ToTable("TblFuentesFinanciamiento");
+
+            entity.Property(e => e.Clave).HasMaxLength(5);
+            entity.Property(e => e.Etiquetado).HasMaxLength(50);
+            entity.Property(e => e.FuenteFinanciamiento).HasMaxLength(100);
+            entity.Property(e => e.Tipo).HasMaxLength(50);
         });
 
         modelBuilder.Entity<TblInventario>(entity =>

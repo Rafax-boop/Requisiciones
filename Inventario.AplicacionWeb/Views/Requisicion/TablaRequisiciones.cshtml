@@ -633,8 +633,10 @@
                             <label>Fuente de Financiamiento:</label>
                             <select id="expFf" class="form-select select2" disabled>
                                 <option value="">--</option>
-                                <option value="1">Federal</option>
-                                <option value="2">Estatal</option>
+                                @foreach (var ff in Model.ListaFuentesFinanciamiento)
+                                {
+                                    <option value="@ff.Value">@ff.Text</option>
+                                }
                             </select>
                         </div>
                     </div>
@@ -827,8 +829,10 @@
                             <label>Fuente de Financiamiento:</label>
                             <select id="ffSelect" name="FFV" class="form-select select2">
                                 <option value="">-- Selecciona Fuente de Financiamiento --</option>
-                                <option value="1">Federal</option>
-                                <option value="2">Estatal</option>
+                                @foreach (var ff in Model.ListaFuentesFinanciamiento)
+                                {
+                                    <option value="@ff.Value">@ff.Text</option>
+                                }
                             </select>
                         </div>
                     </div>

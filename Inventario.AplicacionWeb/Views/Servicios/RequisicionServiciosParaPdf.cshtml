@@ -320,9 +320,9 @@
                                     foreach (var m in a.Municipios)
                                     {
                                         nDistribuidos++;
-                                        var muniInfo = ((List<MunicipiosDTO>)ViewBag.ListaMunicipios)
+                                        var muniInfo = ((List<CatalogoDTO>)ViewBag.ListaMunicipios)
                                             .FirstOrDefault(x => x.Id == m.IdMunicipio);
-                                        var nombreMunicipio = muniInfo != null ? muniInfo.Municipio : $"ID {m.IdMunicipio}";
+                                        var nombreMunicipio = muniInfo != null ? muniInfo.Nombre : $"ID {m.IdMunicipio}";
                                         <tr>
                                             <td>@nDistribuidos</td>
                                             <td>@(a.DescripcionDetallada ?? "—")</td>
