@@ -55,6 +55,19 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<bool> GuardarCotizaciones(int idRequisicion, List<CotizacionDTO> cotizaciones)
         {
+            var idsPartidasValidas = await (await _repositoryDetalle.Consultar(d => d.IdRequisicion == idRequisicion))
+                .Select(d => d.IdRequisicionDetalle)
+                .ToListAsync();
+
+            var idsValidos = idsPartidasValidas.ToHashSet();
+            var cotizacionesValidas = cotizaciones
+                .Where(c => c.IdProveedor > 0 && c.IdPartida.HasValue && idsValidos.Contains(c.IdPartida.Value))
+                .ToList();
+
+            var tienePartidasInvalidas = cotizaciones.Any(c => c.IdPartida.HasValue && !idsValidos.Contains(c.IdPartida.Value));
+            if (tienePartidasInvalidas)
+                throw new InvalidOperationException("Hay partidas que no pertenecen a esta requisición.");
+
             // Eliminar cotizaciones anteriores de esta requisición
             var queryPrev = await _repositoryCotizaciones.Consultar(c => c.IdRequisicion == idRequisicion);
             var previas = await queryPrev.ToListAsync();
@@ -62,9 +75,8 @@ namespace Inventario.BLL.Implementacion
                 await _repositoryCotizaciones.Eliminar(p);
 
             // Insertar las nuevas
-            foreach (var cot in cotizaciones)
+            foreach (var cot in cotizacionesValidas)
             {
-                if (cot.IdProveedor <= 0) continue;
                 await _repositoryCotizaciones.Crear(new TblCotizacione
                 {
                     IdRequisicion = idRequisicion,
@@ -218,15 +230,11 @@ namespace Inventario.BLL.Implementacion
         }
 
         public async Task<bool> GuardarProveedorGanador(int idRequisicion, int idProveedor,
-            bool seleccionManual, int idUsuario)
+            bool seleccionManual, string? justificacion, int idUsuario)
         {
-            // Eliminar ganador anterior si existe
             var queryPrev = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
             var previo = await queryPrev.FirstOrDefaultAsync();
-            if (previo != null)
-                await _repositoryGanador.Eliminar(previo);
 
-            // Calcular totales del proveedor elegido
             var queryCot = await _repositoryCotizaciones.Consultar(
                 c => c.IdRequisicion == idRequisicion
                   && c.IdProveedor == idProveedor
@@ -252,17 +260,39 @@ namespace Inventario.BLL.Implementacion
                 return c.Importe!.Value * cant * 0.16m;
             });
 
-            await _repositoryGanador.Crear(new TblProveedorGanador
+            var justificacionFinal = seleccionManual
+                ? (justificacion ?? "").Trim()
+                : null;
+            var usuarioFinal = seleccionManual ? idUsuario : (int?)null;
+
+            if (previo == null)
             {
-                IdRequisicion = idRequisicion,
-                IdProveedor = idProveedor,
-                Subtotal = subtotal,
-                Iva = iva,
-                Total = subtotal + iva,
-                SeleccionManual = seleccionManual,
-                IdUsuario = seleccionManual ? idUsuario : null,
-                FechaSeleccion = DateTime.Now
-            });
+                await _repositoryGanador.Crear(new TblProveedorGanador
+                {
+                    IdRequisicion = idRequisicion,
+                    IdProveedor = idProveedor,
+                    Subtotal = subtotal,
+                    Iva = iva,
+                    Total = subtotal + iva,
+                    SeleccionManual = seleccionManual,
+                    Justificacion = justificacionFinal,
+                    IdUsuario = usuarioFinal,
+                    FechaSeleccion = DateTime.Now
+                });
+            }
+            else
+            {
+                previo.IdProveedor = idProveedor;
+                previo.Subtotal = subtotal;
+                previo.Iva = iva;
+                previo.Total = subtotal + iva;
+                previo.SeleccionManual = seleccionManual;
+                previo.Justificacion = justificacionFinal;
+                previo.IdUsuario = usuarioFinal;
+                previo.FechaSeleccion = DateTime.Now;
+
+                await _repositoryGanador.Editar(previo);
+            }
 
             return true;
         }
@@ -282,7 +312,8 @@ namespace Inventario.BLL.Implementacion
                 Subtotal = ganador.Subtotal ?? 0,
                 Iva = ganador.Iva ?? 0,
                 Total = ganador.Total ?? 0,
-                SeleccionManual = ganador.SeleccionManual
+                SeleccionManual = ganador.SeleccionManual,
+                Justificacion = ganador.Justificacion ?? ""
             };
         }
     }

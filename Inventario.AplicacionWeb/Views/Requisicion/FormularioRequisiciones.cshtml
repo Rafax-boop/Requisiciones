@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
-<div class="mt-3 container" style="width:1300px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")" data-tipo-requisicion="@ViewBag.TipoRequisicion">
+<div class="mt-3 container" style="width:1600px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")" data-tipo-requisicion="@ViewBag.TipoRequisicion">
     <form asp-action="@(modoEdicion ? "ActualizarRequisicion" : "CrearRequisicion")" method="post" class="no-loader">
         <input type="hidden" asp-for="IdRequiMaestra" />
         <div class="info-requisicion">

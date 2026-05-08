@@ -122,23 +122,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>

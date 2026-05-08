@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────
-   📅 FLATPICKR — Override
+   FLATPICKR — Override
 ────────────────────────────────────────── */
 
 /* Contenedor principal */
@@ -13,7 +13,6 @@
     background: white !important;
 }
 
-    /* Quitar las flechitas triangulares */
     .flatpickr-calendar::before,
     .flatpickr-calendar::after {
         display: none !important;

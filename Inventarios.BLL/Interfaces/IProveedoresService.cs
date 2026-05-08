@@ -15,7 +15,7 @@ namespace Inventario.BLL.Interfaces
         Task<List<PartidaDTO>> ObtenerPartidas(int idRequisicion);
         Task<List<DetalleArticuloDTO>> ObtenerArticulosParaCompra(int idRequisicion);
         Task<List<OpcionProveedorDTO>> ObtenerOpcionesGanador(int idRequisicion);
-        Task<bool> GuardarProveedorGanador(int idRequisicion, int idProveedor, bool seleccionManual, int idUsuario);
+        Task<bool> GuardarProveedorGanador(int idRequisicion, int idProveedor, bool seleccionManual, string? justificacion, int idUsuario);
         Task<ProveedorGanadorDTO?> ObtenerProveedorGanador(int idRequisicion);
     }
 }

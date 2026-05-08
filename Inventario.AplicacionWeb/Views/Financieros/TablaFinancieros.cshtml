@@ -100,7 +100,7 @@
                         <th>Folio</th>
                         <th>Fecha de emisión</th>
                         <th>Departamento</th>
-                        <th>Responsable</th>
+                        <th>Analista</th>
                         <th style="text-align:center">Partida(s)</th>
                         <th>Estado</th>
                         @if (User.IsInRole("8"))
@@ -198,23 +198,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -341,23 +341,23 @@
                                             <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
                                             <div class="step-label">Capturada</div>
                                             <div class="step-tooltip">
-                                                <strong>Requisición Capturada</strong>
-                                                <span>Emisión @item.FechaEmision</span>
+                                                <strong>Requisici&oacute;n Capturada</strong>
+                                                <span>Emisi&oacute;n @item.FechaEmision</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 2 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
-                                            <div class="step-label">Cotización</div>
+                                            <div class="step-label">Cotizaci&oacute;n</div>
                                             <div class="step-tooltip">
-                                                <strong>Cotización / Presupuesto</strong>
+                                                <strong>Cotizaci&oacute;n / Presupuesto</strong>
                                                 <span>@(faseA >= 2 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
                                         <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esModA ? "A Modificar" : "Trámite")</div>
+                                            <div class="step-label">@(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esModA ? "Modificación" : "Trámite Operativo")</strong>
+                                                <strong>@(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -906,7 +906,7 @@
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium">Asignar requisición</h5>
-                    <p class="modal-subtitulo-premium">Selecciona el responsable</p>
+                    <p class="modal-subtitulo-premium">Selecciona el analista</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i>
@@ -914,9 +914,9 @@
             </div>
             <div class="modal-body modal-body-premium">
                 <div class="formulario-input">
-                    <label>Responsable:</label>
+                    <label>Analista:</label>
                     <select id="selectUsuarioAsignar" class="form-select">
-                        <option value="">-- Seleccionar responsable --</option>
+                        <option value="">-- Seleccionar analista --</option>
                     </select>
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1rem;">

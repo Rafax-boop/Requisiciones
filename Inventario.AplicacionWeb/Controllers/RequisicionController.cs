@@ -530,8 +530,15 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> GuardarCotizaciones([FromBody] GuardarCotizacionesRequest modelo)
         {
-            var ok = await _proveedoresService.GuardarCotizaciones(modelo.IdRequisicion, modelo.Cotizaciones);
-            return Ok(new { success = ok });
+            try
+            {
+                var ok = await _proveedoresService.GuardarCotizaciones(modelo.IdRequisicion, modelo.Cotizaciones);
+                return Ok(new { success = ok });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpGet]
@@ -555,12 +562,19 @@ namespace Inventario.AplicacionWeb.Controllers
             return Ok(opciones);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ObtenerProveedorGanador(int idRequisicion)
+        {
+            var ganador = await _proveedoresService.ObtenerProveedorGanador(idRequisicion);
+            return Ok(ganador);
+        }
+
         [HttpPost]
         public async Task<IActionResult> GuardarProveedorGanador([FromBody] GuardarGanadorRequest modelo)
         {
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var ok = await _proveedoresService.GuardarProveedorGanador(
-                modelo.IdRequisicion, modelo.IdProveedor, modelo.SeleccionManual, idUsuario);
+                modelo.IdRequisicion, modelo.IdProveedor, modelo.SeleccionManual, modelo.Justificacion, idUsuario);
             return Ok(new { success = ok });
         }
 

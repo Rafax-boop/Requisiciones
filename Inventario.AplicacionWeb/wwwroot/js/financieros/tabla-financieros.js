@@ -818,8 +818,7 @@
                 "border-radius:8px; border:1px solid var(--color-border-tertiary);" +
                 "background:var(--color-background-secondary); cursor:pointer;";
             fila.innerHTML =
-                '<input type="checkbox" value="' + doc.label + '" ' +
-                'style="width:16px;height:16px;flex-shrink:0;">' +
+                window.crearCheckAnimado({ value: doc.label }) +
                 '<span style="font-size:13px;">' + doc.label + '</span>';
             checklist.appendChild(fila);
         });

@@ -1,0 +1,33 @@
+@model Inventario.AplicacionWeb.Models.ViewModels.VMCheckAnimado
+@{
+    var labelClass = "check-animado";
+    if (!string.IsNullOrWhiteSpace(Model.Text)) labelClass += " check-animado--choice";
+    if (!string.IsNullOrWhiteSpace(Model.ClassName)) labelClass += " " + Model.ClassName;
+
+    var inputClass = "check-animado__input";
+    if (!string.IsNullOrWhiteSpace(Model.InputClass)) inputClass += " " + Model.InputClass;
+}
+
+<label class="@labelClass" title="@Model.Title">
+    <input type="@Model.Type"
+           class="@inputClass"
+           name="@Model.Name"
+           value="@Model.Value"
+           id="@Model.Id"
+           @if (Model.Checked) { <text>checked</text> }
+           @if (Model.Required) { <text>required</text> } />
+    <span class="check-animado__bullet">
+        <span class="check-animado__line zero"></span>
+        <span class="check-animado__line one"></span>
+        <span class="check-animado__line two"></span>
+        <span class="check-animado__line three"></span>
+        <span class="check-animado__line four"></span>
+        <span class="check-animado__line five"></span>
+        <span class="check-animado__line six"></span>
+        <span class="check-animado__line seven"></span>
+    </span>
+    @if (!string.IsNullOrWhiteSpace(Model.Text))
+    {
+        <span class="check-animado__text">@Model.Text</span>
+    }
+</label>
