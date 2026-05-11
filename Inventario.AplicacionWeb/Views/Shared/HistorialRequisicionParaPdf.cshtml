@@ -1,0 +1,403 @@
+@using Inventario.AplicacionWeb.Utilidades
+@using System.Globalization
+@model VMHistorialRequisicionPdf
+@{
+    Layout = null;
+    var fecha = Model.FechaEmision.HasValue
+        ? Model.FechaEmision.Value.Day.ToString("D2") + "/" + Model.FechaEmision.Value.Month.ToString("D2") + "/" + Model.FechaEmision.Value.Year
+        : "-";
+    var folio = Model.Folio ?? "-";
+    var estatus = Model.EstatusActual ?? "-";
+    var timeline = TimelineHelper.Calcular(Model.IdEstatus);
+    var progresoAncho = (timeline.progress * 0.8).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+    var pasosTimeline = new[]
+    {
+        new { Numero = 1, Titulo = "Emision", Texto = "Requisicion capturada" },
+        new { Numero = 2, Titulo = "Cotizacion", Texto = timeline.fase >= 2 ? estatus : "Pendiente" },
+        new { Numero = 3, Titulo = "Atencion", Texto = timeline.esMod ? "Regresada para cambios" : (timeline.fase >= 3 ? estatus : "Pendiente") },
+        new { Numero = 4, Titulo = "Autorizacion", Texto = timeline.fase >= 4 ? estatus : "Pendiente" },
+        new { Numero = 5, Titulo = "Cierre", Texto = timeline.fase >= 5 ? estatus : "Pendiente" }
+    };
+
+    string EstadoTexto(string estado)
+    {
+        return estado switch
+        {
+            "done" => "Completado",
+            "active" => "En curso",
+            "completed" => "Finalizado",
+            "cancelled" => "Cancelada",
+            _ => "Pendiente"
+        };
+    }
+}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Historico @folio</title>
+    <style>
+        :root {
+            --ink: #111827;
+            --muted: #64748b;
+            --line: #dbe3ef;
+            --soft: #f8fafc;
+            --brand: #be123c;
+            --ok: #15803d;
+            --warn: #b45309;
+            --bad: #b91c1c;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #eef2f7;
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+        }
+
+        .print-actions {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(238, 242, 247, 0.94);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .print-actions button {
+            border: 0;
+            border-radius: 999px;
+            padding: 9px 16px;
+            background: var(--brand);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .sheet {
+            width: 216mm;
+            min-height: 279mm;
+            margin: 18px auto;
+            padding: 16mm;
+            background: #fff;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--ink);
+        }
+
+        .eyebrow {
+            margin: 0 0 6px;
+            color: var(--brand);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.15;
+        }
+
+        .folio-box {
+            min-width: 170px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--soft);
+            text-align: right;
+        }
+
+        .folio-box strong {
+            display: block;
+            font-size: 16px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .meta-card {
+            padding: 9px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            margin: 20px 0 10px;
+            font-size: 15px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+        }
+
+        .timeline {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 18px 0 6px;
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            top: 31px;
+            height: 4px;
+            border-radius: 999px;
+            background: var(--line);
+        }
+
+        .timeline-progress {
+            position: absolute;
+            left: 10%;
+            top: 31px;
+            height: 4px;
+            width: @progresoAncho;
+            border-radius: 999px;
+            background: var(--brand);
+        }
+
+        .timeline-step {
+            position: relative;
+            text-align: center;
+        }
+
+        .dot {
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 8px;
+            border: 2px solid var(--line);
+            border-radius: 50%;
+            background: #fff;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .timeline-step.done .dot,
+        .timeline-step.active .dot {
+            border-color: var(--brand);
+            background: var(--brand);
+            color: #fff;
+        }
+
+        .timeline-step.cancelled .dot {
+            border-color: var(--bad);
+            background: var(--bad);
+            color: #fff;
+        }
+
+        .timeline-step h3 {
+            margin: 0 0 3px;
+            font-size: 11px;
+        }
+
+        .timeline-step p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.25;
+        }
+
+        .history {
+            display: grid;
+            gap: 10px;
+        }
+
+        .history-item {
+            display: grid;
+            grid-template-columns: 88px 1fr;
+            gap: 12px;
+            page-break-inside: avoid;
+        }
+
+        .history-date {
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.35;
+        }
+
+        .history-card {
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--brand);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .history-card.done { border-left-color: var(--ok); }
+        .history-card.active { border-left-color: var(--warn); }
+        .history-card.completed { border-left-color: var(--ok); }
+        .history-card.cancelled { border-left-color: var(--bad); }
+
+        .history-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            white-space: nowrap;
+            border-radius: 999px;
+            padding: 3px 8px;
+            background: var(--soft);
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .badge.done,
+        .badge.completed { color: var(--ok); }
+        .badge.active { color: var(--warn); }
+        .badge.cancelled { color: var(--bad); }
+
+        .history-row {
+            margin: 4px 0;
+            line-height: 1.35;
+        }
+
+        .history-row b {
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        @@media print {
+            body { background: #fff; }
+            .print-actions { display: none; }
+            .sheet {
+                width: auto;
+                min-height: auto;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            @@page {
+                size: letter;
+                margin: 14mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions">
+        <button type="button" onclick="window.print()">Descargar / imprimir PDF</button>
+    </div>
+
+    <main class="sheet">
+        <header class="top">
+            <div>
+                <p class="eyebrow">@Model.TipoRequisicion</p>
+                <h1>Historico completo de requisicion</h1>
+            </div>
+            <div class="folio-box">
+                <span class="label">Folio</span>
+                <strong>@folio</strong>
+            </div>
+        </header>
+
+        <section class="meta-grid">
+            <div class="meta-card">
+                <span class="label">Fecha de emision</span>
+                <strong>@fecha</strong>
+            </div>
+            <div class="meta-card">
+                <span class="label">Departamento</span>
+                <strong>@(Model.Departamento ?? "-")</strong>
+            </div>
+            <div class="meta-card">
+                <span class="label">Responsable</span>
+                <strong>@(Model.Responsable ?? "-")</strong>
+            </div>
+            <div class="meta-card">
+                <span class="label">Estatus actual</span>
+                <strong>@estatus</strong>
+            </div>
+        </section>
+
+        <h2 class="section-title">Linea de tiempo</h2>
+        <section class="timeline">
+            <div class="timeline-progress"></div>
+            @foreach (var paso in pasosTimeline)
+            {
+                var clase = timeline.esTerminal && paso.Numero == timeline.fase && timeline.progress == 0
+                    ? "cancelled"
+                    : paso.Numero < timeline.fase ? "done"
+                    : paso.Numero == timeline.fase ? "active"
+                    : "pending";
+                <article class="timeline-step @clase">
+                    <div class="dot">@paso.Numero</div>
+                    <h3>@paso.Titulo</h3>
+                    <p>@paso.Texto</p>
+                </article>
+            }
+        </section>
+
+        <h2 class="section-title">Historial cronologico</h2>
+        <section class="history">
+            @if (!Model.Historial.Any())
+            {
+                <p>No hay movimientos registrados para esta requisicion.</p>
+            }
+            else
+            {
+                foreach (var paso in Model.Historial)
+                {
+                    <article class="history-item">
+                        <div class="history-date">
+                            <strong>@(paso.Fecha ?? "-")</strong><br />
+                            <span>@(paso.Hora ?? "-")</span>
+                        </div>
+                        <div class="history-card @paso.Estado">
+                            <div class="history-head">
+                                <strong>@(paso.Departamento ?? "-")</strong>
+                                <span class="badge @paso.Estado">@EstadoTexto(paso.Estado)</span>
+                            </div>
+                            <p class="history-row"><b>Responsable:</b> @(paso.Responsable ?? "-")</p>
+                            @if (!string.IsNullOrWhiteSpace(paso.Accion))
+                            {
+                                <p class="history-row"><b>Accion:</b> @paso.Accion</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(paso.Nota))
+                            {
+                                <p class="history-row"><b>Nota:</b> @paso.Nota</p>
+                            }
+                        </div>
+                    </article>
+                }
+            }
+        </section>
+    </main>
+</body>
+</html>

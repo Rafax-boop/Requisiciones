@@ -24,6 +24,8 @@ namespace Inventario.BLL.DTO
         public string? TipoServicio { get; set; }
         public DateOnly? FechaServicio { get; set; }
         public bool? RequiServicio { get; set; }
+        public int IdEstatus { get; set; }
+        public string? Estatus { get; set; }
         public string? Hash { get; set; }
         public List<DetalleArticuloDTO> Articulos { get; set; } = new();
     }

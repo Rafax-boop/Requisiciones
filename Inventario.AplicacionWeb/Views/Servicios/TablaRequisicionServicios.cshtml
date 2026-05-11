@@ -22,6 +22,7 @@
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-modificar="@Url.Action("EnviarAModificacion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
+     data-url-historial-pdf="@Url.Action("HistorialParaPdf", "Servicios")"
     data-url-subir-archivos-atencion="@Url.Action("SubirArchivosAtencion", "Requisicion")"
      data-url-aceptar-expediente="@Url.Action("AceptarExpediente", "Servicios")"
      data-url-subir-doc-proveedor="@Url.Action("SubirDocumentoProveedor", "Requisicion")"
@@ -232,9 +233,9 @@
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
+                                            <div class="step-label">@Html.Raw(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                                <strong>@Html.Raw(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -380,9 +381,9 @@
                                         </li>
                                         <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
+                                            <div class="step-label">@Html.Raw(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                                <strong>@Html.Raw(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -1206,9 +1207,15 @@
                     <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
                     <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
                 </div>
-                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <div class="modal-historial-actions">
+                    <a id="btnDescargarHistorialPdf" class="btn-descargar-historial disabled" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Descargar historico">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Descargar</span>
+                    </a>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
             <div class="modal-body modal-body-premium">
                 <div class="modal-summary" id="historialSummary">

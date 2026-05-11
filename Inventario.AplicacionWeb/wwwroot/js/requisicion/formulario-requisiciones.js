@@ -535,6 +535,14 @@
     reindexarArticulos();
     var valido = true;
     var mensajes = [];
+    var mensajesUnicos = {};
+
+    function agregarMensaje(msg) {
+      if (!mensajesUnicos[msg]) {
+        mensajesUnicos[msg] = true;
+        mensajes.push(msg);
+      }
+    }
 
     if ($("#tablaArticulos tbody tr").length === 0) {
       valido = false;
@@ -585,6 +593,101 @@
         valido = false;
         mensajes.push("Debe seleccionar la fecha de prestación del servicio.");
       }
+    }
+
+    var correo = ($('[name="Correo"]').val() || "").trim();
+    var telefono = ($('[name="Telefono"]').val() || "").trim();
+    var justificacion = ($('[name="Justificacion"]').val() || "").trim();
+    var lugarEntrega = ($('[name="LugarEntrega"]').val() || "").trim();
+    var mensajesDetallados = [];
+    var mensajesDetalladosSet = {};
+
+    function agregarDetalle(msg) {
+      if (!mensajesDetalladosSet[msg]) {
+        mensajesDetalladosSet[msg] = true;
+        mensajesDetallados.push(msg);
+      }
+    }
+
+    if (!correo) agregarDetalle("Falta capturar el correo.");
+    if (!telefono) agregarDetalle("Falta capturar el teléfono.");
+    if (!justificacion) {
+      agregarDetalle(
+        esServicio
+          ? "Falta capturar la justificación del servicio solicitado."
+          : "Falta capturar la justificación de la requisición.",
+      );
+    }
+    if (!lugarEntrega) {
+      agregarDetalle(
+        esServicio
+          ? "Falta capturar el lugar de prestación del servicio."
+          : "Falta seleccionar el lugar de entrega.",
+      );
+    }
+
+    if (!esServicio) {
+      var usoEspecifico = ($('[name="UsoEspecifico"]').val() || "").trim();
+      var cuentaPrograma = $(
+        'input[name="CuentaProgramaPresupuestario"]:checked',
+      ).val();
+      var usoMaterial = $('input[name="UsoMaterial"]:checked').val();
+
+      if (!usoEspecifico) {
+        agregarDetalle("Falta capturar el uso específico del material.");
+      }
+      if (typeof cuentaPrograma === "undefined") {
+        agregarDetalle(
+          "Falta indicar si está programado en el presupuesto y programa de adquisiciones.",
+        );
+      }
+      if (typeof usoMaterial === "undefined") {
+        agregarDetalle(
+          "Falta indicar si el uso del material es administrativo o donativo.",
+        );
+      }
+    } else {
+      if (!tipoServicio) agregarDetalle("Falta seleccionar el tipo de servicio.");
+      if (!fechaServicio) {
+        agregarDetalle("Falta seleccionar la fecha de prestación del servicio.");
+      }
+    }
+
+    $("#tablaArticulos tbody tr").each(function (index) {
+      var select = $(this).find(".select-articulo");
+      var unidad = $(this).find(".select-unidad");
+      var cantidad = $(this).find(".cantidad-input");
+      var descripcionDetallada = $(this).find(".desc-hidden");
+      var numeroPartida = index + 1;
+
+      if (!select.val()) {
+        agregarDetalle(
+          "Partida " + numeroPartida + ": falta seleccionar el artículo.",
+        );
+      }
+      if (!unidad.val()) {
+        agregarDetalle(
+          "Partida " + numeroPartida + ": falta seleccionar la unidad de medida.",
+        );
+      }
+      if (!cantidad.val() || parseFloat(cantidad.val()) <= 0) {
+        agregarDetalle(
+          "Partida " + numeroPartida + ": la cantidad debe ser mayor a cero.",
+        );
+      }
+      if (
+        !descripcionDetallada.val() ||
+        descripcionDetallada.val().trim() === ""
+      ) {
+        agregarDetalle(
+          "Partida " + numeroPartida + ": falta capturar la descripción detallada.",
+        );
+      }
+    });
+
+    if (mensajesDetallados.length > 0) {
+      valido = false;
+      mensajes = mensajesDetallados;
     }
 
     return { valido: valido, mensajes: mensajes };
@@ -664,32 +767,31 @@
           mostrarErroresValidacion(resultado.mensajes);
           return;
         }
-
-        Swal.fire({
-          title: "\u00bfProgramar requisici\u00f3n?",
-          icon: "question",
-          iconColor: "var(--rosa-400)",
-          showDenyButton: true,
-          showCancelButton: false,
-          confirmButtonText: "S\u00ed",
-          denyButtonText: "No",
-          confirmButtonColor: "var(--rosa-400)",
-          denyButtonColor: "var(--slate-500)",
-        }).then(function (result) {
-          if (result.isConfirmed) {
-            iniciarWizardProgramacion();
-          } else if (result.isDenied) {
-            reindexarArticulos();
-            bloquearSeccionArticulos();
-            var btnC2 = document.getElementById("btnContinuar");
-            var btnG2 = document.getElementById("btnGuardarFinal");
-            if (btnC2) btnC2.style.display = "none";
-            if (btnG2) btnG2.style.display = "";
-            preguntarMunicipios();
-          }
+        iniciarWizardMunicipios(function () {
+          preguntarProgramacion();
         });
       });
     }
+  }
+
+  function preguntarProgramacion() {
+    Swal.fire({
+      title: "\u00bfProgramar requisici\u00f3n?",
+      icon: "question",
+      iconColor: "var(--rosa-400)",
+      showDenyButton: true,
+      showCancelButton: false,
+      confirmButtonText: "S\u00ed",
+      denyButtonText: "No",
+      confirmButtonColor: "var(--rosa-400)",
+      denyButtonColor: "var(--slate-500)",
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        iniciarWizardProgramacion();
+      } else if (result.isDenied) {
+        completarFlujoContinuar();
+      }
+    });
   }
 
   function obtenerSnapshotArticulos() {
@@ -1198,15 +1300,7 @@
   function finalizarWizard(state) {
     reindexarArticulos();
     serializarProgramacion();
-    programacionFinalizada = true;
-    bloquearSeccionArticulos();
-
-    var btnC = document.getElementById("btnContinuar");
-    var btnG = document.getElementById("btnGuardarFinal");
-    if (btnC) btnC.style.display = "none";
-    if (btnG) btnG.style.display = "";
-
-    preguntarMunicipios();
+    completarFlujoContinuar();
   }
 
   // ── Wizard distribución por municipio ──────────────────────────────────
@@ -1235,7 +1329,7 @@
     });
   }
 
-  function iniciarWizardMunicipios() {
+  function iniciarWizardMunicipios(onComplete) {
     municipioWizardArticulos = [];
     $("#tablaArticulos tbody tr").each(function () {
       var $row = $(this);
@@ -1256,7 +1350,7 @@
     console.log("municipioWizardArticulos:", municipioWizardArticulos);
 
     if (!municipioWizardArticulos.length) {
-      mostrarExitoYEnviar();
+      if (typeof onComplete === "function") onComplete();
       return;
     }
 
@@ -1273,7 +1367,7 @@
     var modalEl = document.getElementById("modalMunicipiosWizard");
     if (!modalEl) {
       console.error("modalMunicipiosWizard no encontrado en el DOM");
-      mostrarExitoYEnviar();
+      if (typeof onComplete === "function") onComplete();
       return;
     }
 
@@ -1281,25 +1375,20 @@
     var btnSig = document.getElementById("btnWizardMuniSiguiente");
     var btnAnt = document.getElementById("btnWizardMuniAnterior");
     var btnAgregar = document.getElementById("btnWizardMuniAgregarFila");
-    var btnCancelar = document.getElementById("btnWizardMuniCancelar");
 
     // Clonar para limpiar listeners previos
     if (btnSig) {
       var nuevoSig = btnSig.cloneNode(true);
       btnSig.parentNode.replaceChild(nuevoSig, btnSig);
-      nuevoSig.addEventListener("click", onClickSiguienteMunicipio);
+      nuevoSig.addEventListener("click", function () {
+        onClickSiguienteMunicipio(onComplete);
+      });
     }
     if (btnAnt) {
       var nuevoAnt = btnAnt.cloneNode(true);
       btnAnt.parentNode.replaceChild(nuevoAnt, btnAnt);
       nuevoAnt.addEventListener("click", onClickAnteriorMunicipio);
     }
-    if (btnCancelar) {
-      var nuevoCancelar = btnCancelar.cloneNode(true);
-      btnCancelar.parentNode.replaceChild(nuevoCancelar, btnCancelar);
-      nuevoCancelar.addEventListener("click", onClickCancelarMunicipio);
-    }
-
     var modal =
       bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     $(modalEl).one("shown.bs.modal", function () {
@@ -1319,7 +1408,7 @@
     }, 200);
   }
 
-  function onClickSiguienteMunicipio() {
+  function onClickSiguienteMunicipio(onComplete) {
     var val = validarMunicipioActual();
     if (!val.valido) {
       Swal.fire({
@@ -1337,8 +1426,12 @@
     } else {
       serializarMunicipios();
       var modalEl = document.getElementById("modalMunicipiosWizard");
+      $(modalEl).one("hidden.bs.modal", function () {
+        if (typeof onComplete === "function") {
+          onComplete();
+        }
+      });
       bootstrap.Modal.getInstance(modalEl).hide();
-      mostrarExitoYEnviar();
     }
   }
 
@@ -1346,14 +1439,6 @@
     guardarMunicipioActual();
     municipioWizardIdx--;
     renderizarPasoMunicipio(municipioWizardIdx);
-  }
-
-  function onClickCancelarMunicipio() {
-    var modalEl = document.getElementById("modalMunicipiosWizard");
-    var modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) {
-      modal.hide();
-    }
   }
 
   function renderizarPasoMunicipio(idx) {
@@ -1496,7 +1581,12 @@
         total += parseFloat(inp.value) || 0;
       }
     });
-    if (!hayFilas) return { valido: true };
+    if (!hayFilas) {
+      return {
+        valido: false,
+        mensaje: "Debe asignar al menos un municipio para esta partida.",
+      };
+    }
     if (Math.abs(total - art.cantidad) > 0.01) {
       return {
         valido: false,
@@ -1551,6 +1641,18 @@
       confirmButtonText: "Entendido",
       confirmButtonColor: "var(--rosa-400)",
     });
+  }
+
+  function completarFlujoContinuar() {
+    programacionFinalizada = true;
+    bloquearSeccionArticulos();
+
+    var btnC = document.getElementById("btnContinuar");
+    var btnG = document.getElementById("btnGuardarFinal");
+    if (btnC) btnC.style.display = "none";
+    if (btnG) btnG.style.display = "";
+
+    mostrarExitoYEnviar();
   }
 
   window.eliminarFotoExistente = function (idFoto) {
