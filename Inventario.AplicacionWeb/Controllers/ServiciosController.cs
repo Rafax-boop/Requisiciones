@@ -308,6 +308,39 @@ namespace Inventario.AplicacionWeb.Controllers
             return View("RequisicionServiciosParaPdf", vm);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> HistorialParaPdf(int id)
+        {
+            var dto = await _requisicionesService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var historial = await _requisicionesService.ObtenerProgresoRequisicion(id);
+            var vm = new VMHistorialRequisicionPdf
+            {
+                IdRequisicion = id,
+                TipoRequisicion = "Servicios",
+                Folio = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                Departamento = dto.Departamento,
+                Responsable = dto.NomResponsableDepartamento,
+                IdEstatus = dto.IdEstatus,
+                EstatusActual = dto.Estatus,
+                Historial = historial.Select(p => new VMHistorialPasoPdf
+                {
+                    Departamento = p.Dept,
+                    Fecha = p.Date,
+                    Hora = p.Time,
+                    Estado = p.State,
+                    Responsable = p.By,
+                    Accion = p.Action,
+                    Nota = p.Comment
+                }).ToList()
+            };
+
+            return View("HistorialRequisicionParaPdf", vm);
+        }
+
         [HttpPost]
         public async Task<IActionResult> EliminarFoto(int idFoto)
         {

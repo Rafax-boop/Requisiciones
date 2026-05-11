@@ -161,8 +161,19 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> ObtenerProgresoRequisicion(int idRequisicion)
         {
-            var pasos = await _requisicionService.ObtenerProgresoRequisicion(idRequisicion);
-            return Json(pasos);
+            try
+            {
+                var pasos = await _requisicionService.ObtenerProgresoRequisicion(idRequisicion);
+                return Json(pasos);
+            }
+            catch (Exception ex)
+            {
+                var detalle = _webHostEnvironment.EnvironmentName == "Development"
+                    ? ex.GetBaseException().Message
+                    : "No se pudo cargar el historial de esta requisicion.";
+
+                return StatusCode(500, new { message = detalle });
+            }
         }
 
         [HttpGet]
@@ -225,6 +236,39 @@ namespace Inventario.AplicacionWeb.Controllers
             ViewBag.ListaMunicipios = municipios;
 
             return View("RequisicionParaPdf", vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> HistorialParaPdf(int id)
+        {
+            var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);
+            if (dto == null)
+                return NotFound();
+
+            var historial = await _requisicionService.ObtenerProgresoRequisicion(id);
+            var vm = new VMHistorialRequisicionPdf
+            {
+                IdRequisicion = id,
+                TipoRequisicion = "Materiales",
+                Folio = dto.NumRequisicion,
+                FechaEmision = dto.FechaEmision,
+                Departamento = dto.Departamento,
+                Responsable = dto.NomResponsableDepartamento,
+                IdEstatus = dto.IdEstatus,
+                EstatusActual = dto.Estatus,
+                Historial = historial.Select(p => new VMHistorialPasoPdf
+                {
+                    Departamento = p.Dept,
+                    Fecha = p.Date,
+                    Hora = p.Time,
+                    Estado = p.State,
+                    Responsable = p.By,
+                    Accion = p.Action,
+                    Nota = p.Comment
+                }).ToList()
+            };
+
+            return View("HistorialRequisicionParaPdf", vm);
         }
 
         [HttpGet]

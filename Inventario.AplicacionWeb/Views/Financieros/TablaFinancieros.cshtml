@@ -213,9 +213,9 @@
                                         </li>
                                         <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
+                                            <div class="step-label">@Html.Raw(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                                <strong>@Html.Raw(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -356,9 +356,9 @@
                                         </li>
                                         <li class="timeline-step @(faseA >= 3 ? (esModA ? "warning" : "completed") : "")">
                                             <div class="step-icon"><i class="fa-solid @(esModA ? "fa-rotate-left" : "fa-spinner")"></i></div>
-                                            <div class="step-label">@(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
+                                            <div class="step-label">@Html.Raw(esModA ? "A Modificar" : "Tr&aacute;mite")</div>
                                             <div class="step-tooltip">
-                                                <strong>@(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                                <strong>@Html.Raw(esModA ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
                                                 <span>@(esModA ? "Regresada para cambios" : (faseA >= 3 ? item.Estatus : "Pendiente"))</span>
                                             </div>
                                         </li>
@@ -712,8 +712,8 @@
 
                 <!-- Botones -->
                 <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
-                    <button type="button" class="btn btn-danger" onclick="rebotarDocumentos()">
-                        <i class="fa-solid fa-rotate-left"></i> Rebotar documentos
+                    <button type="button" class="btn btn-regresar-documentos" onclick="rebotarDocumentos()">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Regresar documentos
                     </button>
                     <button type="button" class="btn boton-rosa" onclick="finalizarExpediente()">
                         <i class="fa-solid fa-circle-check"></i> Finalizar
@@ -916,7 +916,7 @@
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">Rebotar documentos</h5>
+                    <h5 class="modal-title modal-titulo-premium">Regresar documentos</h5>
                     <p class="modal-subtitulo-premium">Marca los documentos con anomalías</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
@@ -936,8 +936,8 @@
                     <button type="button" class="btn boton-gris" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="confirmarRebotar()">
-                        <i class="fa-solid fa-rotate-left"></i> Confirmar rebotar
+                    <button type="button" class="btn btn-regresar-documentos" onclick="confirmarRebotar()">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Confirmar regreso
                     </button>
                 </div>
             </div>

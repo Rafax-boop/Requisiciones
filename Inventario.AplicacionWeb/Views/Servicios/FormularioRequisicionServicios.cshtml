@@ -274,6 +274,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script>
     window.municipiosOpciones = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
@@ -291,6 +292,7 @@
             window.articulosIniciales = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Articulos.Select(a => new {
                 idArticulo = a.IdArticulo,
                 cog        = a.Cog,
+                claveMaterial = a.ClaveMaterial,
                 cantidad   = a.Cantidad,
                 unidadMedida = a.UnidadMedida,
                 descripcion  = a.Descripcion,

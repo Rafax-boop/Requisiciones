@@ -3721,6 +3721,29 @@
   var urlObtenerProgreso = container
     ? container.getAttribute("data-url-obtener-progreso")
     : "";
+  var urlHistorialPdf = container
+    ? container.getAttribute("data-url-historial-pdf")
+    : "";
+
+  function configurarDescargaHistorial(idRequi) {
+    var btn = document.getElementById("btnDescargarHistorialPdf");
+    if (!btn) return;
+
+    if (!urlHistorialPdf || !idRequi) {
+      btn.setAttribute("href", "#");
+      btn.classList.add("disabled");
+      btn.setAttribute("aria-disabled", "true");
+      return;
+    }
+
+    var separador = urlHistorialPdf.indexOf("?") >= 0 ? "&" : "?";
+    btn.setAttribute(
+      "href",
+      urlHistorialPdf + separador + "id=" + encodeURIComponent(idRequi)
+    );
+    btn.classList.remove("disabled");
+    btn.removeAttribute("aria-disabled");
+  }
 
   function renderHistorialSteps(steps) {
     var done = 0,
@@ -3834,6 +3857,7 @@
 
   window.verHistorialTimeline = function (idRequi, numRequi) {
     document.getElementById("historialSubtitle").textContent = numRequi;
+    configurarDescargaHistorial(idRequi);
     document.getElementById("historialSummary").innerHTML =
       '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial…</div>';
     document.getElementById("historialTl").innerHTML = "";
@@ -3860,10 +3884,17 @@
         };
       });
       renderHistorialSteps(steps);
-    }).fail(function () {
+    }).fail(function (xhr) {
+      var detalle =
+        (xhr.responseJSON && xhr.responseJSON.message) ||
+        (xhr.status
+          ? "Error " + xhr.status + (xhr.statusText ? ": " + xhr.statusText : "")
+          : "Error de conexion");
       document.getElementById("historialSummary").innerHTML =
         '<div style="color:#b91c1c;text-align:center;padding:1rem;">' +
-        '<i class="fa-solid fa-triangle-exclamation"></i> Error al cargar el historial</div>';
+        '<i class="fa-solid fa-triangle-exclamation"></i> ' +
+        detalle +
+        "</div>";
     });
   };
 })();

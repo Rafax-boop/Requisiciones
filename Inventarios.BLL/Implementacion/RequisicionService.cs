@@ -395,6 +395,13 @@ namespace Inventario.BLL.Implementacion
                 nombreDepartamento = departamento?.NombreDepartamento;
             }
 
+            string? nombreEstatus = null;
+            if (requisicion.IdEstatus.HasValue)
+            {
+                var estatus = await _repositoryEstatus.Obtener(e => e.IdEstatus == requisicion.IdEstatus.Value);
+                nombreEstatus = estatus?.NombreEstatus;
+            }
+
             var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
             var articulos = await queryDetalles
                 .Select(r => new DetalleArticuloDTO
@@ -453,6 +460,9 @@ namespace Inventario.BLL.Implementacion
                 Hash = requisicion.Hash,
                 FechaServicio = requisicion.FechaServicio,
                 TipoServicio = requisicion.TipoServicio,
+                RequiServicio = requisicion.RequiServicio,
+                IdEstatus = requisicion.IdEstatus ?? 0,
+                Estatus = nombreEstatus,
                 Articulos = articulos
             };
         }
@@ -677,6 +687,7 @@ namespace Inventario.BLL.Implementacion
 
             var bitacorasQuery = await _repositoryBitacora.Consultar(b => b.IdRequisicion == idRequisicion);
             var eventos = await bitacorasQuery
+                .Include(b => b.IdUsuarioNavigation)
                 .OrderBy(b => b.FechaEstatus)
                 .ThenBy(b => b.IdBitacoraEstatus)
                 .Select(b => new
@@ -718,10 +729,10 @@ namespace Inventario.BLL.Implementacion
 
                 resultado.Add(new ProgresoPasoDTO
                 {
-                    Dept = nombresEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}"),
+                    Dept = nombresEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}") ?? $"Estatus {idEst}",
                     Date = date,
                     State = state,
-                    By = ev.Usuario ?? "â€”",
+                    By = string.IsNullOrWhiteSpace(ev.Usuario) ? "â€”" : ev.Usuario,
                     Time = time,
                     Action = ev.Observacion ?? "",
                     Comment = ev.Observacion ?? ""
@@ -745,7 +756,7 @@ namespace Inventario.BLL.Implementacion
 
                 resultado.Add(new ProgresoPasoDTO
                 {
-                    Dept = nombresEstatus.GetValueOrDefault(idEstatusActual, $"Estatus {idEstatusActual}"),
+                    Dept = nombresEstatus.GetValueOrDefault(idEstatusActual, $"Estatus {idEstatusActual}") ?? $"Estatus {idEstatusActual}",
                     Date = synDate,
                     State = synState,
                     By = "â€”",
