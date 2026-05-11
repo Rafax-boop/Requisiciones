@@ -90,7 +90,13 @@
     : "";
   var urlDescargarTodosArchivosZip = container
     ? container.getAttribute("data-url-descargar-todos-archivos-zip")
-    : "";
+        : "";
+    var urlDescargarReqDirecta = container
+        ? container.getAttribute("data-url-descargar-req-directa")
+        : "";
+    var urlObtenerIdAdquisicion = container
+        ? container.getAttribute("data-url-obtener-id-adquisicion")
+        : "";
 
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -1645,36 +1651,55 @@
     window.open(url, "_blank");
   };
 
-  window.descargarCuadroComparativo = function () {
-    var btnCuadro = document.getElementById("btnDescargarCuadroComparativo");
-    if (btnCuadro && btnCuadro.disabled) {
-      Swal.fire({
-        icon: "warning",
-        title: "Selecciona los proveedores primero",
-        text: "Guarda las cotizaciones para habilitar el cuadro comparativo.",
-        confirmButtonText: "Ok",
-        confirmButtonColor: "#fe6291",
-      });
-      return;
-    }
+    window.descargarCuadroComparativo = function () {
+        var btnCuadro = document.getElementById("btnDescargarCuadroComparativo");
+        if (btnCuadro && btnCuadro.disabled) {
+            Swal.fire({
+                icon: "warning",
+                title: "Selecciona los proveedores primero",
+                text: "Guarda las cotizaciones para habilitar el cuadro comparativo.",
+                confirmButtonColor: "#fe6291",
+            });
+            return;
+        }
 
-    if (!requisicionActual) {
-      Swal.fire({
-        icon: "warning",
-        title: "Sin requisicion",
-        text: "Primero abre una requisicion en modo atender.",
-        confirmButtonText: "Ok",
-        confirmButtonColor: "#fe6291",
-      });
-      return;
-    }
+        if (!requisicionActual) {
+            Swal.fire({ icon: "warning", title: "Sin requisición activa." });
+            return;
+        }
 
-    var url =
-      (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
-      "?idRequisicion=" +
-      requisicionActual;
-    window.open(url, "_blank");
-  };
+        // Consultar qué tipo de adquisición tiene esta requisición
+        $.get(
+            urlObtenerIdAdquisicion,
+            { idRequisicion: requisicionActual },
+            function (res) {
+                var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
+
+                if (idAdquisicion === 1) {
+                    // Adjudicación directa → ReqDirecta
+                    var url =
+                        (urlDescargarReqDirecta || "").replace(/\/$/, "") +
+                        "?idRequisicion=" +
+                        requisicionActual;
+                    window.open(url, "_blank");
+                } else {
+                    // Cualquier otro → cuadro comparativo
+                    var url =
+                        (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
+                        "?idRequisicion=" +
+                        requisicionActual;
+                    window.open(url, "_blank");
+                }
+            }
+        ).fail(function () {
+            // Si falla, caer al cuadro comparativo por defecto
+            var url =
+                (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
+                "?idRequisicion=" +
+                requisicionActual;
+            window.open(url, "_blank");
+        });
+    };
 
   var _descPanelModalTrigger = null;
 

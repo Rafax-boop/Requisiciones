@@ -9,5 +9,9 @@ namespace Inventario.BLL.Interfaces
             int idRequisicion,
             string webRootPath,
             CancellationToken cancellationToken = default);
+        Task<(byte[] PdfBytes, string FileName)?> GenerarReqAsync(
+        int idRequisicion,
+        string webRootPath,
+        CancellationToken cancellationToken = default);
     }
 }

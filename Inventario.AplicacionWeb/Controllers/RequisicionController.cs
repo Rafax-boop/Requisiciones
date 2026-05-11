@@ -241,6 +241,26 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> DescargarReqDirecta(int idRequisicion)
+        {
+            var resultado = await _cuadroComparativoPdfService.GenerarReqAsync(
+                idRequisicion,
+                _webHostEnvironment.WebRootPath);
+
+            if (resultado == null)
+                return NotFound();
+
+            return File(resultado.Value.PdfBytes, "application/pdf", resultado.Value.FileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerIdAdquisicion(int idRequisicion)
+        {
+            var req = await _requisicionService.ObtenerRequisicionCompletaPorId(idRequisicion);
+            return Ok(new { idAdquisicion = req?.IdAdquisicion });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> EditarRequisicion(int id)
         {
             var dto = await _requisicionService.ObtenerRequisicionCompletaPorId(id);

@@ -448,6 +448,7 @@ namespace Inventario.BLL.Implementacion
                 UsoEspecifico = requisicion.UsoEspecifico,
                 Justificacion = requisicion.Justificacion,
                 CuentaProgramaPresupuestario = requisicion.CuentaProgramaPresupuestario,
+                IdAdquisicion = requisicion.IdAdjudicacion,
                 UsoMaterial = requisicion.Donativo,
                 Hash = requisicion.Hash,
                 FechaServicio = requisicion.FechaServicio,
