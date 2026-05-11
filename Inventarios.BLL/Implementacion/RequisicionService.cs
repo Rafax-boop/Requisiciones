@@ -980,7 +980,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = idRequisicion,
                 IdEstatus = 17,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Documentos del proveedor enviados a revisiÃ³n",
+                Observacion = "Documentos del proveedor enviados a revisión",
                 IdUsuario = idUsuario
             });
 

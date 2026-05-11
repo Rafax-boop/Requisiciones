@@ -78,7 +78,6 @@ namespace Inventario.AplicacionWeb.Controllers
             var actividades = await _catalogoService
                 .ObtenerActividades();
             var fuentesFinanciamiento = await _catalogoService.ObtenerFuentesFinanciamiento();
-            var municipios = await _catalogoService.ObtenerMunicipios();
             var estatus = await _almacenService.ObtenerEstatus();
 
             var vm = new VMTablaRequisiciones

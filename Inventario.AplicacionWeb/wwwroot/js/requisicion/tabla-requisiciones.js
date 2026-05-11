@@ -663,109 +663,150 @@
     });
   }
 
-  function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion) {
-    var notaEl = document.getElementById("expNotaObservacion");
-    if (notaObservacion && idEstatus === 18) {
-      notaEl.textContent = "Financieros observaron: " + notaObservacion;
-      notaEl.style.display = "block";
-    } else {
-      notaEl.style.display = "none";
+    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion) {
+        var notaEl = document.getElementById("expNotaObservacion");
+        if (notaObservacion && idEstatus === 18) {
+            notaEl.textContent = "Financieros observaron: " + notaObservacion;
+            notaEl.style.display = "block";
+        } else {
+            notaEl.style.display = "none";
+        }
+
+        var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
+
+        // Extraer qué docs están observados de la nota de financieros
+        var clavesObservadas = [];
+        if (idEstatus === 18 && notaObservacion) {
+            DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+                if (notaObservacion.indexOf(doc.label) !== -1) {
+                    clavesObservadas.push(doc.clave);
+                }
+            });
+        }
+
+        // Inicializar estado "No aplica" si no existe para esta requisición
+        if (!window._noAplica) window._noAplica = {};
+        if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
+
+        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+            var observado = clavesObservadas.indexOf(doc.clave) !== -1;
+
+            // Solo precargar si el usuario no ha interactuado aún (undefined = intacto)
+            if (window._noAplica[idRequi][doc.clave] === undefined) {
+                // No está subido y no está observado → asumir "No aplica"
+                window._noAplica[idRequi][doc.clave] = !subido && !observado;
+            }
+
+            // Si financieros lo observó pero estaba marcado como "No aplica" → forzar a false
+            if (observado && window._noAplica[idRequi][doc.clave]) {
+                window._noAplica[idRequi][doc.clave] = false;
+            }
+        });
+
+        var checklist = document.getElementById("expChecklistDocs");
+        checklist.innerHTML = "";
+
+        var todosResueltos = true;
+
+        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+            var noAplica = window._noAplica[idRequi][doc.clave] === true;
+            var observado = clavesObservadas.indexOf(doc.clave) !== -1;
+
+            if (!subido && !noAplica) todosResueltos = false;
+
+            var archivo = docsSubidos.find(function (d) { return d.nombreArchivo === doc.clave; });
+            var esObservado = observado && !subido;
+
+            var borderColor = esObservado ? "#fecaca"
+                : noAplica ? "#e2e8f0"
+                    : subido ? "#bbf7d0"
+                        : "var(--color-border-tertiary)";
+            var bgColor = esObservado ? "#fef2f2"
+                : noAplica ? "#f8fafc"
+                    : subido ? "#f0fdf4"
+                        : "var(--color-background-secondary)";
+
+            var fila = document.createElement("div");
+            fila.style.cssText =
+                "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                "border-radius:8px; border:1px solid " + borderColor + ";" +
+                "background:" + bgColor + ";";
+
+            var icono;
+            if (esObservado) {
+                icono = '<i class="fa-solid fa-circle-exclamation" style="color:#dc2626;font-size:16px;flex-shrink:0;"></i>';
+            } else if (noAplica) {
+                icono = '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
+            } else if (subido) {
+                icono = '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>';
+            } else {
+                icono = '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>';
+            }
+
+            var linkArchivo = subido && archivo
+                ? '<a href="' + archivo.ruta + '" target="_blank" ' +
+                'style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;">' +
+                '<i class="fa-solid fa-eye"></i> Ver</a>'
+                : "";
+
+            var btnSubir = "";
+            if ((idEstatus === 15 || idEstatus === 18) && !noAplica) {
+                btnSubir =
+                    '<label style="cursor:pointer;flex-shrink:0;">' +
+                    '<input type="file" style="display:none;" ' +
+                    'onchange="subirDocProveedor(' + idRequi + ", '" + doc.clave + "', this)\">" +
+                    '<span style="font-size:11px;color:var(--color-text-secondary);' +
+                    "padding:3px 8px;border:1px solid var(--color-border-secondary);" +
+                    'border-radius:6px;white-space:nowrap;">' +
+                    (subido
+                        ? '<i class="fa-solid fa-arrow-rotate-right"></i> Reemplazar'
+                        : '<i class="fa-solid fa-upload"></i> Subir') +
+                    "</span></label>";
+            }
+
+            var chkNoAplica = "";
+            if ((idEstatus === 15 || idEstatus === 18) && !subido) {
+                chkNoAplica =
+                    '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;' +
+                    'font-size:11px;color:var(--color-text-secondary);flex-shrink:0;white-space:nowrap;">' +
+                    '<input type="checkbox" ' +
+                    (noAplica ? "checked " : "") +
+                    'style="width:14px;height:14px;cursor:pointer;accent-color:#94a3b8;" ' +
+                    'onchange="toggleNoAplica(' + idRequi + ", '" + doc.clave + "', this, " + idEstatus + ", '" +
+                    (notaObservacion || "").replace(/'/g, "\\'") + '\')"> No aplica</label>';
+            }
+
+            fila.innerHTML =
+                icono +
+                '<span style="font-size:13px;flex:1;">' + doc.label + "</span>" +
+                linkArchivo +
+                chkNoAplica +
+                btnSubir;
+
+            checklist.appendChild(fila);
+        });
+
+        var acciones = document.getElementById("expAccionesProveedor");
+        if (idEstatus === 15 || idEstatus === 18) {
+            acciones.style.display = todosResueltos ? "block" : "none";
+        } else {
+            acciones.style.display = "none";
+        }
     }
 
-    var clavesSubidas = docsSubidos.map(function (d) {
-      return d.nombreArchivo;
-    });
-    var checklist = document.getElementById("expChecklistDocs");
-    checklist.innerHTML = "";
+    window.toggleNoAplica = function (idRequi, clave, checkbox, idEstatus, notaObservacion) {
+        if (!window._noAplica) window._noAplica = {};
+        if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
 
-    var todosSubidos = true;
+        window._noAplica[idRequi][clave] = checkbox.checked;
 
-    DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
-      var subido = clavesSubidas.indexOf(doc.clave) !== -1;
-      if (!subido) todosSubidos = false;
-
-      var archivo = docsSubidos.find(function (d) {
-        return d.nombreArchivo === doc.clave;
-      });
-      var esObservado =
-        idEstatus === 18 &&
-        notaObservacion &&
-        notaObservacion.indexOf(doc.label) !== -1;
-
-      var fila = document.createElement("div");
-      fila.style.cssText =
-        "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-        "border-radius:8px; border:1px solid " +
-        (esObservado
-          ? "#fecaca"
-          : subido
-            ? "#bbf7d0"
-            : "var(--color-border-tertiary)") +
-        ";" +
-        "background:" +
-        (esObservado
-          ? "#fef2f2"
-          : subido
-            ? "#f0fdf4"
-            : "var(--color-background-secondary)") +
-        ";";
-
-      var icono = subido
-        ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-        : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>';
-
-      if (esObservado) {
-        icono =
-          '<i class="fa-solid fa-circle-exclamation" style="color:#dc2626;font-size:16px;flex-shrink:0;"></i>';
-      }
-
-      var linkArchivo =
-        subido && archivo
-          ? '<a href="' +
-            archivo.ruta +
-            '" target="_blank" ' +
-            'style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;text-decoration:none;">' +
-            '<i class="fa-solid fa-eye"></i> Ver</a>'
-          : "";
-
-      // Botón subir solo si estatus permite (16 o 18)
-      var btnSubir = "";
-      if (idEstatus === 15 || idEstatus === 18) {
-        btnSubir =
-          '<label style="margin-left:auto;cursor:pointer;">' +
-          '<input type="file" style="display:none;" ' +
-          'onchange="subirDocProveedor(' +
-          idRequi +
-          ", '" +
-          doc.clave +
-          "', this)\">" +
-          '<span style="font-size:11px;color:var(--color-text-secondary);' +
-          "padding:3px 8px;border:1px solid var(--color-border-secondary);" +
-          'border-radius:6px;white-space:nowrap;">' +
-          (subido
-            ? '<i class="fa-solid fa-arrow-rotate-right"></i> Reemplazar'
-            : '<i class="fa-solid fa-upload"></i> Subir') +
-          "</span></label>";
-      }
-
-      fila.innerHTML =
-        icono +
-        '<span style="font-size:13px;flex:1;">' +
-        doc.label +
-        "</span>" +
-        linkArchivo +
-        btnSubir;
-
-      checklist.appendChild(fila);
-    });
-
-    var acciones = document.getElementById("expAccionesProveedor");
-    if (idEstatus === 15 || idEstatus === 18) {
-      acciones.style.display = todosSubidos ? "block" : "none";
-    } else {
-      acciones.style.display = "none";
-    }
-  }
+        // Re-renderizar checklist para reflejar cambios visuales
+        $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+            renderChecklist(docs, idRequi, idEstatus, notaObservacion);
+        });
+    };
 
   window.subirDocProveedor = function (idRequi, clave, inputEl) {
     var archivo = inputEl.files[0];

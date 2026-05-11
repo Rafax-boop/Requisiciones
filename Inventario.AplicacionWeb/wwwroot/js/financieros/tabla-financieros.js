@@ -426,8 +426,7 @@
                 // Precargar valores desde la data (PP, FF, Programa, Municipio)
                 if (data.idPp) $("#actividadSeleccionada").val(data.idPp).trigger("change");
                 if (data.ff) {
-                    $("#ffSelect option").filter(function () { return $(this).text().trim() === data.ff; }).prop("selected", true);
-                    $("#ffSelect").trigger("change");
+                    $("#ffSelect").val(data.ff).trigger("change");
                 }
                 if (data.tipoPrograma) {
                     $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
@@ -671,10 +670,7 @@
 
             if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
             if (data.ff) {
-                $("#expFinFf option").filter(function () {
-                    return $(this).text().trim() === data.ff;
-                }).prop("selected", true);
-                $("#expFinFf").trigger("change");
+                $("#expFinFf").val(data.ff).trigger("change");
             }
             if (data.tipoPrograma) {
                 $("#expFinTipoPrograma option").filter(function () {
@@ -770,23 +766,36 @@
                     var subido = clavesSubidas.indexOf(doc.clave) !== -1;
                     var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
 
+                    // Si está en BD → subido. Si no → el analista lo marcó "No aplica"
+                    var noAplica = !subido;
+
                     var fila = document.createElement("div");
-                    fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-                        "border-radius:8px; border:1px solid " +
-                        (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
-                        "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+
+                    var borderColor = noAplica
+                        ? "var(--color-border-tertiary)"
+                        : "#bbf7d0";
+                    var bgColor = noAplica
+                        ? "var(--color-background-secondary)"
+                        : "#f0fdf4";
+
+                    fila.style.cssText =
+                        "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                        "border-radius:8px; border:1px solid " + borderColor + ";" +
+                        "background:" + bgColor + ";";
 
                     var icono = subido
                         ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-                        : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>';
+                        : '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
 
                     var linkVer = subido && archivo
                         ? '<a href="' + archivo.ruta + '" target="_blank" ' +
                         'style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;' +
                         'text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);' +
-                        'border-radius:6px;">' +
+                        'border-radius:6px;white-space:nowrap;">' +
                         '<i class="fa-solid fa-eye"></i> Ver</a>'
-                        : '<span style="font-size:11px;color:#9ca3af;margin-left:auto;">No subido</span>';
+                        : '<span style="font-size:11px;color:#94a3b8;margin-left:auto;' +
+                        'padding:3px 8px;border:1px solid var(--color-border-tertiary);' +
+                        'border-radius:6px;white-space:nowrap;font-style:italic;">No aplica</span>';
 
                     fila.innerHTML = icono +
                         '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
