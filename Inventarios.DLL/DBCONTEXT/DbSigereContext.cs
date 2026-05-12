@@ -24,6 +24,10 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; }
 
+    public virtual DbSet<TblConsolidada> TblConsolidadas { get; set; }
+
+    public virtual DbSet<TblConsolidadasDetalle> TblConsolidadasDetalles { get; set; }
+
     public virtual DbSet<TblCotizacione> TblCotizaciones { get; set; }
 
     public virtual DbSet<TblDepartamento> TblDepartamentos { get; set; }
@@ -145,6 +149,68 @@ public partial class DbSigereContext : DbContext
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblBitacoraEstatuses)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK_TblBitacoraEstatus_TblUsuario");
+        });
+
+        modelBuilder.Entity<TblConsolidada>(entity =>
+        {
+            entity.HasKey(e => e.ConsolidadaId);
+
+            entity.HasIndex(e => e.FolioConsolidada, "UQ_TblConsolidadas_Folio").IsUnique();
+
+            entity.HasIndex(e => e.Hash, "UQ_TblConsolidadas_Hash").IsUnique();
+
+            entity.Property(e => e.ConsolidadaId).HasColumnName("ConsolidadaID");
+            entity.Property(e => e.FechaCreacion)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.FechaModificacion).HasColumnType("datetime");
+            entity.Property(e => e.Ff)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("FF");
+            entity.Property(e => e.FolioConsolidada)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.Hash)
+                .HasMaxLength(16)
+                .IsUnicode(false)
+                .IsFixedLength();
+            entity.Property(e => e.IdEstatus).HasDefaultValue(1);
+            entity.Property(e => e.IdPp).HasColumnName("IdPP");
+            entity.Property(e => e.NumApi)
+                .HasMaxLength(15)
+                .IsUnicode(false);
+            entity.Property(e => e.NumPedido)
+                .HasMaxLength(15)
+                .IsUnicode(false);
+            entity.Property(e => e.TipoPrograma)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TblConsolidadasDetalle>(entity =>
+        {
+            entity.HasKey(e => e.ConsolidadaDetalleId);
+
+            entity.ToTable("TblConsolidadasDetalle");
+
+            entity.HasIndex(e => new { e.ConsolidadaId, e.IdRequisicion }, "UQ_ConsolidadaRequisicion").IsUnique();
+
+            entity.Property(e => e.ConsolidadaDetalleId).HasColumnName("ConsolidadaDetalleID");
+            entity.Property(e => e.ConsolidadaId).HasColumnName("ConsolidadaID");
+            entity.Property(e => e.FechaAgregada)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.Consolidada).WithMany(p => p.TblConsolidadasDetalles)
+                .HasForeignKey(d => d.ConsolidadaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ConsDetalle_Consolidada");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblConsolidadasDetalles)
+                .HasForeignKey(d => d.IdRequisicion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ConsDetalle_Requisicion");
         });
 
         modelBuilder.Entity<TblCotizacione>(entity =>
@@ -374,6 +440,7 @@ public partial class DbSigereContext : DbContext
             entity.ToTable("tblRequisicion");
 
             entity.Property(e => e.IdRequisicion).HasColumnName("idRequisicion");
+            entity.Property(e => e.ConsolidadaId).HasColumnName("ConsolidadaID");
             entity.Property(e => e.Correo)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -418,6 +485,10 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.UsoEspecifico).IsUnicode(false);
+
+            entity.HasOne(d => d.Consolidada).WithMany(p => p.TblRequisicions)
+                .HasForeignKey(d => d.ConsolidadaId)
+                .HasConstraintName("FK_Requisicion_Consolidada");
 
             entity.HasOne(d => d.IdAdjudicacionNavigation).WithMany(p => p.TblRequisicions)
                 .HasForeignKey(d => d.IdAdjudicacion)

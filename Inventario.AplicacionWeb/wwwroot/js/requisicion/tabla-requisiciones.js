@@ -2062,6 +2062,166 @@
       wizardDatos[wizardIdx] = filas;
     }
 
+
+      //Consolidadas
+      (function () {
+          var urlRequisConsolidables = container
+              ? container.getAttribute("data-url-requis-consolidables") : "";
+          var urlCrearConsolidada = container
+              ? container.getAttribute("data-url-crear-consolidada") : "";
+
+          var _requisDisponibles = [];
+          var _seleccionadas = new Set();
+
+          window.abrirModalConsolidada = function () {
+              _seleccionadas.clear();
+              document.getElementById("filtroConsolidada").value = "";
+              document.getElementById("listaRequisConsolidables").innerHTML =
+                  '<div style="text-align:center;padding:2rem;color:#9ca3af;">' +
+                  '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>';
+              document.getElementById("sinRequisConsolidables").style.display = "none";
+              document.getElementById("contadorConsolidada").style.display = "none";
+              document.getElementById("btnConfirmarConsolidada").disabled = true;
+
+              fetch(urlRequisConsolidables, { credentials: "same-origin" })
+                  .then(r => r.json())
+                  .then(data => {
+                      _requisDisponibles = data || [];
+                      renderizarCardsConsolidada(_requisDisponibles);
+                  })
+                  .catch(() => {
+                      document.getElementById("listaRequisConsolidables").innerHTML =
+                          '<div style="text-align:center;padding:2rem;color:#b91c1c;">' +
+                          '<i class="fa-solid fa-triangle-exclamation"></i> Error al cargar las requisiciones.</div>';
+                  });
+          };
+
+          function renderizarCardsConsolidada(lista) {
+              var contenedor = document.getElementById("listaRequisConsolidables");
+              var sinResultados = document.getElementById("sinRequisConsolidables");
+
+              if (!lista.length) {
+                  contenedor.innerHTML = "";
+                  sinResultados.style.display = "block";
+                  return;
+              }
+
+              sinResultados.style.display = "none";
+              contenedor.innerHTML = "";
+
+              lista.forEach(function (req) {
+                  var sel = _seleccionadas.has(req.idRequi);
+                  var card = document.createElement("div");
+                  card.setAttribute("data-id", req.idRequi);
+                  card.setAttribute("data-folio", (req.numRequi || "").toLowerCase());
+                  card.setAttribute("data-depto", (req.departamento || "").toLowerCase());
+                  card.style.cssText =
+                      "display:flex;align-items:center;gap:14px;padding:12px 16px;" +
+                      "border-radius:10px;cursor:pointer;transition:all .15s;" +
+                      "border:2px solid " + (sel ? "#fe6291" : "var(--color-border-tertiary)") + ";" +
+                      "background:" + (sel ? "#fff0f5" : "var(--color-background-secondary)") + ";";
+
+                  card.innerHTML =
+                      '<div class="cons-chk" style="width:22px;height:22px;border-radius:50%;flex-shrink:0;' +
+                      'display:flex;align-items:center;justify-content:center;' +
+                      'border:2px solid ' + (sel ? "#fe6291" : "#d1d5db") + ';' +
+                      'background:' + (sel ? "#fe6291" : "transparent") + ';">' +
+                      (sel ? '<i class="fa-solid fa-check" style="color:white;font-size:11px;"></i>' : "") +
+                      '</div>' +
+                      '<div style="flex:1;min-width:0;">' +
+                      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
+                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "—") + '</span>' +
+                      '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
+                      'background:#fef9c3;color:#854d0e;font-weight:600;">En proceso</span>' +
+                      '</div>' +
+                      '<div style="font-size:12px;color:var(--color-text-secondary);">' +
+                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "—") +
+                      ' &nbsp;·&nbsp; ' +
+                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "—") +
+                      '</div>' +
+                      '</div>' +
+                      '<div style="text-align:right;flex-shrink:0;">' +
+                      '<span style="font-size:11px;color:var(--color-text-secondary);">Partidas</span><br/>' +
+                      '<span style="font-weight:700;font-size:15px;">' + (req.cantidadPartidas || 0) + '</span>' +
+                      '</div>';
+
+                  card.addEventListener("click", function () {
+                      if (_seleccionadas.has(req.idRequi)) {
+                          _seleccionadas.delete(req.idRequi);
+                          card.style.border = "2px solid var(--color-border-tertiary)";
+                          card.style.background = "var(--color-background-secondary)";
+                          card.querySelector(".cons-chk").style.cssText +=
+                              ";border-color:#d1d5db;background:transparent;";
+                          card.querySelector(".cons-chk").innerHTML = "";
+                      } else {
+                          _seleccionadas.add(req.idRequi);
+                          card.style.border = "2px solid #fe6291";
+                          card.style.background = "#fff0f5";
+                          card.querySelector(".cons-chk").style.borderColor = "#fe6291";
+                          card.querySelector(".cons-chk").style.background = "#fe6291";
+                          card.querySelector(".cons-chk").innerHTML =
+                              '<i class="fa-solid fa-check" style="color:white;font-size:11px;"></i>';
+                      }
+                      var n = _seleccionadas.size;
+                      var ctr = document.getElementById("contadorConsolidada");
+                      ctr.style.display = n > 0 ? "block" : "none";
+                      document.getElementById("textoContadorConsolidada").textContent =
+                          n + (n === 1 ? " requisición seleccionada" : " requisiciones seleccionadas");
+                      document.getElementById("btnConfirmarConsolidada").disabled = n < 2;
+                  });
+
+                  contenedor.appendChild(card);
+              });
+          }
+
+          // Filtro buscador
+          document.getElementById("filtroConsolidada").addEventListener("input", function () {
+              var term = this.value.toLowerCase().trim();
+              document.querySelectorAll("#listaRequisConsolidables [data-id]").forEach(function (card) {
+                  var coincide = !term ||
+                      card.getAttribute("data-folio").includes(term) ||
+                      card.getAttribute("data-depto").includes(term);
+                  card.style.display = coincide ? "" : "none";
+              });
+          });
+
+          window.confirmarCrearConsolidada = function () {
+              var ids = Array.from(_seleccionadas);
+              Swal.fire({
+                  title: "¿Crear consolidada?",
+                  html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
+                  icon: "question",
+                  showCancelButton: true,
+                  confirmButtonColor: "#fe6291",
+                  confirmButtonText: "Sí, crear",
+                  cancelButtonText: "Cancelar",
+              }).then(function (result) {
+                  if (!result.isConfirmed) return;
+                  Swal.fire({ title: "Creando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                  fetch(urlCrearConsolidada, {
+                      method: "POST",
+                      credentials: "same-origin",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ idsRequisiciones: ids }),
+                  })
+                      .then(r => r.json())
+                      .then(function (data) {
+                          bootstrap.Modal.getInstance(document.getElementById("modalCrearConsolidada")).hide();
+                          Swal.fire({
+                              icon: "success",
+                              title: "Consolidada creada",
+                              html: "Folio: <strong>" + (data.folioConsolidada || "") + "</strong>",
+                              confirmButtonColor: "#fe6291",
+                          }).then(() => location.reload());
+                      })
+                      .catch(function () {
+                          Swal.fire({ icon: "error", title: "Error al crear la consolidada", confirmButtonColor: "#fe6291" });
+                      });
+              });
+          };
+      })();
+
     // ── Renderizar la pantalla de la partida activa ──
     function renderizarPartida(idx) {
       var $c = $contenedor();

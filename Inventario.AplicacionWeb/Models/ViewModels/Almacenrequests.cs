@@ -111,4 +111,9 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public List<TablaApiHistorialDTO> HistorialTablaApi { get; set; } = new();
         public List<PedidoHistorialDTO> HistorialPedido { get; set; } = new();
     }
+
+    public class CrearConsolidadaRequest
+    {
+        public List<int> IdsRequisiciones { get; set; } = new();
+    }
 }

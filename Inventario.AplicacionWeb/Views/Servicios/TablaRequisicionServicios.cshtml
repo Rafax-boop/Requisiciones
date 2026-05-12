@@ -41,7 +41,9 @@
      data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")"
      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Servicios")"
      data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Servicios")"
-     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")">
+     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
+     data-url-requis-consolidables="@Url.Action("ObtenerRequisicionesConsolidables", "Consolidada")"
+     data-url-crear-consolidada="@Url.Action("CrearConsolidada", "Consolidada")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -51,6 +53,15 @@
         {
             <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
                 <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
+            </a>
+        }
+        @if (User.IsInRole("7"))
+        {
+            <a href="#" class="boton-gris"
+                   data-bs-toggle="modal"
+                   data-bs-target="#modalCrearConsolidada"
+                   onclick="abrirModalConsolidada()">
+                <i class="fa-solid fa-layer-group"></i> Crear Consolidada
             </a>
         }
     </div>
@@ -1183,6 +1194,93 @@
                      style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalCrearConsolidada" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium modal-premium-compacta">
+
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">
+                        <i class="fa-solid fa-layer-group" style="color:#fe6291; margin-right:6px;"></i>
+                        Crear Requisición Consolidada
+                    </h5>
+                    <p class="modal-subtitulo-premium">
+                        Selecciona las requisiciones que deseas agrupar en una sola
+                    </p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body modal-body-premium">
+
+                <div style="margin-bottom:14px; position:relative;">
+                    <i class="fa-solid fa-magnifying-glass"
+                       style="position:absolute; left:12px; top:50%; transform:translateY(-50%);
+                    color:#9ca3af; font-size:13px;"></i>
+                    <input type="text" id="filtroConsolidada"
+                           placeholder="Buscar por folio o departamento..."
+                           style="width:100%; padding:9px 12px 9px 34px;
+                    border:1px solid var(--color-border-secondary);
+                    border-radius:8px; font-size:13px;
+                    background:var(--color-background-secondary);
+                    color:var(--color-text-primary);" />
+                </div>
+
+                <div id="contadorConsolidada"
+                     style="display:none; margin-bottom:10px; padding:8px 12px;
+                    border-radius:8px; background:#fff0f5; border:1px solid #fecdd3;
+                    font-size:13px; font-weight:600; color:#be123c;">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="textoContadorConsolidada">0 requisiciones seleccionadas</span>
+                </div>
+
+                <div id="listaRequisConsolidables"
+                     style="max-height:360px; overflow-y:auto;
+                    display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+                    <div style="text-align:center; padding:2rem; color:#9ca3af;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Cargando...
+                    </div>
+                </div>
+
+                <div id="sinRequisConsolidables" style="display:none; text-align:center; padding:2rem;">
+                    <i class="fa-solid fa-inbox"
+                       style="font-size:2rem; color:#d1d5db; display:block; margin-bottom:8px;"></i>
+                    <p style="color:#9ca3af; font-size:13px; margin:0;">
+                        No tienes requisiciones disponibles para consolidar.
+                    </p>
+                    <p style="color:#9ca3af; font-size:12px; margin:4px 0 0;">
+                        Solo se muestran las asignadas a ti, en estatus <strong>En proceso</strong>
+                        y que aún no pertenezcan a una consolidada.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="modal-footer"
+                 style="justify-content:space-between; align-items:center;
+                padding:16px 24px; border-top:1px solid var(--color-border-tertiary);">
+                <span style="font-size:12px; color:#9ca3af; font-style:italic;">
+                    Mínimo 2 requisiciones para consolidar
+                </span>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn boton-gris" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn boton-rosa"
+                            id="btnConfirmarConsolidada"
+                            onclick="confirmarCrearConsolidada()"
+                            disabled>
+                        <i class="fa-solid fa-layer-group"></i> Crear consolidada
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

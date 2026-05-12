@@ -63,6 +63,10 @@ public partial class TblRequisicion
 
     public string? NumPedido { get; set; }
 
+    public int? ConsolidadaId { get; set; }
+
+    public virtual TblConsolidada? Consolidada { get; set; }
+
     public virtual TblAdjudicacion? IdAdjudicacionNavigation { get; set; }
 
     public virtual TblDepartamento? IdDepartamentoNavigation { get; set; }
@@ -80,6 +84,8 @@ public partial class TblRequisicion
     public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
 
     public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();
+
+    public virtual ICollection<TblConsolidadasDetalle> TblConsolidadasDetalles { get; set; } = new List<TblConsolidadasDetalle>();
 
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 
