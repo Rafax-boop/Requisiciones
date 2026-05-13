@@ -12,6 +12,7 @@ using iText.Layout;
 using iText.Layout.Borders;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -27,15 +28,24 @@ namespace Inventario.BLL.Implementacion
         private readonly IRequisicionesService _requisicionesService;
         private readonly IProveedoresService _cotizacionesService;
         private readonly IGenericRepository<TblAdjudicacion> _repositoryAdquisicion;
+        private readonly IGenericRepository<TblConsolidada> _repositoryConsolidada;
+        private readonly IGenericRepository<TblConsolidadasDetalle> _repositoryConsolidadaDetalle;
+        private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
 
         public CuadroComparativoPdfService(
             IRequisicionesService requisicionesService,
             IProveedoresService cotizacionesService,
-            IGenericRepository<TblAdjudicacion> repositoryAdquisicion)
+            IGenericRepository<TblAdjudicacion> repositoryAdquisicion,
+            IGenericRepository<TblConsolidada> repositoryConsolidada,
+            IGenericRepository<TblConsolidadasDetalle> repositoryConsolidadaDetalle,
+            IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle)
         {
             _requisicionesService = requisicionesService;
             _cotizacionesService = cotizacionesService;
             _repositoryAdquisicion = repositoryAdquisicion;
+            _repositoryConsolidada = repositoryConsolidada;
+            _repositoryConsolidadaDetalle = repositoryConsolidadaDetalle;
+            _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
         }
 
         public async Task<(byte[] PdfBytes, string FileName)?> GenerarAsync(
@@ -814,6 +824,256 @@ namespace Inventario.BLL.Implementacion
 
             doc.Close();
             return ms.ToArray();
+        }
+
+        public async Task<(byte[] PdfBytes, string FileName)?> GenerarConsolidadoAsync(
+    int idConsolidada,
+    string webRootPath,
+    CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // 1. Obtener la consolidada
+            var consolidada = await _repositoryConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null) return null;
+
+            // 2. Obtener ids de requisiciones hijas
+            var qDetalles = await _repositoryConsolidadaDetalle
+                .Consultar(d => d.ConsolidadaId == idConsolidada);
+            var detallesConsolidada = await qDetalles.ToListAsync();
+            var idsRequisiciones = detallesConsolidada.Select(d => d.IdRequisicion).ToList();
+
+            if (!idsRequisiciones.Any()) return null;
+
+            // 3. Traer TODOS los artículos de todas las hijas
+            var qArticulos = await _repositoryRequisicionDetalle
+                .Consultar(d => idsRequisiciones.Contains(d.IdRequisicion));
+            var todosLosArticulos = await qArticulos.ToListAsync();
+
+            // 4. Agrupar por IdArticulo sumando cantidades
+            var articulosAgrupados = todosLosArticulos
+                .GroupBy(a => a.IdArticulo)
+                .Select(g =>
+                {
+                    var primero = g.First();
+                    return new DetalleArticuloDTO
+                    {
+                        IdRequisicionDetalle = primero.IdRequisicionDetalle, // referencia para cotizaciones
+                        NumPartida = primero.NumPartida,
+                        IdArticulo = primero.IdArticulo,
+                        Cantidad = g.Sum(x => x.Cantidad),
+                        UnidadMedida = primero.UnidadMedida,
+                        Descripcion = primero.Descripcion,
+                        DescripcionDetallada = primero.DescripcionDetallada
+                    };
+                })
+                .ToList();
+
+            var idReqReferencia = idsRequisiciones.First();
+            var ganador = await _cotizacionesService.ObtenerProveedorGanador(idReqReferencia);
+            var idProveedorGanado = ganador?.IdProveedor ?? 0;
+
+            // 6. Tipo de procedimiento y criterio (igual que el individual)
+            string tipoProcedimiento = "PENDIENTE DE CAPTURA";
+            string criterioAdjudicacion = "SELECCION AL PROVEEDOR QUE CUMPLA CON REQUISITOS LEGALES Y OFERTE EL PRECIO MAS BAJO.";
+
+            if (consolidada.IdAdjudicacion.HasValue)
+            {
+                var tipoAdq = await _repositoryAdquisicion
+                    .Obtener(a => a.Id == consolidada.IdAdjudicacion.Value);
+                if (tipoAdq != null && !string.IsNullOrWhiteSpace(tipoAdq.Tipo))
+                    tipoProcedimiento = tipoAdq.Tipo.ToUpperInvariant();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ganador?.Justificacion))
+                criterioAdjudicacion = ganador.Justificacion.ToUpperInvariant();
+
+            // 7. Construir mapa cotizaciones por IdRequisicionDetalle del primero de cada grupo
+            //    Necesitamos mapear: para cada artículo agrupado, buscar su precio
+            //    en las cotizaciones de las hijas por IdArticulo
+
+            // Mapa: idArticulo -> List<cotizacion> (buscando en todas las hijas)
+            var todasLasCotizaciones = new List<CotizacionDTO>();
+            foreach (var idReq in idsRequisiciones)
+            {
+                var cotsDeEstaReq = await _cotizacionesService.ObtenerCotizaciones(idReq);
+                // Enriquecer con idArticulo usando el detalle
+                var detallesDeEstaReq = todosLosArticulos
+                    .Where(a => a.IdRequisicion == idReq).ToList();
+
+                foreach (var cot in cotsDeEstaReq)
+                {
+                    // Buscar el IdArticulo de esta partida
+                    var detalle = detallesDeEstaReq
+                        .FirstOrDefault(d => d.IdRequisicionDetalle == cot.IdPartida);
+                    if (detalle != null)
+                    {
+                        // Crear copia con IdPartida = IdArticulo para el agrupamiento
+                        todasLasCotizaciones.Add(new CotizacionDTO
+                        {
+                            IdProveedor = cot.IdProveedor,
+                            NombreProveedor = cot.NombreProveedor,
+                            Importe = cot.Importe,
+                            IVA = cot.IVA,
+                            IdPartida = detalle.IdArticulo // ← clave: agrupamos por artículo
+                        });
+                    }
+                }
+            }
+
+            // Rebuild cotsPorPartida usando idArticulo como clave
+            var cotsPorPartidaConsolidada = todasLasCotizaciones
+                .GroupBy(c => c.IdPartida) // IdPartida aquí = IdArticulo
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // 8. Proveedores únicos
+            var proveedores = todasLasCotizaciones
+                .Select(c => new { c.IdProveedor, c.NombreProveedor })
+                .DistinctBy(p => p.IdProveedor)
+                .OrderBy(p => p.IdProveedor == idProveedorGanado ? 0 : 1)
+                .Take(3)
+                .ToList();
+
+            var indiceGanadorForzado = idProveedorGanado > 0
+                ? proveedores.FindIndex(p => p.IdProveedor == idProveedorGanado)
+                : -1;
+
+            // 9. Construir filas usando articulosAgrupados
+            var filas = articulosAgrupados.Select(a =>
+            {
+                var cantidadTexto = a.Cantidad.HasValue
+                    ? decimal.Truncate(a.Cantidad.Value) == a.Cantidad.Value
+                        ? ((int)a.Cantidad.Value).ToString(CultureInfo.InvariantCulture)
+                        : a.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
+                    : "";
+
+                var cotsDeLaPartida = cotsPorPartidaConsolidada
+                    .TryGetValue(a.IdArticulo, out var lista)
+                    ? lista : new List<CotizacionDTO>();
+
+                var precios = proveedores
+                    .Select(p => cotsDeLaPartida.FirstOrDefault(c => c.IdProveedor == p.IdProveedor))
+                    .ToArray();
+
+                return new CuadroComparativoFilaPdf
+                {
+                    Partida = a.NumPartida?.ToString() ?? "",
+                    Descripcion = a.DescripcionDetallada ?? a.Descripcion ?? "",
+                    Cantidad = a.Cantidad ?? 0m,
+                    CantidadTxt = cantidadTexto,
+                    Unidad = a.UnidadMedida ?? "",
+                    PrecioP1 = precios.ElementAtOrDefault(0)?.Importe,
+                    PrecioP2 = precios.ElementAtOrDefault(1)?.Importe,
+                    PrecioP3 = precios.ElementAtOrDefault(2)?.Importe,
+                    IvaP1 = precios.ElementAtOrDefault(0)?.IVA ?? false,
+                    IvaP2 = precios.ElementAtOrDefault(1)?.IVA ?? false,
+                    IvaP3 = precios.ElementAtOrDefault(2)?.IVA ?? false,
+                };
+            }).ToList();
+
+            // 10. Datos de encabezado (tomados de la primera requisición hija)
+            var primeraReq = await _requisicionesService
+                .ObtenerRequisicionCompletaPorId(idReqReferencia);
+
+            var nombresProveedores = proveedores.Select(p => p.NombreProveedor).ToArray();
+
+            var bytes = GenerarCuadroComparativoPdf(
+                webRootPath,
+                requisicion: consolidada.FolioConsolidada,
+                fecha: primeraReq?.FechaEmision?.ToDateTime(TimeOnly.MinValue),
+                departamento: primeraReq?.Departamento ?? "",
+                justificacion: primeraReq?.Justificacion ?? "",
+                filas: filas,
+                nombresProveedores: nombresProveedores,
+                indiceGanadorForzado: indiceGanadorForzado,
+                tipoProcedimiento: tipoProcedimiento,
+                criterioAdjudicacion: criterioAdjudicacion);
+
+            var nombreArchivo =
+                $"CuadroComparativo_Cons_{consolidada.FolioConsolidada.Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+            return (bytes, nombreArchivo);
+        }
+
+        public async Task<(byte[] PdfBytes, string FileName)?> GenerarConsolidadoReqAsync(
+    int idConsolidada,
+    string webRootPath,
+    CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var consolidada = await _repositoryConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null) return null;
+
+            var qDetalles = await _repositoryConsolidadaDetalle
+                .Consultar(d => d.ConsolidadaId == idConsolidada);
+            var detallesConsolidada = await qDetalles.ToListAsync();
+            var idsRequisiciones = detallesConsolidada.Select(d => d.IdRequisicion).ToList();
+            if (!idsRequisiciones.Any()) return null;
+
+            var qArticulos = await _repositoryRequisicionDetalle
+                .Consultar(d => idsRequisiciones.Contains(d.IdRequisicion));
+            var todosLosArticulos = await qArticulos.ToListAsync();
+
+            var idReqReferencia = idsRequisiciones.First();
+            var ganador = await _cotizacionesService.ObtenerProveedorGanador(idReqReferencia);
+
+            var cotizacionesTodas = new List<(int IdArticulo, decimal Importe)>();
+            foreach (var idReq in idsRequisiciones)
+            {
+                var cots = await _cotizacionesService.ObtenerCotizaciones(idReq);
+                var detallesReq = todosLosArticulos.Where(a => a.IdRequisicion == idReq).ToList();
+                foreach (var cot in cots.Where(c => ganador != null && c.IdProveedor == ganador.IdProveedor))
+                {
+                    var detalle = detallesReq.FirstOrDefault(d => d.IdRequisicionDetalle == cot.IdPartida);
+                    if (detalle?.IdArticulo != null)
+                        cotizacionesTodas.Add((detalle.IdArticulo.Value, cot.Importe));
+                }
+            }
+
+            var precioPorArticulo = cotizacionesTodas
+                .GroupBy(c => c.IdArticulo)
+                .ToDictionary(g => g.Key, g => g.First().Importe);
+
+            var articulosAgrupados = todosLosArticulos
+                .GroupBy(a => a.IdArticulo)
+                .Select((g, idx) =>
+                {
+                    var primero = g.First();
+                    var cantidad = g.Sum(x => x.Cantidad) ?? 0m;
+                    var cantidadTxt = decimal.Truncate(cantidad) == cantidad
+                        ? ((int)cantidad).ToString(CultureInfo.InvariantCulture)
+                        : cantidad.ToString("0.##", CultureInfo.InvariantCulture);
+                    var precioUnitario = precioPorArticulo.TryGetValue(g.Key ?? 0, out var p) ? p : 0m;
+
+                    return new ReqDirectaFila
+                    {
+                        NumPartida = idx + 1,
+                        Descripcion = primero.DescripcionDetallada ?? primero.Descripcion ?? "",
+                        Cantidad = cantidad,
+                        CantidadTxt = cantidadTxt,
+                        UnidadMedida = primero.UnidadMedida ?? "",
+                        PrecioUnitario = precioUnitario,
+                        Total = precioUnitario * cantidad
+                    };
+                })
+                .ToList();
+
+            var primeraReq = await _requisicionesService
+                .ObtenerRequisicionCompletaPorId(idReqReferencia);
+            var fecha = primeraReq?.FechaEmision?.ToDateTime(TimeOnly.MinValue);
+
+            var bytes = GenerarPdf(
+                webRootPath,
+                requisicion: consolidada.FolioConsolidada,
+                fecha: fecha,
+                areasSolicitantes: primeraReq?.Departamento ?? "",
+                filas: articulosAgrupados);
+
+            var nombreArchivo =
+                $"ReqDirecta_Cons_{consolidada.FolioConsolidada.Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+            return (bytes, nombreArchivo);
         }
 
         // ── DTOs internos ───────────────────────────────────────────────────

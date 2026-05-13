@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Inventario.BLL.DTO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,9 @@ namespace Inventario.BLL.DTO
 
         public List<RequiHijaDTO> Requisiciones { get; set; } = new();
         public List<ArticuloConsolidadoDTO> Articulos { get; set; } = new();
+
+        public List<ArchivoAtencionDTO> CuadroComparativo { get; set; } = new();
+        public List<ArchivoAtencionDTO> Anexos { get; set; } = new();
     }
 
     public class RequiHijaDTO

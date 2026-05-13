@@ -19,5 +19,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> GuardarArchivosAtencionConsolidada(int idConsolidada,
             List<IFormFile> cuadroComparativo, List<IFormFile> anexos, string webRootPath);
         Task<List<PartidaConsolidadaDTO>> ObtenerPartidasConsolidada(int idConsolidada);
+        Task<TblConsolidada?> ObtenerConsolidada(int idConsolidada);
     }
 }

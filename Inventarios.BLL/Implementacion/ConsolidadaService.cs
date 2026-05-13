@@ -159,6 +159,18 @@ namespace Inventario.BLL.Implementacion
                 creadoPor = con?.IdUsuarioNavigation?.Usuario ?? "";
             }
 
+            var queryDocs = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
+
+            var docsCuadro = await queryDocs
+                .Where(f => f.Tipo == "cuadro_comparativo")
+                .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                .ToListAsync();
+
+            var docsAnexos = await queryDocs
+                .Where(f => f.Tipo == "anexo")
+                .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                .ToListAsync();
+
             return new ConsolidadaDetalleDTO
             {
                 ConsolidadaId = consolidada.ConsolidadaId,
@@ -167,7 +179,9 @@ namespace Inventario.BLL.Implementacion
                 FechaCreacion = consolidada.FechaCreacion.ToString("dd/MM/yyyy"),
                 CreadoPor = creadoPor,
                 Requisiciones = requisHijas,
-                Articulos = articulos
+                Articulos = articulos,
+                CuadroComparativo = docsCuadro,
+                Anexos = docsAnexos
             };
         }
 
@@ -259,40 +273,39 @@ namespace Inventario.BLL.Implementacion
             List<IFormFile> anexos,
             string webRootPath)
         {
-            // Obtener todas las hijas para asociar archivos a cada una
-            var detallesQuery = await _repoDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
-            var idsHijas = await detallesQuery.Select(d => d.IdRequisicion).ToListAsync();
+            var carpeta = $"consolidada_{idConsolidada}";
 
             async Task Guardar(List<IFormFile> archivos, string carpetaNombre, string tipo)
             {
                 if (!archivos.Any()) return;
+                var rutaBase = Path.Combine(webRootPath, "uploads", carpetaNombre, carpeta);
+                Directory.CreateDirectory(rutaBase);
 
-                foreach (var idRequi in idsHijas)
+                foreach (var archivo in archivos)
                 {
-                    var carpeta = Path.Combine(webRootPath, "uploads", carpetaNombre, idRequi.ToString());
-                    Directory.CreateDirectory(carpeta);
+                    if (archivo.Length == 0) continue;
+                    var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+                    using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
+                        await archivo.CopyToAsync(stream);
 
-                    foreach (var archivo in archivos)
+                    await _repoDiseno.Crear(new TblRegistroDiseno
                     {
-                        if (archivo.Length == 0) continue;
-                        var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
-                        using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
-                            await archivo.CopyToAsync(stream);
-
-                        await _repoDiseno.Crear(new TblRegistroDiseno
-                        {
-                            IdRequisicion = idRequi,
-                            Ruta = $"/uploads/{carpetaNombre}/{idRequi}/{nombre}",
-                            FechaSubida = DateTime.Now,
-                            Tipo = tipo
-                        });
-                    }
+                        IdConsolidada = idConsolidada,
+                        Ruta = $"/uploads/{carpetaNombre}/{carpeta}/{nombre}",
+                        FechaSubida = DateTime.Now,
+                        Tipo = tipo
+                    });
                 }
             }
 
             await Guardar(cuadroComparativo, "cuadro_comparativo", "cuadro_comparativo");
             await Guardar(anexos, "Anexos", "anexo");
             return true;
+        }
+
+        public async Task<TblConsolidada?> ObtenerConsolidada(int idConsolidada)
+        {
+            return await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
         }
 
         public async Task<List<PartidaConsolidadaDTO>> ObtenerPartidasConsolidada(int idConsolidada)

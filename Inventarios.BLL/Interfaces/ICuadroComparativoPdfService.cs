@@ -10,8 +10,12 @@ namespace Inventario.BLL.Interfaces
             string webRootPath,
             CancellationToken cancellationToken = default);
         Task<(byte[] PdfBytes, string FileName)?> GenerarReqAsync(
-        int idRequisicion,
-        string webRootPath,
-        CancellationToken cancellationToken = default);
+            int idRequisicion,
+            string webRootPath,
+            CancellationToken cancellationToken = default);
+        Task<(byte[] PdfBytes, string FileName)?> GenerarConsolidadoAsync(
+            int idConsolidada, string webRootPath, CancellationToken cancellationToken = default);
+        Task<(byte[] PdfBytes, string FileName)?> GenerarConsolidadoReqAsync(
+            int idConsolidada, string webRootPath, CancellationToken cancellationToken = default);
     }
 }

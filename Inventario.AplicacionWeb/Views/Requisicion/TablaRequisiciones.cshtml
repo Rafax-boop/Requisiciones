@@ -53,7 +53,9 @@
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Consolidada")"
      data-url-subir-archivos-consolidada="@Url.Action("SubirArchivosAtencionConsolidada", "Consolidada")"
      data-url-partidas-consolidada="@Url.Action("ObtenerPartidasConsolidada", "Consolidada")"
-     data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")">
+     data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")"
+     data-url-descargar-cuadro-consolidada="@Url.Action("DescargarCuadroComparativoConsolidada", "Requisicion")"
+     data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -138,7 +140,11 @@
         var numColsReq = 8;
         if (User.IsInRole("4")) numColsReq++;
         if (User.IsInRole("3") || User.IsInRole("4")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.ConsolidadaId == null && r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.ConsolidadaId == null && r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList(); ;
+        @if (User.IsInRole("1"))
+        {
+            requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        }
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
@@ -1432,6 +1438,16 @@
                     </table>
                 </div>
 
+                <!-- Documentos adjuntos -->
+                <hr />
+                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;margin-top:4px;">
+                    <i class="fa-solid fa-paperclip" style="color:#fe6291;margin-right:6px;"></i>
+                    Documentos adjuntos
+                </p>
+                <div id="consolidadaDocumentos" style="margin-bottom:16px;">
+                    <p style="color:#888;font-size:12px;font-style:italic;">Sin documentos</p>
+                </div>
+
             </div>
         </div>
     </div>
@@ -1531,6 +1547,15 @@
                             onclick="abrirWizardCotizacionesConsolidada()">
                         <span id="textoBtnProveedoresCons">Seleccionar Proveedores</span>
                     </button>
+                </div>
+
+                <!-- Documentos existentes -->
+                <div id="consolidadaDocsExistentes" style="display:none;margin-bottom:16px;">
+                    <p style="font-size:12px;font-weight:600;color:var(--slate-600);margin-bottom:6px;">
+                        <i class="fa-solid fa-paperclip" style="color:#fe6291;margin-right:4px;"></i>
+                        Documentos subidos
+                    </p>
+                    <div id="consolidadaDocsExistentesBody"></div>
                 </div>
 
                 <!-- Cuadro comparativo -->

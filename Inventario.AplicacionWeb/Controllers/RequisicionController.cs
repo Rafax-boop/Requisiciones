@@ -1,6 +1,7 @@
 using AutoMapper;
 using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
+using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Inventario.Entity.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -8,8 +9,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using System.IO.Compression;
+using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
 {
@@ -25,6 +26,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IProveedoresService _proveedoresService;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ICuadroComparativoPdfService _cuadroComparativoPdfService;
+        private readonly IConsolidadaService _consolidadaService;
 
         public RequisicionController(
             IRequisicionesService requisicionesService,
@@ -34,7 +36,8 @@ namespace Inventario.AplicacionWeb.Controllers
             IAlmacenService almacenService,
             IWebHostEnvironment webHostEnvironment,
             ICuadroComparativoPdfService cuadroComparativoPdfService,
-            IProveedoresService proveedoresService
+            IProveedoresService proveedoresService,
+            IConsolidadaService consolidadaService
         )
         {
             _requisicionService = requisicionesService;
@@ -46,6 +49,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _proveedoresService = proveedoresService;
             _webHostEnvironment = webHostEnvironment;
             _cuadroComparativoPdfService = cuadroComparativoPdfService;
+            _consolidadaService = consolidadaService;
         }
 
         [HttpGet]
@@ -298,9 +302,15 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerIdAdquisicion(int idRequisicion)
+        public async Task<IActionResult> ObtenerIdAdquisicion(int? idRequisicion, int? idConsolidada)
         {
-            var req = await _requisicionService.ObtenerRequisicionCompletaPorId(idRequisicion);
+            if (idConsolidada.HasValue)
+            {
+                var cons = await _consolidadaService.ObtenerConsolidada(idConsolidada.Value);
+                return Ok(new { idAdquisicion = cons?.IdAdjudicacion });
+            }
+
+            var req = await _requisicionService.ObtenerRequisicionCompletaPorId(idRequisicion!.Value);
             return Ok(new { idAdquisicion = req?.IdAdquisicion });
         }
 
@@ -792,6 +802,30 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var opciones = await _proveedoresService.ObtenerOpcionesGanadorConsolidada(idsRequisiciones);
             return Ok(opciones);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarCuadroComparativoConsolidada(int idConsolidada)
+        {
+            var resultado = await _cuadroComparativoPdfService
+                .GenerarConsolidadoAsync(idConsolidada, _webHostEnvironment.WebRootPath);
+
+            if (resultado == null)
+                return NotFound("No se pudo generar el cuadro comparativo.");
+
+            return File(resultado.Value.PdfBytes, "application/pdf", resultado.Value.FileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarReqDirectaConsolidada(int idConsolidada)
+        {
+            var resultado = await _cuadroComparativoPdfService
+                .GenerarConsolidadoReqAsync(idConsolidada, _webHostEnvironment.WebRootPath);
+
+            if (resultado == null)
+                return NotFound("No se pudo generar la requisición directa.");
+
+            return File(resultado.Value.PdfBytes, "application/pdf", resultado.Value.FileName);
         }
     }
 }

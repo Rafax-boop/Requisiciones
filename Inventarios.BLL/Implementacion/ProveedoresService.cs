@@ -20,6 +20,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicion> _repositoryRequisicion;
         private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
         private readonly IGenericRepository<TblAdjudicacion> _repositoryAdquisicion;
+        private readonly IGenericRepository<TblConsolidada> _repositoryConsolidada;
 
         public ProveedoresService(
             IGenericRepository<TblProvedor> repository,
@@ -28,7 +29,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblRequisicionDetalleMovimiento> repositoryMovimiento,
             IGenericRepository<TblRequisicion> repositoryRequisicion,
             IGenericRepository<TblProveedorGanador> repositoryGanador,
-            IGenericRepository<TblAdjudicacion> repositoryAdquisicion
+            IGenericRepository<TblAdjudicacion> repositoryAdquisicion,
+            IGenericRepository<TblConsolidada> repositoryConsolidada
         )
         {
             _repository = repository;
@@ -38,6 +40,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryGanador = repositoryGanador;
             _repositoryAdquisicion = repositoryAdquisicion;
+            _repositoryConsolidada = repositoryConsolidada;
         }
 
         public async Task<List<ProveedoresDTO>> ObtenerProveedores()
@@ -317,6 +320,18 @@ namespace Inventario.BLL.Implementacion
             {
                 requisicion.IdAdjudicacion = tipoAdq.Id;
                 await _repositoryRequisicion.Editar(requisicion);
+
+                if (requisicion.ConsolidadaId.HasValue)
+                {
+                    var consolidada = await _repositoryConsolidada.Obtener(
+                        c => c.ConsolidadaId == requisicion.ConsolidadaId.Value);
+                    if (consolidada != null)
+                    {
+                        consolidada.IdAdjudicacion = tipoAdq.Id;
+                        consolidada.FechaModificacion = DateTime.Now;
+                        await _repositoryConsolidada.Editar(consolidada);
+                    }
+                }
             }
 
             return true;

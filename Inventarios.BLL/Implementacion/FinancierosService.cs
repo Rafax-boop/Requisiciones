@@ -204,9 +204,10 @@ namespace Inventario.BLL.Implementacion
 
                 if (transferencias != null && transferencias.Any())
                 {
+                    var (idRequiDest, idConsolDest, carpetaDest) = await ResolverDestino(idRequisicion);
                     var rutaBase = System.IO.Path.Combine(
                         Directory.GetCurrentDirectory(),
-                        "wwwroot", "uploads", "Transferencias", idRequisicion.ToString());
+                        "wwwroot", "uploads", "Transferencias", carpetaDest);
                     Directory.CreateDirectory(rutaBase);
 
                     foreach (var archivo in transferencias)
@@ -221,8 +222,9 @@ namespace Inventario.BLL.Implementacion
 
                         var registro = new TblRegistroDiseno
                         {
-                            IdRequisicion = idRequisicion,
-                            Ruta = $"/uploads/Transferencias/{idRequisicion}/{nombreArchivo}",
+                            IdRequisicion = idRequiDest,
+                            IdConsolidada = idConsolDest,
+                            Ruta = $"/uploads/Transferencias/{carpetaDest}/{nombreArchivo}",
                             FechaSubida = DateTime.Now,
                             Tipo = "Transferencia"
                         };
@@ -235,6 +237,14 @@ namespace Inventario.BLL.Implementacion
             catch { throw; }
         }
 
+        private async Task<(int? IdRequi, int? IdConsolidada, string Carpeta)> ResolverDestino(int idRequisicion)
+        {
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (req?.ConsolidadaId != null)
+                return (null, req.ConsolidadaId, $"consolidada_{req.ConsolidadaId}");
+            return (idRequisicion, null, idRequisicion.ToString());
+        }
+
         private async Task GuardarArchivos(
             List<IFormFile>? archivos,
             int idRequisicion,
@@ -243,10 +253,11 @@ namespace Inventario.BLL.Implementacion
         {
             if (archivos == null || !archivos.Any()) return;
 
-            // Ruta: wwwroot/uploads/DocumentoSIAF/{idRequisicion}/ o TablaApi/{idRequisicion}/
+            var (idRequiDest, idConsolDest, carpetaDest) = await ResolverDestino(idRequisicion);
+
             var rutaBase = System.IO.Path.Combine(
                 Directory.GetCurrentDirectory(),
-                "wwwroot", "uploads", carpeta, idRequisicion.ToString());
+                "wwwroot", "uploads", carpeta, carpetaDest);
 
             Directory.CreateDirectory(rutaBase);
 
@@ -260,12 +271,12 @@ namespace Inventario.BLL.Implementacion
                 using (var stream = new FileStream(rutaFisica, FileMode.Create))
                     await archivo.CopyToAsync(stream);
 
-                // Ruta relativa para guardar en BD
-                var rutaBd = $"/uploads/{carpeta}/{idRequisicion}/{nombreArchivo}";
+                var rutaBd = $"/uploads/{carpeta}/{carpetaDest}/{nombreArchivo}";
 
                 var registro = new TblRegistroDiseno
                 {
-                    IdRequisicion = idRequisicion,
+                    IdRequisicion = idRequiDest,
+                    IdConsolidada = idConsolDest,
                     Ruta = rutaBd,
                     FechaSubida = DateTime.Now,
                     Tipo = tipo

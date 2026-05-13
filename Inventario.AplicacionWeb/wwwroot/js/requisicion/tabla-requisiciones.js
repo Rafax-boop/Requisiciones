@@ -114,6 +114,12 @@
     var urlObtenerOpcionesGanadorConsolidada = container
         ? container.getAttribute("data-url-obtener-opciones-ganador-consolidada")
         : "";
+    var urlDescargarCuadroConsolidada = container
+        ? container.getAttribute("data-url-descargar-cuadro-consolidada")
+        : "";
+    var urlDescargarReqDirectaConsolidada = container
+        ? container.getAttribute("data-url-descargar-req-directa-consolidada")
+        : "";
 
     window._modoConsolidada = false;
     window._idConsolidadaWizard = null;
@@ -943,6 +949,29 @@
             });
             document.getElementById("consolidadaArticulosBody").innerHTML = rows;
 
+            // ── Documentos adjuntos ────────────────────────────
+            var docsHtml = "";
+            var tieneCuadro = data.cuadroComparativo && data.cuadroComparativo.length;
+            var tieneAnexos = data.anexos && data.anexos.length;
+
+            if (tieneCuadro || tieneAnexos) {
+                if (tieneCuadro) {
+                    docsHtml += ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                }
+                if (tieneAnexos) {
+                    docsHtml += ModalAdjuntos.renderGrupoHtml("Anexos", data.anexos);
+                }
+            } else {
+                docsHtml = '<p style="color:#888;font-size:12px;font-style:italic;">Sin documentos</p>';
+            }
+            var docsContainer = document.getElementById("consolidadaDocumentos");
+            if (docsContainer) {
+                docsContainer.innerHTML = docsHtml;
+                if (tieneCuadro || tieneAnexos) {
+                    ModalAdjuntos.enlazarEventosContenedor(docsContainer);
+                }
+            }
+
         }).fail(function () {
             Swal.fire({ icon: "error", title: "Error al cargar el detalle." });
             bootstrap.Modal.getInstance(
@@ -1400,6 +1429,36 @@
             });
             document.getElementById("atenderConsArticulosBody").innerHTML =
                 rows || '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+
+            // Verificar si ya existen cotizaciones guardadas
+            var primeraRequi = data.requisiciones && data.requisiciones.length
+                ? data.requisiciones[0].idRequi : null;
+            if (primeraRequi) {
+                $.get(urlObtenerCotizaciones, { idRequisicion: primeraRequi }, function (cotizaciones) {
+                    if (cotizaciones && cotizaciones.length) {
+                        document.getElementById("estadoProveedoresConsolidada").style.display = "block";
+                        document.getElementById("textoBtnProveedoresCons").textContent = "Editar proveedores";
+                        document.getElementById("btnCuadroConsolidada").disabled = false;
+                    }
+                });
+            }
+
+            // Mostrar documentos existentes si los hay
+            var docsHtml = "";
+            var tieneCuadro = data.cuadroComparativo && data.cuadroComparativo.length;
+            var tieneAnexos = data.anexos && data.anexos.length;
+            if (tieneCuadro || tieneAnexos) {
+                if (tieneCuadro) {
+                    docsHtml += ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                }
+                if (tieneAnexos) {
+                    docsHtml += ModalAdjuntos.renderGrupoHtml("Anexos", data.anexos);
+                }
+                var docsBody = document.getElementById("consolidadaDocsExistentesBody");
+                if (docsBody) docsBody.innerHTML = docsHtml;
+                var docsWrap = document.getElementById("consolidadaDocsExistentes");
+                if (docsWrap) docsWrap.style.display = "block";
+            }
         });
 
         new bootstrap.Modal(
@@ -1431,14 +1490,32 @@
     };
 
     window.descargarCuadroConsolidada = function () {
-        if (!CACHE_PARTIDAS.length || !CACHE_PARTIDAS[0].idRequisicionPorDetalle) {
-            Swal.fire({ icon: "warning", title: "Primero selecciona los proveedores." });
+        if (!window._idConsolidadaAtender) {
+            Swal.fire({ icon: "warning", title: "No hay consolidada activa." });
             return;
         }
-        var idReq = Object.values(CACHE_PARTIDAS[0].idRequisicionPorDetalle)[0];
-        var url = (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
-            "?idRequisicion=" + idReq;
-        window.open(url, "_blank");
+
+        $.get(
+            urlObtenerIdAdquisicion,
+            { idConsolidada: window._idConsolidadaAtender },
+            function (res) {
+                var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
+                var url;
+
+                if (idAdquisicion === 1) {
+                    url = (urlDescargarReqDirectaConsolidada || "").replace(/\/$/, "")
+                        + "?idConsolidada=" + window._idConsolidadaAtender;
+                } else {
+                    url = (urlDescargarCuadroConsolidada || "").replace(/\/$/, "")
+                        + "?idConsolidada=" + window._idConsolidadaAtender;
+                }
+                window.open(url, "_blank");
+            }
+        ).fail(function () {
+            var url = (urlDescargarCuadroConsolidada || "").replace(/\/$/, "")
+                + "?idConsolidada=" + window._idConsolidadaAtender;
+            window.open(url, "_blank");
+        });
     };
 
     window.enviarAtencionConsolidada = function () {

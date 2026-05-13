@@ -49,7 +49,8 @@
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Consolidada")"
      data-url-subir-archivos-consolidada="@Url.Action("SubirArchivosAtencionConsolidada", "Consolidada")"
      data-url-partidas-consolidada="@Url.Action("ObtenerPartidasConsolidada", "Consolidada")"
-     data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")">
+     data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")"
+     data-url-descargar-cuadro-consolidada="@Url.Action("DescargarCuadroComparativoConsolidada", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -125,7 +126,11 @@
         var numColsReq = 8;
         if (User.IsInRole("6")) numColsReq++;
         if (User.IsInRole("7") || User.IsInRole("6")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.ConsolidadaId == null && r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.ConsolidadaId == null && r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList(); ;
+        @if (User.IsInRole("1"))
+        {
+            requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        }
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();

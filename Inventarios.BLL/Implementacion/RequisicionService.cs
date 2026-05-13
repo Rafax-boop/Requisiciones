@@ -298,15 +298,23 @@ namespace Inventario.BLL.Implementacion
                 }
             }
 
+            var consolidadaId = maestra?.ConsolidadaId;
+
+            System.Linq.Expressions.Expression<Func<TblRegistroDiseno, bool>> FiltroDoc(string tipo)
+            {
+                if (consolidadaId.HasValue)
+                    return f => f.IdConsolidada == consolidadaId && f.Tipo == tipo;
+                return f => f.IdRequisicion == idMaestro && f.Tipo == tipo;
+            }
+
             List<string> fotos = new();
             if (maestra?.TipoServicio == "Servicio Impresion")
             {
-                var queryFotos = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idMaestro && f.Tipo == "diseno");
+                var queryFotos = await _repositoryDisenos.Consultar(FiltroDoc("diseno"));
                 fotos = await queryFotos.Select(f => f.Ruta).ToListAsync();
             }
 
-            var queryCotizaciones = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "cotizacion");
+            var queryCotizaciones = await _repositoryDisenos.Consultar(FiltroDoc("cotizacion"));
             var cotizaciones = await queryCotizaciones
                 .Select(f => new ArchivoAtencionDTO
                 {
@@ -320,8 +328,7 @@ namespace Inventario.BLL.Implementacion
                 .Select(b => b.Observacion)
                 .FirstOrDefaultAsync();
 
-            var queryCuadro = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "cuadro_comparativo");
+            var queryCuadro = await _repositoryDisenos.Consultar(FiltroDoc("cuadro_comparativo"));
             var cuadro = await queryCuadro
                 .Select(f => new ArchivoAtencionDTO
                 {
@@ -329,8 +336,7 @@ namespace Inventario.BLL.Implementacion
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
-            var queryAnexos = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "anexo");
+            var queryAnexos = await _repositoryDisenos.Consultar(FiltroDoc("anexo"));
             var anexos = await queryAnexos
                 .Select(f => new ArchivoAtencionDTO
                 {
@@ -338,25 +344,23 @@ namespace Inventario.BLL.Implementacion
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
-            var querySIAF = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "SIAF");
-            var archivosSiaf = await querySIAF  // â† querySIAF, no queryCuadro
+            var querySIAF = await _repositoryDisenos.Consultar(FiltroDoc("SIAF"));
+            var archivosSiaf = await querySIAF
                 .Select(f => new ArchivoAtencionDTO
                 {
                     Ruta = f.Ruta,
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
 
-            var queryTablaApi = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "TablaApi");
+            var queryTablaApi = await _repositoryDisenos.Consultar(FiltroDoc("TablaApi"));
             var archivosTablaApi = await queryTablaApi
                 .Select(f => new ArchivoAtencionDTO
                 {
                     Ruta = f.Ruta,
                     NombreArchivo = Path.GetFileName(f.Ruta)
                 }).ToListAsync();
-            var queryPedido = await _repositoryDisenos.Consultar(
-                f => f.IdRequisicion == idMaestro && f.Tipo == "pedido_compra");
+
+            var queryPedido = await _repositoryDisenos.Consultar(FiltroDoc("pedido_compra"));
             var archivosPedidos = await queryPedido
                 .Select(f => new ArchivoAtencionDTO
                 {
@@ -844,23 +848,25 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath)
         {
-            var carpeta = Path.Combine(webRootPath, "uploads", "diseÃ±os", idRequisicion.ToString());
-            Directory.CreateDirectory(carpeta);
+            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            var rutaBase = Path.Combine(webRootPath, "uploads", "diseños", carpeta);
+            Directory.CreateDirectory(rutaBase);
 
             foreach (var foto in fotos)
             {
                 if (foto.Length == 0) continue;
 
                 var nombreArchivo = $"{Guid.NewGuid()}{Path.GetExtension(foto.FileName)}";
-                var rutaCompleta = Path.Combine(carpeta, nombreArchivo);
+                var rutaCompleta = Path.Combine(rutaBase, nombreArchivo);
 
                 using (var stream = new FileStream(rutaCompleta, FileMode.Create))
                     await foto.CopyToAsync(stream);
 
                 await _repositoryDisenos.Crear(new TblRegistroDiseno
                 {
-                    IdRequisicion = idRequisicion,
-                    Ruta = $"/uploads/diseÃ±os/{idRequisicion}/{nombreArchivo}",
+                    IdRequisicion = idRequiDest,
+                    IdConsolidada = idConsolDest,
+                    Ruta = $"/uploads/diseños/{carpeta}/{nombreArchivo}",
                     FechaSubida = DateTime.Now,
                     Tipo = "diseno"
                 });
@@ -871,8 +877,14 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<string>> ObtenerFotosRequisicion(int idRequisicion)
         {
-            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion);
-            return await query.Select(f => f.Ruta).ToListAsync();
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (req?.ConsolidadaId != null)
+            {
+                var query = await _repositoryDisenos.Consultar(f => f.IdConsolidada == req.ConsolidadaId);
+                return await query.Select(f => f.Ruta).ToListAsync();
+            }
+            var query2 = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion);
+            return await query2.Select(f => f.Ruta).ToListAsync();
         }
 
         public async Task<bool> EliminarFotoRequisicion(int idFoto)
@@ -891,42 +903,48 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<TblRegistroDiseno>> ObtenerFotosConIdRequisicion(int idRequisicion)
         {
-            var query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion &&
-                f.Tipo == "diseno");
-            return await query.ToListAsync();
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (req?.ConsolidadaId != null)
+            {
+                var query = await _repositoryDisenos.Consultar(f => f.IdConsolidada == req.ConsolidadaId && f.Tipo == "diseno");
+                return await query.ToListAsync();
+            }
+            var query2 = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion && f.Tipo == "diseno");
+            return await query2.ToListAsync();
         }
 
         public async Task<bool> GuardarArchivosAtencion(
             int idRequisicion,
-            //List<IFormFile> cotizaciones,
             List<IFormFile> cuadroComparativo,
             List<IFormFile> anexos,
             string webRootPath)
         {
+            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+
             async Task Guardar(List<IFormFile> archivos, string carpetaNombre, string tipo)
             {
                 if (!archivos.Any()) return;
-                var carpeta = Path.Combine(webRootPath, "uploads", carpetaNombre, idRequisicion.ToString());
-                Directory.CreateDirectory(carpeta);
+                var rutaBase = Path.Combine(webRootPath, "uploads", carpetaNombre, carpeta);
+                Directory.CreateDirectory(rutaBase);
 
                 foreach (var archivo in archivos)
                 {
                     if (archivo.Length == 0) continue;
                     var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
-                    using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+                    using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
                         await archivo.CopyToAsync(stream);
 
                     await _repositoryDisenos.Crear(new TblRegistroDiseno
                     {
-                        IdRequisicion = idRequisicion,
-                        Ruta = $"/uploads/{carpetaNombre}/{idRequisicion}/{nombre}",
+                        IdRequisicion = idRequiDest,
+                        IdConsolidada = idConsolDest,
+                        Ruta = $"/uploads/{carpetaNombre}/{carpeta}/{nombre}",
                         FechaSubida = DateTime.Now,
                         Tipo = tipo
                     });
                 }
             }
 
-           // await Guardar(cotizaciones, "cotizaciones", "cotizacion");
             await Guardar(cuadroComparativo, "cuadro_comparativo", "cuadro_comparativo");
             await Guardar(anexos, "Anexos", "anexo");
             return true;
@@ -937,24 +955,30 @@ namespace Inventario.BLL.Implementacion
         {
             if (archivo == null || archivo.Length == 0) return false;
 
-            var carpeta = Path.Combine(webRootPath, "uploads", "Proveedor", idRequisicion.ToString());
-            Directory.CreateDirectory(carpeta);
+            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            var rutaBase = Path.Combine(webRootPath, "uploads", "Proveedor", carpeta);
+            Directory.CreateDirectory(rutaBase);
 
             var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
-            using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+            using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
                 await archivo.CopyToAsync(stream);
 
-            // Eliminar versiÃ³n anterior del mismo tipo si existe
-            var queryPrev = await _repositoryDisenos.Consultar(f =>
-                f.IdRequisicion == idRequisicion && f.Tipo == $"proveedor_{tipoDocumento}");
+            // Eliminar versión anterior del mismo tipo si existe
+            System.Linq.Expressions.Expression<Func<TblRegistroDiseno, bool>> filtroPrev;
+            if (idConsolDest.HasValue)
+                filtroPrev = f => f.IdConsolidada == idConsolDest && f.Tipo == $"proveedor_{tipoDocumento}";
+            else
+                filtroPrev = f => f.IdRequisicion == idRequisicion && f.Tipo == $"proveedor_{tipoDocumento}";
+            var queryPrev = await _repositoryDisenos.Consultar(filtroPrev);
             var previos = await queryPrev.ToListAsync();
             foreach (var p in previos)
                 await _repositoryDisenos.Eliminar(p);
 
             await _repositoryDisenos.Crear(new TblRegistroDiseno
             {
-                IdRequisicion = idRequisicion,
-                Ruta = $"/uploads/Proveedor/{idRequisicion}/{nombre}",
+                IdRequisicion = idRequiDest,
+                IdConsolidada = idConsolDest,
+                Ruta = $"/uploads/Proveedor/{carpeta}/{nombre}",
                 FechaSubida = DateTime.Now,
                 Tipo = $"proveedor_{tipoDocumento}"
             });
@@ -964,8 +988,12 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion)
         {
-            var query = await _repositoryDisenos.Consultar(f =>
-                f.IdRequisicion == idRequisicion && f.Tipo.StartsWith("proveedor_"));
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            IQueryable<TblRegistroDiseno> query;
+            if (req?.ConsolidadaId != null)
+                query = await _repositoryDisenos.Consultar(f => f.IdConsolidada == req.ConsolidadaId && f.Tipo.StartsWith("proveedor_"));
+            else
+                query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion && f.Tipo.StartsWith("proveedor_"));
 
             return await query.Select(f => new ArchivoAtencionDTO
             {
@@ -1046,6 +1074,14 @@ namespace Inventario.BLL.Implementacion
             return true;
         }
 
+        private async Task<(int? IdRequi, int? IdConsolidada, string Carpeta)> ResolverDestino(int idRequisicion)
+        {
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (req?.ConsolidadaId != null)
+                return (null, req.ConsolidadaId, $"consolidada_{req.ConsolidadaId}");
+            return (idRequisicion, null, idRequisicion.ToString());
+        }
+
         private string GenerarSelloDigital()
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
@@ -1056,17 +1092,19 @@ namespace Inventario.BLL.Implementacion
         {
             if (archivo == null || archivo.Length == 0) return false;
 
-            var carpeta = Path.Combine(webRootPath, "uploads", "PedidoCompra", idRequisicion.ToString());
-            Directory.CreateDirectory(carpeta);
+            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            var rutaBase = Path.Combine(webRootPath, "uploads", "PedidoCompra", carpeta);
+            Directory.CreateDirectory(rutaBase);
 
             var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
-            using (var stream = new FileStream(Path.Combine(carpeta, nombre), FileMode.Create))
+            using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
                 await archivo.CopyToAsync(stream);
 
             await _repositoryDisenos.Crear(new TblRegistroDiseno
             {
-                IdRequisicion = idRequisicion,
-                Ruta = $"/uploads/PedidoCompra/{idRequisicion}/{nombre}",
+                IdRequisicion = idRequiDest,
+                IdConsolidada = idConsolDest,
+                Ruta = $"/uploads/PedidoCompra/{carpeta}/{nombre}",
                 FechaSubida = DateTime.Now,
                 Tipo = "pedido_compra"
             });
@@ -1172,7 +1210,12 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<List<TblRegistroDiseno>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion)
         {
-            var query = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            IQueryable<TblRegistroDiseno> query;
+            if (req?.ConsolidadaId != null)
+                query = await _repositoryDisenos.Consultar(a => a.IdConsolidada == req.ConsolidadaId);
+            else
+                query = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
             return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
         }
 

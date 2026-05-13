@@ -445,6 +445,10 @@ public partial class DbSigereContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Tipo).HasMaxLength(50);
 
+            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblRegistroDisenos)
+                .HasForeignKey(d => d.IdConsolidada)
+                .HasConstraintName("FK_TblRegistroDisenos_TblConsolidadas");
+
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblRegistroDisenos)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_TblRegistroDisenos_tblRequisicion");
