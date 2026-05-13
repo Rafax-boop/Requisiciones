@@ -111,9 +111,13 @@
     var urlPartidasConsolidada = container
         ? container.getAttribute("data-url-partidas-consolidada") : "";
 
-    var _modoConsolidada = false;
-    var _idConsolidadaWizard = null;
-    var _idConsolidadaAtender = null;
+    var urlObtenerOpcionesGanadorConsolidada = container
+        ? container.getAttribute("data-url-obtener-opciones-ganador-consolidada")
+        : "";
+
+    window._modoConsolidada = false;
+    window._idConsolidadaWizard = null;
+    window._idConsolidadaAtender = null;
 
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -500,15 +504,26 @@
 
         asegurarControlesGanador();
 
-        // En modo consolidada usar la primera hija como referencia para ganador
-        var idReqGanador = _modoConsolidada
-            ? (CACHE_PARTIDAS.length ? CACHE_PARTIDAS[0].idRequisicionPorDetalle
-                ? Object.values(CACHE_PARTIDAS[0].idRequisicionPorDetalle)[0] : null
-                : null)
-            : _idRequiCotizaciones;
+        // ── FIX: determinar idRequisicion según modo ──
+        var idReqGanador = null;
+        if (window._modoConsolidada) {
+            // Sacar la primera requisición del mapa de partidas consolidadas
+            for (var i = 0; i < CACHE_PARTIDAS.length; i++) {
+                var mapa = CACHE_PARTIDAS[i].idRequisicionPorDetalle;
+                if (mapa) {
+                    var vals = Object.values(mapa);
+                    if (vals.length) {
+                        idReqGanador = vals[0];
+                        break;
+                    }
+                }
+            }
+        } else {
+            idReqGanador = _idRequiCotizaciones;
+        }
 
         if (!idReqGanador) {
-            Swal.fire({ icon: "error", title: "No se pudo determinar la requisición." });
+            Swal.fire({ icon: "error", title: "No se pudo determinar la requisición para el ganador." });
             return;
         }
 
@@ -531,6 +546,7 @@
             }).fail(function () {
                 var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
                 wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
+                $("#wizardGanadorJustificacion").val("");
                 pintarOpcionesGanador();
                 $("#wizardPasoGanador").show();
             });
@@ -1341,7 +1357,7 @@
     };
 
     window.atenderConsolidada = function (idConsolidada) {
-        _idConsolidadaAtender = idConsolidada;
+        window._idConsolidadaAtender = idConsolidada;
 
         // Limpiar modal
         document.getElementById("atenderConsArticulosBody").innerHTML = "";
@@ -1397,17 +1413,21 @@
             return;
         }
 
-        // Activar modo consolidada
-        _modoConsolidada = true;
-        _idConsolidadaWizard = _idConsolidadaAtender;
-
-        // _idRequiCotizaciones lo dejamos en null — no se usará para cargar partidas
-        _idRequiCotizaciones = null;
+        window._modoConsolidada = true;
+        window._idConsolidadaWizard = window._idConsolidadaAtender;
+        window._idRequiCotizaciones = null;
 
         var el = document.getElementById("modalProveedoresRequisicion");
+
+        // ── FIX: elevar z-index para que quede sobre el modal de atender ──
+        el.style.zIndex = "1060";  // Bootstrap usa 1055 para modals apilados
+
         var instancia = bootstrap.Modal.getInstance(el);
-        if (instancia) instancia.show();
-        else new bootstrap.Modal(el, { backdrop: false, keyboard: false }).show();
+        if (instancia) {
+            instancia.show();
+        } else {
+            new bootstrap.Modal(el, { backdrop: false, keyboard: false }).show();
+        }
     };
 
     window.descargarCuadroConsolidada = function () {
@@ -2484,89 +2504,6 @@
       $("#wizardPasoGanador").hide();
     }
 
-    // ── Abrir el wizard: cargar partidas y cotizaciones previas ──
-      $(document).on("show.bs.modal", "#modalProveedoresRequisicion", function () {
-
-          cargarCatalogoProveedores();
-          proveedorIdx = 0;
-          proveedoresWizard = [];
-          wizardOpciones = [];
-          wizardIdGanador = 0;
-          wizardGanadorManual = false;
-
-          $("#modalProveedoresFilas").hide();
-          $("#wizardPasoGanador").hide();
-          $("#wizardProveedorActual").show();
-          $("#btnModalProveedoresAgregar").show();
-          $("#btnWizardSiguiente").show();
-          $("#btnWizardAnterior").hide();
-
-          if (_modoConsolidada && _idConsolidadaWizard) {
-              // ── Modo consolidada: cargar partidas agrupadas ──
-              $.get(urlPartidasConsolidada,
-                  { idConsolidada: _idConsolidadaWizard },
-                  function (partidas) {
-                      // Normalizar al formato que espera el wizard
-                      // El wizard usa CACHE_PARTIDAS internamente
-                      CACHE_PARTIDAS = partidas.map(function (p) {
-                          return {
-                              idRequiDetalle: p.idRequiDetalle,
-                              idArticulo: p.idArticulo,
-                              nombrePartida: p.descripcion,
-                              descripcion: p.descripcion,
-                              descripcionDetallada: p.descripcionDetallada,
-                              cantidad: p.cantidadTotal,
-                              unidadMedida: p.unidadMedida,
-                              numPartida: p.numPartida,
-                              idsRequiDetalle: p.idsRequiDetalle,
-                              idRequisicionPorDetalle: p.idRequisicionPorDetalle  // ← nuevo
-                          };
-                      });
-                      CACHE_PARTIDAS_REQUI = "consolidada_" + _idConsolidadaWizard;
-
-                      // Cargar cotizaciones previas usando el idRequiDetalle representante
-                      var idRepresentante = CACHE_PARTIDAS.length
-                          ? CACHE_PARTIDAS[0].idRequiDetalle : null;
-
-                      if (idRepresentante) {
-                          $.get(urlObtenerCotizaciones,
-                              { idRequisicion: idRepresentante },
-                              function (cotizaciones) {
-                                  reconstruirProveedoresDesdeCotizaciones(cotizaciones);
-                                  renderizarProveedorActual();
-                              }
-                          ).fail(function () {
-                              proveedoresWizard = [crearProveedorVacio()];
-                              renderizarProveedorActual();
-                          });
-                      } else {
-                          proveedoresWizard = [crearProveedorVacio()];
-                          renderizarProveedorActual();
-                      }
-                  }
-              ).fail(function () {
-                  Swal.fire({ icon: "error", title: "No se pudieron cargar las partidas." });
-              });
-
-          } else {
-              // ── Modo normal: comportamiento original ──
-              if (!_idRequiCotizaciones) return;
-
-              obtenerPartidasCotizacion(function () {
-                  $.get(urlObtenerCotizaciones,
-                      { idRequisicion: _idRequiCotizaciones },
-                      function (cotizaciones) {
-                          reconstruirProveedoresDesdeCotizaciones(cotizaciones);
-                          renderizarProveedorActual();
-                      }
-                  ).fail(function () {
-                      proveedoresWizard = [crearProveedorVacio()];
-                      renderizarProveedorActual();
-                  });
-              });
-          }
-      });
-
     // ── Botón Siguiente / Guardar ──
     $(document).on("click", "#btnWizardSiguiente", function () {
       guardarFilasActuales();
@@ -2681,23 +2618,6 @@
       $fila.remove();
       actualizarOpcionesProveedores();
     });
-
-    // ── Limpiar select2 al cerrar ──
-    $(document).on(
-      "hidden.bs.modal",
-      "#modalProveedoresRequisicion",
-        function () {
-            _modoConsolidada = false;
-            _idConsolidadaWizard = null;
-        destruirSelect2En($(this));
-        // Resetear paso ganador para la próxima apertura
-        $("#wizardPasoGanador").hide().find("#btnConfirmarGanador").remove();
-        $("#modalProveedoresFilas").show();
-        $("#btnModalProveedoresAgregar").show();
-        $("#wizardProveedoresNombrePartida").show();
-        $("#btnWizardSiguiente").show();
-      },
-    );
   })();
 
   (function modalProveedoresPorProveedor() {
@@ -3163,64 +3083,97 @@
       actualizarJustificacionGanador();
     }
 
-    function mostrarPasoGanador() {
-      $("#wizardProveedorActual").hide();
-      $("#modalProveedoresFilas").hide();
-      $("#btnModalProveedoresAgregar").hide();
-      $("#btnWizardSiguiente").hide();
-      $("#btnWizardAnterior").hide();
-      document.getElementById("wizardProveedoresSubtitulo").textContent =
-        "Selecciona el proveedor ganador";
+      function mostrarPasoGanador() {
+          $("#wizardProveedorActual").hide();
+          $("#modalProveedoresFilas").hide();
+          $("#btnModalProveedoresAgregar").hide();
+          $("#btnWizardSiguiente").hide();
+          $("#btnWizardAnterior").hide();
+          document.getElementById("wizardProveedoresSubtitulo").textContent =
+              "Selecciona el proveedor ganador";
 
-      asegurarControlesGanador();
+          asegurarControlesGanador();
 
-      $.get(
-        urlObtenerOpcionesGanador,
-        { idRequisicion: _idRequiCotizaciones },
-        function (opciones) {
-          wizardOpciones = opciones || [];
-
-          $.get(
-            urlObtenerGanador,
-            { idRequisicion: _idRequiCotizaciones },
-            function (ganador) {
-              var sugerido = wizardOpciones.find(function (op) {
-                return op.esSugerido;
+          if (window._modoConsolidada) {
+              // ── Recopilar todos los idRequisicion del grupo ──
+              var idSet = {};
+              CACHE_PARTIDAS.forEach(function (p) {
+                  if (!p.idRequisicionPorDetalle) return;
+                  Object.values(p.idRequisicionPorDetalle).forEach(function (idReq) {
+                      idSet[idReq] = true;
+                  });
               });
+              var idsRequisiciones = Object.keys(idSet).map(Number);
 
-              if (ganador && ganador.idProveedor) {
-                wizardIdGanador = ganador.idProveedor;
-                $("#wizardGanadorJustificacion").val(
-                  ganador.justificacion || "",
-                );
-              } else {
-                wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
-                $("#wizardGanadorJustificacion").val("");
+              if (!idsRequisiciones.length) {
+                  Swal.fire({ icon: "error", title: "No se pudieron determinar las requisiciones." });
+                  return;
               }
 
-              pintarOpcionesGanador();
-              $("#wizardPasoGanador").show();
-            },
-          ).fail(function () {
-            var sugerido = wizardOpciones.find(function (op) {
-              return op.esSugerido;
-            });
-            wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
-            $("#wizardGanadorJustificacion").val("");
-            pintarOpcionesGanador();
-            $("#wizardPasoGanador").show();
-          });
-        },
-      ).fail(function () {
-        Swal.fire({
-          icon: "error",
-          title: "Error al cargar opciones de ganador.",
-        });
-        $("#wizardProveedorActual").show();
-        $("#btnModalProveedoresAgregar").show();
-        $("#btnWizardSiguiente").show();
-        $("#btnWizardAnterior").show();
-      });
+              // Construir query string con múltiples ids: ?idsRequisiciones=1&idsRequisiciones=2
+              var params = idsRequisiciones.map(function (id) {
+                  return "idsRequisiciones=" + id;
+              }).join("&");
+
+              $.get(urlObtenerOpcionesGanadorConsolidada + "?" + params, function (opciones) {
+                  wizardOpciones = opciones || [];
+
+                  // Para obtener ganador guardado usamos la primera requisición como referencia
+                  $.get(urlObtenerGanador, { idRequisicion: idsRequisiciones[0] }, function (ganador) {
+                      var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
+                      if (ganador && ganador.idProveedor) {
+                          wizardIdGanador = ganador.idProveedor;
+                          $("#wizardGanadorJustificacion").val(ganador.justificacion || "");
+                      } else {
+                          wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
+                          $("#wizardGanadorJustificacion").val("");
+                      }
+                      pintarOpcionesGanador();
+                      $("#wizardPasoGanador").show();
+                  }).fail(function () {
+                      var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
+                      wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
+                      pintarOpcionesGanador();
+                      $("#wizardPasoGanador").show();
+                  });
+
+              }).fail(function () {
+                  Swal.fire({ icon: "error", title: "Error al cargar opciones de ganador." });
+                  $("#wizardProveedorActual").show();
+                  $("#btnModalProveedoresAgregar").show();
+                  $("#btnWizardSiguiente").show();
+                  $("#btnWizardAnterior").show();
+              });
+
+          } else {
+              // ── Modo normal — sin cambios ──
+              $.get(urlObtenerOpcionesGanador, { idRequisicion: _idRequiCotizaciones }, function (opciones) {
+                  wizardOpciones = opciones || [];
+                  $.get(urlObtenerGanador, { idRequisicion: _idRequiCotizaciones }, function (ganador) {
+                      var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
+                      if (ganador && ganador.idProveedor) {
+                          wizardIdGanador = ganador.idProveedor;
+                          $("#wizardGanadorJustificacion").val(ganador.justificacion || "");
+                      } else {
+                          wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
+                          $("#wizardGanadorJustificacion").val("");
+                      }
+                      pintarOpcionesGanador();
+                      $("#wizardPasoGanador").show();
+                  }).fail(function () {
+                      var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
+                      wizardIdGanador = sugerido ? sugerido.idProveedor : 0;
+                      pintarOpcionesGanador();
+                      $("#wizardPasoGanador").show();
+                  });
+              }).fail(function () {
+                  Swal.fire({ icon: "error", title: "Error al cargar opciones de ganador." });
+                  $("#wizardProveedorActual").show();
+                  $("#btnModalProveedoresAgregar").show();
+                  $("#btnWizardSiguiente").show();
+                  $("#btnWizardAnterior").show();
+              });
+          }
       }
 
       window.cargarConsolidadas = function () {
@@ -3294,7 +3247,7 @@
 
           // Determinar a qué requisiciones guardar el ganador
           var idsRequisiciones = [];
-          if (_modoConsolidada) {
+          if (window._modoConsolidada) {
               // Obtener todos los idRequisicion únicos del mapa
               var idSet = {};
               CACHE_PARTIDAS.forEach(function (p) {
@@ -3378,41 +3331,85 @@
     );
     $(document).off("click", "#btnConfirmarGanador");
 
-    $(document).on(
-      "show.bs.modal",
-      "#modalProveedoresRequisicion",
-      function () {
-        if (!_idRequiCotizaciones) return;
+      $(document).on("show.bs.modal", "#modalProveedoresRequisicion", function () {
 
-        cargarCatalogoProveedores();
-        proveedorIdx = 0;
-        proveedoresWizard = [];
-        wizardOpciones = [];
-        wizardIdGanador = 0;
-        wizardGanadorManual = false;
+          cargarCatalogoProveedores();
+          proveedorIdx = 0;
+          proveedoresWizard = [];
+          wizardOpciones = [];
+          wizardIdGanador = 0;
+          wizardGanadorManual = false;
 
-        $("#modalProveedoresFilas").hide();
-        $("#wizardPasoGanador").hide();
-        $("#wizardProveedorActual").show();
-        $("#btnModalProveedoresAgregar").show();
-        $("#btnWizardSiguiente").show();
-        $("#btnWizardAnterior").hide();
+          $("#modalProveedoresFilas").hide();
+          $("#wizardPasoGanador").hide();
+          $("#wizardProveedorActual").show();
+          $("#btnModalProveedoresAgregar").show();
+          $("#btnWizardSiguiente").show();
+          $("#btnWizardAnterior").hide();
 
-        obtenerPartidasCotizacion(function () {
-          $.get(
-            urlObtenerCotizaciones,
-            { idRequisicion: _idRequiCotizaciones },
-            function (cotizaciones) {
-              reconstruirProveedoresDesdeCotizaciones(cotizaciones);
-              renderizarProveedorActual();
-            },
-          ).fail(function () {
-            proveedoresWizard = [crearProveedorVacio()];
-            renderizarProveedorActual();
-          });
-        });
-      },
-    );
+          if (window._modoConsolidada && window._idConsolidadaWizard) {
+              // ── Modo consolidada ──
+              $.get(urlPartidasConsolidada,
+                  { idConsolidada: window._idConsolidadaWizard },
+                  function (partidas) {
+                      CACHE_PARTIDAS = partidas.map(function (p) {
+                          return {
+                              idRequiDetalle: p.idRequiDetalle,
+                              idArticulo: p.idArticulo,
+                              nombrePartida: p.descripcion,
+                              descripcion: p.descripcion,
+                              descripcionDetallada: p.descripcionDetallada,
+                              cantidad: p.cantidadTotal,
+                              unidadMedida: p.unidadMedida,
+                              numPartida: p.numPartida,
+                              idsRequiDetalle: p.idsRequiDetalle,
+                              idRequisicionPorDetalle: p.idRequisicionPorDetalle
+                          };
+                      });
+                      CACHE_PARTIDAS_REQUI = "consolidada_" + _idConsolidadaWizard;
+
+                      var idReqRef = CACHE_PARTIDAS.length && CACHE_PARTIDAS[0].idRequisicionPorDetalle
+                          ? Object.values(CACHE_PARTIDAS[0].idRequisicionPorDetalle)[0]
+                          : null;
+
+                      if (idReqRef) {
+                          $.get(urlObtenerCotizaciones,
+                              { idRequisicion: idReqRef },
+                              function (cotizaciones) {
+                                  reconstruirProveedoresDesdeCotizaciones(cotizaciones);
+                                  renderizarProveedorActual();
+                              }
+                          ).fail(function () {
+                              proveedoresWizard = [crearProveedorVacio()];
+                              renderizarProveedorActual();
+                          });
+                      } else {
+                          proveedoresWizard = [crearProveedorVacio()];
+                          renderizarProveedorActual();
+                      }
+                  }
+              ).fail(function () {
+                  Swal.fire({ icon: "error", title: "No se pudieron cargar las partidas." });
+              });
+
+          } else {
+              // ── Modo normal ──
+              if (!_idRequiCotizaciones) return;
+
+              obtenerPartidasCotizacion(function () {
+                  $.get(urlObtenerCotizaciones,
+                      { idRequisicion: _idRequiCotizaciones },
+                      function (cotizaciones) {
+                          reconstruirProveedoresDesdeCotizaciones(cotizaciones);
+                          renderizarProveedorActual();
+                      }
+                  ).fail(function () {
+                      proveedoresWizard = [crearProveedorVacio()];
+                      renderizarProveedorActual();
+                  });
+              });
+          }
+      });
 
     $(document).on("click", "#btnModalProveedoresAgregar", function () {
       if (!validarProveedorActual()) return;
@@ -3444,7 +3441,7 @@
               return;
           }
 
-          if (_modoConsolidada) {
+          if (window._modoConsolidada) {
               // expandir cotizaciones a todos los IdRequisicionDetalle del grupo
               var cotizacionesExpandidas = [];
               cotizaciones.forEach(function (cot) {
@@ -3537,7 +3534,10 @@
     $(document).on(
       "hidden.bs.modal",
       "#modalProveedoresRequisicion",
-      function () {
+        function () {
+            this.style.zIndex = "";
+            window._modoConsolidada = false;
+            window._idConsolidadaWizard = null;
         if ($selectProveedor().data("select2")) {
           $selectProveedor().select2("destroy");
         }

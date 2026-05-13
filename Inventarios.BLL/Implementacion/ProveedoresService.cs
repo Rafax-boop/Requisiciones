@@ -341,5 +341,71 @@ namespace Inventario.BLL.Implementacion
                 Justificacion = ganador.Justificacion ?? ""
             };
         }
+
+        public async Task<List<OpcionProveedorDTO>> ObtenerOpcionesGanadorConsolidada(List<int?> idsRequisiciones)
+        {
+            // Traer detalles de TODAS las requisiciones y sumar cantidades por artículo+proveedor
+            var queryDet = await _repositoryDetalle.Consultar(
+                d => idsRequisiciones.Contains(d.IdRequisicion));
+            var detalles = await queryDet.ToListAsync();
+
+            // Cantidad total por idRequisicionDetalle
+            var cantidadPorPartida = detalles.ToDictionary(
+                d => d.IdRequisicionDetalle,
+                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+
+            // Cotizaciones de TODAS las requisiciones
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => idsRequisiciones.Contains(c.IdRequisicion)
+                  && c.IdRequiDetalle.HasValue
+                  && c.Importe.HasValue
+                  && c.IdProveedor.HasValue);
+
+            var filas = await queryCot
+                .Select(c => new
+                {
+                    c.IdProveedor,
+                    NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
+                    c.IdRequiDetalle,
+                    c.Importe,
+                    c.Iva
+                })
+                .ToListAsync();
+
+            // Agrupar por proveedor y sumar (importe × cantidad) de todas las partidas/requisiciones
+            var opciones = filas
+                .GroupBy(c => new { c.IdProveedor, c.NombreProveedor })
+                .Select(g =>
+                {
+                    var subtotal = g.Sum(c =>
+                    {
+                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                        return c.Importe!.Value * cant;
+                    });
+                    var iva = g.Sum(c =>
+                    {
+                        if (c.Iva != true) return 0m;
+                        var cant = cantidadPorPartida.TryGetValue(c.IdRequiDetalle!.Value, out var q) ? q : 1m;
+                        return c.Importe!.Value * cant * 0.16m;
+                    });
+                    return new OpcionProveedorDTO
+                    {
+                        IdProveedor = g.Key.IdProveedor ?? 0,
+                        NombreProveedor = g.Key.NombreProveedor ?? "",
+                        Subtotal = subtotal,
+                        Iva = iva,
+                        Total = subtotal + iva,
+                        EsSugerido = false
+                    };
+                })
+                .Where(o => o.IdProveedor > 0 && o.Total > 0)
+                .OrderBy(o => o.Total)
+                .ToList();
+
+            if (opciones.Any())
+                opciones.First().EsSugerido = true;
+
+            return opciones;
+        }
     }
 }

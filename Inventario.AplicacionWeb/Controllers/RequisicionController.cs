@@ -783,5 +783,15 @@ namespace Inventario.AplicacionWeb.Controllers
 
             return candidato;
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerOpcionesGanadorConsolidada([FromQuery] List<int?> idsRequisiciones)
+        {
+            if (idsRequisiciones == null || !idsRequisiciones.Any())
+                return BadRequest("Se requiere al menos una requisición.");
+
+            var opciones = await _proveedoresService.ObtenerOpcionesGanadorConsolidada(idsRequisiciones);
+            return Ok(opciones);
+        }
     }
 }
