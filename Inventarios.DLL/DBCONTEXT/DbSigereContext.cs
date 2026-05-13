@@ -186,6 +186,23 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.TipoPrograma)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.IdEstatusNavigation).WithMany(p => p.TblConsolidada)
+                .HasForeignKey(d => d.IdEstatus)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TblConsolidadas_TblEstatus");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblConsolidadaIdUsuarioNavigations)
+                .HasForeignKey(d => d.IdUsuario)
+                .HasConstraintName("FK_TblConsolidadas_TblUsuario2");
+
+            entity.HasOne(d => d.IdUsuarioFinanNavigation).WithMany(p => p.TblConsolidadaIdUsuarioFinanNavigations)
+                .HasForeignKey(d => d.IdUsuarioFinan)
+                .HasConstraintName("FK_TblConsolidadas_TblUsuario1");
+
+            entity.HasOne(d => d.IdUsuarioMatNavigation).WithMany(p => p.TblConsolidadaIdUsuarioMatNavigations)
+                .HasForeignKey(d => d.IdUsuarioMat)
+                .HasConstraintName("FK_TblConsolidadas_TblUsuario");
         });
 
         modelBuilder.Entity<TblConsolidadasDetalle>(entity =>

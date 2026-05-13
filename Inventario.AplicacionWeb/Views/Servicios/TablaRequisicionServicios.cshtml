@@ -43,7 +43,12 @@
      data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Servicios")"
      data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
      data-url-requis-consolidables="@Url.Action("ObtenerRequisicionesConsolidables", "Consolidada")"
-     data-url-crear-consolidada="@Url.Action("CrearConsolidada", "Consolidada")">
+     data-url-crear-consolidada="@Url.Action("CrearConsolidada", "Consolidada")"
+     data-url-listar-consolidadas="@Url.Action("ListarConsolidadas", "Consolidada")"
+     data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidada", "Consolidada")"
+     data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Consolidada")"
+     data-url-subir-archivos-consolidada="@Url.Action("SubirArchivosAtencionConsolidada", "Consolidada")"
+     data-url-partidas-consolidada="@Url.Action("ObtenerPartidasConsolidada", "Consolidada")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -100,11 +105,17 @@
 
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
+        @if (!User.IsInRole("1"))
+        {
+            <button type="button" class="almacen-tabs-btn" data-tab="consolidadas">
+                Requisiciones consolidadas
+            </button>
+            <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
+        }
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
         @if (!User.IsInRole("1"))
         {
-            <button type="button" class="almacen-tabs-btn" data-tab="verificadas">Requisiciones verificadas</button>
             <button type="button" class="almacen-tabs-btn" data-tab="documentos">Requisiciones con documentos</button>
         }
     </nav>
@@ -113,7 +124,7 @@
         var numColsReq = 8;
         if (User.IsInRole("6")) numColsReq++;
         if (User.IsInRole("7") || User.IsInRole("6")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.ConsolidadaId == null && r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 16 || r.IdEstatus == 18).ToList();
@@ -585,6 +596,35 @@
             <div id="paginacionVerificadas" class="almacen-paginacion"></div>
         </div>
     </div>
+
+        <div id="tab-consolidadas" class="almacen-tab-panel">
+            <div class="container-formulario tabla-container">
+                <table class="tabla-requisiciones" id="tablaConsolidadas">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Folio</th>
+                            <th>Fecha de creación</th>
+                            <th>Departamentos</th>
+                            <th>Requisiciones</th>
+                            <th style="text-align:center">Partidas</th>
+                            <th>Estado</th>
+                            <th>Creado por</th>
+                            <th style="text-align:center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyConsolidadas">
+                        <tr>
+                            <td colspan="9" class="text-center" style="padding:2rem;">
+                                <i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;"></i>
+                                Cargando consolidadas...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="paginacionConsolidadas" class="almacen-paginacion"></div>
+            </div>
+        </div>
 
     <!-- Pestaña Requisiciones con documentos -->
     <div id="tab-documentos" class="almacen-tab-panel">
@@ -1281,6 +1321,198 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalDetalleConsolidada" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content modal-premium modal-premium-ancha">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="consolidadaTitulo">
+                        Requisición Consolidada
+                    </h5>
+                    <p class="modal-subtitulo-premium" id="consolidadaSubtitulo">Cargando...</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+
+                <!-- Cards de requisiciones hijas -->
+                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;">
+                    <i class="fa-solid fa-layer-group" style="color:#fe6291;margin-right:6px;"></i>
+                    Requisiciones agrupadas
+                </p>
+                <div id="consolidadaHijas"
+                     style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+                </div>
+
+                <hr />
+
+                <!-- Tabla de artículos -->
+                <p style="font-size:13px;font-weight:600;color:var(--slate-700);
+                    margin-bottom:10px;margin-top:4px;">
+                    <i class="fa-solid fa-list" style="color:#fe6291;margin-right:6px;"></i>
+                    Artículos consolidados
+                </p>
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaArticulosConsolidada">
+                        <thead>
+                            <tr>
+                                <th>Requisición</th>
+                                <th style="text-align:center">Partida</th>
+                                <th style="text-align:center">Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Descripción</th>
+                                <th>Descripción Detallada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="consolidadaArticulosBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalAtenderConsolidada" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium modal-premium-ancha">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Atender Consolidada</h5>
+                    <p class="modal-subtitulo-premium" id="atenderConsolidadaSubtitulo">
+                        Cargando...
+                    </p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+
+                <!-- Actividad y FF -->
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Actividad</label>
+                            <select id="consActividadSelect" class="form-select select2">
+                                <option value="">-- Selecciona actividad --</option>
+                                @foreach (var act in Model.ListaActividades)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Fuente de Financiamiento</label>
+                            <select id="consFfSelect" class="form-select select2">
+                                <option value="">-- Selecciona FF --</option>
+                                @foreach (var ff in Model.ListaFuentesFinanciamiento)
+                                {
+                                    <option value="@ff.Value">@ff.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="formulario-input">
+                            <label>Tipo de Programa</label>
+                            <select id="consTipoProgramaSelect" class="form-select select2">
+                                <option value="">-- Selecciona --</option>
+                                <option value="1">Prioritario</option>
+                                <option value="2">Adicional</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- Artículos consolidados (readonly) -->
+                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;">
+                    <i class="fa-solid fa-list" style="color:#fe6291;margin-right:6px;"></i>
+                    Artículos
+                </p>
+                <div class="table-responsive-container" style="margin-bottom:20px;">
+                    <table class="tabla-requisiciones">
+                        <thead>
+                            <tr>
+                                <th>Requisición</th>
+                                <th style="text-align:center">Partida</th>
+                                <th style="text-align:center">Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="atenderConsArticulosBody"></tbody>
+                    </table>
+                </div>
+
+                <hr />
+
+                <!-- Cotizaciones: reutiliza el wizard existente -->
+                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;">
+                    <i class="fa-solid fa-file-invoice-dollar"
+                       style="color:#fe6291;margin-right:6px;"></i>
+                    Cotizaciones
+                </p>
+                <div style="margin-bottom:16px;">
+                    <div id="estadoProveedoresConsolidada"
+                         style="display:none;margin-bottom:10px;color:#15803d;
+                        font-size:13px;font-weight:600;">
+                        Proveedores seleccionados correctamente
+                    </div>
+                    <button type="button" class="btn boton-rosa"
+                            onclick="abrirWizardCotizacionesConsolidada()">
+                        <span id="textoBtnProveedoresCons">Seleccionar Proveedores</span>
+                    </button>
+                </div>
+
+                <!-- Cuadro comparativo -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="formulario-input">
+                            <label>Cuadro comparativo</label>
+                            <button type="button" id="btnCuadroConsolidada"
+                                    class="btn boton-rosa w-100 mb-2"
+                                    onclick="descargarCuadroConsolidada()" disabled>
+                                Descargar cuadro comparativo
+                            </button>
+                            <input type="file" id="inputCuadroConsolidada"
+                                   class="input-file-rosa" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="formulario-input">
+                            <label>Documentos Anexos</label>
+                            <input type="file" id="inputAnexosConsolidada"
+                                   class="input-file-rosa" multiple />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="formulario-input">
+                    <label>Observaciones</label>
+                    <textarea id="txtObsConsolidada" class="form-control" rows="3"
+                              placeholder="Observaciones..."></textarea>
+                </div>
+
+                <div style="margin-top:20px;text-align:right;">
+                    <button type="button" class="btn boton-rosa"
+                            onclick="enviarAtencionConsolidada()">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar
+                    </button>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>

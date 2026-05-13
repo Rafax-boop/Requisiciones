@@ -37,6 +37,14 @@ public partial class TblConsolidada
 
     public int? IdUsuario { get; set; }
 
+    public virtual TblEstatus IdEstatusNavigation { get; set; } = null!;
+
+    public virtual TblUsuario? IdUsuarioFinanNavigation { get; set; }
+
+    public virtual TblUsuario? IdUsuarioMatNavigation { get; set; }
+
+    public virtual TblUsuario? IdUsuarioNavigation { get; set; }
+
     public virtual ICollection<TblConsolidadasDetalle> TblConsolidadasDetalles { get; set; } = new List<TblConsolidadasDetalle>();
 
     public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();

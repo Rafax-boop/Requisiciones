@@ -11,5 +11,7 @@ public partial class TblEstatus
 
     public bool Actvio { get; set; }
 
+    public virtual ICollection<TblConsolidada> TblConsolidada { get; set; } = new List<TblConsolidada>();
+
     public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 }

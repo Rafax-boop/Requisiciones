@@ -1,4 +1,5 @@
 ﻿using Inventario.AplicacionWeb.Models.ViewModels;
+using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,18 +26,76 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearConsolidada([FromBody] CrearConsolidadaRequest modelo)
+        public async Task<IActionResult> CrearConsolidada([FromBody] CrearConsolidadaRequest modelo, bool servicio)
         {
             if (modelo.IdsRequisiciones == null || modelo.IdsRequisiciones.Count < 2)
                 return BadRequest(new { mensaje = "Se requieren al menos 2 requisiciones." });
 
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario);
+            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario, servicio);
 
             if (resultado == null)
                 return BadRequest(new { mensaje = "No se pudo crear la consolidada. Verifica que las requisiciones no estén ya consolidadas." });
 
             return Ok(new { folioConsolidada = resultado.FolioConsolidada });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ListarConsolidadas(bool servicio)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            // Rol 3 o 7= analista: ve solo las asignadas a él
+            // Cualquier otro rol con acceso (ej. admin): ve todas
+            List<ConsolidadaDTO> lista;
+
+            if (User.IsInRole("3") || User.IsInRole("7"))
+                lista = await _consolidadaService.ListarConsolidadas(servicio, idUsuario);
+            else
+                lista = await _consolidadaService.ListarConsolidadas(servicio);
+
+            return Ok(lista);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerDetalleConsolidada(int idConsolidada)
+        {
+            var detalle = await _consolidadaService.ObtenerDetalleConsolidada(idConsolidada);
+            if (detalle == null)
+                return NotFound(new { mensaje = "Consolidada no encontrada." });
+
+            return Ok(detalle);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AtenderConsolidada([FromBody] AtenderConsolidadaDTO modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _consolidadaService.AtenderConsolidada(modelo, idUsuario);
+            if (!ok) return BadRequest();
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirArchivosAtencionConsolidada(
+            int IdConsolidada,
+            List<IFormFile>? CuadroComparativo,
+            List<IFormFile>? Anexos)
+        {
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            await _consolidadaService.GuardarArchivosAtencionConsolidada(
+                IdConsolidada,
+                CuadroComparativo ?? new List<IFormFile>(),
+                Anexos ?? new List<IFormFile>(),
+                webRootPath);
+            return Ok();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerPartidasConsolidada(int idConsolidada)
+        {
+            var partidas = await _consolidadaService.ObtenerPartidasConsolidada(idConsolidada);
+            return Ok(partidas);
         }
     }
 }
