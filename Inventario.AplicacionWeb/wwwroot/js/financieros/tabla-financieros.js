@@ -31,6 +31,14 @@
         ? container.getAttribute("data-url-obtener-todos-archivos") : "";
     var urlDescargarTodosArchivosZip = container
         ? container.getAttribute("data-url-descargar-todos-archivos-zip") : "";
+    var urlConsolidadas = container
+        ? container.getAttribute("data-url-consolidadas") : "";
+    var urlAsignarConsolidada = container
+        ? container.getAttribute("data-url-asignar-consolidada") : "";
+    var urlDetalleConsolidada = container
+        ? container.getAttribute("data-url-detalle-consolidada") : "";
+    var esRol8 = container ? container.getAttribute("data-es-rol8") === "true" : false;
+    var esRol9 = container ? container.getAttribute("data-es-rol9") === "true" : false;
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -52,8 +60,10 @@
     const atenderUrl = contenedor ? contenedor.dataset.urlAtender : "";
 
     var _idRequiAsignar = null;
+    var _idConsolidadaAsignar = null;
     var fechaSeleccionada = "";
     var requisicionActual = null;
+    var consolidadaActual = null;
 
     var fpInstance = flatpickr("#filtroFecha", {
         locale: "es",
@@ -65,6 +75,7 @@
             var btnLimpiar = document.getElementById("btnLimpiarFecha");
             if (btnLimpiar) btnLimpiar.style.display = dateStr ? "inline" : "none";
             filtrarTabla();
+            aplicarFiltrosConsolidadas();
         },
     });
 
@@ -74,6 +85,7 @@
         var btnLimpiar = document.getElementById("btnLimpiarFecha");
         if (btnLimpiar) btnLimpiar.style.display = "none";
         filtrarTabla();
+        aplicarFiltrosConsolidadas();
     };
 
     const TAMANO_PAGINA_REQUISICIONES = 7;
@@ -235,8 +247,20 @@
     }
 
     // ── Modal asignar — solo el select ──────────────────────────────────────
-    window.abrirModalAsignar = function (idRequi) {
-        _idRequiAsignar = idRequi;
+    window.abrirModalAsignar = function (id, tipo) {
+        tipo = tipo || "requi";
+        _idRequiAsignar = tipo === "requi" ? id : null;
+        _idConsolidadaAsignar = tipo === "consolidada" ? id : null;
+
+        var modalTitle = document.querySelector("#modalAsignar .modal-titulo-premium");
+        var modalSubtitle = document.querySelector("#modalAsignar .modal-subtitulo-premium");
+        if (tipo === "consolidada") {
+            if (modalTitle) modalTitle.textContent = "Asignar consolidada";
+            if (modalSubtitle) modalSubtitle.textContent = "Selecciona el analista financiero para esta consolidada";
+        } else {
+            if (modalTitle) modalTitle.textContent = "Asignar requisición";
+            if (modalSubtitle) modalSubtitle.textContent = "Selecciona el analista";
+        }
 
         var $select = $("#selectUsuarioAsignar");
         if ($select.data("select2")) $select.select2("destroy");
@@ -264,7 +288,17 @@
             Swal.fire({ icon: "warning", title: "Selecciona un responsable", confirmButtonText: "Ok" });
             return;
         }
-        $.post(urlAsignar, { idRequi: _idRequiAsignar, idUsuario: idUsuario }, function (res) {
+
+        var postUrl, postData;
+        if (_idConsolidadaAsignar) {
+            postUrl = urlAsignarConsolidada;
+            postData = { idConsolidada: _idConsolidadaAsignar, idUsuario: idUsuario };
+        } else {
+            postUrl = urlAsignar;
+            postData = { idRequi: _idRequiAsignar, idUsuario: idUsuario };
+        }
+
+        $.post(postUrl, postData, function (res) {
             if (res.success) {
                 bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
                 Swal.fire({
@@ -328,6 +362,13 @@
     window.verDetalle = function (idMaestro, modo) {
         modo = modo || "ver";
 
+        // Hide "Req." column (only visible in consolidada atender mode)
+        document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = "none"; });
+
+        // Restore articles table visibility (may have been hidden by consolidada detail)
+        var detalleTableContainer = document.querySelector("#tablaDetalle")?.closest(".table-responsive-container");
+        if (detalleTableContainer) detalleTableContainer.style.display = "";
+
         // Limpiar al abrir
         var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
         if (archivosReadonly) archivosReadonly.innerHTML = "";
@@ -342,6 +383,16 @@
         if (inputSiaf) inputSiaf.value = "";
         if (inputTablaApi) inputTablaApi.value = "";
         if (inputNumeroApi) inputNumeroApi.value = "";
+
+        // Restore modal title (in case it was changed by consolidada detail)
+        var modalTitle = document.querySelector("#modalDetalle .modal-titulo-premium");
+        if (modalTitle) modalTitle.textContent = "Artículos de la Requisición";
+        var modalSubtitle = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+        if (modalSubtitle) modalSubtitle.textContent = "Detalle de partidas solicitadas";
+
+        // Restore "Editar Tabla API" button visibility (hidden in consolidada mode)
+        var btnEditarTablaApi = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
+        if (btnEditarTablaApi) btnEditarTablaApi.style.display = "";
 
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
@@ -1221,6 +1272,422 @@
             });
     };
 
+    // ── Consolidada: cargar, filtrar, detalle ───────────────────────────────
+    var CONSOL_COLSPAN = 9; // # + Folio + Deptos + #Req + Fecha + Estado + Asignado + Estatus + Acciones
+
+    window.cargarConsolidadas = function () {
+        var tbody = document.getElementById("tbodyConsolidadas");
+        if (!tbody) return;
+
+        var URL = urlConsolidadas;
+        if (!URL) return;
+
+        fetch(URL, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.length) {
+                    tbody.innerHTML = '<tr class="fila-vacia"><td colspan="' + CONSOL_COLSPAN + '" class="text-center">No hay consolidadas en seguimiento</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                data.forEach(function (item, idx) {
+                    var tr = document.createElement("tr");
+                    tr.className = "fila-requi";
+                    tr.setAttribute("data-consolidada-id", item.consolidadaId);
+                    tr.setAttribute("data-estatus", item.idEstatus);
+                    tr.setAttribute("data-folio", (item.folioConsolidada || "").toLowerCase());
+                    tr.setAttribute("data-deptos", (item.departamentos || "").toLowerCase());
+
+                    var badgeHtml = item.estatus || "";
+
+                    var diasHtml = "";
+                    if (item.diasAsignado > 0 || item.nombreAsignado) {
+                        var claseColor = item.diasAsignado <= 3 ? "badge-semaforo-verde" : (item.diasAsignado <= 5 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                        diasHtml = '<span class="badge-semaforo-premium ' + claseColor + '">' +
+                            '<i class="fa-solid fa-circle"></i>' +
+                            '<span>' + (item.diasAsignado === 0 ? "Hoy" : item.diasAsignado + (item.diasAsignado === 1 ? " día" : " días")) + '</span>' +
+                            '</span>';
+                    } else {
+                        diasHtml = '<span class="text-muted" style="font-size: 11px; font-style: italic;">Sin asignación</span>';
+                    }
+
+                    var accionesHtml = '<div class="acciones-grupo" style="justify-content:center">' +
+                        '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidadaFinancieros(' + item.consolidadaId + ')">' +
+                        '<i class="fa-solid fa-eye"></i></button>';
+                    if (esRol8 && item.idEstatus === 13) {
+                        accionesHtml += '<button class="btn-accion" title="Asignar Consolidada" onclick="abrirModalAsignar(' + item.consolidadaId + ', \'consolidada\')">' +
+                            '<i class="fa-solid fa-clipboard-user"></i></button>';
+                    }
+                    if (esRol9 && item.idEstatus >= 14) {
+                        accionesHtml += '<button class="btn-accion" title="Atender" onclick="atenderConsolidada(' + item.consolidadaId + ')">' +
+                            '<i class="fa-solid fa-hand-holding"></i></button>';
+                    }
+                    accionesHtml += '</div>';
+
+                    var celdas = '';
+                    celdas += '<td style="text-align:center">' + (idx + 1) + '</td>';
+                    celdas += '<td>' + item.folioConsolidada + '</td>';
+                    celdas += '<td>' + item.departamentos + '</td>';
+                    celdas += '<td style="text-align:center">' + item.cantidadRequis + '</td>';
+                    celdas += '<td>' + item.fechaCreacion + '</td>';
+                    celdas += '<td>' + badgeHtml + '</td>';
+                    if (esRol8) {
+                        celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
+                    }
+                    if (esRol8 || esRol9) {
+                        celdas += '<td>' + diasHtml + '</td>';
+                    }
+                    celdas += '<td>' + accionesHtml + '</td>';
+
+                    tr.innerHTML = celdas;
+                    tbody.appendChild(tr);
+                });
+
+                aplicarFiltrosConsolidadas();
+            })
+            .catch(function (err) {
+                console.error("Error cargando consolidadas:", err);
+                tbody.innerHTML = '<tr class="fila-vacia"><td colspan="' + CONSOL_COLSPAN + '" class="text-center">Error al cargar los datos</td></tr>';
+            });
+    };
+
+    function aplicarFiltrosConsolidadas() {
+        var tbody = document.getElementById("tbodyConsolidadas");
+        if (!tbody) return;
+
+        var textoFolio = ((document.getElementById("filtroNumReq") && document.getElementById("filtroNumReq").value) || "").toLowerCase().trim();
+        var textoDepto = ((document.getElementById("filtroDepartamento") && document.getElementById("filtroDepartamento").value) || "").toLowerCase().trim();
+        var textoEstado = ((document.getElementById("filtroEstado") && document.getElementById("filtroEstado").value) || "").toLowerCase().trim();
+
+        var filas = tbody.querySelectorAll("tr.fila-requi");
+        var visibles = 0;
+        filas.forEach(function (fila) {
+            var folio = fila.getAttribute("data-folio") || "";
+            var deptos = fila.getAttribute("data-deptos") || "";
+            var estado = (fila.querySelector("td:nth-child(6)")?.textContent || "").toLowerCase().trim();
+            var fecha = (fila.querySelector("td:nth-child(5)")?.textContent || "").trim();
+
+            var pasaFolio = !textoFolio || folio.indexOf(textoFolio) !== -1;
+            var pasaDepto = !textoDepto || deptos.indexOf(textoDepto) !== -1;
+            var pasaEstado = !textoEstado || estado.indexOf(textoEstado) !== -1;
+            var pasaFecha = !fechaSeleccionada || fecha === fechaSeleccionada;
+
+            if (pasaFolio && pasaDepto && pasaEstado && pasaFecha) {
+                fila.style.display = "";
+                visibles++;
+            } else {
+                fila.style.display = "none";
+            }
+        });
+
+        var filaVacia = tbody.querySelector(".fila-vacia");
+        if (visibles === 0 && !filaVacia) {
+            var colCount = tbody.querySelector("tr")?.cells?.length || 9;
+            var empty = document.createElement("tr");
+            empty.className = "fila-vacia";
+            empty.innerHTML = '<td colspan="' + colCount + '" class="text-center">Sin resultados para los filtros aplicados</td>';
+            tbody.appendChild(empty);
+        } else if (visibles > 0) {
+            var fv = tbody.querySelector(".fila-vacia");
+            if (fv) fv.remove();
+        }
+    }
+
+    // Wire up consolidada filters to the general filter inputs
+    document.addEventListener("input", function (e) {
+        if (e.target.id === "filtroNumReq" || e.target.id === "filtroDepartamento") {
+            aplicarFiltrosConsolidadas();
+        }
+    });
+    document.addEventListener("change", function (e) {
+        if (e.target.id === "filtroEstado") {
+            aplicarFiltrosConsolidadas();
+        }
+    });
+
+    window.verDetalleConsolidadaFinancieros = function (idConsolidada) {
+        var URL = urlDetalleConsolidada;
+        if (!URL) return;
+
+        // Hide "Req." column (only visible in consolidada atender mode)
+        document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = "none"; });
+
+        // Limpiar modal para contenido nuevo
+        var tablaDetalle = document.getElementById("tablaDetalle");
+        if (tablaDetalle) tablaDetalle.innerHTML = "";
+        var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
+        if (archivosReadonly) archivosReadonly.innerHTML = "";
+        var galeriaFotos = document.getElementById("galeriaFotosDetalle");
+        if (galeriaFotos) galeriaFotos.innerHTML = "";
+        var seccionFotos = document.getElementById("seccionFotosDetalle");
+        if (seccionFotos) seccionFotos.style.display = "none";
+        // Ocultar sección atender (no aplica para consolidada)
+        document.querySelectorAll(".seccionAtender").forEach(function (s) { s.style.display = "none"; });
+        var botonesAtender = document.getElementById("botonesAtender");
+        if (botonesAtender) botonesAtender.style.display = "none";
+
+        $.get(URL, { idConsolidada: idConsolidada }, function (data) {
+            var modalTitle = document.querySelector("#modalDetalle .modal-titulo-premium");
+            if (modalTitle) modalTitle.textContent = "Consolidada: " + (data.folioConsolidada || "");
+            var subtitle = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+            if (subtitle) subtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " · " + data.articulos.length + " partidas" : "");
+
+            // ── Header info ────────────────────────────────────────────────
+            var headerHtml = '<div class="row mb-3" style="padding:0 4px;">' +
+                '<div class="col-md-3"><strong>Folio:</strong> ' + (data.folioConsolidada || "") + '</div>' +
+                '<div class="col-md-3"><strong>Estatus:</strong> ' + (data.estatus || "") + '</div>' +
+                '<div class="col-md-3"><strong>Creado:</strong> ' + (data.fechaCreacion || "") + '</div>' +
+                '<div class="col-md-3"><strong>Por:</strong> ' + (data.creadoPor || "") + '</div>' +
+                '</div>';
+            if (data.nombreAsignado) {
+                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
+                    '<div class="col-md-6"><strong>Analista asignado:</strong> ' + data.nombreAsignado + '</div>' +
+                    '<div class="col-md-6"><strong>Días asignado:</strong> ' + (data.diasAsignado > 0 ? data.diasAsignado + " día(s)" : "Hoy") + '</div>' +
+                    '</div>';
+            }
+            if (data.idPp || data.ff || data.tipoPrograma) {
+                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
+                    (data.idPp ? '<div class="col-md-4"><strong>PP:</strong> ' + data.idPp + '</div>' : '') +
+                    (data.ff ? '<div class="col-md-4"><strong>FF:</strong> ' + data.ff + '</div>' : '') +
+                    (data.tipoPrograma ? '<div class="col-md-4"><strong>Tipo Programa:</strong> ' + data.tipoPrograma + '</div>' : '') +
+                    '</div>';
+            }
+
+            // ── Articles table ─────────────────────────────────────────────
+            var articulosHtml = '<div style="margin-top:16px;"><h6 style="font-weight:600;margin-bottom:8px;">Artículos consolidados</h6>' +
+                '<div class="table-responsive-container"><table class="tabla-requisiciones" id="tablaDetalleConsolidada"><thead><tr>' +
+                '<th>Requisición</th><th>Partida</th><th style="width:100px;">Cantidad</th><th style="width:135px;">Unidad</th><th>Descripción</th>' +
+                '</tr></thead><tbody>';
+            if (data.articulos && data.articulos.length) {
+                data.articulos.forEach(function (a) {
+                    var txtCompleto = a.descripcionDetallada || "";
+                    var txtCorto = txtCompleto.length > 28 ? txtCompleto.substring(0, 28) + "…" : txtCompleto || "Sin descripción...";
+                    var fullEsc = (txtCompleto || "").replace(/"/g, "&quot;");
+                    articulosHtml += '<tr>' +
+                        '<td>' + (a.numRequi || "") + '</td>' +
+                        '<td>' + (a.numPartida || "") + '</td>' +
+                        '<td>' + (a.cantidad || "") + '</td>' +
+                        '<td>' + (a.unidadMedida || "") + '</td>' +
+                        '<td>' + (a.descripcion || "") +
+                        '<div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)" style="margin-top:2px;">' +
+                        '<span class="desc-texto-preview' + (txtCompleto ? " tiene-texto" : "") + '">' + txtCorto + '</span>' +
+                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        '</tr>';
+                });
+            } else {
+                articulosHtml += '<tr class="fila-vacia"><td colspan="5" class="text-center">Sin artículos</td></tr>';
+            }
+            articulosHtml += '</tbody></table></div></div>';
+
+            // ── Files ──────────────────────────────────────────────────────
+            var archivosHtml = '<div style="margin-top:16px;">';
+            if (window.ModalAdjuntos) {
+                if (data.cuadroComparativo && data.cuadroComparativo.length) {
+                    archivosHtml += '<div id="consolCuadroComparativo"></div>';
+                }
+                if (data.anexos && data.anexos.length) {
+                    archivosHtml += '<div id="consolAnexos" style="margin-top:12px;"></div>';
+                }
+            }
+            archivosHtml += '</div>';
+
+            var contenidoCompleto = headerHtml + articulosHtml + archivosHtml;
+            var contenedor = document.getElementById("tablaDetalle");
+            if (contenedor) {
+                // Instead of replacing tablaDetalle which is inside the table, wrap everything
+                var parentTable = contenedor.closest(".table-responsive-container");
+                if (parentTable) parentTable.style.display = "none";
+            }
+            // Insert into contenedorArchivosReadonly
+            if (archivosReadonly) {
+                archivosReadonly.innerHTML = contenidoCompleto;
+            }
+
+            // Render files using ModalAdjuntos
+            if (window.ModalAdjuntos) {
+                var cuadroEl = document.getElementById("consolCuadroComparativo");
+                if (cuadroEl && data.cuadroComparativo && data.cuadroComparativo.length) {
+                    cuadroEl.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(cuadroEl);
+                }
+                var anexosEl = document.getElementById("consolAnexos");
+                if (anexosEl && data.anexos && data.anexos.length) {
+                    anexosEl.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(anexosEl);
+                }
+            }
+
+            // Hide selects section
+            document.querySelectorAll(".seccionAtender").forEach(function (s) { s.style.display = "none"; });
+
+            new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+        }).fail(function () {
+            Swal.fire({ icon: "error", title: "No se pudo cargar el detalle de la consolidada." });
+        });
+    };
+
+    window.atenderConsolidada = function (idConsolidada) {
+        consolidadaActual = idConsolidada;
+        var URL = urlDetalleConsolidada;
+        if (!URL) return;
+
+        // Show "Req." column in thead
+        document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = ""; });
+
+        // Restore articles table visibility (may have been hidden by verDetalleConsolidadaFinancieros)
+        var detalleTableContainer = document.querySelector("#tablaDetalle")?.closest(".table-responsive-container");
+        if (detalleTableContainer) detalleTableContainer.style.display = "";
+
+        // Limpiar al abrir
+        var tablaDetalle = document.getElementById("tablaDetalle");
+        if (tablaDetalle) tablaDetalle.innerHTML = "";
+        var archivosReadonly = document.getElementById("contenedorArchivosReadonly");
+        if (archivosReadonly) archivosReadonly.innerHTML = "";
+        var galeriaFotos = document.getElementById("galeriaFotosDetalle");
+        if (galeriaFotos) galeriaFotos.innerHTML = "";
+        var seccionFotos = document.getElementById("seccionFotosDetalle");
+        if (seccionFotos) seccionFotos.style.display = "none";
+        var inputSiaf = document.getElementById("inputSiaf");
+        var inputTablaApi = document.getElementById("inputTablaApi");
+        var inputNumeroApi = document.getElementById("inputNumeroApi");
+        if (inputSiaf) inputSiaf.value = "";
+        if (inputTablaApi) inputTablaApi.value = "";
+        if (inputNumeroApi) inputNumeroApi.value = "";
+
+        // Restore modal title
+        var modalTitle = document.querySelector("#modalDetalle .modal-titulo-premium");
+        if (modalTitle) modalTitle.textContent = "Consolidada: " + idConsolidada;
+        var modalSubtitle = document.querySelector("#modalDetalle .modal-subtitulo-premium");
+        if (modalSubtitle) modalSubtitle.textContent = "Detalle de la consolidada";
+
+        // Show selects section + buttons
+        document.querySelectorAll(".seccionAtender").forEach(function (sec) {
+            sec.style.display = "block";
+        });
+        // Hide "Editar Tabla API" button (pending for consolidadas)
+        var btnEditarTablaApi = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
+        if (btnEditarTablaApi) btnEditarTablaApi.style.display = "none";
+        var botonesAtender = document.getElementById("botonesAtender");
+        if (botonesAtender) botonesAtender.style.display = "flex";
+
+        $.get(URL, { idConsolidada: idConsolidada }, function (data) {
+            modalTitle.textContent = "Consolidada: " + (data.folioConsolidada || "");
+            modalSubtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " \u00B7 " + data.articulos.length + " partidas" : "");
+
+            // ── Header info ────────────────────────────────────────────────
+            var headerHtml = '<div class="row mb-3" style="padding:0 4px;">' +
+                '<div class="col-md-3"><strong>Folio:</strong> ' + (data.folioConsolidada || "") + '</div>' +
+                '<div class="col-md-3"><strong>Estatus:</strong> ' + (data.estatus || "") + '</div>' +
+                '<div class="col-md-3"><strong>Creado:</strong> ' + (data.fechaCreacion || "") + '</div>' +
+                '<div class="col-md-3"><strong>Por:</strong> ' + (data.creadoPor || "") + '</div>' +
+                '</div>';
+            if (data.nombreAsignado) {
+                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
+                    '<div class="col-md-6"><strong>Analista asignado:</strong> ' + data.nombreAsignado + '</div>' +
+                    '<div class="col-md-6"><strong>D\u00edas asignado:</strong> ' + (data.diasAsignado > 0 ? data.diasAsignado + " d\u00eda(s)" : "Hoy") + '</div>' +
+                    '</div>';
+            }
+
+            // ── Articles table with "Req." column ──────────────────────────
+            var articulosHtml = "";
+            if (data.articulos && data.articulos.length) {
+                articulosHtml += '<div class="table-responsive-container" style="margin-top:12px;"><table class="tabla-requisiciones"><thead><tr>' +
+                    '<th style="width:80px;">Req.</th><th>N\u00ba Partida</th><th style="width:100px;">Cantidad</th><th style="width:135px;">Unidad Medida</th><th style="width:150px;">Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>' +
+                    '</tr></thead><tbody>';
+                data.articulos.forEach(function (a) {
+                    var txtCompleto = a.descripcionDetallada || "";
+                    var txtCorto = txtCompleto.length > 28 ? txtCompleto.substring(0, 28) + "\u2026" : txtCompleto || "Sin descripci\u00f3n...";
+                    var fullEsc = (txtCompleto || "").replace(/"/g, "&quot;");
+                    articulosHtml += '<tr>' +
+                        '<td>' + (a.numRequi || "") + '</td>' +
+                        '<td>' + (a.numPartida || "") + '</td>' +
+                        '<td>' + (a.cantidad || "") + '</td>' +
+                        '<td>' + (a.unidadMedida || "") + '</td>' +
+                        '<td>' + (a.descripcion || "") + '</td>' +
+                        '<td><div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)">' +
+                        '<span class="desc-texto-preview' + (txtCompleto ? " tiene-texto" : "") + '">' + txtCorto + '</span>' +
+                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        '</tr>';
+                });
+                articulosHtml += '</tbody></table></div>';
+            }
+
+            // ── Files: Cuadro Comparativo + Anexos ─────────────────────────
+            var archivosHtml = '<div style="margin-top:16px;">';
+            if (window.ModalAdjuntos) {
+                if (data.cuadroComparativo && data.cuadroComparativo.length) {
+                    archivosHtml += '<div id="consolAtenderCuadro"></div>';
+                }
+                if (data.anexos && data.anexos.length) {
+                    archivosHtml += '<div id="consolAtenderAnexos" style="margin-top:12px;"></div>';
+                }
+            }
+            archivosHtml += '</div>';
+
+            // Insert all into tablaDetalle (replacing the tbody content)
+            var contenedor = document.getElementById("tablaDetalle");
+            if (contenedor) {
+                contenedor.innerHTML = headerHtml + articulosHtml + archivosHtml;
+            }
+
+            // Render files using ModalAdjuntos
+            if (window.ModalAdjuntos) {
+                var cuadroEl = document.getElementById("consolAtenderCuadro");
+                if (cuadroEl && data.cuadroComparativo && data.cuadroComparativo.length) {
+                    cuadroEl.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(cuadroEl);
+                }
+                var anexosEl = document.getElementById("consolAtenderAnexos");
+                if (anexosEl && data.anexos && data.anexos.length) {
+                    anexosEl.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(anexosEl);
+                }
+            }
+
+            // Update subtitle with count
+            if (data.articulos) {
+                modalSubtitle.textContent = "Detalle de la consolidada \u00B7 Total: " + data.articulos.length + " partidas";
+            }
+
+            // Init Select2 and pre-fill PP, FF, TipoPrograma
+            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").each(function () {
+                if ($(this).data("select2")) $(this).select2("destroy");
+            });
+            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+                dropdownParent: $("#modalDetalle"),
+                width: "100%",
+                language: "es"
+            });
+
+            if (data.idPp) $("#actividadSeleccionada").val(data.idPp).trigger("change");
+            if (data.ff) $("#ffSelect").val(data.ff).trigger("change");
+            if (data.tipoPrograma) {
+                $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
+                $("#tipoProgramaSelect").trigger("change");
+            }
+
+            // Disable selects (readonly) — only the "Autorizar" action will process them
+            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
+                .prop("disabled", true);
+
+            // Clear and enable observations
+            $("#txtObservaciones")
+                .prop("readonly", false)
+                .val("");
+
+            new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+        }).fail(function () {
+            Swal.fire({ icon: "error", title: "No se pudo cargar la consolidada para atender." });
+            // Re-hide Req. column on error
+            document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = "none"; });
+        });
+    };
+
     if (modoTabs && container) {
         var tabBtns = container.querySelectorAll(".almacen-tabs-btn");
         var tabPanels = container.querySelectorAll(".almacen-tab-panel");
@@ -1230,6 +1697,9 @@
 
                 if (tab === "documentos" && urlObtenerArchivos) {
                     cargarRequisicionesConDocumentos();
+                }
+                if (tab === "consolidadas" && urlConsolidadas) {
+                    cargarConsolidadas();
                 }
 
                 var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");

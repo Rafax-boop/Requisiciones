@@ -22,6 +22,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly IAlmacenService _almacenService;
         private readonly ILogger<FinancierosController> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly IConsolidadaService _consolidadaService;
 
 
         public FinancierosController(IMapper mapper,
@@ -31,7 +32,8 @@ namespace Inventario.AplicacionWeb.Controllers
             ICatalogoService catalogoService,
             IAlmacenService almacenService,
             ILogger<FinancierosController> logger,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IConsolidadaService consolidadaService)
         {
             _mapper = mapper;
             _financierosService = financierosService;
@@ -41,6 +43,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _almacenService = almacenService;
             _logger = logger;
             _env = env;
+            _consolidadaService = consolidadaService;
         }
 
         [HttpGet]
@@ -125,6 +128,64 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 return Json(new { success = false, mensaje = "Error al asignar la requisición" });
             }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerConsolidadasFinancieros()
+        {
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(idUsuarioClaim, out int idUsuario);
+
+            List<ConsolidadaFinancierosDTO> lista;
+            if (User.IsInRole("9"))
+                lista = await _financierosService.ListarConsolidadasFinancieros(idUsuario);
+            else
+                lista = await _financierosService.ListarConsolidadasFinancieros();
+
+            return Json(lista);
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> AsignarConsolidada(int idConsolidada, int idUsuario)
+        {
+            int idUsuarioLog = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            try
+            {
+                var resultado = await _financierosService.AsignarConsolidada(idConsolidada, idUsuarioLog, idUsuario);
+                return Json(new { success = resultado });
+            }
+            catch
+            {
+                return Json(new { success = false, mensaje = "Error al asignar la consolidada" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerDetalleConsolidadaFinancieros(int idConsolidada)
+        {
+            var detalle = await _consolidadaService.ObtenerDetalleConsolidada(idConsolidada);
+            var consolidada = await _consolidadaService.ObtenerConsolidada(idConsolidada);
+
+            if (consolidada != null)
+            {
+                detalle.IdEstatus = consolidada.IdEstatus;
+                detalle.IdUsuarioFinan = consolidada.IdUsuarioFinan;
+                detalle.DiasAsignado = consolidada.IdUsuarioFinan != null
+                    ? (DateTime.Now - (consolidada.FechaModificacion ?? DateTime.Now)).Days
+                    : 0;
+                detalle.IdPp = consolidada.IdPp;
+                detalle.Ff = consolidada.Ff;
+                detalle.TipoPrograma = consolidada.TipoPrograma;
+
+                if (consolidada.IdUsuarioFinan.HasValue)
+                {
+                    var usuarios = await _usuarioService.ListaUsuariosAsignar(9);
+                    var analista = usuarios.FirstOrDefault(u => u.IdUsuario == consolidada.IdUsuarioFinan.Value);
+                    detalle.NombreAsignado = analista?.Usuario;
+                }
+            }
+
+            return Json(detalle);
         }
 
         [HttpPost]

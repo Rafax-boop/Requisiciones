@@ -20,6 +20,14 @@ namespace Inventario.BLL.DTO
 
         public List<ArchivoAtencionDTO> CuadroComparativo { get; set; } = new();
         public List<ArchivoAtencionDTO> Anexos { get; set; } = new();
+
+        public int? IdEstatus { get; set; }
+        public int? IdUsuarioFinan { get; set; }
+        public string? NombreAsignado { get; set; }
+        public int DiasAsignado { get; set; }
+        public int? IdPp { get; set; }
+        public string? Ff { get; set; }
+        public string? TipoPrograma { get; set; }
     }
 
     public class RequiHijaDTO

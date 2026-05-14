@@ -47,6 +47,8 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IGenericRepository<TblProveedorGanador> _repositoryGanador;
         private readonly IGenericRepository<TblRequisicionDetalleMunicipio> _repoMunicipiosDetalle;
+        private readonly IGenericRepository<TblConsolidada> _repoConsolidada;
+        private readonly IGenericRepository<TblConsolidadasDetalle> _repoConsolidadaDetalle;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -58,7 +60,9 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblTablaApiHistorial> repoHistorial,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
             IGenericRepository<TblProveedorGanador> repositoryGanador,
-            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle)
+            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle,
+            IGenericRepository<TblConsolidada> repoConsolidada,
+            IGenericRepository<TblConsolidadasDetalle> repoConsolidadaDetalle)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
@@ -70,6 +74,8 @@ namespace Inventario.BLL.Implementacion
             _repoMovimiento = repoMovimiento;
             _repositoryGanador = repositoryGanador;
             _repoMunicipiosDetalle = repoMunicipiosDetalle;
+            _repoConsolidada = repoConsolidada;
+            _repoConsolidadaDetalle = repoConsolidadaDetalle;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -85,7 +91,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             var resultado = await query
-                .Where(r => r.IdUsuarioFinan.HasValue || r.IdEstatus == 13)
+                .Where(r => (r.IdUsuarioFinan.HasValue || r.IdEstatus == 13) && r.ConsolidadaId == null)
                 .OrderBy(r => r.FechaModificacion)
                 .ThenBy(r => r.IdRequisicion)
                 .Select(r => new RequisicionMaestraDTO
@@ -110,6 +116,99 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
 
             return resultado;
+        }
+
+        public async Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null)
+        {
+            var query = await _repoConsolidada.Consultar();
+
+            if (idUsuario.HasValue)
+                query = query.Where(c => c.IdUsuarioFinan == idUsuario.Value);
+
+            var consolidaciones = await query
+                .Where(c => c.IdEstatus == 13 || c.IdEstatus == 14)
+                .Include(c => c.IdEstatusNavigation)
+                .Include(c => c.IdUsuarioFinanNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                .OrderBy(c => c.FechaCreacion)
+                .ThenBy(c => c.ConsolidadaId)
+                .ToListAsync();
+
+            if (consolidaciones.Count == 0) return new List<ConsolidadaFinancierosDTO>();
+
+            var ids = consolidaciones.Select(c => c.ConsolidadaId).ToList();
+
+            var queryDeptos = await _repoConsolidadaDetalle.Consultar(d => ids.Contains(d.ConsolidadaId));
+            var deptosPorConsolidada = await queryDeptos
+                .Include(d => d.IdRequisicionNavigation)
+                    .ThenInclude(r => r.IdDepartamentoNavigation)
+                .ToListAsync();
+
+            var deptosAgrupados = deptosPorConsolidada
+                .GroupBy(d => d.ConsolidadaId)
+                .ToDictionary(g => g.Key, g => string.Join(", ",
+                    g.Select(x => x.IdRequisicionNavigation?.IdDepartamentoNavigation?.NombreDepartamento)
+                      .Where(n => n != null)
+                      .Distinct()));
+
+            var ahora = DateTime.Now;
+            var resultado = new List<ConsolidadaFinancierosDTO>(consolidaciones.Count);
+            foreach (var c in consolidaciones)
+            {
+                resultado.Add(new ConsolidadaFinancierosDTO
+                {
+                    ConsolidadaId = c.ConsolidadaId,
+                    FolioConsolidada = c.FolioConsolidada,
+                    CantidadRequis = c.TblConsolidadasDetalles?.Count ?? 0,
+                    Departamentos = deptosAgrupados.TryGetValue(c.ConsolidadaId, out var deptos) ? deptos : "",
+                    FechaCreacion = c.FechaCreacion.ToString("dd/MM/yyyy"),
+                    IdEstatus = c.IdEstatus,
+                    Estatus = c.IdEstatusNavigation?.NombreEstatus ?? "",
+                    DiasAsignado = c.IdUsuarioFinan != null && c.FechaModificacion.HasValue
+                        ? (int)(ahora - c.FechaModificacion.Value).TotalDays
+                        : 0,
+                    NombreAsignado = c.IdUsuarioFinanNavigation?.Usuario,
+                    IdUsuarioFinan = c.IdUsuarioFinan
+                });
+            }
+
+            return resultado;
+        }
+
+        public async Task<bool> AsignarConsolidada(int idConsolidada, int idUsuarioLog, int idUsuarioFinan)
+        {
+            try
+            {
+                var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+                if (consolidada == null) return false;
+
+                consolidada.IdUsuarioFinan = idUsuarioFinan;
+                consolidada.IdEstatus = 14;
+                consolidada.FechaModificacion = DateTime.Now;
+                await _repoConsolidada.Editar(consolidada);
+
+                var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+                var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+                foreach (var hija in hijas)
+                {
+                    var bitacora = new TblBitacoraEstatus
+                    {
+                        IdRequisicion = hija.IdRequisicion,
+                        IdEstatus = 14,
+                        FechaEstatus = DateTime.Now,
+                        Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] AsignarFinancieros",
+                        IdUsuario = idUsuarioLog
+                    };
+                    await _repositoryBitacora.Crear(bitacora);
+                }
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         public async Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan)

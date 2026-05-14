@@ -30,7 +30,12 @@
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
      data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Financieros")"
-     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")">
+     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
+     data-url-consolidadas="@Url.Action("ObtenerConsolidadasFinancieros", "Financieros")"
+     data-url-asignar-consolidada="@Url.Action("AsignarConsolidada", "Financieros")"
+     data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidadaFinancieros", "Financieros")"
+     data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
+     data-es-rol9="@(User.IsInRole("9") ? "true" : "false")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -72,13 +77,11 @@
 
     <nav class="almacen-tabs">
         <button type="button" class="almacen-tabs-btn activo" data-tab="principal">En seguimiento</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="consolidadas">Consolidadas</button>
+        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">En proceso de pago</button>
         <button type="button" class="almacen-tabs-btn" data-tab="autorizadas">Requisiciones autorizadas</button>
         <button type="button" class="almacen-tabs-btn" data-tab="rechazadas">Requisiciones rechazadas</button>
-        <button type="button" class="almacen-tabs-btn" data-tab="procesopago">En proceso de pago</button>
-        @if (!User.IsInRole("1"))
-        {
-            <button type="button" class="almacen-tabs-btn" data-tab="documentos">Requisiciones con documentos</button>
-        }
+        <button type="button" class="almacen-tabs-btn" data-tab="documentos">Requisiciones con documentos</button>
     </nav>
 
     @{
@@ -553,6 +556,44 @@
         </div>
     </div>
 
+    <!-- Pestaña Consolidadas -->
+    <div id="tab-consolidadas" class="almacen-tab-panel">
+        <div class="container-formulario tabla-container">
+            <table class="tabla-requisiciones" id="tablaConsolidadas">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Departamentos</th>
+                        <th style="text-align:center"># Req</th>
+                        <th>Fecha de creación</th>
+                        <th>Estado</th>
+                        @if (User.IsInRole("8"))
+                        {
+                            <th>Asignado</th>
+                        }
+                        @if (User.IsInRole("9") || User.IsInRole("8"))
+                        {
+                            <th>Estatus</th>
+                        }
+                        <th style="text-align:center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyConsolidadas">
+                    <tr>
+                        <td colspan="@(8 + (User.IsInRole("8") ? 1 : 0) + (User.IsInRole("9") || User.IsInRole("8") ? 1 : 0) + 1)" class="text-center" style="padding: 2rem;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite;"></i>
+                                Cargando consolidadas...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="paginacionConsolidadas" class="almacen-paginacion"></div>
+        </div>
+    </div>
+
     <!-- Pestaña Requisiciones con documentos -->
     @if (!User.IsInRole("1"))
     {
@@ -786,6 +827,7 @@
                     <table class="tabla-requisiciones" id="tablaModalDetalle">
                         <thead>
                             <tr>
+                                <th style="width:80px; display:none;" class="col-requi">Requisición</th>
                                 <th style="width:120px;">Nº Partida</th>
                                 <th style="width:100px;">Cantidad</th>
                                 <th style="width:135px;">Unidad Medida</th>
