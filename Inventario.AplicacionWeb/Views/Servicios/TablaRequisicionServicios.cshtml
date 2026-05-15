@@ -34,6 +34,7 @@
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
      data-url-obtener-partidas="@Url.Action("ObtenerPartidas", "Requisicion")"
      data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
+     data-url-obtener-ganador="@Url.Action("ObtenerProveedorGanador", "Requisicion")"
      data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")"
      data-url-finalizar="@Url.Action("FinalizarRequisicion", "Servicios")"
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
@@ -954,9 +955,12 @@
                                 @*<label>Subir cotizaciones</label>
                                 <input type="file" id="inputCotizaciones" name="Cotizaciones" multiple class="input-file-rosa" />*@
                                 <label>Cotizaciones</label>
+                                <div id="estadoProveedoresSeleccionados" style="display:none; margin-bottom:10px; color:#15803d; font-size:13px; font-weight:600;">
+                                    Proveedores seleccionados correctamente
+                                </div>
                                 <button type="button" class="btn boton-rosa modal-proveedores-abrir"
                                         onclick="abrirModalProveedoresSinCerrar()">
-                                    Seleccionar Proveedores
+                                    <span id="textoBtnProveedores">Seleccionar Proveedores</span>
                                 </button>
                             </div>
                         </div>
@@ -967,7 +971,8 @@
                                         id="btnDescargarCuadroComparativo"
                                         class="btn boton-rosa w-100 mb-2"
                                         onclick="descargarCuadroComparativo()"
-                                        title="Descargar cuadro comparativo en PDF">
+                                        title="Disponible cuando se hayan seleccionado los proveedores"
+                                        disabled>
                                     Descargar cuadro comparativo
                                 </button>
                                 <input type="file" id="inputCuadroComparativo" name="CuadroComparativo" multiple class="input-file-rosa" />
@@ -1005,8 +1010,8 @@
         <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Proveedores por partida</h5>
-                    <p class="modal-subtitulo-premium" id="wizardProveedoresSubtitulo">Partida 1 de 1</p>
+                    <h5 class="modal-title modal-titulo-premium" id="modalProveedoresRequisicionLabel">Cotizaciones por proveedor</h5>
+                    <p class="modal-subtitulo-premium" id="wizardProveedoresSubtitulo">Proveedor 1 de 1</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
@@ -1014,11 +1019,37 @@
             </div>
             <div class="modal-body modal-body-premium modal-proveedores-cuerpo">
 
-                <!-- Nombre de la partida activa -->
-                <p id="wizardProveedoresNombrePartida" style="font-size:13px; font-weight:600; color:var(--slate-700,#334155); margin:0 0 1rem;"></p>
+                <!-- Proveedor activo -->
+                <div id="wizardProveedorActual">
+                    <div class="formulario-input" style="margin-bottom:16px;">
+                        <label>Proveedor</label>
+                        <select id="wizardProveedorSelect" class="form-select select2" title="Proveedor">
+                            <option value="">-- Seleccione proveedor --</option>
+                            @foreach (var act in Model.ListaProveedores)
+                            {
+                                <option value="@act.Value">@act.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="table-responsive-container" style="margin-bottom:16px;">
+                        <table class="tabla-requisiciones" id="tablaWizardProveedorPartidas">
+                            <thead>
+                                <tr>
+                                    <th style="width:90px;">Partida</th>
+                                    <th>Descripcion</th>
+                                    <th>Descripcion detallada</th>
+                                    <th style="width:160px;">Precio</th>
+                                    <th style="width:120px;">IVA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wizardProveedorPartidasBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
                 <!-- Filas de proveedor + precio para la partida activa -->
-                <div id="modalProveedoresFilas" class="modal-proveedores-lista"></div>
+                <div id="modalProveedoresFilas" class="modal-proveedores-lista" style="display:none;"></div>
 
                 <!-- Botón agregar fila -->
                 <div class="modal-proveedores-agregar-wrap">
@@ -1084,12 +1115,13 @@
                         <!-- Se llena dinámicamente -->
                     </div>
 
-                    <div id="wizardGanadorCambio" style="display:none; margin-top:8px;">
+                    <div id="wizardGanadorJustificacionWrap" style="display:none; margin-top:12px;">
                         <div class="formulario-input">
-                            <label>Selecciona otro proveedor:</label>
-                            <select id="selectGanadorManual" class="form-select select2">
-                                <option value="">-- Seleccionar --</option>
-                            </select>
+                            <label>Justificacion de seleccion manual</label>
+                            <textarea id="wizardGanadorJustificacion"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="Escribe por que se eligio este proveedor y no el de menor costo..."></textarea>
                         </div>
                     </div>
                 </div>
