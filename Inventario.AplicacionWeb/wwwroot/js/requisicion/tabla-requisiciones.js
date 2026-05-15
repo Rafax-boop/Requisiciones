@@ -167,6 +167,110 @@
   var CACHE_PARTIDAS = [];
   var CACHE_PARTIDAS_REQUI = null;
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function obtenerBadgeEstatusHtml(idEstatus, nombreEstatus) {
+    var nombreSafe = escapeHtml(nombreEstatus || "Desconocido");
+    var colorClass = "badge-estado-info";
+    var iconClass =
+      idEstatus === 1
+        ? "fa-solid fa-file-signature"
+        : "fa-solid fa-spinner fa-spin-pulse";
+
+    switch (idEstatus) {
+      case 7:
+      case 12:
+      case 17:
+        colorClass = "badge-estado-success";
+        iconClass = "fa-solid fa-check-double";
+        break;
+      case 4:
+      case 10:
+      case 15:
+      case 16:
+        colorClass = "badge-estado-purple";
+        iconClass = "fa-solid fa-user-check";
+        break;
+      case 5:
+      case 6:
+        colorClass = "badge-estado-danger";
+        iconClass = "fa-solid fa-ban";
+        break;
+      case 3:
+      case 18:
+        colorClass = "badge-estado-warning";
+        iconClass = "fa-solid fa-triangle-exclamation";
+        break;
+      case 1:
+      case 2:
+      case 9:
+      case 11:
+      case 13:
+      case 14:
+      default:
+        colorClass = "badge-estado-info";
+        iconClass =
+          idEstatus === 1
+            ? "fa-solid fa-file-signature"
+            : "fa-solid fa-spinner fa-spin-pulse";
+        break;
+    }
+
+    return (
+      '<div class="badge-estado-premium ' +
+      colorClass +
+      '" title="' +
+      nombreSafe +
+      '">' +
+      '<i class="' +
+      iconClass +
+      '"></i><span class="badge-text">' +
+      nombreSafe +
+      "</span></div>"
+    );
+  }
+
+  function renderTextoTablaPrincipal(texto, icono, secundaria) {
+    var principal = escapeHtml(texto || "—");
+    var detalle = secundaria ? escapeHtml(secundaria) : "";
+
+    return (
+      '<div class="tabla-meta-stack">' +
+      '<span class="tabla-meta-principal"><i class="' +
+      icono +
+      '"></i>' +
+      principal +
+      "</span>" +
+      (detalle
+        ? '<span class="tabla-meta-secundaria">' + detalle + "</span>"
+        : "") +
+      "</div>"
+    );
+  }
+
+  function renderFolioTabla(texto, secundaria) {
+    var folio = escapeHtml(texto || "—");
+    var detalle = secundaria ? escapeHtml(secundaria) : "";
+
+    return (
+      '<div class="tabla-meta-stack">' +
+      '<span class="folio-badge">' +
+      folio +
+      "</span>" +
+      (detalle
+        ? '<span class="tabla-meta-secundaria">' + detalle + "</span>"
+        : "") +
+      "</div>"
+    );
+  }
+
   function actualizarEstadoProveedoresSeleccionados(tieneCotizaciones) {
     var mensaje = document.getElementById("estadoProveedoresSeleccionados");
     var textoBoton = document.getElementById("textoBtnProveedores");
@@ -1752,12 +1856,12 @@
           tr.setAttribute("data-requi-id", item.idRequi);
           tr.innerHTML = `
             <td style="text-align:center">${idx + 1}</td>
-            <td>${item.numRequi}</td>
-            <td>${item.fechaEmision}</td>
-            <td>${item.departamento}</td>
-            <td>${item.responsable}</td>
+            <td>${renderFolioTabla(item.numRequi)}</td>
+            <td>${escapeHtml(item.fechaEmision || "—")}</td>
+            <td>${renderTextoTablaPrincipal(item.departamento || "—", "fa-solid fa-building")}</td>
+            <td>${renderTextoTablaPrincipal(item.responsable || "—", "fa-solid fa-user")}</td>
             <td style="text-align:center">${item.cantidadPartidas}</td>
-            <td>${item.estatus}</td>
+            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "—")}</td>
             <td style="text-align:center">
               <button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicion(${item.idRequi})">
                 <i class="fa-solid fa-file"></i>
@@ -3361,16 +3465,16 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi";
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
+                      var folio = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><strong>" + (c.folioConsolidada || "—") + "</strong></td>" +
-                          "<td>" + (c.fechaCreacion || "—") + "</td>" +
-                          '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
-                          (c.departamentos || "—") + "</td>" +
+                          '<td><span class="folio-badge">' + folio + "</span></td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + (c.estatus || "—") + "</td>" +
-                          "<td>" + (c.creadoPor || "—") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "—", "fa-solid fa-user") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -3414,15 +3518,15 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi fila-consolidada";
                       tr.setAttribute("data-consolidada-id", c.consolidadaId);
+                      var folioConsolidado = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><strong>" + (c.folioConsolidada || "—") + " <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></strong></td>" +
-                          "<td>" + (c.fechaCreacion || "—") + "</td>" +
-                          '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
-                          (c.departamentos || "—") + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="folio-badge">' + folioConsolidado + '</span><span class="tabla-meta-secundaria"><i class="fa-solid fa-layer-group"></i>Consolidada</span></div></td>' +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequisiciones || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + (c.estatus || "—") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver expediente completo" ' +

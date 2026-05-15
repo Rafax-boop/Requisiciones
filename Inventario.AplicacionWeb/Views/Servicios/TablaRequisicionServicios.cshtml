@@ -177,15 +177,15 @@
                         idxPrincipal++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxPrincipal</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("6"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("7") || User.IsInRole("6"))
                             {
@@ -344,15 +344,15 @@
                         idxAutorizadas++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxAutorizadas</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("6"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("7") || User.IsInRole("6"))
                             {
@@ -492,15 +492,15 @@
                         idxRechazadas++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxRechazadas</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("6"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("7") || User.IsInRole("6"))
                             {
@@ -583,12 +583,12 @@
                         idxVerificadas++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi">
                             <td style="text-align:center">@idxVerificadas</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
-                            <td>@item.Estatus</td>
+                            <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <button class="btn-accion btn-ver" title="Ver expediente completo"
