@@ -37,6 +37,12 @@
         ? container.getAttribute("data-url-asignar-consolidada") : "";
     var urlDetalleConsolidada = container
         ? container.getAttribute("data-url-detalle-consolidada") : "";
+    var urlEditarTablaApiConsolidada = container
+        ? container.getAttribute("data-url-editar-tabla-api-consolidada") : "";
+    var urlDescargarTablaApiConsolidada = container
+        ? container.getAttribute("data-url-descargar-tabla-api-consolidada") : "";
+    var urlAtenderConsolidada = container
+        ? container.getAttribute("data-url-atender-consolidada") : "";
     var esRol8 = container ? container.getAttribute("data-es-rol8") === "true" : false;
     var esRol9 = container ? container.getAttribute("data-es-rol9") === "true" : false;
 
@@ -353,9 +359,27 @@
         window.open(url, "_blank");
     };
 
+    window.editarTablaApiConsolidada = function () {
+        if (!consolidadaActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin consolidada",
+                text: "No se pudo identificar la consolidada actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        var url = (urlEditarTablaApiConsolidada || "").replace(/\/$/, "")
+            + "?idConsolidada=" + consolidadaActual;
+        window.open(url, "_blank");
+    };
+
     // ── Ver detalle / atender ───────────────────────────────────────────────
     window.atenderRequisicion = function (idMaestro) {
         requisicionActual = idMaestro;
+        consolidadaActual = null;
         verDetalle(idMaestro, "atender");
     };
 
@@ -978,6 +1002,7 @@
 
     // ── Enviar atención ─────────────────────────────────────────────────────
     window.enviarAtencion = function () {
+        var esConsolidada = consolidadaActual != null;
         var observaciones = document.getElementById("txtObservaciones").value.trim();
         if (!observaciones) {
             Swal.fire({ icon: "warning", title: "Debe escribir una observaci\u00f3n.", confirmButtonText: "Ok" });
@@ -985,10 +1010,13 @@
         }
 
         var formData = new FormData();
-        formData.append("IdRequisicion", requisicionActual);
+        if (esConsolidada) {
+            formData.append("IdConsolidada", consolidadaActual);
+        } else {
+            formData.append("IdRequisicion", requisicionActual);
+        }
         formData.append("Observaciones", observaciones);
 
-        // Solo intentar leer archivos si los inputs existen (rol 9)
         var inputSiaf = document.getElementById("inputSiaf");
         var inputTablaApi = document.getElementById("inputTablaApi");
 
@@ -1002,8 +1030,10 @@
                 formData.append("TablaApi", inputTablaApi.files[i]);
         }
 
+        var url = esConsolidada ? urlAtenderConsolidada : atenderUrl;
+
         $.ajax({
-            url: atenderUrl,
+            url: url,
             type: "POST",
             data: formData,
             processData: false,
@@ -1013,19 +1043,20 @@
                 if (inputSiaf) inputSiaf.value = "";
                 if (inputTablaApi) inputTablaApi.value = "";
                 document.getElementById("txtObservaciones").value = "";
+                var titulo = esConsolidada ? "Consolidada autorizada" : "Requisici\u00f3n autorizada";
                 Swal.fire({
                     icon: "success",
-                    title: "Requisici\u00f3n autorizada",
+                    title: titulo,
                     html: res && res.numApi
                         ? "N\u00famero de API asignado:<br><strong style=\"font-size:1.4rem;color:#166534;letter-spacing:.05em;\">"
                         + res.numApi + "</strong>"
-                        : "La requisici\u00f3n fue autorizada correctamente.",
+                        : "La " + (esConsolidada ? "consolidada" : "requisici\u00f3n") + " fue autorizada correctamente.",
                     confirmButtonText: "Aceptar",
                     confirmButtonColor: "#fe6291"
                 }).then(function () { location.reload(); });
             },
             error: function () {
-                Swal.fire({ icon: "error", title: "Error al atender la requisici\u00f3n." });
+                Swal.fire({ icon: "error", title: "Error al atender la " + (esConsolidada ? "consolidada" : "requisici\u00f3n") + "." });
             }
         });
     };
@@ -1533,6 +1564,7 @@
 
     window.atenderConsolidada = function (idConsolidada) {
         consolidadaActual = idConsolidada;
+        requisicionActual = null;
         var URL = urlDetalleConsolidada;
         if (!URL) return;
 
@@ -1569,9 +1601,11 @@
         document.querySelectorAll(".seccionAtender").forEach(function (sec) {
             sec.style.display = "block";
         });
-        // Hide "Editar Tabla API" button (pending for consolidadas)
-        var btnEditarTablaApi = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
-        if (btnEditarTablaApi) btnEditarTablaApi.style.display = "none";
+        // Show Editar API button for consolidada, hide individual one
+        var btnIndiv = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
+        if (btnIndiv) btnIndiv.style.display = "none";
+        var btnConsol = document.getElementById("btnEditarApiConsolidada");
+        if (btnConsol) btnConsol.style.display = "block";
         var botonesAtender = document.getElementById("botonesAtender");
         if (botonesAtender) botonesAtender.style.display = "flex";
 

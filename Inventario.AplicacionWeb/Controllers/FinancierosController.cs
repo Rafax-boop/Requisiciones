@@ -198,6 +198,15 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> AtenderConsolidada([FromForm] AtenderConsolidadaDTO modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var resultado = await _financierosService.AtenderConsolidadaFinancieros(modelo, idUsuario);
+            if (!resultado.Exito) return BadRequest();
+            return Ok(new { success = true, numApi = resultado.NumApi, numPedido = resultado.NumPedido });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> FinalizarRequisicion([FromForm] VMRevisarRequisicion modelo)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -244,27 +253,67 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditarTablaApiConsolidada(int idConsolidada)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerTablaApiEditableConsolidadaAsync(idConsolidada);
+                return View("EditarTablaApi", modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error preparando edición de Tabla API para consolidada {Id}", idConsolidada);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarTablaApiConsolidada(int idConsolidada)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerTablaApiEditableConsolidadaAsync(idConsolidada);
+                var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
+
+                int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                await _financierosService.GuardarHistorialTablaApiAsync(
+                    modelo,
+                    idUsuario,
+                    observacion: $"PDF generado (descarga directa) el {DateTime.Now:dd/MM/yyyy HH:mm}");
+
+                var nombreArchivo = $"TablaAPI_Consolidada_{idConsolidada}_{DateTime.Now:yyyyMMdd}.pdf";
+                return File(bytes, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error generando Tabla API para consolidada {Id}", idConsolidada);
+                return StatusCode(500, $"Error al generar el PDF: {ex.Message}");
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GenerarTablaApiEditada([FromForm] TablaApiEditableDTO modelo)
         {
             try
             {
-                if (modelo.IdRequisicion <= 0)
-                    return BadRequest("La requisición es requerida.");
+                if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))
+                    return BadRequest("La requisición o consolidada es requerida.");
 
-                // Obtener usuario de sesión (ajusta según tu implementación)
                 int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
 
-                // Guardar historial antes de devolver
                 await _financierosService.GuardarHistorialTablaApiAsync(
                     modelo,
                     idUsuario,
                     observacion: $"PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
 
-                var nombreArchivo = $"TablaAPI_Editada_{modelo.IdRequisicion}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                var sufijo = modelo.IdConsolidada > 0
+                    ? $"Consolidada_{modelo.IdConsolidada}"
+                    : $"{modelo.IdRequisicion}";
+                var nombreArchivo = $"TablaAPI_Editada_{sufijo}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(bytes, "application/pdf", nombreArchivo);
             }
             catch (Exception ex)
@@ -303,6 +352,21 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditarPedidoCompraConsolidada(int idConsolidada)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerPedidoEditableConsolidadaAsync(idConsolidada);
+                return View("EditarPedidoCompra", modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error cargando pedido editable para consolidada {Id}", idConsolidada);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> GenerarPedidoPdf([FromForm] PedidoVistaDTO form)
         {
@@ -320,13 +384,56 @@ namespace Inventario.AplicacionWeb.Controllers
                     observacion: $"Pedido PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
                 // ─────────────────────────────────────────────────────────────
 
-                var nombre = $"Pedido_{form.IdRequisicion}_{DateTime.Now:yyyyMMdd}.pdf";
+                var nombre = $"Pedido_{form.IdRequisicion ?? 0}_{DateTime.Now:yyyyMMdd}.pdf";
                 return File(bytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error generando PDF de pedido para requisición {Id}", form.IdRequisicion);
+                _logger?.LogError(ex, "Error generando PDF de pedido para requisición {Id}", form.IdRequisicion ?? 0);
                 return StatusCode(500, $"Error al generar el PDF: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GenerarPedidoPdfConsolidada([FromForm] PedidoVistaDTO form)
+        {
+            try
+            {
+                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath);
+
+                int idUsuario = int.Parse(
+                    User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                await _financierosService.GuardarHistorialPedidoConsolidadaAsync(
+                    form,
+                    idUsuario,
+                    observacion: $"Pedido PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
+
+                var nombre = $"Pedido_Consolidada_{form.IdConsolidada ?? 0}_{DateTime.Now:yyyyMMdd}.pdf";
+                return File(bytes, "application/pdf", nombre);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error generando PDF de pedido para consolidada {Id}", form.IdConsolidada ?? 0);
+                return StatusCode(500, $"Error al generar el PDF: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EnviarFinancierosConsolidada(int idConsolidada)
+        {
+            try
+            {
+                int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var (success, message) = await _financierosService.EnviarFinancierosConsolidadaAsync(idConsolidada, idUsuario);
+                if (!success)
+                    return Ok(new { success, message });
+                return Ok(new { success, message });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error enviando consolidada {Id} a financieros", idConsolidada);
+                return Ok(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
 

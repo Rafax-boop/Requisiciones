@@ -118,15 +118,18 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        public async Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null)
+        public async Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null, List<int>? estatusPermitidos = null)
         {
             var query = await _repoConsolidada.Consultar();
 
             if (idUsuario.HasValue)
                 query = query.Where(c => c.IdUsuarioFinan == idUsuario.Value);
 
+            if (estatusPermitidos == null || estatusPermitidos.Count == 0)
+                estatusPermitidos = new List<int> { 13, 14 };
+
             var consolidaciones = await query
-                .Where(c => c.IdEstatus == 13 || c.IdEstatus == 14)
+                .Where(c => estatusPermitidos.Contains(c.IdEstatus))
                 .Include(c => c.IdEstatusNavigation)
                 .Include(c => c.IdUsuarioFinanNavigation)
                 .Include(c => c.TblConsolidadasDetalles)
@@ -209,6 +212,184 @@ namespace Inventario.BLL.Implementacion
             {
                 throw;
             }
+        }
+
+        public async Task<AtenderResultadoDTO> AtenderConsolidadaFinancieros(AtenderConsolidadaDTO modelo, int idUsuario)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == modelo.IdConsolidada);
+            if (consolidada == null) return new AtenderResultadoDTO { Exito = false };
+
+            var numApi = await GenerarNumeroApiAsync();
+            var numPedido = await GenerarNumeroPedidoAsync();
+
+            consolidada.IdEstatus = 15;
+            consolidada.NumApi = numApi;
+            consolidada.NumPedido = numPedido;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
+
+            var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == modelo.IdConsolidada);
+            var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+            foreach (var hija in hijas)
+            {
+                hija.IdEstatus = 15;
+                hija.NumApi = numApi;
+                hija.NumPedido = numPedido;
+                hija.FechaModificacion = DateTime.Now;
+                await _repositoryRequisicion.Editar(hija);
+
+                await _repositoryBitacora.Crear(new TblBitacoraEstatus
+                {
+                    IdRequisicion = hija.IdRequisicion,
+                    IdEstatus = 15,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Autorizada — {modelo.Observaciones}",
+                    IdUsuario = idUsuario
+                });
+            }
+
+            await GuardarArchivosConsolidada(modelo.DocSiaf, modelo.IdConsolidada, "SIAF", "DocumentoSIAF");
+            await GuardarArchivosConsolidada(modelo.TablaApi, modelo.IdConsolidada, "TablaApi", "TablaApi");
+
+            return new AtenderResultadoDTO { Exito = true, NumApi = numApi, NumPedido = numPedido };
+        }
+
+        public async Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null)
+                return (false, "La consolidada no existe.");
+
+            if (consolidada.IdEstatus != 15 && consolidada.IdEstatus != 16 && consolidada.IdEstatus != 18)
+                return (false, $"La consolidada debe estar en estatus de verificación (actual: {consolidada.IdEstatus}).");
+
+            consolidada.IdEstatus = 17;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
+
+            var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+            foreach (var hija in hijas)
+            {
+                hija.IdEstatus = 17;
+                hija.FechaModificacion = DateTime.Now;
+                await _repositoryRequisicion.Editar(hija);
+
+                await _repositoryBitacora.Crear(new TblBitacoraEstatus
+                {
+                    IdRequisicion = hija.IdRequisicion,
+                    IdEstatus = 17,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Documentos del proveedor enviados a revisión",
+                    IdUsuario = idUsuario
+                });
+            }
+
+            return (true, "Documentos enviados a financieros correctamente.");
+        }
+
+        public async Task<bool> FinalizarRequisicionConsolidada(int idConsolidada, List<IFormFile>? transferencias, int idUsuario)
+        {
+            try
+            {
+                var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+                if (consolidada == null) return false;
+
+                consolidada.IdEstatus = 7;
+                consolidada.FechaModificacion = DateTime.Now;
+                await _repoConsolidada.Editar(consolidada);
+
+                var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+                var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+                foreach (var hija in hijas)
+                {
+                    hija.IdEstatus = 7;
+                    hija.FechaModificacion = DateTime.Now;
+                    await _repositoryRequisicion.Editar(hija);
+
+                    await _repositoryBitacora.Crear(new TblBitacoraEstatus
+                    {
+                        IdRequisicion = hija.IdRequisicion,
+                        IdEstatus = 7,
+                        FechaEstatus = DateTime.Now,
+                        Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Pago finalizado",
+                        IdUsuario = idUsuario
+                    });
+                }
+
+                if (transferencias != null && transferencias.Any())
+                {
+                    var carpetaDest = $"consolidada_{idConsolidada}";
+                    var rutaBase = System.IO.Path.Combine(
+                        Directory.GetCurrentDirectory(),
+                        "wwwroot", "uploads", "Transferencias", carpetaDest);
+                    Directory.CreateDirectory(rutaBase);
+
+                    foreach (var archivo in transferencias)
+                    {
+                        if (archivo.Length == 0) continue;
+
+                        var nombreArchivo = $"{Guid.NewGuid()}_{System.IO.Path.GetFileName(archivo.FileName)}";
+                        var rutaFisica = System.IO.Path.Combine(rutaBase, nombreArchivo);
+
+                        using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                            await archivo.CopyToAsync(stream);
+
+                        var registro = new TblRegistroDiseno
+                        {
+                            IdConsolidada = idConsolidada,
+                            Ruta = $"/uploads/Transferencias/{carpetaDest}/{nombreArchivo}",
+                            FechaSubida = DateTime.Now,
+                            Tipo = "Transferencia"
+                        };
+                        await _repositoryDiseno.Crear(registro);
+                    }
+                }
+
+                return true;
+            }
+            catch { throw; }
+        }
+
+        public async Task<bool> RebotarDocumentosConsolidada(int idConsolidada, string observaciones,
+            List<string> docsObservados, int idUsuario)
+        {
+            try
+            {
+                var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+                if (consolidada == null) return false;
+
+                consolidada.IdEstatus = 18;
+                consolidada.FechaModificacion = DateTime.Now;
+                await _repoConsolidada.Editar(consolidada);
+
+                var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+                var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+                var notaCompleta = $"DOCUMENTOS OBSERVADOS: {string.Join(", ", docsObservados)}. NOTA: {observaciones}";
+
+                foreach (var hija in hijas)
+                {
+                    hija.IdEstatus = 18;
+                    hija.FechaModificacion = DateTime.Now;
+                    await _repositoryRequisicion.Editar(hija);
+
+                    await _repositoryBitacora.Crear(new TblBitacoraEstatus
+                    {
+                        IdRequisicion = hija.IdRequisicion,
+                        IdEstatus = 18,
+                        FechaEstatus = DateTime.Now,
+                        Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] {notaCompleta}",
+                        IdUsuario = idUsuario
+                    });
+                }
+
+                return true;
+            }
+            catch { throw; }
         }
 
         public async Task<bool> AsignarRequisicion(int idRequi, int idUsuario, int idUsuarioFinan)
@@ -376,6 +557,45 @@ namespace Inventario.BLL.Implementacion
                 {
                     IdRequisicion = idRequiDest,
                     IdConsolidada = idConsolDest,
+                    Ruta = rutaBd,
+                    FechaSubida = DateTime.Now,
+                    Tipo = tipo
+                };
+
+                await _repositoryDiseno.Crear(registro);
+            }
+        }
+
+        private async Task GuardarArchivosConsolidada(
+            List<IFormFile>? archivos,
+            int idConsolidada,
+            string tipo,
+            string carpeta)
+        {
+            if (archivos == null || !archivos.Any()) return;
+
+            var carpetaDest = $"consolidada_{idConsolidada}";
+            var rutaBase = System.IO.Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot", "uploads", carpeta, carpetaDest);
+
+            Directory.CreateDirectory(rutaBase);
+
+            foreach (var archivo in archivos)
+            {
+                if (archivo.Length == 0) continue;
+
+                var nombreArchivo = $"{Guid.NewGuid()}_{System.IO.Path.GetFileName(archivo.FileName)}";
+                var rutaFisica = System.IO.Path.Combine(rutaBase, nombreArchivo);
+
+                using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                    await archivo.CopyToAsync(stream);
+
+                var rutaBd = $"/uploads/{carpeta}/{carpetaDest}/{nombreArchivo}";
+
+                var registro = new TblRegistroDiseno
+                {
+                    IdConsolidada = idConsolidada,
                     Ruta = rutaBd,
                     FechaSubida = DateTime.Now,
                     Tipo = tipo
@@ -830,14 +1050,168 @@ namespace Inventario.BLL.Implementacion
             return modelo;
         }
 
+        public async Task<TablaApiEditableDTO> ObtenerTablaApiEditableConsolidadaAsync(int idConsolidada)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada)
+                ?? throw new Exception($"No se encontró la consolidada {idConsolidada}.");
+
+            var queryDetConsol = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var hijas = await queryDetConsol
+                .Include(d => d.IdRequisicionNavigation)
+                    .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Select(d => d.IdRequisicionNavigation)
+                .Distinct()
+                .ToListAsync();
+
+            var idsHijas = hijas.Select(h => h.IdRequisicion).ToList();
+
+            var detallesPorHija = new Dictionary<int, List<TblRequisicionDetalle>>();
+            var cotizacionesPorHija = new Dictionary<int, Dictionary<int, (decimal PrecioUnitario, decimal Cantidad, bool? IVA)>>();
+
+            foreach (var hija in hijas)
+            {
+                var idH = hija.IdRequisicion;
+                detallesPorHija[idH] = await ObtenerDetallesFiltradosAsync(idH, hija.RequiServicio ?? false);
+                cotizacionesPorHija[idH] = await ObtenerCotizacionConCantidadAsync(idH);
+            }
+
+            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => idsHijas.Contains(m.IdRequisicion));
+            var municipiosPorDetalle = await queryMunis
+                .Include(m => m.IdMunicipioNavigation)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionaryAsync(g => g.Key, g => g.ToList());
+
+            var grupos = new Dictionary<(int? IdArticulo, int? IdDepartamento, int IdMunicipio),
+                (decimal Cantidad, decimal ImporteTotal, int? Cog, string? Region)>();
+
+            foreach (var hija in hijas)
+            {
+                var idH = hija.IdRequisicion;
+                var detalles = detallesPorHija[idH];
+                var cotizaciones = cotizacionesPorHija[idH];
+                var idDepto = hija.IdDepartamento;
+
+                foreach (var d in detalles)
+                {
+                    if (!cotizaciones.TryGetValue(d.IdRequisicionDetalle, out var cot))
+                        continue;
+
+                    var cantDetalle = d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m;
+                    var importeBase = cot.PrecioUnitario * cantDetalle;
+                    if (cot.IVA == true) importeBase *= 1.16m;
+
+                    municipiosPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var municipios);
+
+                    if (municipios is { Count: > 0 })
+                    {
+                        var sumaCant = municipios.Sum(m => m.Cantidad);
+                        foreach (var muni in municipios)
+                        {
+                            var prop = sumaCant > 0 ? muni.Cantidad / sumaCant : 1m;
+                            var key = (d.IdArticulo, idDepto, muni.IdMunicipio);
+
+                            if (grupos.TryGetValue(key, out var ex))
+                            {
+                                grupos[key] = (
+                                    ex.Cantidad + cantDetalle * prop,
+                                    ex.ImporteTotal + importeBase * prop,
+                                    ex.Cog ?? d.CogEditable ?? d.NumPartida,
+                                    ex.Region ?? muni.IdMunicipioNavigation?.ClaveRegion
+                                );
+                            }
+                            else
+                            {
+                                grupos[key] = (
+                                    cantDetalle * prop,
+                                    importeBase * prop,
+                                    d.CogEditable ?? d.NumPartida,
+                                    muni.IdMunicipioNavigation?.ClaveRegion
+                                );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var key = (d.IdArticulo, idDepto, 0);
+                        if (grupos.TryGetValue(key, out var ex))
+                        {
+                            grupos[key] = (
+                                ex.Cantidad + cantDetalle,
+                                ex.ImporteTotal + importeBase,
+                                ex.Cog ?? d.CogEditable ?? d.NumPartida,
+                                ex.Region
+                            );
+                        }
+                        else
+                        {
+                            grupos[key] = (cantDetalle, importeBase, d.CogEditable ?? d.NumPartida, null);
+                        }
+                    }
+                }
+            }
+
+            var deptoDefault = await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
+            var areaClave = "19";
+            var areaNombre = deptoDefault?.NombreDepartamento ?? "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES";
+
+            var fhoy = DateTime.Now;
+            var totalSolicitado = grupos.Values.Sum(g => g.ImporteTotal);
+            var primerHija = hijas.FirstOrDefault();
+
+            var modelo = new TablaApiEditableDTO
+            {
+                IdConsolidada = idConsolidada,
+                IdRequisicion = 0,
+                FechaElaboracion = fhoy.ToString("dddd, d 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX")),
+                Ejercicio = fhoy.Year.ToString(),
+                AreaSolicitanteClave = areaClave,
+                AreaSolicitanteNombre = areaNombre,
+                DescripcionBienServicio = S(primerHija?.UsoEspecifico),
+                Justificacion = S(primerHija?.Justificacion),
+                NumeroRequisicion = S(consolidada.FolioConsolidada),
+                OficioSuficiencia = "",
+                ContratoAsociado = "",
+                Comentarios = "",
+                TotalSolicitado = totalSolicitado > 0 ? FormatearImporte(totalSolicitado) : "$",
+                TotalAutorizado = "$"
+            };
+
+            foreach (var (key, val) in grupos
+                .OrderBy(g => g.Key.IdDepartamento)
+                .ThenBy(g => g.Value.Region)
+                .ThenBy(g => g.Key.IdMunicipio)
+                .ThenBy(g => g.Key.IdArticulo))
+            {
+                modelo.Partidas.Add(new TablaApiPartidaEditableDTO
+                {
+                    Numero = (modelo.Partidas.Count + 1).ToString(),
+                    Ua = areaClave,
+                    Region = S(val.Region),
+                    ClaveMunicipio = key.IdMunicipio > 0 ? key.IdMunicipio.ToString() : "",
+                    ImporteSolicitado = val.ImporteTotal > 0 ? FormatearImporte(val.ImporteTotal) : "",
+                    FuenteFinanciamiento = S(consolidada.Ff),
+                    Pp = S(consolidada.IdPp?.ToString()),
+                    Componente = "",
+                    Actividad = "",
+                    ObjetoGasto = S(val.Cog?.ToString()),
+                    ImporteAutorizado = ""
+                });
+            }
+
+            return modelo;
+        }
+
         public async Task<byte[]> GenerarTablaApiAsync(TablaApiEditableDTO modelo)
         {
-            if (modelo.IdRequisicion <= 0)
-                throw new ArgumentException("La requisición es requerida.", nameof(modelo));
+            if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))
+                throw new ArgumentException("La requisición o consolidada es requerida.", nameof(modelo));
 
-            var requi = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
-            if (requi == null)
-                throw new Exception($"No se encontró la requisición {modelo.IdRequisicion}.");
+            if (modelo.IdRequisicion > 0)
+            {
+                var requi = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
+                if (requi == null)
+                    throw new Exception($"No se encontró la requisición {modelo.IdRequisicion}.");
+            }
 
             // Solo lo capturado en el formulario; sin rellenar desde BD ni fusionar modelos.
             AsegurarTablaApiDesdeFormulario(modelo);
@@ -1070,7 +1444,8 @@ namespace Inventario.BLL.Implementacion
 
             var registro = new TblTablaApiHistorial
             {
-                IdRequisicion = modelo.IdRequisicion,
+                IdRequisicion = modelo.IdRequisicion > 0 ? modelo.IdRequisicion : null,
+                IdConsolidada = modelo.IdConsolidada.GetValueOrDefault() > 0 ? modelo.IdConsolidada : null,
                 IdUsuario = idUsuario,
                 FechaGeneracion = DateTime.Now,
                 DatosJson = json,
@@ -1109,7 +1484,7 @@ namespace Inventario.BLL.Implementacion
             return lista.Select(h => new TablaApiHistorialDTO
             {
                 IdHistorial = h.IdHistorial,
-                IdRequisicion = h.IdRequisicion,
+                IdRequisicion = h.IdRequisicion ?? 0,
                 FechaGeneracion = h.FechaGeneracion,
                 NombreUsuario = h.NombreUsuario,
                 Observacion = h.Observacion,
@@ -1336,74 +1711,77 @@ namespace Inventario.BLL.Implementacion
         private async Task<string> GenerarNumeroApiAsync()
         {
             int anioActual = DateTime.Now.Year;
-            // Los dos últimos dígitos del año: 2026 → "26"
             string sufAno = (anioActual % 100).ToString("D2");
-
-            // Prefijo que tienen todos los números API de este año
-            // Formato guardado en BD: "API-0001/26"
             string prefijo = $"API-";
             string terminacion = $"/{sufAno}";
 
-            // Obtener todos los NumApi del año en curso que tengan el formato esperado
-            var query = await _repositoryRequisicion.Consultar(r =>
+            int maxConsecutivo = 0;
+            string ExtraerMaximo(string? valor)
+            {
+                if (valor == null) return null;
+                var inicio = prefijo.Length;
+                var fin = valor.Length - terminacion.Length;
+                if (fin > inicio)
+                {
+                    var parte = valor.Substring(inicio, fin - inicio);
+                    if (int.TryParse(parte, out int num) && num > maxConsecutivo)
+                        maxConsecutivo = num;
+                }
+                return null;
+            }
+
+            var queryReq = await _repositoryRequisicion.Consultar(r =>
                 r.NumApi != null &&
                 r.NumApi.StartsWith(prefijo) &&
                 r.NumApi.EndsWith(terminacion));
+            var numApiReq = await queryReq.Select(r => r.NumApi).ToListAsync();
+            foreach (var n in numApiReq) ExtraerMaximo(n);
 
-            var registros = await query.Select(r => r.NumApi).ToListAsync();
+            var queryCons = await _repoConsolidada.Consultar(c =>
+                c.NumApi != null &&
+                c.NumApi.StartsWith(prefijo) &&
+                c.NumApi.EndsWith(terminacion));
+            var numApiCons = await queryCons.Select(c => c.NumApi).ToListAsync();
+            foreach (var n in numApiCons) ExtraerMaximo(n);
 
-            // Extraer el número consecutivo más alto
-            // Ejemplo: "API-0042/26" → 42
-            int maxConsecutivo = 0;
-            foreach (var numApi in registros)
-            {
-                // numApi tiene forma "API-XXXX/YY"
-                // Extraemos lo que está entre "API-" y "/YY"
-                var inicio = prefijo.Length;                      // posición después de "API-"
-                var fin = numApi.Length - terminacion.Length;  // posición antes de "/26"
-
-                if (fin > inicio)
-                {
-                    var parteNumerica = numApi.Substring(inicio, fin - inicio);
-                    if (int.TryParse(parteNumerica, out int num) && num > maxConsecutivo)
-                        maxConsecutivo = num;
-                }
-            }
-
-            int siguiente = maxConsecutivo + 1;
-
-            // Formato final: API-0001/26  (4 dígitos con ceros)
-            return $"API-{siguiente:D4}/{sufAno}";
+            return $"API-{(maxConsecutivo + 1):D4}/{sufAno}";
         }
 
         private async Task<string> GenerarNumeroPedidoAsync()
         {
             int anioActual = DateTime.Now.Year;
             string sufAno = (anioActual % 100).ToString("D2");
-
             string prefijo = "PED-";
             string terminacion = $"/{sufAno}";
 
-            var query = await _repositoryRequisicion.Consultar(r =>
+            int maxConsecutivo = 0;
+            string ExtraerMaximo(string? valor)
+            {
+                if (valor == null) return null;
+                var inicio = prefijo.Length;
+                var fin = valor.Length - terminacion.Length;
+                if (fin > inicio)
+                {
+                    var parte = valor.Substring(inicio, fin - inicio);
+                    if (int.TryParse(parte, out int num) && num > maxConsecutivo)
+                        maxConsecutivo = num;
+                }
+                return null;
+            }
+
+            var queryReq = await _repositoryRequisicion.Consultar(r =>
                 r.NumPedido != null &&
                 r.NumPedido.StartsWith(prefijo) &&
                 r.NumPedido.EndsWith(terminacion));
+            var numPedReq = await queryReq.Select(r => r.NumPedido).ToListAsync();
+            foreach (var n in numPedReq) ExtraerMaximo(n);
 
-            var registros = await query.Select(r => r.NumPedido).ToListAsync();
-
-            int maxConsecutivo = 0;
-            foreach (var numPedido in registros)
-            {
-                var inicio = prefijo.Length;
-                var fin = numPedido!.Length - terminacion.Length;
-
-                if (fin > inicio)
-                {
-                    var parteNumerica = numPedido.Substring(inicio, fin - inicio);
-                    if (int.TryParse(parteNumerica, out int num) && num > maxConsecutivo)
-                        maxConsecutivo = num;
-                }
-            }
+            var queryCons = await _repoConsolidada.Consultar(c =>
+                c.NumPedido != null &&
+                c.NumPedido.StartsWith(prefijo) &&
+                c.NumPedido.EndsWith(terminacion));
+            var numPedCons = await queryCons.Select(c => c.NumPedido).ToListAsync();
+            foreach (var n in numPedCons) ExtraerMaximo(n);
 
             return $"PED-{(maxConsecutivo + 1):D4}/{sufAno}";
         }
@@ -1687,7 +2065,9 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath)
         {
-            var vista = await ObtenerPedidoEditableAsync(form.IdRequisicion);
+            var vista = form.IdConsolidada.HasValue
+                ? await ObtenerPedidoEditableConsolidadaAsync(form.IdConsolidada.Value)
+                : await ObtenerPedidoEditableAsync(form.IdRequisicion!.Value);
             vista.NumeroPedido = form.NumeroPedido;
             vista.TiempoEntrega = form.TiempoEntrega;
             vista.CondicionesPago = form.CondicionesPago;
@@ -2115,13 +2495,179 @@ namespace Inventario.BLL.Implementacion
             return lista.Select(h => new PedidoHistorialDTO
             {
                 IdHistorial = h.IdHistorial,
-                IdRequisicion = h.IdRequisicion,
+                IdRequisicion = h.IdRequisicion ?? 0,
                 FechaGeneracion = h.FechaGeneracion,
                 NombreUsuario = h.NombreUsuario,
                 Observacion = h.Observacion,
                 Modelo = System.Text.Json.JsonSerializer
                 .Deserialize<PedidoVistaDTO>(h.DatosJson, opciones)
             }).ToList();
+        }
+
+        public async Task<PedidoVistaDTO> ObtenerPedidoEditableConsolidadaAsync(int idConsolidada)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada)
+                ?? throw new Exception($"No se encontró la consolidada {idConsolidada}.");
+
+            var detalleQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var detalles = await detalleQuery
+                .Include(d => d.IdRequisicionNavigation)
+                    .ThenInclude(r => r.TblRequisicionDetalles)
+                        .ThenInclude(det => det.IdArticuloNavigation)
+                .ToListAsync();
+
+            var hijas = detalles.Select(d => d.IdRequisicionNavigation).ToList();
+            var idsHijas = hijas.Select(r => (int?)r.IdRequisicion).ToList();
+
+            // Departamento fijo: Recursos Materiales (ID=19)
+            var depto19 = await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
+            var nombreDepartamento = depto19?.NombreDepartamento ?? "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES";
+            var responsableDepto = depto19?.NombreJefe ?? "";
+
+            // Partidas de todas las hijas
+            var todasPartidas = hijas
+                .SelectMany(r => r.TblRequisicionDetalles.Where(a => a.Activo != false))
+                .Select(a => new
+                {
+                    a.IdRequisicionDetalle,
+                    a.IdRequisicion,
+                    IdArticulo = a.IdArticulo ?? 0,
+                    a.Descripcion,
+                    a.Cantidad,
+                    a.UnidadMedida,
+                    Clave = a.IdArticuloNavigation != null ? a.IdArticuloNavigation.Clave : null,
+                    ClaveMaterial = a.IdArticuloNavigation != null ? (int?)a.IdArticuloNavigation.ClaveMaterial : null,
+                    a.NumPartida,
+                    a.CogEditable
+                })
+                .ToList();
+
+            // Cotizaciones de todas las hijas
+            var cotQuery = await _repositoryCotizaciones.Consultar(
+                c => idsHijas.Contains(c.IdRequisicion) && c.IdRequiDetalle.HasValue && c.Importe.HasValue);
+            var cotizaciones = await cotQuery
+                .Select(c => new
+                {
+                    c.IdProveedor,
+                    c.IdRequiDetalle,
+                    c.Importe,
+                    c.Iva,
+                    ProvNombre = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.NombreProvedor : "",
+                    ProvDireccion = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Direccion : "",
+                    ProvRfc = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Rfc : ""
+                })
+                .ToListAsync();
+
+            // Reutilizar ganador adjudicado de las requisiciones hijas
+            var queryGanador = await _repositoryGanador.Consultar(g => idsHijas.Contains(g.IdRequisicion));
+            var ganador = await queryGanador.FirstOrDefaultAsync();
+            int? idGanador = ganador?.IdProveedor;
+
+            if (idGanador == null || idGanador <= 0)
+                throw new Exception($"La consolidada {idConsolidada} no tiene un proveedor ganador asignado.");
+
+            var provGanador = idGanador.HasValue
+                ? cotizaciones.FirstOrDefault(c => c.IdProveedor == idGanador)
+                : null;
+
+            var cotGanadora = cotizaciones
+                .Where(c => c.IdProveedor == idGanador && c.IdRequiDetalle.HasValue)
+                .GroupBy(c => c.IdRequiDetalle!.Value)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            // Agrupar partidas por IdArticulo (consolidar cantidades)
+            var partidasConsolidadas = todasPartidas
+                .GroupBy(p => new { p.IdArticulo, p.Clave, p.ClaveMaterial, p.Descripcion, p.UnidadMedida })
+                .Select(g =>
+                {
+                    var primera = g.First();
+                    cotGanadora.TryGetValue(primera.IdRequisicionDetalle, out var cot);
+                    bool tieneIva = cot?.Iva ?? false;
+                    decimal precioUnitario = cot?.Importe ?? 0m;
+                    decimal cantidadTotal = g.Sum(p => p.Cantidad ?? 1m);
+
+                    return new
+                    {
+                        primera.IdRequisicionDetalle,
+                        primera.Clave,
+                        primera.ClaveMaterial,
+                        primera.Descripcion,
+                        primera.UnidadMedida,
+                        primera.NumPartida,
+                        Cantidad = cantidadTotal,
+                        PrecioUnitario = precioUnitario,
+                        TieneIva = tieneIva,
+                        primera.CogEditable
+                    };
+                })
+                .OrderBy(p => p.NumPartida)
+                .ToList();
+
+            var dto = new PedidoVistaDTO
+            {
+                IdRequisicion = null,
+                IdConsolidada = idConsolidada,
+                NumRequisicion = consolidada.FolioConsolidada ?? "",
+                NumeroPedido = consolidada.NumPedido ?? "",
+                ProveedorNombre = provGanador?.ProvNombre ?? "",
+                ProveedorDireccion = provGanador?.ProvDireccion ?? "",
+                ProveedorRfc = provGanador?.ProvRfc ?? "",
+                Departamento = nombreDepartamento,
+                Responsable = responsableDepto,
+                LugarEntrega = "RECURSOS MATERIALES",
+                PartidaPresupuestal = consolidada.IdPp?.ToString() ?? ""
+            };
+
+            foreach (var part in partidasConsolidadas)
+            {
+                dto.Partidas.Add(new PedidoPartidaVistaDTO
+                {
+                    Numero = (dto.Partidas.Count + 1).ToString(),
+                    Clave = part.Clave ?? part.ClaveMaterial?.ToString() ?? "",
+                    Descripcion = part.Descripcion ?? "",
+                    Cantidad = part.Cantidad,
+                    UnidadMedida = part.UnidadMedida ?? "",
+                    PrecioUnitario = part.PrecioUnitario,
+                    TieneIva = part.TieneIva
+                });
+            }
+
+            decimal sumaInicial = dto.Partidas.Sum(p => p.PrecioUnitario * p.Cantidad);
+            decimal ivaInicial = sumaInicial * 0.16m;
+            decimal subtotalInicial = sumaInicial + ivaInicial;
+            decimal retencionInicial = subtotalInicial * 0.005m;
+            dto.Suma = sumaInicial;
+            dto.Iva = ivaInicial;
+            dto.Descuento = 0m;
+            dto.Subtotal = subtotalInicial;
+            dto.Retencion = retencionInicial;
+            dto.Total = subtotalInicial - retencionInicial;
+
+            return dto;
+        }
+
+        public async Task GuardarHistorialPedidoConsolidadaAsync(
+            PedidoVistaDTO modelo,
+            int idUsuario,
+            string? observacion = null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(modelo, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var registro = new TblTablaApiHistorial
+            {
+                IdConsolidada = modelo.IdConsolidada,
+                IdRequisicion = null,
+                IdUsuario = idUsuario,
+                FechaGeneracion = DateTime.Now,
+                DatosJson = json,
+                Observacion = observacion ?? "Pedido"
+            };
+
+            await _repoHistorial.Crear(registro);
         }
     }
 }

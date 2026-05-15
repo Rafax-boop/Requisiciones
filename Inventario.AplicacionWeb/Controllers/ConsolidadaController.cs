@@ -32,7 +32,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 return BadRequest(new { mensaje = "Se requieren al menos 2 requisiciones." });
 
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario, servicio);
+            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario, false);
 
             if (resultado == null)
                 return BadRequest(new { mensaje = "No se pudo crear la consolidada. Verifica que las requisiciones no estén ya consolidadas." });
@@ -96,6 +96,44 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var partidas = await _consolidadaService.ObtenerPartidasConsolidada(idConsolidada);
             return Ok(partidas);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerConsolidadasVerificadas(bool servicio)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var lista = await _consolidadaService.ObtenerConsolidadasVerificadas(idUsuario, servicio);
+            return Ok(lista);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerExpedienteConsolidada(int idConsolidada)
+        {
+            var expediente = await _consolidadaService.ObtenerExpedienteConsolidada(idConsolidada);
+            if (expediente == null)
+                return NotFound(new { mensaje = "Consolidada no encontrada." });
+            return Ok(expediente);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirDocumentoProveedorConsolidada(
+            int idConsolidada,
+            string tipoDocumento,
+            IFormFile archivo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var ok = await _consolidadaService.SubirDocumentoProveedorConsolidada(
+                idConsolidada, tipoDocumento, archivo, webRootPath, idUsuario);
+            if (!ok) return BadRequest();
+            return Ok();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerDocumentosProveedorConsolidada(int idConsolidada)
+        {
+            var docs = await _consolidadaService.ObtenerDocumentosProveedorConsolidada(idConsolidada);
+            return Ok(docs);
         }
     }
 }

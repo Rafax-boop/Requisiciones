@@ -1,4 +1,5 @@
 ﻿using Inventario.BLL.DTO;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +57,8 @@ namespace Inventario.BLL.DTO
         public string FF { get; set; }
         public string TipoPrograma { get; set; }
         public string Observaciones { get; set; }
+        public List<IFormFile>? DocSiaf { get; set; }
+        public List<IFormFile>? TablaApi { get; set; }
     }
 
     public class PartidaConsolidadaDTO

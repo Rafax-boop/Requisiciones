@@ -344,5 +344,208 @@ namespace Inventario.BLL.Implementacion
 
             return grupos;
         }
+
+        public async Task<List<ConsolidadaVerificadaDTO>> ObtenerConsolidadasVerificadas(int idUsuario, bool servicio)
+        {
+            IQueryable<TblConsolidada> consBase;
+
+            if (!servicio)
+            {
+                consBase = await _repoConsolidada.Consultar(c =>
+                    c.IdUsuarioMat == idUsuario &&
+                    c.RequiServicio == false);
+            }
+            else
+            {
+                consBase = await _repoConsolidada.Consultar(c =>
+                    c.RequiServicio == true);
+            }
+
+            var consolidadas = await consBase
+                .Include(c => c.IdEstatusNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                    .ThenInclude(d => d.IdRequisicionNavigation)
+                        .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                    .ThenInclude(d => d.IdRequisicionNavigation)
+                        .ThenInclude(r => r.TblRequisicionDetalles)
+                .ToListAsync();
+
+            var estatusValidos = servicio ? new[] { 16, 18 } : new[] { 15, 18 };
+
+            var resultado = consolidadas
+                .Where(c => c.TblConsolidadasDetalles
+                    .Any(d => estatusValidos.Contains(d.IdRequisicionNavigation.IdEstatus ?? 0)))
+                .Select(c =>
+                {
+                    var hijas = c.TblConsolidadasDetalles
+                        .Select(d => d.IdRequisicionNavigation)
+                        .ToList();
+
+                    return new ConsolidadaVerificadaDTO
+                    {
+                        ConsolidadaId = c.ConsolidadaId,
+                        FolioConsolidada = c.FolioConsolidada,
+                        FechaCreacion = c.FechaCreacion.ToString("dd/MM/yyyy"),
+                        IdEstatus = c.IdEstatus,
+                        Estatus = c.IdEstatusNavigation?.NombreEstatus ?? "",
+                        CantidadRequisiciones = hijas.Count,
+                        TotalPartidas = hijas.Sum(r => r.TblRequisicionDetalles.Count(d => d.Activo != false)),
+                        Departamentos = string.Join(", ", hijas
+                            .Select(r => r.IdDepartamentoNavigation?.NombreDepartamento ?? "")
+                            .Distinct()),
+                        RequiServicio = c.RequiServicio ?? false
+                    };
+                }).ToList();
+
+            return resultado;
+        }
+
+        public async Task<ConsolidadaExpedienteDTO> ObtenerExpedienteConsolidada(int idConsolidada)
+        {
+            var consQuery = await _repoConsolidada.Consultar(c => c.ConsolidadaId == idConsolidada);
+            var consolidada = await consQuery
+                .Include(c => c.IdEstatusNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                    .ThenInclude(d => d.IdRequisicionNavigation)
+                        .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                    .ThenInclude(d => d.IdRequisicionNavigation)
+                        .ThenInclude(r => r.TblRequisicionDetalles)
+                            .ThenInclude(a => a.IdArticuloNavigation)
+                .Include(c => c.TblConsolidadasDetalles)
+                    .ThenInclude(d => d.IdRequisicionNavigation)
+                        .ThenInclude(r => r.TblBitacoraEstatuses)
+                .FirstOrDefaultAsync();
+
+            if (consolidada == null) return null;
+
+            var hijas = consolidada.TblConsolidadasDetalles
+                .Select(d => d.IdRequisicionNavigation)
+                .ToList();
+
+            var requisHijas = hijas.Select(r => new RequiHijaDTO
+            {
+                IdRequi = r.IdRequisicion,
+                NumRequi = r.NumRequisicion,
+                Departamento = r.IdDepartamentoNavigation?.NombreDepartamento ?? "",
+                Responsable = r.NomResponsableDepartamento,
+                CantidadPartidas = r.TblRequisicionDetalles.Count(d => d.Activo != false)
+            }).ToList();
+
+            var articulos = hijas
+                .SelectMany(r => r.TblRequisicionDetalles
+                    .Where(a => a.Activo != false)
+                    .Select(a => new DetalleArticuloDTO
+                    {
+                        IdRequisicionDetalle = a.IdRequisicionDetalle,
+                        NumPartida = a.NumPartida,
+                        ClaveMaterial = a.IdArticuloNavigation?.Clave,
+                        IdArticulo = a.IdArticulo,
+                        Cantidad = a.Cantidad,
+                        UnidadMedida = a.UnidadMedida,
+                        Descripcion = a.Descripcion,
+                        DescripcionDetallada = a.DescripcionDetallada,
+                        NumRequiOrigen = r.NumRequisicion
+                    }))
+                .OrderBy(a => a.NumPartida)
+                .ToList();
+
+            var observaciones = hijas
+                .SelectMany(r => r.TblBitacoraEstatuses
+                    .Where(b => b.IdEstatus == 13 || b.IdEstatus == 15 || b.IdEstatus == 16 || b.IdEstatus == 18))
+                .OrderByDescending(b => b.FechaEstatus)
+                .Select(b => b.Observacion)
+                .FirstOrDefault();
+
+            var numApi = hijas
+                .Select(r => r.NumApi)
+                .FirstOrDefault(n => !string.IsNullOrEmpty(n));
+
+            var docsQuery = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
+            var docs = await docsQuery.ToListAsync();
+
+            return new ConsolidadaExpedienteDTO
+            {
+                ConsolidadaId = consolidada.ConsolidadaId,
+                FolioConsolidada = consolidada.FolioConsolidada,
+                IdEstatus = consolidada.IdEstatus,
+                Estatus = consolidada.IdEstatusNavigation?.NombreEstatus ?? "",
+                FechaCreacion = consolidada.FechaCreacion.ToString("dd/MM/yyyy"),
+                IdPp = consolidada.IdPp,
+                Ff = consolidada.Ff,
+                TipoPrograma = consolidada.TipoPrograma,
+                NumeroApi = numApi,
+                Observaciones = observaciones,
+                Requisiciones = requisHijas,
+                Articulos = articulos,
+                CuadroComparativo = docs
+                    .Where(f => f.Tipo == "cuadro_comparativo")
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                    .ToList(),
+                Anexos = docs
+                    .Where(f => f.Tipo == "anexo")
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                    .ToList(),
+                ArchivosSiaf = docs
+                    .Where(f => f.Tipo == "SIAF")
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                    .ToList(),
+                ArchivosTablaApi = docs
+                    .Where(f => f.Tipo == "TablaApi")
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                    .ToList(),
+                ArchivosPedidoCompra = docs
+                    .Where(f => f.Tipo == "pedido_compra")
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
+                    .ToList(),
+                DocumentosProveedor = docs
+                    .Where(f => f.Tipo.StartsWith("proveedor_"))
+                    .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = f.Tipo.Replace("proveedor_", "") })
+                    .ToList()
+            };
+        }
+
+        public async Task<bool> SubirDocumentoProveedorConsolidada(int idConsolidada, string tipoDocumento,
+            IFormFile archivo, string webRootPath, int idUsuario)
+        {
+            if (archivo == null || archivo.Length == 0) return false;
+
+            var carpeta = $"consolidada_{idConsolidada}";
+            var rutaBase = Path.Combine(webRootPath, "uploads", "Proveedor", carpeta);
+            Directory.CreateDirectory(rutaBase);
+
+            var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+            using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
+                await archivo.CopyToAsync(stream);
+
+            var filtroPrev = await _repoDiseno.Consultar(f =>
+                f.IdConsolidada == idConsolidada && f.Tipo == $"proveedor_{tipoDocumento}");
+            var previos = await filtroPrev.ToListAsync();
+            foreach (var p in previos)
+                await _repoDiseno.Eliminar(p);
+
+            await _repoDiseno.Crear(new TblRegistroDiseno
+            {
+                IdConsolidada = idConsolidada,
+                Ruta = $"/uploads/Proveedor/{carpeta}/{nombre}",
+                FechaSubida = DateTime.Now,
+                Tipo = $"proveedor_{tipoDocumento}"
+            });
+
+            return true;
+        }
+
+        public async Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedorConsolidada(int idConsolidada)
+        {
+            var query = await _repoDiseno.Consultar(f =>
+                f.IdConsolidada == idConsolidada && f.Tipo.StartsWith("proveedor_"));
+
+            return await query.Select(f => new ArchivoAtencionDTO
+            {
+                Ruta = f.Ruta,
+                NombreArchivo = f.Tipo.Replace("proveedor_", "")
+            }).ToListAsync();
+        }
     }
 }

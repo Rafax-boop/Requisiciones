@@ -2,7 +2,8 @@ namespace Inventario.BLL.DTO
 {
     public class PedidoVistaDTO
     {
-        public int IdRequisicion { get; set; }
+        public int? IdRequisicion { get; set; }
+        public int? IdConsolidada { get; set; }
         public string NumRequisicion { get; set; } = "";
         public string NumPedido { get; set; } = "";
         public string ProveedorNombre { get; set; } = "";

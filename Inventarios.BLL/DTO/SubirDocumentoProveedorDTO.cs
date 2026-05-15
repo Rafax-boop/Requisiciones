@@ -20,4 +20,11 @@ namespace Inventario.BLL.DTO
         public string Observaciones { get; set; } = "";
         public List<string> DocumentosObservados { get; set; } = new();
     }
+
+    public class RebotarDocumentosConsolidadaDTO
+    {
+        public int IdConsolidada { get; set; }
+        public string Observaciones { get; set; } = "";
+        public List<string> DocumentosObservados { get; set; } = new();
+    }
 }

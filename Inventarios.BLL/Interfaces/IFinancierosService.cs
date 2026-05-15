@@ -28,7 +28,15 @@ namespace Inventario.BLL.Interfaces
         Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoAsync(int idRequisicion);
 
         // consolidada
-        Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null);
+        Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null, List<int>? estatusPermitidos = null);
         Task<bool> AsignarConsolidada(int idConsolidada, int idUsuarioLog, int idUsuarioFinan);
+        Task<TablaApiEditableDTO> ObtenerTablaApiEditableConsolidadaAsync(int idConsolidada);
+        Task<AtenderResultadoDTO> AtenderConsolidadaFinancieros(AtenderConsolidadaDTO modelo, int idUsuario);
+
+        Task<PedidoVistaDTO> ObtenerPedidoEditableConsolidadaAsync(int idConsolidada);
+        Task GuardarHistorialPedidoConsolidadaAsync(PedidoVistaDTO modelo, int idUsuario, string? observacion = null);
+        Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario);
+        Task<bool> FinalizarRequisicionConsolidada(int idConsolidada, List<IFormFile>? transferencias, int idUsuario);
+        Task<bool> RebotarDocumentosConsolidada(int idConsolidada, string observaciones, List<string> docsObservados, int idUsuario);
     }
 }

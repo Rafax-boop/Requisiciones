@@ -34,6 +34,9 @@
      data-url-consolidadas="@Url.Action("ObtenerConsolidadasFinancieros", "Financieros")"
      data-url-asignar-consolidada="@Url.Action("AsignarConsolidada", "Financieros")"
      data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidadaFinancieros", "Financieros")"
+     data-url-editar-tabla-api-consolidada="@Url.Action("EditarTablaApiConsolidada", "Financieros")"
+     data-url-descargar-tabla-api-consolidada="@Url.Action("DescargarTablaApiConsolidada", "Financieros")"
+     data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Financieros")"
      data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
      data-es-rol9="@(User.IsInRole("9") ? "true" : "false")">
     <div class="tabla-requi-header">
@@ -873,6 +876,16 @@
                                                 title="Abre el editor visual de la Tabla API">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                             Editar Tabla API
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn boton-rosado mb-2 w-100"
+                                                id="btnEditarApiConsolidada"
+                                                style="display:none;"
+                                                onclick="editarTablaApiConsolidada()"
+                                                title="Abre el editor visual de la Tabla API para la consolidada">
+                                            <i class="fa-solid fa-layer-group"></i>
+                                            Editar Tabla API (Consolidada)
                                         </button>
 
                                         <!-- Input para subir la Tabla API ya firmada (flujo original) -->

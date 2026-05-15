@@ -55,7 +55,14 @@
      data-url-partidas-consolidada="@Url.Action("ObtenerPartidasConsolidada", "Consolidada")"
      data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")"
      data-url-descargar-cuadro-consolidada="@Url.Action("DescargarCuadroComparativoConsolidada", "Requisicion")"
-     data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")">
+     data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
+     data-url-consolidadas-verificadas="@Url.Action("ObtenerConsolidadasVerificadas", "Consolidada")"
+     data-url-expediente-consolidada="@Url.Action("ObtenerExpedienteConsolidada", "Consolidada")"
+     data-url-subir-doc-proveedor-consolidada="@Url.Action("SubirDocumentoProveedorConsolidada", "Consolidada")"
+     data-url-obtener-docs-proveedor-consolidada="@Url.Action("ObtenerDocumentosProveedorConsolidada", "Consolidada")"
+     data-url-editar-pedido-consolidada="@Url.Action("EditarPedidoCompraConsolidada", "Financieros")"
+     data-url-generar-pedido-pdf-consolidada="@Url.Action("GenerarPedidoPdfConsolidada", "Financieros")"
+     data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -147,7 +154,7 @@
         }
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 18).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => (r.IdEstatus == 15 || r.IdEstatus == 18) && r.ConsolidadaId == null).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -561,7 +568,7 @@
                         <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbodyVerificadasIndividuales">
                     @{
                         var idxVerificadas = 0;
                     }
@@ -588,11 +595,13 @@
                     }
                     @if (!requisicionesVerificadas.Any())
                     {
-                        <tr class="fila-vacia">
+                        <tr class="fila-vacia" id="filaVaciaVerificadas">
                             <td colspan="8" class="text-center">No hay requisiciones verificadas</td>
                         </tr>
                     }
                 </tbody>
+                <!-- Consolidadas en verificadas (cargado dinámicamente) -->
+                <tbody id="tbodyVerificadasConsolidadas"></tbody>
             </table>
             <div id="paginacionVerificadas" class="almacen-paginacion"></div>
         </div>

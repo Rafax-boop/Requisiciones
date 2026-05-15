@@ -647,9 +647,12 @@ public partial class DbSigereContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.Observacion).HasMaxLength(500);
 
+            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblTablaApiHistorials)
+                .HasForeignKey(d => d.IdConsolidada)
+                .HasConstraintName("FK_TblTablaApiHistorial_TblConsolidadas");
+
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblTablaApiHistorials)
                 .HasForeignKey(d => d.IdRequisicion)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_TablaApiHistorial_Requisicion");
 
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblTablaApiHistorials)

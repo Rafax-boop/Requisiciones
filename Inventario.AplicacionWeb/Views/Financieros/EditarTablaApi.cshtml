@@ -65,6 +65,7 @@
     <form asp-action="GenerarTablaApiEditada" asp-controller="Financieros" method="post" class="no-loader">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="IdRequisicion" />
+        <input type="hidden" asp-for="IdConsolidada" />
 
         <div class="container-formulario">
             <div class="seccion-1">

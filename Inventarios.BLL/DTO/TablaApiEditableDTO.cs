@@ -3,6 +3,7 @@ namespace Inventario.BLL.DTO
     public class TablaApiEditableDTO
     {
         public int IdRequisicion { get; set; }
+        public int? IdConsolidada { get; set; }
         public string FechaElaboracion { get; set; } = "";
         public string Ejercicio { get; set; } = "";
         public string AreaSolicitanteClave { get; set; } = "";

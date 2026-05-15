@@ -20,5 +20,11 @@ namespace Inventario.BLL.Interfaces
             List<IFormFile> cuadroComparativo, List<IFormFile> anexos, string webRootPath);
         Task<List<PartidaConsolidadaDTO>> ObtenerPartidasConsolidada(int idConsolidada);
         Task<TblConsolidada?> ObtenerConsolidada(int idConsolidada);
+
+        Task<List<ConsolidadaVerificadaDTO>> ObtenerConsolidadasVerificadas(int idUsuario, bool servicio);
+        Task<ConsolidadaExpedienteDTO> ObtenerExpedienteConsolidada(int idConsolidada);
+        Task<bool> SubirDocumentoProveedorConsolidada(int idConsolidada, string tipoDocumento,
+            IFormFile archivo, string webRootPath, int idUsuario);
+        Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedorConsolidada(int idConsolidada);
     }
 }

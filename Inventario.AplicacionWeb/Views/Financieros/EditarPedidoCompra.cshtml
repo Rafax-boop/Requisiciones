@@ -87,9 +87,11 @@
         </div>
     </div>
 
-    <form asp-action="GenerarPedidoPdf" asp-controller="Financieros" method="post" target="_blank" class="no-loader">
+    <form method="post" target="_blank" class="no-loader"
+          action="@(Model.IdConsolidada.HasValue ? Url.Action("GenerarPedidoPdfConsolidada", "Financieros") : Url.Action("GenerarPedidoPdf", "Financieros"))">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="IdRequisicion" />
+        <input type="hidden" asp-for="IdConsolidada" />
         <input type="hidden" asp-for="ProveedorNombre" />
         <input type="hidden" asp-for="ProveedorDireccion" />
         <input type="hidden" asp-for="ProveedorRfc" />
