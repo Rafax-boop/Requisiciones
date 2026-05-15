@@ -48,6 +48,14 @@
     var esRol9 = container ? container.getAttribute("data-es-rol9") === "true" : false;
     var urlProcesoPago = container ? container.getAttribute("data-url-proceso-pago") : "";
     var urlExpedienteConsolidada = container ? container.getAttribute("data-url-expediente-consolidada") : "";
+    var urlConsolidadasAutorizadas = container
+        ? container.getAttribute("data-url-consolidadas-autorizadas") : "";
+    var urlConsolidadasDocumentos = container
+        ? container.getAttribute("data-url-consolidadas-documentos") : "";
+    var urlObtenerArchivosConsolidada = container
+        ? container.getAttribute("data-url-obtener-archivos-consolidada") : "";
+    var urlDescargarArchivosConsolidadaZip = container
+        ? container.getAttribute("data-url-descargar-archivos-consolidada-zip") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -1223,9 +1231,21 @@
         var tbody = tbodyOptional || document.querySelector(".tabla-requisiciones:not(#tablaModalDetalle) tbody");
         if (!tbody) return;
         var filaVacia = tbody.querySelector(".fila-vacia");
-        if (totalVisibles === 0) {
+
+        var table = tbody.closest("table");
+        var hayConsolidadas = false;
+        if (table) {
+            var tbodys = table.querySelectorAll("tbody");
+            for (var i = 0; i < tbodys.length; i++) {
+                if (tbodys[i] !== tbody) {
+                    var rows = tbodys[i].querySelectorAll("tr:not(.fila-vacia):not(.fila-detalle)");
+                    if (rows.length > 0) { hayConsolidadas = true; break; }
+                }
+            }
+        }
+
+        if (totalVisibles === 0 && !hayConsolidadas) {
             if (!filaVacia) {
-                var table = tbody.closest("table");
                 var colCount = table ? table.querySelectorAll("thead tr th").length : 8;
                 filaVacia = document.createElement("tr");
                 filaVacia.className = "fila-vacia";
@@ -1251,7 +1271,7 @@
             .then(function (data) {
                 if (!data || !data.requisiciones || data.requisiciones.length === 0) {
                     tbodyDocumentos.innerHTML =
-                        '<tr class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones con documentos</td></tr>';
+                        '<tr id="filaVaciaDocumentos" class="fila-vacia"><td colspan="8" class="text-center">No hay requisiciones con documentos</td></tr>';
                     return;
                 }
                 tbodyDocumentos.innerHTML = "";
@@ -1278,9 +1298,169 @@
             .catch(function (err) {
                 console.error("Error cargando requisiciones con documentos:", err);
                 tbodyDocumentos.innerHTML =
-                    '<tr class="fila-vacia"><td colspan="8" class="text-center">Error al cargar los datos</td></tr>';
+                    '<tr id="filaVaciaDocumentos" class="fila-vacia"><td colspan="8" class="text-center">Error al cargar los datos</td></tr>';
             });
     }
+
+    window.cargarConsolidadasDocumentos = function () {
+        var tbody = document.getElementById("tbodyDocumentosConsolidadas");
+        if (!tbody) return;
+        if (tbody.getAttribute("data-cargado") === "1") return;
+        if (!urlConsolidadasDocumentos) return;
+
+        fetch(urlConsolidadasDocumentos, { credentials: "same-origin" })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                tbody.setAttribute("data-cargado", "1");
+
+                if (!data || !data.consolidadas || data.consolidadas.length === 0) return;
+
+                var filaVacia = document.getElementById("filaVaciaDocumentos");
+                if (filaVacia) filaVacia.remove();
+                var tbodyIndDoc = document.getElementById("tbodyDocumentos");
+                if (tbodyIndDoc) {
+                    var fvDoc = tbodyIndDoc.querySelector(".fila-vacia");
+                    if (fvDoc) fvDoc.remove();
+                }
+
+                tbody.innerHTML = "";
+                data.consolidadas.forEach(function (c, idx) {
+                    var tr = document.createElement("tr");
+                    tr.className = "fila-requi fila-consolidada";
+                    tr.setAttribute("data-consolidada-id", c.consolidadaId);
+                    tr.innerHTML =
+                        '<td style="text-align:center">' + (idx + 1) + "</td>" +
+                        "<td><strong>" + (c.folioConsolidada || "—") + " <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></strong></td>" +
+                        "<td>" + (c.fechaCreacion || "—") + "</td>" +
+                        '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
+                        (c.departamentos || "—") + "</td>" +
+                        '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
+                        '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
+                        "<td>" + (c.estatus || "—") + "</td>" +
+                        '<td style="text-align:center">' +
+                        '<div class="acciones-grupo" style="justify-content:center">' +
+                        '<button class="btn-accion btn-ver" title="Ver archivos" ' +
+                        'onclick="verArchivosConsolidadaFin(' + c.consolidadaId + ')">' +
+                        '<i class="fa-solid fa-file"></i>' +
+                        "</button>" +
+                        "</div>" +
+                        "</td>";
+                    tbody.appendChild(tr);
+                });
+
+                aplicarPaginacionRequisiciones();
+            })
+            .catch(function () {
+                if (tbody) tbody.innerHTML =
+                    '<tr class="fila-vacia"><td colspan="8" class="text-center">' +
+                    "Error al cargar las consolidadas con documentos</td></tr>";
+            });
+    };
+
+    window.verArchivosConsolidadaFin = function (idConsolidada) {
+        if (window.DocumentosRequisicionModal) {
+            window.DocumentosRequisicionModal.open({
+                idConsolidada: idConsolidada,
+                fetchUrl: urlObtenerArchivosConsolidada,
+                downloadZipUrl: urlDescargarArchivosConsolidadaZip
+            });
+            return;
+        }
+
+        fetch(urlObtenerArchivosConsolidada + "?idConsolidada=" + idConsolidada, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (archivos) {
+                if (!archivos || archivos.length === 0) {
+                    alert("Esta consolidada no tiene archivos vinculados");
+                    return;
+                }
+
+                var archivoActual = archivos[0];
+                var esImagen = /\.(jpg|jpeg|png|gif|webp)$/i.test(archivoActual.nombreArchivo);
+                var esPdf = /\.pdf$/i.test(archivoActual.nombreArchivo);
+
+                var listaHtml = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                archivos.forEach(function (arch, idx) {
+                    var nombre = arch.nombreArchivo || arch.ruta.split("/").pop();
+                    var activo = idx === 0 ? "activo" : "";
+                    listaHtml +=
+                        '<li class="archivo-item ' + activo + '" data-archivo="' + arch.ruta + '" data-nombre="' + nombre + '" data-tipo="' + arch.tipo + '" data-fecha="' + arch.fechaSubida + '" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s;">' +
+                            '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+                                '<div style="flex: 1;">' +
+                                    '<div style="font-weight: 500; color: #333;">' +
+                                        '<i class="fa-solid fa-file"></i> ' + nombre +
+                                    '</div>' +
+                                    '<div style="font-size: 0.85rem; color: #888; margin-top: 4px;">' +
+                                        arch.tipo + ' &bull; ' + arch.fechaSubida +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</li>';
+                });
+                listaHtml += '</ul>';
+
+                var previewHtml = esImagen
+                    ? '<img src="' + archivoActual.ruta + '" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />'
+                    : esPdf
+                        ? '<iframe src="' + archivoActual.ruta + '" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>'
+                        : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;"><div style="text-align: center; color: #999;"><i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i><p>No hay vista previa disponible</p><p style="font-size: 0.9rem;">Descarga el archivo para verlo</p></div></div>';
+
+                var modalHtml = '<div class="modal fade" id="modalArchivosConsolidada" tabindex="-1" aria-hidden="true">' +
+                    '<div class="modal-dialog modal-lg modal-dialog-centered">' +
+                        '<div class="modal-content modal-premium">' +
+                            '<div class="modal-header">' +
+                                '<h5 class="modal-title modal-titulo-premium"><i class="fa-solid fa-folder-open" style="margin-right:8px;"></i>Archivos de la consolidada</h5>' +
+                                '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>' +
+                            '</div>' +
+                            '<div class="modal-body" style="display:flex;gap:16px;padding:16px;">' +
+                                '<div style="flex:1;max-height:400px;overflow-y:auto;">' + listaHtml + '</div>' +
+                                '<div style="flex:1.5;min-height:300px;background:#fafafa;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;" id="previewContainerConsolidada">' + previewHtml + '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer" style="justify-content: flex-end;">' +
+                                '<a href="' + urlDescargarArchivosConsolidadaZip + "?idConsolidada=" + idConsolidada + '" class="btn boton-rosa"><i class="fa-solid fa-file-zipper"></i> Descarga masiva</a>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+                var existingModal = document.getElementById("modalArchivosConsolidada");
+                if (existingModal) existingModal.remove();
+
+                var div = document.createElement("div");
+                div.innerHTML = modalHtml;
+                document.body.appendChild(div.firstElementChild);
+
+                var modalEl = document.getElementById("modalArchivosConsolidada");
+                var modalInstance = new bootstrap.Modal(modalEl);
+                modalInstance.show();
+
+                var archivoItems = modalEl.querySelectorAll(".archivo-item");
+                var previewContainer = modalEl.querySelector("#previewContainerConsolidada");
+                archivoItems.forEach(function (item) {
+                    item.addEventListener("click", function () {
+                        archivoItems.forEach(function (it) { it.classList.remove("activo"); });
+                        this.classList.add("activo");
+                        var ruta = this.getAttribute("data-archivo") || "";
+                        var nombre = this.getAttribute("data-nombre") || "";
+                        var esImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(nombre);
+                        var esPDF = /\.pdf$/i.test(nombre);
+                        previewContainer.innerHTML = esImg
+                            ? '<img src="' + ruta + '" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" />'
+                            : esPDF
+                                ? '<iframe src="' + ruta + '" style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>'
+                                : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; border-radius: 4px;"><div style="text-align: center; color: #999;"><i class="fa-solid fa-file" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i><p>No hay vista previa disponible</p><p style="font-size: 0.9rem;">Descarga el archivo para verlo</p></div></div>';
+                    });
+                });
+            })
+            .catch(function (err) {
+                console.error("Error cargando archivos de consolidada:", err);
+                alert("Error al cargar los archivos");
+            });
+    };
 
     window.verArchivosRequisicionFin = function (idRequisicion) {
         if (window.DocumentosRequisicionModal) {
@@ -1510,6 +1690,87 @@
             .catch(function (err) {
                 console.error("Error cargando consolidadas:", err);
                 tbody.innerHTML = '<tr class="fila-vacia"><td colspan="' + CONSOL_COLSPAN + '" class="text-center">Error al cargar los datos</td></tr>';
+            });
+    };
+
+    window.cargarConsolidadasAutorizadasFinancieros = function () {
+        var tbody = document.getElementById("tbodyAutorizadasConsolidadas");
+        if (!tbody) return;
+        if (tbody.getAttribute("data-cargado") === "1") return;
+        if (!urlConsolidadasAutorizadas) return;
+
+        fetch(urlConsolidadasAutorizadas, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                tbody.setAttribute("data-cargado", "1");
+
+                if (!data || !data.length) return;
+
+                var filaVacia = document.getElementById("filaVaciaAutorizadas");
+                if (filaVacia) filaVacia.remove();
+                var tbodyIndAut = document.getElementById("tbodyAutorizadasIndividuales");
+                if (tbodyIndAut) {
+                    var fvAut = tbodyIndAut.querySelector(".fila-vacia");
+                    if (fvAut) fvAut.remove();
+                }
+
+                tbody.innerHTML = "";
+                data.forEach(function (item, idx) {
+                    var tr = document.createElement("tr");
+                    tr.className = "fila-requi fila-consolidada";
+                    tr.setAttribute("data-consolidada-id", item.consolidadaId);
+                    tr.setAttribute("data-estatus", item.idEstatus);
+                    tr.setAttribute("data-folio", (item.folioConsolidada || "").toLowerCase());
+                    tr.setAttribute("data-deptos", (item.departamentos || "").toLowerCase());
+
+                    var badgeHtml = item.estatus || "";
+
+                    var diasHtml = "";
+                    if (item.diasAsignado > 0 || item.nombreAsignado) {
+                        var claseColor = item.diasAsignado <= 3 ? "badge-semaforo-verde" : (item.diasAsignado <= 5 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
+                        diasHtml = '<span class="badge-semaforo-premium ' + claseColor + '">' +
+                            '<i class="fa-solid fa-circle"></i>' +
+                            '<span>' + (item.diasAsignado === 0 ? "Hoy" : item.diasAsignado + (item.diasAsignado === 1 ? " día" : " días")) + '</span>' +
+                            '</span>';
+                    } else {
+                        diasHtml = '<span class="text-muted" style="font-size: 11px; font-style: italic;">Sin asignación</span>';
+                    }
+
+                    var accionesHtml = '<div class="acciones-grupo" style="justify-content:center">' +
+                        '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidadaFinancieros(' + item.consolidadaId + ')">' +
+                        '<i class="fa-solid fa-eye"></i></button>' +
+                        '<button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="Swal.fire({ icon: \'info\', title: \'No disponible\', text: \'La exportación a PDF no está disponible para consolidadas.\', confirmButtonText: \'Aceptar\' })">' +
+                        '<i class="fa-solid fa-file-pdf"></i></button>' +
+                        '</div>';
+
+                    var celdas = '';
+                    celdas += '<td style="text-align:center">' + (idx + 1) + '</td>';
+                    celdas += '<td><strong>' + (item.folioConsolidada || "—") + ' <span style="font-size:10px;color:var(--color-text-secondary);">(<i class="fa-solid fa-layer-group"></i> Consolidada)</span></strong></td>';
+                    celdas += '<td>' + (item.fechaCreacion || "—") + '</td>';
+                    celdas += '<td>' + (item.departamentos || "—") + '</td>';
+                    celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
+                    celdas += '<td style="text-align:center">' + (item.cantidadRequis || 0) + '</td>';
+                    celdas += '<td>' + badgeHtml + '</td>';
+                    if (esRol8) {
+                        celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
+                    }
+                    if (esRol8 || esRol9) {
+                        celdas += '<td>' + diasHtml + '</td>';
+                    }
+                    celdas += '<td>' + accionesHtml + '</td>';
+
+                    tr.innerHTML = celdas;
+                    tbody.appendChild(tr);
+                });
+
+                aplicarPaginacionRequisiciones();
+            })
+            .catch(function (err) {
+                console.error("Error cargando consolidadas autorizadas:", err);
             });
     };
 
@@ -1939,12 +2200,18 @@
 
                 if (tab === "documentos" && urlObtenerArchivos) {
                     cargarRequisicionesConDocumentos();
+                    if (urlConsolidadasDocumentos) {
+                        cargarConsolidadasDocumentos();
+                    }
                 }
                 if (tab === "consolidadas" && urlConsolidadas) {
                     cargarConsolidadas();
                 }
                 if (tab === "procesopago" && urlProcesoPago) {
                     cargarProcesoPago();
+                }
+                if (tab === "autorizadas" && urlConsolidadasAutorizadas) {
+                    cargarConsolidadasAutorizadasFinancieros();
                 }
 
                 var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");

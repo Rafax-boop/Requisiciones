@@ -1145,11 +1145,11 @@ namespace Inventario.BLL.Implementacion
             if (idUsuarioMat.HasValue)
                 query = query.Where(r => r.IdUsuarioMat == idUsuarioMat.Value);
 
-            var archivoIds = await _repositoryDisenos.Consultar(a => true);
-            var idsConArchivos = await archivoIds.Select(a => a.IdRequisicion).Distinct().ToListAsync();
+            var archivoIds = await _repositoryDisenos.Consultar(a => a.IdRequisicion != null);
+            var idsConArchivos = await archivoIds.Select(a => a.IdRequisicion.Value).Distinct().ToListAsync();
 
             var resultado = await query
-                .Where(r => idsConArchivos.Contains(r.IdRequisicion))
+                .Where(r => idsConArchivos.Contains(r.IdRequisicion) && r.ConsolidadaId == null)
                 .Select(r => new RequisicionMaestraDTO
                 {
                     IdRequi = r.IdRequisicion,
@@ -1173,18 +1173,21 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConArchivosTodos(int? idDepartamento)
+        public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConArchivosTodos(int? idDepartamento, int? idUsuarioFinan = null)
         {
             var query = await _repositoryRequisicion.Consultar(r => true);
 
             if (idDepartamento.HasValue)
                 query = query.Where(r => r.IdDepartamento == idDepartamento.Value);
 
-            var archivoIds = await _repositoryDisenos.Consultar(a => true);
-            var idsConArchivos = await archivoIds.Select(a => a.IdRequisicion).Distinct().ToListAsync();
+            if (idUsuarioFinan.HasValue)
+                query = query.Where(r => r.IdUsuarioFinan == idUsuarioFinan.Value);
+
+            var archivoIds = await _repositoryDisenos.Consultar(a => a.IdRequisicion != null);
+            var idsConArchivos = await archivoIds.Select(a => a.IdRequisicion.Value).Distinct().ToListAsync();
 
             var resultado = await query
-                .Where(r => idsConArchivos.Contains(r.IdRequisicion))
+                .Where(r => idsConArchivos.Contains(r.IdRequisicion) && r.ConsolidadaId == null)
                 .Select(r => new RequisicionMaestraDTO
                 {
                     IdRequi = r.IdRequisicion,

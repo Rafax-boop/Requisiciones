@@ -126,10 +126,19 @@ namespace Inventario.BLL.Implementacion
                 query = query.Where(c => c.IdUsuarioFinan == idUsuario.Value);
 
             if (estatusPermitidos == null || estatusPermitidos.Count == 0)
-                estatusPermitidos = new List<int> { 13, 14 };
+            {
+                // Por defecto: traer todas las consolidadas asignadas a un analista financiero
+                // o que esten en estatus 13 (listas para asignar). Esto evita que desaparezcan
+                // al cambiar de estatus (14, 15, 17, etc.) mientras tengan IdUsuarioFinan.
+                query = query.Where(c => c.IdUsuarioFinan.HasValue || c.IdEstatus == 13);
+                query = query.Where(c => c.IdEstatus != 7);
+            }
+            else
+            {
+                query = query.Where(c => estatusPermitidos.Contains(c.IdEstatus));
+            }
 
             var consolidaciones = await query
-                .Where(c => estatusPermitidos.Contains(c.IdEstatus))
                 .Include(c => c.IdEstatusNavigation)
                 .Include(c => c.IdUsuarioFinanNavigation)
                 .Include(c => c.TblConsolidadasDetalles)
@@ -204,6 +213,11 @@ namespace Inventario.BLL.Implementacion
                         IdUsuario = idUsuarioLog
                     };
                     await _repositoryBitacora.Crear(bitacora);
+
+                    hija.IdEstatus = 14;
+                    hija.IdUsuarioFinan = idUsuarioFinan;
+                    hija.FechaModificacion = DateTime.Now;
+                    await _repositoryRequisicion.Editar(hija);
                 }
 
                 return true;

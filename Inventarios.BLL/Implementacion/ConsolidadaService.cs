@@ -547,5 +547,65 @@ namespace Inventario.BLL.Implementacion
                 NombreArchivo = f.Tipo.Replace("proveedor_", "")
             }).ToListAsync();
         }
+
+        public async Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada)
+        {
+            var query = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
+            return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
+        }
+
+        public async Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null)
+        {
+            // Obtener IDs de consolidadas que tienen archivos
+            var archivosQuery = await _repoDiseno.Consultar(f => f.IdConsolidada != null);
+            var idsConsolidadasConArchivos = await archivosQuery
+                .Select(f => f.IdConsolidada.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (idsConsolidadasConArchivos.Count == 0)
+                return new List<ConsolidadaDTO>();
+
+            IQueryable<TblConsolidada> query;
+
+            if (idUsuarioMat.HasValue)
+            {
+                query = await _repoConsolidada.Consultar(c =>
+                    c.IdUsuarioMat == idUsuarioMat.Value &&
+                    idsConsolidadasConArchivos.Contains(c.ConsolidadaId));
+            }
+            else
+            {
+                query = await _repoConsolidada.Consultar(c =>
+                    idsConsolidadasConArchivos.Contains(c.ConsolidadaId));
+            }
+
+            if (idUsuarioFinan.HasValue)
+                query = query.Where(c => c.IdUsuarioFinan == idUsuarioFinan.Value);
+
+            if (servicio.HasValue)
+                query = query.Where(c => c.RequiServicio == servicio.Value);
+
+            return await query
+                .Select(c => new ConsolidadaDTO
+                {
+                    ConsolidadaID = c.ConsolidadaId,
+                    FolioConsolidada = c.FolioConsolidada,
+                    FechaCreacion = c.FechaCreacion.ToString("dd/MM/yyyy"),
+                    IdEstatus = c.IdEstatus,
+                    Estatus = c.IdEstatusNavigation.NombreEstatus,
+                    CreadoPor = c.IdUsuarioNavigation.Usuario,
+                    CantidadRequis = c.TblConsolidadasDetalles.Count,
+                    TotalPartidas = c.TblConsolidadasDetalles
+                                         .SelectMany(d => d.IdRequisicionNavigation.TblRequisicionDetalles)
+                                         .Count(),
+                    Departamentos = string.Join(", ", c.TblConsolidadasDetalles
+                                         .Select(d => d.IdRequisicionNavigation
+                                                       .IdDepartamentoNavigation.NombreDepartamento)
+                                         .Distinct())
+                })
+                .OrderByDescending(c => c.ConsolidadaID)
+                .ToListAsync();
+        }
     }
 }
