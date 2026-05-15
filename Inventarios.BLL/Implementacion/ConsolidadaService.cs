@@ -78,7 +78,7 @@ namespace Inventario.BLL.Implementacion
                 RequiServicio = servicio,
                 IdUsuarioMat = idUsuario,
                 IdUsuario = idUsuario,
-                IdEstatus = 1,
+                IdEstatus = 2,
                 FechaCreacion = DateTime.Now,
                 FechaModificacion = DateTime.Now
             };

@@ -864,10 +864,19 @@
       var ajaxOpts;
 
       if (esConsolidada) {
+        var formData = new FormData();
+        formData.append("idConsolidada", id);
+        var archivoInput = document.getElementById("inputSubirPedido");
+        var archivo = archivoInput ? archivoInput.files[0] : null;
+        if (archivo) {
+          formData.append("archivo", archivo);
+        }
         ajaxOpts = {
           url: urlEnviarFinancierosDocsConsolidada,
           type: "POST",
-          data: { idConsolidada: id }
+          data: formData,
+          processData: false,
+          contentType: false
         };
       } else {
         var formData = new FormData();
@@ -2555,7 +2564,7 @@
                   if (!result.isConfirmed) return;
                   Swal.fire({ title: "Creando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-                  fetch(urlCrearConsolidada + "?servicio=" + false, {
+                  fetch(urlCrearConsolidada + "?servicio=" + esTablaServicios, {
                       method: "POST",
                       credentials: "same-origin",
                       headers: { "Content-Type": "application/json" },

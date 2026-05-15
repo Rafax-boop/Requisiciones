@@ -35,7 +35,7 @@ namespace Inventario.BLL.Interfaces
 
         Task<PedidoVistaDTO> ObtenerPedidoEditableConsolidadaAsync(int idConsolidada);
         Task GuardarHistorialPedidoConsolidadaAsync(PedidoVistaDTO modelo, int idUsuario, string? observacion = null);
-        Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario);
+        Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario, IFormFile? archivo = null, string? webRootPath = null);
         Task<bool> FinalizarRequisicionConsolidada(int idConsolidada, List<IFormFile>? transferencias, int idUsuario);
         Task<bool> RebotarDocumentosConsolidada(int idConsolidada, string observaciones, List<string> docsObservados, int idUsuario);
     }

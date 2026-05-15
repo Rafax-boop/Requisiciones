@@ -207,12 +207,34 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> FinalizarRequisicion([FromForm] VMRevisarRequisicion modelo)
+        public async Task<IActionResult> FinalizarRequisicion([FromForm] FinalizarRequisicionRequestDto modelo)
         {
             int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var resultado = await _financierosService.FinalizarRequisicion(modelo.IdRequisicion, modelo.Transferencia, idUsuario);
+            bool resultado;
+            if (modelo.IdConsolidada.HasValue)
+                resultado = await _financierosService.FinalizarRequisicionConsolidada(
+                    modelo.IdConsolidada.Value, modelo.Transferencia, idUsuario);
+            else
+                resultado = await _financierosService.FinalizarRequisicion(
+                    modelo.IdRequisicion!.Value, modelo.Transferencia, idUsuario);
             if (!resultado) return BadRequest();
             return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RebotarDocumentos([FromBody] RebotarDocumentosDTO modelo)
+        {
+            int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            bool ok;
+            if (modelo.IdConsolidada.HasValue)
+                ok = await _financierosService.RebotarDocumentosConsolidada(
+                    modelo.IdConsolidada.Value, modelo.Observaciones,
+                    modelo.DocumentosObservados, idUsuario);
+            else
+                ok = await _requisicionesService.RebotarDocumentos(
+                    modelo.IdRequisicion!.Value, modelo.Observaciones,
+                    modelo.DocumentosObservados, idUsuario);
+            return Ok(new { success = ok });
         }
 
         [HttpGet]
@@ -420,12 +442,12 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> EnviarFinancierosConsolidada(int idConsolidada)
+        public async Task<IActionResult> EnviarFinancierosConsolidada(int idConsolidada, IFormFile? archivo)
         {
             try
             {
                 int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                var (success, message) = await _financierosService.EnviarFinancierosConsolidadaAsync(idConsolidada, idUsuario);
+                var (success, message) = await _financierosService.EnviarFinancierosConsolidadaAsync(idConsolidada, idUsuario, archivo, _env.WebRootPath);
                 if (!success)
                     return Ok(new { success, message });
                 return Ok(new { success, message });
@@ -472,7 +494,74 @@ namespace Inventario.AplicacionWeb.Controllers
             var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
             var procesopago = listaDTO.Where(r => r.IdEstatus == 17).Select(r => r.IdRequi).ToList();
 
+            // incluir IDs de consolidadas para notificaciones
+            var consolidadas = await _financierosService.ListarConsolidadasFinancieros(
+                User.IsInRole("9") ? idUsuario : null,
+                new List<int> { 13, 14, 15, 17 });
+
+            var consPrincipal = consolidadas.Where(c => c.IdEstatus == 13 || c.IdEstatus == 14)
+                .Select(c => c.ConsolidadaId * -1).ToList(); // negativo para distinguir de individuales
+            var consAutorizadas = consolidadas.Where(c => c.IdEstatus == 15)
+                .Select(c => c.ConsolidadaId * -1).ToList();
+            var consProcesoPago = consolidadas.Where(c => c.IdEstatus == 17)
+                .Select(c => c.ConsolidadaId * -1).ToList();
+
+            principal.AddRange(consPrincipal);
+            autorizadas.AddRange(consAutorizadas);
+            procesopago.AddRange(consProcesoPago);
+
             return Json(new { principal, autorizadas, rechazadas, procesopago });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerProcesoPago()
+        {
+            List<RequisicionMaestraDTO> listaDTO;
+            int? idUsuario = User.IsInRole("9")
+                ? int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0")
+                : null;
+
+            if (idUsuario.HasValue)
+                listaDTO = await _financierosService.ListarRequisiciones(idUsuario.Value);
+            else
+                listaDTO = await _financierosService.ListarRequisiciones();
+
+            var individuales = listaDTO
+                .Where(r => r.IdEstatus == 17)
+                .Select(r => new
+                {
+                    id = r.IdRequi,
+                    folio = r.NumRequi,
+                    fecha = r.FechaEmision?.ToString("dd/MM/yyyy") ?? "",
+                    departamento = r.Departamento,
+                    responsable = r.Responsable,
+                    partidas = r.CantidadPartidas,
+                    estatus = r.Estatus,
+                    idEstatus = r.IdEstatus,
+                    esConsolidada = false
+                }).ToList();
+
+            var consolidadas = await _financierosService.ListarConsolidadasFinancieros(
+                idUsuario, new List<int> { 17 });
+
+            var itemsConsolidada = consolidadas.Select(c => new
+            {
+                id = c.ConsolidadaId,
+                folio = c.FolioConsolidada,
+                fecha = c.FechaCreacion,
+                departamento = c.Departamentos,
+                responsable = "",
+                partidas = c.CantidadRequis,
+                estatus = c.Estatus,
+                idEstatus = c.IdEstatus,
+                esConsolidada = true
+            }).ToList();
+
+            var combinado = individuales.Concat(itemsConsolidada)
+                .OrderBy(x => x.fecha)
+                .ToList();
+
+            return Json(combinado);
         }
 
         [HttpGet]

@@ -255,7 +255,7 @@ namespace Inventario.BLL.Implementacion
             return new AtenderResultadoDTO { Exito = true, NumApi = numApi, NumPedido = numPedido };
         }
 
-        public async Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario)
+        public async Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario, IFormFile? archivo = null, string? webRootPath = null)
         {
             var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
             if (consolidada == null)
@@ -263,6 +263,25 @@ namespace Inventario.BLL.Implementacion
 
             if (consolidada.IdEstatus != 15 && consolidada.IdEstatus != 16 && consolidada.IdEstatus != 18)
                 return (false, $"La consolidada debe estar en estatus de verificación (actual: {consolidada.IdEstatus}).");
+
+            if (archivo != null && archivo.Length > 0 && !string.IsNullOrEmpty(webRootPath))
+            {
+                var carpeta = $"consolidada_{idConsolidada}";
+                var rutaBase = System.IO.Path.Combine(webRootPath, "uploads", "PedidoCompra", carpeta);
+                System.IO.Directory.CreateDirectory(rutaBase);
+
+                var nombre = $"{Guid.NewGuid()}{System.IO.Path.GetExtension(archivo.FileName)}";
+                using (var stream = new System.IO.FileStream(System.IO.Path.Combine(rutaBase, nombre), System.IO.FileMode.Create))
+                    await archivo.CopyToAsync(stream);
+
+                await _repositoryDiseno.Crear(new TblRegistroDiseno
+                {
+                    IdConsolidada = idConsolidada,
+                    Ruta = $"/uploads/PedidoCompra/{carpeta}/{nombre}",
+                    FechaSubida = DateTime.Now,
+                    Tipo = "pedido_compra"
+                });
+            }
 
             consolidada.IdEstatus = 17;
             consolidada.FechaModificacion = DateTime.Now;
@@ -1185,7 +1204,7 @@ namespace Inventario.BLL.Implementacion
                 modelo.Partidas.Add(new TablaApiPartidaEditableDTO
                 {
                     Numero = (modelo.Partidas.Count + 1).ToString(),
-                    Ua = areaClave,
+                    Ua = key.IdDepartamento?.ToString() ?? areaClave,
                     Region = S(val.Region),
                     ClaveMunicipio = key.IdMunicipio > 0 ? key.IdMunicipio.ToString() : "",
                     ImporteSolicitado = val.ImporteTotal > 0 ? FormatearImporte(val.ImporteTotal) : "",

@@ -10,6 +10,7 @@
     var urlObtenerCotizaciones = container
         ? container.getAttribute("data-url-obtener-cotizaciones") : "";
     var expedienteFinActual = null;
+    var _modoConsolidadaFinancieros = false;
     var urlFinalizarExpediente = container
         ? container.getAttribute("data-url-finalizar-expediente")
         : "";
@@ -45,6 +46,8 @@
         ? container.getAttribute("data-url-atender-consolidada") : "";
     var esRol8 = container ? container.getAttribute("data-es-rol8") === "true" : false;
     var esRol9 = container ? container.getAttribute("data-es-rol9") === "true" : false;
+    var urlProcesoPago = container ? container.getAttribute("data-url-proceso-pago") : "";
+    var urlExpedienteConsolidada = container ? container.getAttribute("data-url-expediente-consolidada") : "";
 
     var DOCUMENTOS_PROVEEDOR = [
         { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -143,6 +146,9 @@
 
         paginacionRequisicionesContainer = ctx.paginationContainer;
         paginaRequisicionActual = paginaPorTab[ctx.tabKey] || 1;
+
+        // Skip for dynamic procesopago tab (handled by cargarProcesoPago)
+        if (ctx.tabKey === "procesopago") return;
 
         var textoEstado = ((document.getElementById("filtroEstado") && document.getElementById("filtroEstado").value) || "").toLowerCase().trim();
         var textoNumReq = ((document.getElementById("filtroNumReq") && document.getElementById("filtroNumReq").value) || "").toLowerCase().trim();
@@ -668,8 +674,13 @@
         });
     };
 
-    window.verExpedienteFinancieros = function (idRequi) {
-        expedienteFinActual = idRequi;
+    window.verExpedienteFinancieros = function (id, esConsolidada) {
+        esConsolidada = esConsolidada || false;
+        expedienteFinActual = id;
+        _modoConsolidadaFinancieros = esConsolidada;
+
+        // Show/hide "Requi" column in thead
+        document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = esConsolidada ? "" : "none"; });
 
         // Limpiar
         document.getElementById("expFinObservaciones").value = "";
@@ -684,7 +695,119 @@
         document.getElementById("expFinTablaBody").innerHTML = "";
         document.getElementById("expFinSubtitulo").textContent = "Cargando...";
 
-        $.get(obtenerDetallesUrl, { idMaestro: idRequi }, function (data) {
+        if (esConsolidada) {
+            consolidadaActual = id;
+            requisicionActual = null;
+            var URL = (urlExpedienteConsolidada || "").replace(/\/?$/, "") + "?idConsolidada=" + id;
+            $.get(URL, function (data) {
+                var articulos = data.articulos || [];
+                document.getElementById("expFinSubtitulo").textContent = "Expediente consolidado · " + articulos.length + " partidas";
+
+                var contenido = !articulos.length
+                    ? '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>'
+                    : "";
+                articulos.forEach(function (item) {
+                    var txtCompleto = item.descripcionDetallada || "";
+                    var txtCorto = txtCompleto.length > 28 ? txtCompleto.substring(0, 28) + "…" : txtCompleto || "Sin descripción...";
+                    var fullEsc = (txtCompleto || "").replace(/"/g, "&quot;");
+                    contenido +=
+                        "<tr>" +
+                        "<td>" + (item.numRequiOrigen || "") + "</td>" +
+                        "<td>" + (item.numPartida || "") + "</td>" +
+                        "<td>" + (item.cantidad || "") + "</td>" +
+                        "<td>" + (item.unidadMedida || "") + "</td>" +
+                        "<td>" + (item.descripcion || "") + "</td>" +
+                        '<td><div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)">' +
+                        '<span class="desc-texto-preview' + (txtCompleto ? " tiene-texto" : "") + '">' + txtCorto + "</span>" +
+                        '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
+                        "</tr>";
+                });
+                document.getElementById("expFinTablaBody").innerHTML = contenido;
+
+                // Selects
+                ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
+                    var el = $("#" + selId);
+                    if (el.data("select2")) el.select2("destroy");
+                });
+                $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").select2({
+                    dropdownParent: $("#modalExpedienteFinancieros"),
+                    width: "100%",
+                    language: "es"
+                }).prop("disabled", true);
+                if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
+                if (data.ff) $("#expFinFf").val(data.ff).trigger("change");
+                if (data.tipoPrograma) {
+                    $("#expFinTipoPrograma option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
+                    $("#expFinTipoPrograma").trigger("change");
+                }
+
+                // Observaciones
+                document.getElementById("expFinObservaciones").value = data.observaciones || "";
+
+                // Documentos financieros
+                (function () {
+                    var siaf = data.archivosSiaf || [];
+                    var tablaApi = data.archivosTablaApi || [];
+                    var pedidoCompra = data.archivosPedidoCompra || [];
+                    var numApi = data.numeroApi || null;
+                    if (!siaf.length && !tablaApi.length && !numApi && !pedidoCompra.length) return;
+
+                    document.getElementById("expFinArchivosFinancieros").style.display = "block";
+
+                    function rgf(elId, titulo, archivos) {
+                        var el = document.getElementById(elId);
+                        if (!archivos.length) { el.innerHTML = ""; return; }
+                        if (window.ModalAdjuntos) {
+                            el.innerHTML = window.ModalAdjuntos.renderGrupoHtml(titulo, archivos);
+                            window.ModalAdjuntos.enlazarEventosContenedor(el);
+                        } else { el.innerHTML = ""; }
+                    }
+                    rgf("expFinGrupoSiaf", "Documento SIAF", siaf);
+                    rgf("expFinGrupoTablaApi", "Tabla de API", tablaApi);
+                    if (numApi) {
+                        document.getElementById("expFinGrupoNumeroApi").innerHTML =
+                            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>'
+                            + '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">'
+                            + '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + '</span>';
+                    }
+                    rgf("expFinGrupoPedidoCompra", "Pedido de Compra", pedidoCompra);
+                })();
+
+                // Documentos del proveedor
+                (function () {
+                    var docs = data.documentosProveedor || [];
+                    var seccion = document.getElementById("expFinDocumentosProveedor");
+                    var checklist = document.getElementById("expFinChecklistDocs");
+                    checklist.innerHTML = "";
+                    if (!docs.length) { seccion.style.display = "none"; return; }
+                    seccion.style.display = "block";
+                    var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
+                    DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+                        var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+                        var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
+                        var noAplica = !subido;
+                        var fila = document.createElement("div");
+                        var borderColor = noAplica ? "var(--color-border-tertiary)" : "#bbf7d0";
+                        var bgColor = noAplica ? "var(--color-background-secondary)" : "#f0fdf4";
+                        fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                            "border-radius:8px; border:1px solid " + borderColor + ";" + "background:" + bgColor + ";";
+                        var icono = subido
+                            ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                            : '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
+                        var linkVer = subido && archivo
+                            ? '<a href="' + archivo.ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
+                            : '<span style="font-size:11px;color:#94a3b8;margin-left:auto;padding:3px 8px;border:1px solid var(--color-border-tertiary);border-radius:6px;white-space:nowrap;font-style:italic;">No aplica</span>';
+                        fila.innerHTML = icono + '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' + linkVer;
+                        checklist.appendChild(fila);
+                    });
+                })();
+
+                new bootstrap.Modal(document.getElementById("modalExpedienteFinancieros")).show();
+            });
+            return;
+        }
+
+        $.get(obtenerDetallesUrl, { idMaestro: id }, function (data) {
             var articulos = data.articulos || [];
             document.getElementById("expFinSubtitulo").textContent =
                 "Expediente completo · " + articulos.length + " partidas";
@@ -764,7 +887,7 @@
                 btnCot.style.cssText = "margin-bottom:12px;";
                 btnCot.innerHTML =
                     '<button type="button" class="btn boton-rosa" ' +
-                    'onclick="verCotizaciones(' + idRequi + ')">' +
+                    'onclick="verCotizaciones(' + id + ')">' +
                     '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
                     '</button>';
                 c.appendChild(btnCot);
@@ -824,7 +947,7 @@
                 rgf("expFinGrupoPedidoCompra", "Pedido de Compra", pedidoCompra);
             })();
 
-            $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+            $.get(urlObtenerDocsProveedor, { idRequisicion: id }, function (docs) {
                 var seccion = document.getElementById("expFinDocumentosProveedor");
                 var checklist = document.getElementById("expFinChecklistDocs");
                 checklist.innerHTML = "";
@@ -885,8 +1008,9 @@
     };
 
     window.finalizarExpediente = function () {
+        var titulo = _modoConsolidadaFinancieros ? "\u00bfFinalizar consolidada?" : "\u00bfFinalizar requisici\u00f3n?";
         Swal.fire({
-            title: "\u00bfFinalizar requisici\u00f3n?",
+            title: titulo,
             text: "Se marcar\u00e1 como finalizada y enviada a proceso de pago.",
             icon: "question",
             showCancelButton: true,
@@ -898,7 +1022,7 @@
             if (!result.isConfirmed) return;
 
             var formData = new FormData();
-            formData.append("IdRequisicion", expedienteFinActual);
+            formData.append(_modoConsolidadaFinancieros ? "IdConsolidada" : "IdRequisicion", expedienteFinActual);
 
             var inputTransferencia = document.getElementById("inputTransferencia");
             if (inputTransferencia && inputTransferencia.files.length) {
@@ -972,15 +1096,15 @@
             return;
         }
 
+        var payload = _modoConsolidadaFinancieros
+            ? { IdConsolidada: expedienteFinActual, Observaciones: nota, DocumentosObservados: docsObservados }
+            : { IdRequisicion: expedienteFinActual, Observaciones: nota, DocumentosObservados: docsObservados };
+
         $.ajax({
             url: urlRebotarDocumentos,
             type: "POST",
             contentType: "application/json",
-            data: JSON.stringify({
-                IdRequisicion: expedienteFinActual,
-                Observaciones: nota,
-                DocumentosObservados: docsObservados
-            }),
+            data: JSON.stringify(payload),
             success: function (res) {
                 if (res.success) {
                     bootstrap.Modal.getInstance(
@@ -1101,9 +1225,11 @@
         var filaVacia = tbody.querySelector(".fila-vacia");
         if (totalVisibles === 0) {
             if (!filaVacia) {
+                var table = tbody.closest("table");
+                var colCount = table ? table.querySelectorAll("thead tr th").length : 8;
                 filaVacia = document.createElement("tr");
                 filaVacia.className = "fila-vacia";
-                filaVacia.innerHTML = '<td colspan="8" class="text-center">Sin resultados para los filtros aplicados</td>';
+                filaVacia.innerHTML = '<td colspan="' + colCount + '" class="text-center">Sin resultados para los filtros aplicados</td>';
                 tbody.appendChild(filaVacia);
             }
         } else {
@@ -1387,6 +1513,86 @@
             });
     };
 
+    var _datosProcesoPago = null;
+
+    function renderProcesoPago() {
+        var tbody = document.getElementById("tbodyProcesoPago");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        var data = _datosProcesoPago;
+        if (!data || !data.length) {
+            tbody.innerHTML = '<tr class="fila-vacia"><td colspan="9" class="text-center">No hay requisiciones en proceso de pago</td></tr>';
+            return;
+        }
+
+        var textoFolio = ((document.getElementById("filtroNumReq") && document.getElementById("filtroNumReq").value) || "").toLowerCase().trim();
+        var textoDepto = ((document.getElementById("filtroDepartamento") && document.getElementById("filtroDepartamento").value) || "").toLowerCase().trim();
+        var textoFecha = fechaSeleccionada || "";
+
+        var filtrados = data.filter(function (item) {
+            var pasaFolio = !textoFolio || (item.folio || "").toLowerCase().indexOf(textoFolio) !== -1;
+            var pasaDepto = !textoDepto || (item.departamento || "").toLowerCase().indexOf(textoDepto) !== -1;
+            var pasaFecha = !textoFecha || (item.fecha || "").indexOf(textoFecha) !== -1;
+            return pasaFolio && pasaDepto && pasaFecha;
+        });
+
+        filtrados.forEach(function (item, idx) {
+            var tr = document.createElement("tr");
+            tr.className = "fila-requi";
+            tr.setAttribute("data-id", item.id);
+            tr.setAttribute("data-es-consolidada", item.esConsolidada ? "true" : "false");
+            var badgeHtml = item.esConsolidada
+                ? '<span class="badge-estatus" style="background:#fef3c7;color:#92400e;">' + (item.estatus || "") + "</span>"
+                : '<span class="badge-estatus" style="background:#dbeafe;color:#1e40af;">' + (item.estatus || "") + "</span>";
+            var tipoHtml = item.esConsolidada
+                ? '<span class="badge-estatus" style="background:#e0e7ff;color:#3730a3;font-size:10px;">Consolidada</span>'
+                : '<span class="badge-estatus" style="background:#f0fdf4;color:#166534;font-size:10px;">Individual</span>';
+            tr.innerHTML =
+                '<td style="text-align:center">' + (idx + 1) + '</td>' +
+                '<td>' + (item.folio || "") + '</td>' +
+                '<td>' + (item.fecha || "") + '</td>' +
+                '<td>' + (item.departamento || "") + '</td>' +
+                '<td>' + (item.responsable || "") + '</td>' +
+                '<td style="text-align:center">' + (item.partidas || 0) + '</td>' +
+                '<td>' + badgeHtml + '</td>' +
+                '<td>' + tipoHtml + '</td>' +
+                '<td><div class="acciones-grupo" style="justify-content:center">' +
+                '<button class="btn-accion btn-ver" title="Ver expediente" onclick="verExpedienteFinancieros(' + item.id + ', ' + item.esConsolidada + ')">' +
+                '<i class="fa-solid fa-folder-open"></i></button>' +
+                '<button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(' + item.id + ')">' +
+                '<i class="fa-solid fa-file-pdf"></i></button></div></td>';
+            tbody.appendChild(tr);
+        });
+
+        if (!filtrados.length) {
+            tbody.innerHTML = '<tr class="fila-vacia"><td colspan="9" class="text-center">Sin resultados para los filtros aplicados</td></tr>';
+        }
+    }
+
+    window.cargarProcesoPago = function () {
+        var tbody = document.getElementById("tbodyProcesoPago");
+        if (!tbody || !urlProcesoPago) return;
+
+        if (_datosProcesoPago) {
+            renderProcesoPago();
+            return;
+        }
+
+        fetch(urlProcesoPago, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin"
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                _datosProcesoPago = data;
+                renderProcesoPago();
+            })
+            .catch(function () {
+                tbody.innerHTML = '<tr class="fila-vacia"><td colspan="9" class="text-center">Error al cargar los datos</td></tr>';
+            });
+    };
+
     function aplicarFiltrosConsolidadas() {
         var tbody = document.getElementById("tbodyConsolidadas");
         if (!tbody) return;
@@ -1429,15 +1635,17 @@
         }
     }
 
-    // Wire up consolidada filters to the general filter inputs
+    // Wire up consolidada and procesopago filters to the general filter inputs
     document.addEventListener("input", function (e) {
         if (e.target.id === "filtroNumReq" || e.target.id === "filtroDepartamento") {
             aplicarFiltrosConsolidadas();
+            if (_datosProcesoPago) renderProcesoPago();
         }
     });
     document.addEventListener("change", function (e) {
         if (e.target.id === "filtroEstado") {
             aplicarFiltrosConsolidadas();
+            if (_datosProcesoPago) renderProcesoPago();
         }
     });
 
@@ -1735,6 +1943,9 @@
                 if (tab === "consolidadas" && urlConsolidadas) {
                     cargarConsolidadas();
                 }
+                if (tab === "procesopago" && urlProcesoPago) {
+                    cargarProcesoPago();
+                }
 
                 var panelActivoAnterior = container.querySelector(".almacen-tab-panel.activo");
                 if (panelActivoAnterior && panelActivoAnterior.id !== "tab-" + tab) {
@@ -1821,9 +2032,14 @@
 
     // ── PDF ─────────────────────────────────────────────────────────────────
     window.verPdf = function (id) {
-        var fila = document.querySelector('tr.fila-requi[data-requi-id="' + id + '"]');
+        var fila = document.querySelector('tr.fila-requi[data-requi-id="' + id + '"]')
+            || document.querySelector('tr.fila-requi[data-id="' + id + '"]');
+        var esConsolidada = fila && fila.getAttribute('data-es-consolidada') === 'true';
+        if (esConsolidada) {
+            Swal.fire({ icon: "info", title: "No disponible", text: "La exportaci\u00f3n a PDF no est\u00e1 disponible para consolidadas.", confirmButtonText: "Aceptar" });
+            return;
+        }
         var esServicio = fila && fila.getAttribute('data-requi-servicio') === 'true';
-
         var urlBase = esServicio ? verPdfServicioUrl : verPdfRequisicionUrl;
         window.open(urlBase.replace(/\/$/, "") + "/" + id, "_blank");
     };
@@ -1952,5 +2168,16 @@
                 '<div style="color:#b91c1c;text-align:center;padding:1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Error al cargar el historial</div>';
         });
     };
+
+    // ── Modal close: restore consolidated state ──────────────────────────
+    var _expFinModal = document.getElementById("modalExpedienteFinancieros");
+    if (_expFinModal) {
+        _expFinModal.addEventListener("hidden.bs.modal", function () {
+            if (_modoConsolidadaFinancieros) {
+                _modoConsolidadaFinancieros = false;
+                document.querySelectorAll(".col-requi").forEach(function (th) { th.style.display = "none"; });
+            }
+        });
+    }
 
 })();

@@ -553,8 +553,9 @@ namespace Inventario.AplicacionWeb.Controllers
         public async Task<IActionResult> RebotarDocumentos([FromBody] RebotarDocumentosDTO modelo)
         {
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (modelo.IdRequisicion == null) return BadRequest("IdRequisicion es requerido");
             var ok = await _requisicionService.RebotarDocumentos(
-                modelo.IdRequisicion, modelo.Observaciones,
+                modelo.IdRequisicion.Value, modelo.Observaciones,
                 modelo.DocumentosObservados, idUsuario);
             return Ok(new { success = ok });
         }
