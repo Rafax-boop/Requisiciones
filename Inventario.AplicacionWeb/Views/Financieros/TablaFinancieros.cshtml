@@ -28,18 +28,22 @@
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
-     data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
+      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
+      data-url-consolidadas-documentos="@Url.Action("ObtenerConsolidadasConArchivos", "Financieros")"
      data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Financieros")"
      data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
      data-url-consolidadas="@Url.Action("ObtenerConsolidadasFinancieros", "Financieros")"
+     data-url-consolidadas-autorizadas="@Url.Action("ObtenerConsolidadasAutorizadasFinancieros", "Financieros")"
      data-url-asignar-consolidada="@Url.Action("AsignarConsolidada", "Financieros")"
      data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidadaFinancieros", "Financieros")"
      data-url-editar-tabla-api-consolidada="@Url.Action("EditarTablaApiConsolidada", "Financieros")"
      data-url-descargar-tabla-api-consolidada="@Url.Action("DescargarTablaApiConsolidada", "Financieros")"
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Financieros")"
      data-url-proceso-pago="@Url.Action("ObtenerProcesoPago", "Financieros")"
-     data-url-expediente-consolidada="@Url.Action("ObtenerExpedienteConsolidada", "Consolidada")"
-     data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
+      data-url-expediente-consolidada="@Url.Action("ObtenerExpedienteConsolidada", "Consolidada")"
+      data-url-obtener-archivos-consolidada="@Url.Action("ObtenerArchivosConsolidada", "Consolidada")"
+      data-url-descargar-archivos-consolidada-zip="@Url.Action("DescargarArchivosConsolidadaZip", "Consolidada")"
+      data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
      data-es-rol9="@(User.IsInRole("9") ? "true" : "false")">
     <div class="tabla-requi-header">
         <div>
@@ -287,7 +291,7 @@
                         <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbodyAutorizadasIndividuales">
                     @{
                         var idxAutorizadas = 0;
                     }
@@ -396,11 +400,13 @@
                     }
                     @if (!requisicionesAutorizadas.Any())
                     {
-                        <tr class="fila-vacia">
+                        <tr class="fila-vacia" id="filaVaciaAutorizadas">
                             <td colspan="@numColsReq" class="text-center">No hay requisiciones autorizadas</td>
                         </tr>
                     }
                 </tbody>
+                <!-- Consolidadas autorizadas (cargado dinamicamente) -->
+                <tbody id="tbodyAutorizadasConsolidadas"></tbody>
             </table>
             <div id="paginacionAutorizadas" class="almacen-paginacion"></div>
         </div>
@@ -598,6 +604,16 @@
                                     <i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite;"></i>
                                     Cargando requisiciones...
                                 </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody id="tbodyDocumentosConsolidadas"></tbody>
+                </table>
+                <div id="paginacionDocumentos" class="almacen-paginacion"></div>
+            </div>
+        </div>
+    }
+</div>
                             </td>
                         </tr>
                     </tbody>

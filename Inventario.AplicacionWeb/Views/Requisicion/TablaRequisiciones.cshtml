@@ -41,7 +41,8 @@
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
      data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
      data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")"
-     data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Requisicion")"
+      data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Requisicion")"
+      data-url-consolidadas-documentos="@Url.Action("ObtenerConsolidadasConArchivos", "Requisicion")"
      data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Requisicion")"
      data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
      data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")"
@@ -49,14 +50,17 @@
      data-url-requis-consolidables="@Url.Action("ObtenerRequisicionesConsolidables", "Consolidada")"
      data-url-crear-consolidada="@Url.Action("CrearConsolidada", "Consolidada")"
      data-url-listar-consolidadas="@Url.Action("ListarConsolidadas", "Consolidada")"
+     data-url-consolidadas-autorizadas="@Url.Action("ObtenerConsolidadasAutorizadas", "Consolidada")"
      data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidada", "Consolidada")"
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Consolidada")"
      data-url-subir-archivos-consolidada="@Url.Action("SubirArchivosAtencionConsolidada", "Consolidada")"
      data-url-partidas-consolidada="@Url.Action("ObtenerPartidasConsolidada", "Consolidada")"
      data-url-obtener-opciones-ganador-consolidada="@Url.Action("ObtenerOpcionesGanadorConsolidada", "Requisicion")"
      data-url-descargar-cuadro-consolidada="@Url.Action("DescargarCuadroComparativoConsolidada", "Requisicion")"
-     data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
-     data-url-consolidadas-verificadas="@Url.Action("ObtenerConsolidadasVerificadas", "Consolidada")"
+      data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
+      data-url-obtener-archivos-consolidada="@Url.Action("ObtenerArchivosConsolidada", "Consolidada")"
+      data-url-descargar-archivos-consolidada-zip="@Url.Action("DescargarArchivosConsolidadaZip", "Consolidada")"
+      data-url-consolidadas-verificadas="@Url.Action("ObtenerConsolidadasVerificadas", "Consolidada")"
      data-url-expediente-consolidada="@Url.Action("ObtenerExpedienteConsolidada", "Consolidada")"
      data-url-subir-doc-proveedor-consolidada="@Url.Action("SubirDocumentoProveedorConsolidada", "Consolidada")"
      data-url-obtener-docs-proveedor-consolidada="@Url.Action("ObtenerDocumentosProveedorConsolidada", "Consolidada")"
@@ -152,8 +156,8 @@
         {
             requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7 && r.IdEstatus != 5 && r.IdEstatus != 12).ToList();
         }
-        var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
-        var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
+        var requisicionesAutorizadas = Model.Requisiciones.Where(r => (r.IdEstatus == 7 || r.IdEstatus == 12) && r.ConsolidadaId == null).ToList();
+        var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5 && r.ConsolidadaId == null).ToList();
         var requisicionesVerificadas = Model.Requisiciones.Where(r => (r.IdEstatus == 15 || r.IdEstatus == 18) && r.ConsolidadaId == null).ToList();
     }
 
@@ -345,7 +349,7 @@
                         <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbodyAutorizadasIndividuales">
                     @{ var idxAutorizadas = 0; }
                     @foreach (var item in requisicionesAutorizadas)
                     {
@@ -447,11 +451,13 @@
                     }
                     @if (!requisicionesAutorizadas.Any())
                     {
-                        <tr class="fila-vacia">
+                        <tr class="fila-vacia" id="filaVaciaAutorizadas">
                             <td colspan="@numColsReq" class="text-center">No hay requisiciones autorizadas</td>
                         </tr>
                     }
                 </tbody>
+                <!-- Consolidadas autorizadas (cargado dinamicamente) -->
+                <tbody id="tbodyAutorizadasConsolidadas"></tbody>
             </table>
             <div id="paginacionAutorizadas" class="almacen-paginacion"></div>
         </div>
@@ -664,6 +670,7 @@
                             </td>
                         </tr>
                     </tbody>
+                    <tbody id="tbodyDocumentosConsolidadas"></tbody>
                 </table>
                 <div id="paginacionDocumentos" class="almacen-paginacion"></div>
             </div>

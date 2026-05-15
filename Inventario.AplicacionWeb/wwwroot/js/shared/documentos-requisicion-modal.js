@@ -87,13 +87,18 @@
       var fetchUrl = options?.fetchUrl || "";
       var downloadZipUrl = options?.downloadZipUrl || "";
       var idRequisicion = options?.idRequisicion;
+      var idConsolidada = options?.idConsolidada;
 
-      if (!fetchUrl || !idRequisicion) {
+      if (!fetchUrl || (!idRequisicion && !idConsolidada)) {
         console.error("Faltan datos para abrir la modal de documentos.");
         return;
       }
 
-      fetch(fetchUrl + "?idRequisicion=" + encodeURIComponent(idRequisicion), {
+      var queryParam = idConsolidada
+        ? "idConsolidada=" + encodeURIComponent(idConsolidada)
+        : "idRequisicion=" + encodeURIComponent(idRequisicion);
+
+      fetch(fetchUrl + "?" + queryParam, {
         method: "GET",
         headers: { Accept: "application/json" },
         credentials: "same-origin",
@@ -108,9 +113,12 @@
           var archivoActual = archivos[0];
           var listaHtml = construirListaHtml(archivos);
           var previewHtml = construirPreview(archivoActual.ruta, archivoActual.nombreArchivo);
+          var zipQueryParam = idConsolidada
+            ? "idConsolidada=" + encodeURIComponent(idConsolidada)
+            : "idRequisicion=" + encodeURIComponent(idRequisicion);
           var downloadMassiveHtml = downloadZipUrl
             ? '<div class="modal-footer" style="justify-content: flex-end;">' +
-              '<a href="' + esc(downloadZipUrl) + "?idRequisicion=" + encodeURIComponent(idRequisicion) + '" class="btn boton-rosa">' +
+              '<a href="' + esc(downloadZipUrl) + "?" + zipQueryParam + '" class="btn boton-rosa">' +
               '<i class="fa-solid fa-file-zipper"></i> Descarga masiva' +
               "</a>" +
               "</div>"

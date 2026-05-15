@@ -661,10 +661,6 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<JsonResult> ObtenerRequisicionesConArchivos()
         {
-            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-            if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
-                return Json(new { requisiciones = new List<object>() });
-
             var idUsuarioClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
                 return Json(new { requisiciones = new List<object>() });
@@ -673,11 +669,22 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (User.IsInRole("7"))
             {
+                // El analista de materiales (rol 7) solo ve las suyas
+                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+                int.TryParse(idDeptoClaim, out int idDepartamento);
                 listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false, idUsuario);
+            }
+            else if (User.IsInRole("1"))
+            {
+                // El usuario final solo ve las de su departamento
+                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
+                int.TryParse(idDeptoClaim, out int idDepartamento);
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false);
             }
             else
             {
-                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false);
+                // Roles 3, 4 y otros: sin filtro de departamento
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(null, false);
             }
 
             var requisiciones = listaDTO.Select(r => new
@@ -692,6 +699,38 @@ namespace Inventario.AplicacionWeb.Controllers
             }).ToList();
 
             return Json(new { requisiciones });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerConsolidadasConArchivos()
+        {
+            var idUsuarioClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Json(new { consolidadas = new List<object>() });
+
+            List<ConsolidadaDTO> lista;
+            if (User.IsInRole("3"))
+            {
+                lista = await _consolidadaService.ObtenerConsolidadasConArchivos(false, idUsuario);
+            }
+            else
+            {
+                lista = await _consolidadaService.ObtenerConsolidadasConArchivos(false);
+            }
+
+            var consolidadas = lista.Select(c => new
+            {
+                consolidadaId = c.ConsolidadaID,
+                folioConsolidada = c.FolioConsolidada,
+                fechaCreacion = c.FechaCreacion,
+                cantidadRequis = c.CantidadRequis,
+                totalPartidas = c.TotalPartidas,
+                departamentos = c.Departamentos,
+                idEstatus = c.IdEstatus,
+                estatus = c.Estatus
+            }).ToList();
+
+            return Json(new { consolidadas });
         }
 
         [HttpGet]

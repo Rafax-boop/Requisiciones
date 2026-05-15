@@ -1,8 +1,10 @@
 ﻿using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
 using Inventario.BLL.Interfaces;
+using Inventario.Entity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IO.Compression;
 using System.Security.Claims;
 
 namespace Inventario.AplicacionWeb.Controllers
@@ -11,10 +13,12 @@ namespace Inventario.AplicacionWeb.Controllers
     public class ConsolidadaController : Controller
     {
         private readonly IConsolidadaService _consolidadaService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ConsolidadaController(IConsolidadaService consolidadaService)
+        public ConsolidadaController(IConsolidadaService consolidadaService, IWebHostEnvironment webHostEnvironment)
         {
             _consolidadaService = consolidadaService;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [HttpGet]
@@ -53,6 +57,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 lista = await _consolidadaService.ListarConsolidadas(servicio, idUsuario);
             else
                 lista = await _consolidadaService.ListarConsolidadas(servicio);
+
+            lista = lista.Where(c => c.IdEstatus != 7).ToList();
 
             return Ok(lista);
         }
@@ -107,6 +113,23 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> ObtenerConsolidadasAutorizadas(bool servicio)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            List<ConsolidadaDTO> lista;
+            if (User.IsInRole("3") || User.IsInRole("7"))
+                lista = await _consolidadaService.ListarConsolidadas(servicio, idUsuario);
+            else
+                lista = await _consolidadaService.ListarConsolidadas(servicio);
+
+            var estatusAutorizados = new[] { 7, 12 };
+            var filtradas = lista.Where(c => estatusAutorizados.Contains(c.IdEstatus)).ToList();
+
+            return Ok(filtradas);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> ObtenerExpedienteConsolidada(int idConsolidada)
         {
             var expediente = await _consolidadaService.ObtenerExpedienteConsolidada(idConsolidada);
@@ -134,6 +157,86 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             var docs = await _consolidadaService.ObtenerDocumentosProveedorConsolidada(idConsolidada);
             return Ok(docs);
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerArchivosConsolidada(int idConsolidada)
+        {
+            var archivos = await _consolidadaService.ObtenerArchivosConsolidada(idConsolidada);
+            var resultado = archivos.Select(a => new
+            {
+                id = a.Id,
+                tipo = a.Tipo,
+                ruta = a.Ruta,
+                fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
+                nombreArchivo = System.IO.Path.GetFileName(a.Ruta)
+            }).ToList();
+            return Json(resultado);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarArchivosConsolidadaZip(int idConsolidada)
+        {
+            var archivos = await _consolidadaService.ObtenerArchivosConsolidada(idConsolidada);
+            if (archivos == null || archivos.Count == 0)
+                return NotFound("No hay archivos para descargar.");
+
+            var consolidada = await _consolidadaService.ObtenerConsolidada(idConsolidada);
+            if (consolidada == null)
+                return NotFound("No se encontró la consolidada.");
+
+            using var zipStream = new MemoryStream();
+            using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var nombresUsados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var archivo in archivos)
+                {
+                    if (string.IsNullOrWhiteSpace(archivo.Ruta))
+                        continue;
+
+                    var rutaRelativa = archivo.Ruta
+                        .TrimStart('~', '/')
+                        .Replace('/', System.IO.Path.DirectorySeparatorChar);
+                    var rutaFisica = System.IO.Path.Combine(_webHostEnvironment.WebRootPath, rutaRelativa);
+
+                    if (!System.IO.File.Exists(rutaFisica))
+                        continue;
+
+                    var nombreOriginal = System.IO.Path.GetFileName(archivo.Ruta);
+                    var nombreEntrada = ObtenerNombreZipDisponible(nombreOriginal, nombresUsados);
+                    var entrada = zip.CreateEntry(nombreEntrada, CompressionLevel.Fastest);
+
+                    await using var entryStream = entrada.Open();
+                    await using var fileStream = new FileStream(rutaFisica, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    await fileStream.CopyToAsync(entryStream);
+                }
+            }
+
+            if (zipStream.Length == 0)
+                return NotFound("No se encontraron archivos físicos para descargar.");
+
+            zipStream.Position = 0;
+            var nombreZip = "Consolidada_" + (consolidada.FolioConsolidada ?? idConsolidada.ToString()) + ".zip";
+            return File(zipStream.ToArray(), "application/zip", nombreZip);
+        }
+
+        private static string ObtenerNombreZipDisponible(string nombreOriginal, HashSet<string> nombresUsados)
+        {
+            var baseNombre = string.IsNullOrWhiteSpace(nombreOriginal)
+                ? "archivo"
+                : System.IO.Path.GetFileNameWithoutExtension(nombreOriginal);
+            var extension = System.IO.Path.GetExtension(nombreOriginal);
+            var candidato = $"{baseNombre}{extension}";
+            var indice = 2;
+
+            while (!nombresUsados.Add(candidato))
+            {
+                candidato = $"{baseNombre}_{indice}{extension}";
+                indice++;
+            }
+
+            return candidato;
         }
     }
 }

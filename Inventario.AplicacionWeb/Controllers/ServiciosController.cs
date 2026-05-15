@@ -21,6 +21,7 @@ namespace Inventario.AplicacionWeb.Controllers
         private readonly ICatalogoService _catalogoService;
         private readonly IProveedoresService _proveedorService;
         private readonly IWebHostEnvironment _env;
+        private readonly IConsolidadaService _consolidadaService;
 
         public ServiciosController(
             IUsuarioService usuarioService,
@@ -30,7 +31,8 @@ namespace Inventario.AplicacionWeb.Controllers
             IAlmacenService almacenService,
             ICatalogoService catalogoService,
             IProveedoresService proveedorService,
-            IWebHostEnvironment env
+            IWebHostEnvironment env,
+            IConsolidadaService consolidadaService
         )
         {
             _usuarioService = usuarioService;
@@ -41,6 +43,7 @@ namespace Inventario.AplicacionWeb.Controllers
             _catalogoService = catalogoService;
             _proveedorService = proveedorService;
             _env = env;
+            _consolidadaService = consolidadaService;
         }
 
         [HttpGet]
@@ -449,6 +452,38 @@ namespace Inventario.AplicacionWeb.Controllers
             }).ToList();
 
             return Json(new { requisiciones });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerConsolidadasConArchivos()
+        {
+            var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
+                return Json(new { consolidadas = new List<object>() });
+
+            List<ConsolidadaDTO> lista;
+            if (User.IsInRole("7"))
+            {
+                lista = await _consolidadaService.ObtenerConsolidadasConArchivos(true, idUsuario);
+            }
+            else
+            {
+                lista = await _consolidadaService.ObtenerConsolidadasConArchivos(true);
+            }
+
+            var consolidadas = lista.Select(c => new
+            {
+                consolidadaId = c.ConsolidadaID,
+                folioConsolidada = c.FolioConsolidada,
+                fechaCreacion = c.FechaCreacion,
+                cantidadRequis = c.CantidadRequis,
+                totalPartidas = c.TotalPartidas,
+                departamentos = c.Departamentos,
+                idEstatus = c.IdEstatus,
+                estatus = c.Estatus
+            }).ToList();
+
+            return Json(new { consolidadas });
         }
 
         [HttpGet]
