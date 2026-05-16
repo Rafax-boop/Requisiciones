@@ -2647,7 +2647,7 @@ namespace Inventario.BLL.Implementacion
                 ProveedorRfc = provGanador?.ProvRfc ?? "",
                 Departamento = nombreDepartamento,
                 Responsable = responsableDepto,
-                LugarEntrega = "RECURSOS MATERIALES",
+                LugarEntrega = "ALMACEN GENERAL",
                 PartidaPresupuestal = consolidada.IdPp?.ToString() ?? ""
             };
 

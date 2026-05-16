@@ -139,7 +139,7 @@ namespace Inventario.BLL.Implementacion
             var bytes = GenerarCuadroComparativoPdf(
                 webRootPath,
                 requisicion: dto.NumRequisicion ?? $"REQ-{idRequisicion}",
-                fecha: dto.FechaEmision?.ToDateTime(TimeOnly.MinValue),
+                fecha: DateTime.Now.Date,
                 departamento: dto.Departamento ?? "",
                 justificacion: dto.Justificacion ?? "",
                 filas: filas,
@@ -552,11 +552,10 @@ namespace Inventario.BLL.Implementacion
                 };
             }).ToList();
 
-            var fecha = dto.FechaEmision?.ToDateTime(TimeOnly.MinValue);
             var bytes = GenerarPdf(
                 webRootPath,
                 requisicion: dto.NumRequisicion ?? $"REQ-{idRequisicion}",
-                fecha: fecha,
+                fecha: DateTime.Now.Date,
                 areasSolicitantes: dto.Departamento ?? "",
                 filas: filas);
 
@@ -980,8 +979,8 @@ namespace Inventario.BLL.Implementacion
             var bytes = GenerarCuadroComparativoPdf(
                 webRootPath,
                 requisicion: consolidada.FolioConsolidada,
-                fecha: primeraReq?.FechaEmision?.ToDateTime(TimeOnly.MinValue),
-                departamento: primeraReq?.Departamento ?? "",
+                fecha: DateTime.Now.Date,
+                departamento: "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 justificacion: primeraReq?.Justificacion ?? "",
                 filas: filas,
                 nombresProveedores: nombresProveedores,
@@ -1061,13 +1060,12 @@ namespace Inventario.BLL.Implementacion
 
             var primeraReq = await _requisicionesService
                 .ObtenerRequisicionCompletaPorId(idReqReferencia);
-            var fecha = primeraReq?.FechaEmision?.ToDateTime(TimeOnly.MinValue);
 
             var bytes = GenerarPdf(
                 webRootPath,
                 requisicion: consolidada.FolioConsolidada,
-                fecha: fecha,
-                areasSolicitantes: primeraReq?.Departamento ?? "",
+                fecha: DateTime.Now.Date,
+                areasSolicitantes: "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 filas: articulosAgrupados);
 
             var nombreArchivo =

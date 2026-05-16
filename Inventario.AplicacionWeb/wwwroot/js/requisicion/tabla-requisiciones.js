@@ -158,6 +158,9 @@
     var urlEnviarFinancierosDocsConsolidada = container
         ? container.getAttribute("data-url-enviar-financieros-docs-consolidada")
         : "";
+    var urlFinalizarConsolidada = container
+        ? container.getAttribute("data-url-finalizar-consolidada")
+        : "";
 
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
@@ -1057,6 +1060,21 @@
   };
 
   var _idRequiFinalizar = null;
+    var _idConsolidadaFinalizar = null;
+
+    window.abrirModalFinalizarConsolidada = function (idConsolidada) {
+        _idConsolidadaFinalizar = idConsolidada;
+        _idRequiFinalizar = null;  // ← limpiar el otro para no confundir
+        document.getElementById("txtObservacionesFinalizar").value = "";
+
+        var el = document.getElementById("modalFinalizar");
+        var instancia = bootstrap.Modal.getInstance(el);
+        if (instancia) {
+            instancia.show();
+        } else {
+            new bootstrap.Modal(el, { backdrop: false, keyboard: true }).show();
+        }
+    };
 
   window.abrirModalFinalizar = function (idRequi) {
     _idRequiFinalizar = idRequi;
@@ -1073,6 +1091,10 @@
       }).show();
     }
     };
+
+    document.getElementById("modalFinalizar").addEventListener("hidden.bs.modal", function () {
+        _idConsolidadaFinalizar = null;
+    });
 
     window.verDetalleConsolidada = function (idConsolidada) {
         document.getElementById("consolidadaTitulo").textContent = "Requisición Consolidada";
@@ -1179,50 +1201,49 @@
         });
     };
 
-  window.confirmarFinalizar = function () {
-    var obs = document.getElementById("txtObservacionesFinalizar").value.trim();
-    if (!obs) {
-      Swal.fire({
-        icon: "warning",
-        title: "Escribe una observación de cierre.",
-        confirmButtonColor: "#fe6291",
-      });
-      return;
-    }
-
-    $.ajax({
-      url: urlFinalizar,
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify({
-        idRequisicion: _idRequiFinalizar,
-        observaciones: obs,
-      }),
-      success: function (res) {
-        if (res.success) {
-          bootstrap.Modal.getInstance(
-            document.getElementById("modalFinalizar"),
-          ).hide();
-          Swal.fire({
-            icon: "success",
-            title: "Requisición finalizada",
-            timer: 2000,
-            showConfirmButton: false,
-          }).then(function () {
-            location.reload();
-          });
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "No se pudo finalizar la requisición.",
-          });
+    window.confirmarFinalizar = function () {
+        var obs = document.getElementById("txtObservacionesFinalizar").value.trim();
+        if (!obs) {
+            Swal.fire({
+                icon: "warning",
+                title: "Escribe una observación de cierre.",
+                confirmButtonColor: "#fe6291",
+            });
+            return;
         }
-      },
-      error: function () {
-        Swal.fire({ icon: "error", title: "Error al procesar la solicitud." });
-      },
-    });
-  };
+
+        var esConsolidada = _idConsolidadaFinalizar !== null;
+        var url = esConsolidada ? urlFinalizarConsolidada : urlFinalizar;
+        var body = esConsolidada
+            ? { idConsolidada: _idConsolidadaFinalizar, observaciones: obs }
+            : { idRequisicion: _idRequiFinalizar, observaciones: obs };
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(body),
+            success: function (res) {
+                if (res.success) {
+                    _idConsolidadaFinalizar = null;
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalFinalizar")
+                    ).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Requisición finalizada",
+                        timer: 2000,
+                        showConfirmButton: false,
+                    }).then(function () { location.reload(); });
+                } else {
+                    Swal.fire({ icon: "error", title: "No se pudo finalizar." });
+                }
+            },
+            error: function () {
+                Swal.fire({ icon: "error", title: "Error al procesar la solicitud." });
+            },
+        });
+    };
 
   window.volverOpciones = function () {
     ocultarTodosPasos();
@@ -2882,6 +2903,8 @@
 
           window.confirmarCrearConsolidada = function () {
               var ids = Array.from(_seleccionadas);
+              var esServicio = document.querySelector(".tabla-requi-page")
+                  ?.getAttribute("data-tipo-tabla") === "servicios";
               Swal.fire({
                   title: "¿Crear consolidada?",
                   html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
@@ -2894,7 +2917,7 @@
                   if (!result.isConfirmed) return;
                   Swal.fire({ title: "Creando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-                  fetch(urlCrearConsolidada + "?servicio=" + esTablaServicios, {
+                  fetch(urlCrearConsolidada + "?servicio=" + esServicio, {
                       method: "POST",
                       credentials: "same-origin",
                       headers: { "Content-Type": "application/json" },
@@ -3811,8 +3834,14 @@
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
                           'onclick="verDetalleConsolidada(' + c.consolidadaID + ')">' +
                           '<i class="fa-solid fa-eye"></i>' +
-                          "</button>" +
-                          "</div>" +
+                      '</button>' +
+                      (c.idEstatus === 7
+                          ? '<button class="btn-accion" title="Confirmar entrega" ' +
+                          'onclick="abrirModalFinalizarConsolidada(' + c.consolidadaID + ')">' +
+                          '<i class="fa-solid fa-circle-check"></i>' +
+                          '</button>'
+                          : "") +
+                      "</div>"
                           "</td>";
                       tbody.appendChild(tr);
                   });
