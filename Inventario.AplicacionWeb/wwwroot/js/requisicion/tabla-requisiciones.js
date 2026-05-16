@@ -1593,19 +1593,30 @@
         document.getElementById("estadoProveedoresConsolidada").style.display = "none";
         document.getElementById("textoBtnProveedoresCons").textContent = "Seleccionar Proveedores";
         document.getElementById("btnCuadroConsolidada").disabled = true;
+        var docsWrap = document.getElementById("consolidadaDocsExistentes");
+        var docsBody = document.getElementById("consolidadaDocsExistentesBody");
+        if (docsWrap) docsWrap.style.display = "none";
+        if (docsBody) docsBody.innerHTML = "";
 
-        // Destruir select2 previos
+        // Destruir instancias previas de SelectRosaBuscable
         ["consActividadSelect", "consFfSelect", "consTipoProgramaSelect"].forEach(function (id) {
-            var $el = $("#" + id);
-            if ($el.data("select2")) $el.select2("destroy");
-            $el.val("").trigger("change");
+            var el = document.getElementById(id);
+            if (el && window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.destruir(el);
+            }
+            if (el) el.value = "";
         });
+        // Inicializar SelectRosaBuscable
         ["consActividadSelect", "consFfSelect", "consTipoProgramaSelect"].forEach(function (id) {
-            $("#" + id).select2({
-                dropdownParent: $("#modalAtenderConsolidada"),
-                width: "100%",
-                language: "es"
-            });
+            var el = document.getElementById(id);
+            if (el && window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.inicializar(el, {
+                    placeholder: id === "consActividadSelect" ? "Buscar actividad..." :
+                                 id === "consFfSelect" ? "Buscar fuente..." :
+                                 "Buscar tipo de programa...",
+                    defaultText: false
+                });
+            }
         });
 
         // Cargar detalle para mostrar artículos y obtener primera hija
@@ -1616,6 +1627,11 @@
             // Tabla artículos
             var rows = "";
             (data.articulos || []).forEach(function (a) {
+                var textoCompleto = a.descripcionDetallada || "";
+                var textoCorto = textoCompleto.length > 40
+                    ? textoCompleto.substring(0, 40) + "…"
+                    : textoCompleto || "Sin descripción...";
+                var fullEscapado = escapeHtml(textoCompleto);
                 rows += "<tr>" +
                     '<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
                     'background:#fef9c3;color:#854d0e;font-weight:600;">' +
@@ -1624,10 +1640,17 @@
                     '<td style="text-align:center">' + (a.cantidad || "") + "</td>" +
                     "<td>" + (a.unidadMedida || "") + "</td>" +
                     "<td>" + (a.descripcion || "") + "</td>" +
+                    '<td><div class="desc-preview-modal" data-full="' +
+                    fullEscapado +
+                    '" onclick="verDescDetalleModal(this)">' +
+                    '<span class="desc-texto-preview' + (textoCompleto ? " tiene-texto" : "") + '">' +
+                    textoCorto +
+                    "</span>" +
+                    '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
                     "</tr>";
             });
             document.getElementById("atenderConsArticulosBody").innerHTML =
-                rows || '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+                rows || '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
 
             // Verificar si ya existen cotizaciones guardadas
             var primeraRequi = data.requisiciones && data.requisiciones.length
@@ -1763,7 +1786,7 @@
                     ).hide();
                     Swal.fire({
                         icon: "success", title: "Consolidada atendida",
-                        timer: 2000, showConfirmButton: false
+                        confirmButtonText: "Aceptar"
                     }).then(function () { location.reload(); });
                     return;
                 }
@@ -1791,7 +1814,7 @@
                         ).hide();
                         Swal.fire({
                             icon: "success", title: "Consolidada atendida",
-                            timer: 2000, showConfirmButton: false
+                            confirmButtonText: "Aceptar"
                         }).then(function () { location.reload(); });
                     },
                     error: function () {
@@ -1965,10 +1988,9 @@
           tr.setAttribute("data-consolidada-id", c.consolidadaId);
           tr.innerHTML =
             '<td style="text-align:center">' + (idx + 1) + "</td>" +
-            "<td><strong>" + (c.folioConsolidada || "—") + " <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></strong></td>" +
+            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
             "<td>" + (c.fechaCreacion || "—") + "</td>" +
-            '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
-            (c.departamentos || "—") + "</td>" +
+            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
             '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
             '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
             "<td>" + (c.estatus || "—") + "</td>" +
@@ -3246,17 +3268,18 @@
           "</option>";
       });
 
-      var $select = $selectProveedor();
-      if ($select.data("select2")) {
-        $select.select2("destroy");
+      var select = document.getElementById("wizardProveedorSelect");
+      if (!select) return;
+      if (window.SelectRosaBuscable) {
+        window.SelectRosaBuscable.destruir(select);
       }
-
-      $select.html(html);
-      $select.select2({
-        dropdownParent: $modalProveedores(),
-        width: "100%",
-        language: "es",
-      });
+      select.innerHTML = html;
+      if (window.SelectRosaBuscable) {
+        window.SelectRosaBuscable.inicializar(select, {
+          placeholder: "Buscar proveedor...",
+          defaultText: false,
+        });
+      }
     }
 
     function renderizarPartidasProveedor(proveedor) {
@@ -3683,6 +3706,7 @@
                       tbody.innerHTML =
                           '<tr class="fila-vacia"><td colspan="9" class="text-center">' +
                           "No hay requisiciones consolidadas</td></tr>";
+                      aplicarPaginacionRequisiciones();
                       return;
                   }
 
@@ -3716,6 +3740,8 @@
                           "</td>";
                       tbody.appendChild(tr);
                   });
+
+                  aplicarPaginacionRequisiciones();
               })
               .catch(function () {
                   if (tbody) tbody.innerHTML =
@@ -3799,10 +3825,9 @@
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><strong>" + (c.folioConsolidada || "—") + " <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></strong></td>" +
+                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
                           "<td>" + (c.fechaCreacion || "—") + "</td>" +
-                          '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
-                          (c.departamentos || "—") + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
                           "<td>" + (c.estatus || "—") + "</td>" +

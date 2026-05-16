@@ -73,6 +73,37 @@
         { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
         { clave: "MemoPago", label: "Memorandum Instrucción de Pago" }
     ];
+    function obtenerBadgeEstatusHtml(idEstatus, nombreEstatus) {
+        var nombreSafe = (nombreEstatus || "Desconocido").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        var colorClass = "badge-estado-info";
+        var iconClass = "fa-solid fa-spinner fa-spin-pulse";
+        switch (idEstatus) {
+            case 7: case 12: case 17:
+                colorClass = "badge-estado-success";
+                iconClass = "fa-solid fa-check-double";
+                break;
+            case 4: case 10: case 15: case 16:
+                colorClass = "badge-estado-purple";
+                iconClass = "fa-solid fa-user-check";
+                break;
+            case 5: case 6:
+                colorClass = "badge-estado-danger";
+                iconClass = "fa-solid fa-ban";
+                break;
+            case 3: case 18:
+                colorClass = "badge-estado-warning";
+                iconClass = "fa-solid fa-triangle-exclamation";
+                break;
+            case 1: case 2: case 9: case 11: case 13: case 14:
+            default:
+                colorClass = "badge-estado-info";
+                iconClass = idEstatus === 1 ? "fa-solid fa-file-signature" : "fa-solid fa-spinner fa-spin-pulse";
+                break;
+        }
+        return '<div class="badge-estado-premium ' + colorClass + '" title="' + nombreSafe + '">' +
+               '<i class="' + iconClass + '"></i><span class="badge-text">' + nombreSafe + '</span></div>';
+    }
+
     const contenedor = document.querySelector(".tabla-requi-page");
     const atenderUrl = contenedor ? contenedor.dataset.urlAtender : "";
 
@@ -274,12 +305,15 @@
 
         var modalTitle = document.querySelector("#modalAsignar .modal-titulo-premium");
         var modalSubtitle = document.querySelector("#modalAsignar .modal-subtitulo-premium");
+        var dialog = document.querySelector("#modalAsignar .modal-dialog");
         if (tipo === "consolidada") {
             if (modalTitle) modalTitle.textContent = "Asignar consolidada";
             if (modalSubtitle) modalSubtitle.textContent = "Selecciona el analista financiero para esta consolidada";
+            if (dialog) dialog.style.setProperty("max-width", "700px", "important");
         } else {
             if (modalTitle) modalTitle.textContent = "Asignar requisición";
             if (modalSubtitle) modalSubtitle.textContent = "Selecciona el analista";
+            if (dialog) dialog.style.setProperty("max-width", "", "important");
         }
 
         var $select = $("#selectUsuarioAsignar");
@@ -500,20 +534,38 @@
             if (subtitulo)
                 subtitulo.textContent = "Detalle de partidas · Total: " + articulos.length + " partidas";
 
-            // Inicializar select2 y precargar valores
+            // Inicializar SelectRosaBuscable (PP, FF, TipoPrograma) + Select2 (municipio)
             if (isAtender || isReadonly) {
-                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").each(function () {
-                    if ($(this).data("select2")) $(this).select2("destroy");
+                ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && window.SelectRosaBuscable) {
+                        window.SelectRosaBuscable.destruir(el);
+                    }
                 });
+                var $mun = $("#municipio");
+                if ($mun.data("select2")) $mun.select2("destroy");
 
-                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+                ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && window.SelectRosaBuscable) {
+                        window.SelectRosaBuscable.inicializar(el, {
+                            placeholder: id === "actividadSeleccionada" ? "Buscar actividad..." :
+                                         id === "ffSelect" ? "Buscar fuente..." :
+                                         "Buscar tipo de programa...",
+                            defaultText: false
+                        });
+                    }
+                });
+                $mun.select2({
                     dropdownParent: $("#modalDetalle"),
                     width: "100%",
                     language: "es"
                 });
 
                 // Precargar valores desde la data (PP, FF, Programa, Municipio)
-                if (data.idPp) $("#actividadSeleccionada").val(data.idPp).trigger("change");
+                if (data.idPp) {
+                    $("#actividadSeleccionada").val(data.idPp).trigger("change");
+                }
                 if (data.ff) {
                     $("#ffSelect").val(data.ff).trigger("change");
                 }
@@ -525,6 +577,12 @@
                 // --- CAMBIO AQUÍ: Deshabilitar campos y cargar archivos para AMBOS modos ---
                 $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
                     .prop("disabled", true);
+                ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && window.SelectRosaBuscable) {
+                        window.SelectRosaBuscable.actualizar(el);
+                    }
+                });
 
                 (function () {
                     var c = document.getElementById("contenedorArchivosReadonly");
@@ -1281,12 +1339,12 @@
                     tr.setAttribute("data-requi-id", item.idRequi);
                     tr.innerHTML =
                         '<td style="text-align:center">' + (idx + 1) + '</td>' +
-                        '<td>' + item.numRequi + '</td>' +
+                        '<td><span class="folio-badge">' + (item.numRequi || "—") + '</span></td>' +
                         '<td>' + item.fechaEmision + '</td>' +
-                        '<td>' + item.departamento + '</td>' +
-                        '<td>' + item.responsable + '</td>' +
+                        '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (item.departamento || "—") + '</span></div></td>' +
+                        '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-user"></i>' + (item.responsable || "—") + '</span></div></td>' +
                         '<td style="text-align:center">' + item.cantidadPartidas + '</td>' +
-                        '<td>' + item.estatus + '</td>' +
+                        '<td>' + obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus) + '</td>' +
                         '<td style="text-align:center">' +
                             '<button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicionFin(' + item.idRequi + ')">' +
                                 '<i class="fa-solid fa-file"></i>' +
@@ -1330,13 +1388,12 @@
                     tr.setAttribute("data-consolidada-id", c.consolidadaId);
                     tr.innerHTML =
                         '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                        "<td><strong>" + (c.folioConsolidada || "—") + " <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></strong></td>" +
+                        "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
                         "<td>" + (c.fechaCreacion || "—") + "</td>" +
-                        '<td style="max-width:200px;white-space:normal;font-size:12px;">' +
-                        (c.departamentos || "—") + "</td>" +
+                        '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
                         '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                         '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                        "<td>" + (c.estatus || "—") + "</td>" +
+                        "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus) + "</td>" +
                         '<td style="text-align:center">' +
                         '<div class="acciones-grupo" style="justify-content:center">' +
                         '<button class="btn-accion btn-ver" title="Ver archivos" ' +
@@ -1640,7 +1697,7 @@
                     tr.setAttribute("data-folio", (item.folioConsolidada || "").toLowerCase());
                     tr.setAttribute("data-deptos", (item.departamentos || "").toLowerCase());
 
-                    var badgeHtml = item.estatus || "";
+                    var badgeHtml = obtenerBadgeEstatusHtml(item.idEstatus, item.estatus);
 
                     var diasHtml = "";
                     if (item.diasAsignado > 0 || item.nombreAsignado) {
@@ -1668,13 +1725,13 @@
 
                     var celdas = '';
                     celdas += '<td style="text-align:center">' + (idx + 1) + '</td>';
-                    celdas += '<td>' + item.folioConsolidada + '</td>';
-                    celdas += '<td>' + item.departamentos + '</td>';
+                    celdas += '<td><span class="folio-badge">' + (item.folioConsolidada || "—") + '</span></td>';
+                    celdas += '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (item.departamentos || "—") + '</span></div></td>';
                     celdas += '<td style="text-align:center">' + item.cantidadRequis + '</td>';
                     celdas += '<td>' + item.fechaCreacion + '</td>';
                     celdas += '<td>' + badgeHtml + '</td>';
                     if (esRol8) {
-                        celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
+                        celdas += '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-clipboard-user"></i>' + (item.nombreAsignado || "Sin asignar") + '</span></div></td>';
                     }
                     if (esRol8 || esRol9) {
                         celdas += '<td>' + diasHtml + '</td>';
@@ -1727,7 +1784,7 @@
                     tr.setAttribute("data-folio", (item.folioConsolidada || "").toLowerCase());
                     tr.setAttribute("data-deptos", (item.departamentos || "").toLowerCase());
 
-                    var badgeHtml = item.estatus || "";
+                    var badgeHtml = obtenerBadgeEstatusHtml(item.idEstatus, item.estatus);
 
                     var diasHtml = "";
                     if (item.diasAsignado > 0 || item.nombreAsignado) {
@@ -1749,14 +1806,14 @@
 
                     var celdas = '';
                     celdas += '<td style="text-align:center">' + (idx + 1) + '</td>';
-                    celdas += '<td><strong>' + (item.folioConsolidada || "—") + ' <span style="font-size:10px;color:var(--color-text-secondary);">(<i class="fa-solid fa-layer-group"></i> Consolidada)</span></strong></td>';
+                    celdas += '<td><span class="folio-badge">' + (item.folioConsolidada || "—") + '</span> <span style="font-size:10px;color:var(--color-text-secondary);">(<i class="fa-solid fa-layer-group"></i> Consolidada)</span></td>';
                     celdas += '<td>' + (item.fechaCreacion || "—") + '</td>';
-                    celdas += '<td>' + (item.departamentos || "—") + '</td>';
+                    celdas += '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (item.departamentos || "—") + '</span></div></td>';
                     celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
                     celdas += '<td style="text-align:center">' + (item.cantidadRequis || 0) + '</td>';
                     celdas += '<td>' + badgeHtml + '</td>';
                     if (esRol8) {
-                        celdas += '<td>' + (item.nombreAsignado || "Sin asignar") + '</td>';
+                        celdas += '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-clipboard-user"></i>' + (item.nombreAsignado || "Sin asignar") + '</span></div></td>';
                     }
                     if (esRol8 || esRol9) {
                         celdas += '<td>' + diasHtml + '</td>';
@@ -1802,18 +1859,16 @@
             tr.className = "fila-requi";
             tr.setAttribute("data-id", item.id);
             tr.setAttribute("data-es-consolidada", item.esConsolidada ? "true" : "false");
-            var badgeHtml = item.esConsolidada
-                ? '<span class="badge-estatus" style="background:#fef3c7;color:#92400e;">' + (item.estatus || "") + "</span>"
-                : '<span class="badge-estatus" style="background:#dbeafe;color:#1e40af;">' + (item.estatus || "") + "</span>";
+            var badgeHtml = obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus);
             var tipoHtml = item.esConsolidada
                 ? '<span class="badge-estatus" style="background:#e0e7ff;color:#3730a3;font-size:10px;">Consolidada</span>'
                 : '<span class="badge-estatus" style="background:#f0fdf4;color:#166534;font-size:10px;">Individual</span>';
             tr.innerHTML =
                 '<td style="text-align:center">' + (idx + 1) + '</td>' +
-                '<td>' + (item.folio || "") + '</td>' +
+                '<td><span class="folio-badge">' + (item.folio || "") + '</span></td>' +
                 '<td>' + (item.fecha || "") + '</td>' +
-                '<td>' + (item.departamento || "") + '</td>' +
-                '<td>' + (item.responsable || "") + '</td>' +
+                '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (item.departamento || "") + '</span></div></td>' +
+                '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-user"></i>' + (item.responsable || "") + '</span></div></td>' +
                 '<td style="text-align:center">' + (item.partidas || 0) + '</td>' +
                 '<td>' + badgeHtml + '</td>' +
                 '<td>' + tipoHtml + '</td>' +
@@ -2157,18 +2212,39 @@
                 modalSubtitle.textContent = "Detalle de la consolidada \u00B7 Total: " + data.articulos.length + " partidas";
             }
 
-            // Init Select2 and pre-fill PP, FF, TipoPrograma
-            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").each(function () {
-                if ($(this).data("select2")) $(this).select2("destroy");
+            // Init SelectRosaBuscable for PP, FF, TipoPrograma + Select2 for municipio
+            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) {
+                    window.SelectRosaBuscable.destruir(el);
+                }
             });
-            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio").select2({
+            var $mun = $("#municipio");
+            if ($mun.data("select2")) $mun.select2("destroy");
+
+            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) {
+                    window.SelectRosaBuscable.inicializar(el, {
+                        placeholder: id === "actividadSeleccionada" ? "Buscar actividad..." :
+                                     id === "ffSelect" ? "Buscar fuente..." :
+                                     "Buscar tipo de programa...",
+                        defaultText: false
+                    });
+                }
+            });
+            $mun.select2({
                 dropdownParent: $("#modalDetalle"),
                 width: "100%",
                 language: "es"
             });
 
-            if (data.idPp) $("#actividadSeleccionada").val(data.idPp).trigger("change");
-            if (data.ff) $("#ffSelect").val(data.ff).trigger("change");
+            if (data.idPp) {
+                $("#actividadSeleccionada").val(data.idPp).trigger("change");
+            }
+            if (data.ff) {
+                $("#ffSelect").val(data.ff).trigger("change");
+            }
             if (data.tipoPrograma) {
                 $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
                 $("#tipoProgramaSelect").trigger("change");
@@ -2177,6 +2253,12 @@
             // Disable selects (readonly) — only the "Autorizar" action will process them
             $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
                 .prop("disabled", true);
+            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) {
+                    window.SelectRosaBuscable.actualizar(el);
+                }
+            });
 
             // Clear and enable observations
             $("#txtObservaciones")

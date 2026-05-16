@@ -136,15 +136,15 @@
                         idxPrincipal++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxPrincipal</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("9") || User.IsInRole("8"))
                             {
@@ -300,15 +300,15 @@
                         idxAutorizadas++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxAutorizadas</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("9") || User.IsInRole("8"))
                             {
@@ -445,15 +445,15 @@
                         idxRechazadas++;
                         <tr class="fila-requi" data-requi-id="@item.IdRequi" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
                             <td style="text-align:center">@idxRechazadas</td>
-                            <td>@item.NumRequi</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
                             <td>@item.FechaEmision</td>
-                            <td>@item.Departamento</td>
-                            <td>@item.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             @if (User.IsInRole("8"))
                             {
-                                <td>@(item.NombreAsignado ?? "Sin asignar")</td>
+                                <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.NombreAsignado ?? "Sin asignar", "fa-solid fa-clipboard-user"))</td>
                             }
                             @if (User.IsInRole("9") || User.IsInRole("8"))
                             {
@@ -782,7 +782,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Actividad:</label>
-                            <select id="actividadSeleccionada" class="form-select select2">
+                            <select id="actividadSeleccionada" class="rosa-select-form">
                                 <option value="">-- Selecciona actividad --</option>
                                 @foreach (var act in Model.ListaActividades)
                                 {
@@ -794,7 +794,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Fuente de Financiamiento:</label>
-                            <select id="ffSelect" class="form-select select2">
+                            <select id="ffSelect" class="rosa-select-form">
                                 <option value="">-- Selecciona Fuente de Financiamiento --</option>
                                 @foreach (var ff in Model.ListaFuentesFinanciamiento)
                                 {
@@ -808,7 +808,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Tipo de Programa:</label>
-                            <select id="tipoProgramaSelect" class="form-select select2">
+                            <select id="tipoProgramaSelect" class="rosa-select-form">
                                 <option value="">-- Selecciona el Tipo de Programa --</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
@@ -1063,6 +1063,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
+    <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/financieros/tabla-financieros.js" asp-append-version="true"></script>
 
