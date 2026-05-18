@@ -1576,6 +1576,25 @@
   color: #0284c7;
 }
 
+.consolidada-section-title i {
+  color: var(--rosa-400);
+}
+
+.consolidada-articulos-section {
+  margin-top: 18px;
+}
+
+.consolidada-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--slate-700);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 750;
+}
+
 /* ──────────────────────────────────────────
    Modal proveedores (desde artículos / atender)
 ────────────────────────────────────────── */
