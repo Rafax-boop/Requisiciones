@@ -71,7 +71,7 @@
             <div class="seccion-completa">
                 <div class="formulario-input">
                     <label>Lugar de entrega:</label>
-                    <select id="tipoServicio" name="LugarEntrega" class="select2" style="width:100%" required>
+                    <select id="tipoServicio" name="LugarEntrega" class="rosa-select-form" style="width:100%" required>
                         <option value="">-- Seleccionar tipo --</option>
                         <option value="ALMACEN GENERAL" selected="@(Model.LugarEntrega == "ALMACEN GENERAL")">ALMACEN GENERAL</option>
                         <option value="CASA DE ASISTENCIA" selected="@(Model.LugarEntrega == "CASA DE ASISTENCIA")">CASA DE ASISTENCIA</option>
@@ -290,6 +290,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
+    <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script>
     window.municipiosOpciones = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         ((List<SelectListItem>)ViewBag.ListaMunicipios).Select(m => new {

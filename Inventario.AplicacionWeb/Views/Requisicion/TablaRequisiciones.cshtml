@@ -1023,7 +1023,7 @@
                 <div id="wizardProveedorActual">
                     <div class="formulario-input" style="margin-bottom:16px;">
                         <label>Proveedor</label>
-                        <select id="wizardProveedorSelect" class="form-select select2" title="Proveedor">
+                        <select id="wizardProveedorSelect" class="rosa-select-form" title="Proveedor">
                             <option value="">-- Seleccione proveedor --</option>
                             @foreach (var act in Model.ListaProveedores)
                             {
@@ -1470,7 +1470,7 @@
 </div>
 
 <div class="modal" id="modalAtenderConsolidada" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-detalle-requisicion">
         <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
@@ -1483,14 +1483,12 @@
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <div class="modal-body modal-body-premium">
-
-                <!-- Actividad y FF -->
-                <div class="row mb-3">
+            <div class="px-4" style="margin-top:20px;">
+                <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
-                            <label>Actividad</label>
-                            <select id="consActividadSelect" class="form-select select2">
+                            <label>Actividad:</label>
+                            <select id="consActividadSelect" class="rosa-select-form">
                                 <option value="">-- Selecciona actividad --</option>
                                 @foreach (var act in Model.ListaActividades)
                                 {
@@ -1501,9 +1499,9 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
-                            <label>Fuente de Financiamiento</label>
-                            <select id="consFfSelect" class="form-select select2">
-                                <option value="">-- Selecciona FF --</option>
+                            <label>Fuente de Financiamiento:</label>
+                            <select id="consFfSelect" class="rosa-select-form">
+                                <option value="">-- Selecciona Fuente de Financiamiento --</option>
                                 @foreach (var ff in Model.ListaFuentesFinanciamiento)
                                 {
                                     <option value="@ff.Value">@ff.Text</option>
@@ -1511,27 +1509,24 @@
                             </select>
                         </div>
                     </div>
+                </div>
+
+                <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
-                            <label>Tipo de Programa</label>
-                            <select id="consTipoProgramaSelect" class="form-select select2">
-                                <option value="">-- Selecciona --</option>
+                            <label>Tipo de Programa:</label>
+                            <select id="consTipoProgramaSelect" class="rosa-select-form">
+                                <option value="">-- Selecciona el Tipo de Programa --</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
                             </select>
                         </div>
                     </div>
                 </div>
-
-                <hr />
-
-                <!-- Artículos consolidados (readonly) -->
-                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;">
-                    <i class="fa-solid fa-list" style="color:#fe6291;margin-right:6px;"></i>
-                    Artículos
-                </p>
-                <div class="table-responsive-container" style="margin-bottom:20px;">
-                    <table class="tabla-requisiciones">
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones" id="tablaModalAtenderConsolidada">
                         <thead>
                             <tr>
                                 <th>Requisición</th>
@@ -1539,33 +1534,13 @@
                                 <th style="text-align:center">Cantidad</th>
                                 <th>Unidad</th>
                                 <th>Descripción</th>
+                                <th>Descripción Detallada</th>
                             </tr>
                         </thead>
                         <tbody id="atenderConsArticulosBody"></tbody>
                     </table>
                 </div>
 
-                <hr />
-
-                <!-- Cotizaciones: reutiliza el wizard existente -->
-                <p style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:10px;">
-                    <i class="fa-solid fa-file-invoice-dollar"
-                       style="color:#fe6291;margin-right:6px;"></i>
-                    Cotizaciones
-                </p>
-                <div style="margin-bottom:16px;">
-                    <div id="estadoProveedoresConsolidada"
-                         style="display:none;margin-bottom:10px;color:#15803d;
-                        font-size:13px;font-weight:600;">
-                        Proveedores seleccionados correctamente
-                    </div>
-                    <button type="button" class="btn boton-rosa"
-                            onclick="abrirWizardCotizacionesConsolidada()">
-                        <span id="textoBtnProveedoresCons">Seleccionar Proveedores</span>
-                    </button>
-                </div>
-
-                <!-- Documentos existentes -->
                 <div id="consolidadaDocsExistentes" style="display:none;margin-bottom:16px;">
                     <p style="font-size:12px;font-weight:600;color:var(--slate-600);margin-bottom:6px;">
                         <i class="fa-solid fa-paperclip" style="color:#fe6291;margin-right:4px;"></i>
@@ -1574,34 +1549,45 @@
                     <div id="consolidadaDocsExistentesBody"></div>
                 </div>
 
-                <!-- Cuadro comparativo -->
                 <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="formulario-input">
+                            <label>Cotizaciones</label>
+                            <div id="estadoProveedoresConsolidada" style="display:none; margin-bottom:10px; color:#15803d; font-size:13px; font-weight:600;">
+                                Proveedores seleccionados correctamente
+                            </div>
+                            <button type="button" class="btn boton-rosa"
+                                    onclick="abrirWizardCotizacionesConsolidada()">
+                                <span id="textoBtnProveedoresCons">Seleccionar Proveedores</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="col-md-6">
                         <div class="formulario-input">
                             <label>Cuadro comparativo</label>
                             <button type="button" id="btnCuadroConsolidada"
                                     class="btn boton-rosa w-100 mb-2"
-                                    onclick="descargarCuadroConsolidada()" disabled>
+                                    onclick="descargarCuadroConsolidada()"
+                                    title="Disponible cuando se hayan seleccionado los proveedores"
+                                    disabled>
                                 Descargar cuadro comparativo
                             </button>
-                            <input type="file" id="inputCuadroConsolidada"
-                                   class="input-file-rosa" />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="formulario-input">
-                            <label>Documentos Anexos</label>
-                            <input type="file" id="inputAnexosConsolidada"
-                                   class="input-file-rosa" multiple />
+                            <input type="file" id="inputCuadroConsolidada" class="input-file-rosa" />
                         </div>
                     </div>
                 </div>
-
-                <!-- Observaciones -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="formulario-input">
+                            <label>Documentos Anexos</label>
+                            <input type="file" id="inputAnexosConsolidada" class="input-file-rosa" multiple />
+                        </div>
+                    </div>
+                </div>
                 <div class="formulario-input">
                     <label>Observaciones</label>
                     <textarea id="txtObsConsolidada" class="form-control" rows="3"
-                              placeholder="Observaciones..."></textarea>
+                              placeholder="Escriba las observaciones aquí..."></textarea>
                 </div>
 
                 <div style="margin-top:20px;text-align:right;">
@@ -1671,6 +1657,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
+    <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
 }

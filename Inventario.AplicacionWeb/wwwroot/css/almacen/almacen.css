@@ -164,7 +164,8 @@
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
 
-#paginacionRequisiciones {
+#paginacionRequisiciones,
+#paginacionConsolidadas {
     position: sticky;
     left: 0;
     z-index: 2;

@@ -28,6 +28,9 @@
   let archivosSeleccionados = [];
   var wizardSeleccionarEnfoquePorTab = false;
   var programacionFinalizada = false;
+  var selectorRosaDisponible =
+    !!window.SelectRosaBuscable &&
+    typeof window.SelectRosaBuscable.inicializar === "function";
 
   // Tipos permitidos
   const tiposPermitidos = [
@@ -40,13 +43,7 @@
   ];
 
   $(document).ready(function () {
-    if (typeof $.fn.select2 !== "undefined") {
-      $(".select2").select2({
-        placeholder: "-- Seleccionar tipo --",
-        allowClear: true,
-        width: "100%",
-      });
-    }
+    inicializarSelectsFormulario();
 
     if (window.articulosIniciales && window.articulosIniciales.length > 0) {
       window.articulosIniciales.forEach(function (art) {
@@ -71,14 +68,7 @@
         });
       }
 
-      if (typeof $.fn.select2 !== "undefined") {
-        $(".select2-tipo-servicio").select2({
-          placeholder: "-- Seleccionar tipo --",
-          allowClear: true,
-        });
-      }
-
-      $("#tipoServicio").on("select2:select select2:clear change", function () {
+      $("#tipoServicio").on("change", function () {
         const seccionFotos = document.getElementById("seccionFotos");
         const valor = $(this).val();
 
@@ -97,6 +87,38 @@
       }
     }
   });
+
+  function inicializarSelectsFormulario() {
+    inicializarSelectRosaEstatico("#tipoServicio", {
+      placeholder: esServicio
+        ? "Buscar tipo de servicio..."
+        : "Buscar lugar de entrega...",
+      defaultText: false,
+    });
+  }
+
+  function inicializarSelectRosaEstatico(selector, opciones) {
+    var select = document.querySelector(selector);
+    if (!select) return;
+
+    if (selectorRosaDisponible) {
+      window.SelectRosaBuscable.reinicializar(select, opciones || {});
+      return;
+    }
+
+    var $select = $(select);
+    if (typeof $.fn.select2 === "undefined") return;
+    if ($select.data("select2")) {
+      $select.select2("destroy");
+    }
+
+    $select.select2({
+      placeholder: (opciones && opciones.placeholder) || "-- Seleccionar --",
+      allowClear: true,
+      width: "100%",
+      language: "es",
+    });
+  }
 
   var inputFotos = document.getElementById("inputFotos");
   if (inputFotos) {
@@ -394,13 +416,12 @@
     if (!$selectUnidad.length) return;
 
     $selectUnidad.prop("disabled", false);
-    $selectUnidad
-      .val(
-        unidadesMedidaOpciones.indexOf(unidadNormalizada) >= 0
-          ? unidadNormalizada
-          : "",
-      )
-      .trigger("change.select2");
+    $selectUnidad.val(
+      unidadesMedidaOpciones.indexOf(unidadNormalizada) >= 0
+        ? unidadNormalizada
+        : "",
+    );
+    $selectUnidad.trigger("change.select2");
   }
 
   function limpiarUnidadFila(index) {
@@ -1086,17 +1107,33 @@
 
   function destruirWizardMesSelect2() {
     var $sel = $("#wizardMesSelect");
-    if ($sel.length && $sel.data("select2")) {
+    if (!$sel.length) return;
+
+    if (selectorRosaDisponible) {
+      window.SelectRosaBuscable.destruir($sel[0]);
+      return;
+    }
+
+    if ($sel.data("select2")) {
       $sel.select2("destroy");
     }
   }
 
   function inicializarWizardMesSelect2() {
-    if (typeof $.fn.select2 === "undefined") return;
     var $sel = $("#wizardMesSelect");
     if (!$sel.length || !$("#wizardMesContainer").is(":visible")) return;
 
     destruirWizardMesSelect2();
+
+    if (selectorRosaDisponible) {
+      window.SelectRosaBuscable.inicializar($sel[0], {
+        placeholder: "Buscar mes...",
+        defaultText: false,
+      });
+      return;
+    }
+
+    if (typeof $.fn.select2 === "undefined") return;
 
     var $parent = $(".swal2-container").last();
     if (!$parent.length) {
@@ -1309,6 +1346,46 @@
   var municipioWizardIdx = 0;
   var _opcionesMuniHtml = "";
 
+  function obtenerMunicipiosSeleccionados($actual) {
+    var ids = [];
+    $("#wizardMuniTbody .muni-fila-select").each(function () {
+      if ($actual && this === $actual[0]) return;
+      if (this.value) ids.push(String(this.value));
+    });
+    return ids;
+  }
+
+  function construirOpcionesMunicipio(idSeleccionado, idsExcluidos) {
+    var html = '<option value="">— Seleccione —</option>';
+    (window.municipiosOpciones || []).forEach(function (m) {
+      var id = String(m.id);
+      var esSeleccionado = idSeleccionado && id === String(idSeleccionado);
+      if (idsExcluidos.indexOf(id) !== -1 && !esSeleccionado) return;
+      html +=
+        '<option value="' +
+        id +
+        '"' +
+        (esSeleccionado ? " selected" : "") +
+        ">" +
+        m.nombre +
+        "</option>";
+    });
+    return html;
+  }
+
+  function refrescarOpcionesMunicipios() {
+    $("#wizardMuniTbody .muni-fila-select").each(function () {
+      var $select = $(this);
+      var valorActual = $select.val();
+      var idsExcluidos = obtenerMunicipiosSeleccionados($select);
+
+      destruirSelectorMunicipio(this);
+      this.innerHTML = construirOpcionesMunicipio(valorActual, idsExcluidos);
+      this.value = valorActual || "";
+      inicializarSelectorMunicipio(this);
+    });
+  }
+
   function preguntarMunicipios() {
     Swal.fire({
       title: "¿Distribuir por municipio?",
@@ -1483,8 +1560,14 @@
     var select = document.createElement("select");
     select.className =
       "form-select form-select-sm muni-fila-select municipios-input";
-    select.innerHTML = _opcionesMuniHtml;
+    select.innerHTML = construirOpcionesMunicipio(
+      idMuniVal,
+      obtenerMunicipiosSeleccionados(),
+    );
     if (idMuniVal) select.value = idMuniVal;
+    select.addEventListener("change", function () {
+      refrescarOpcionesMunicipios();
+    });
     tdSelect.appendChild(select);
     tr.appendChild(tdSelect);
 
@@ -1512,7 +1595,9 @@
     btnElim.className = "btn-delete";
     btnElim.innerHTML = '<i class="fa-solid fa-circle-minus"></i>';
     btnElim.addEventListener("click", function () {
+      destruirSelectorMunicipio(select);
       tr.remove();
+      refrescarOpcionesMunicipios();
       actualizarTotalMunicipio(
         municipioWizardArticulos[municipioWizardIdx].cantidad,
       );
@@ -1521,10 +1606,24 @@
     tr.appendChild(tdElim);
 
     tbody.appendChild(tr);
-    inicializarSelect2Municipio($(select));
+    inicializarSelectorMunicipio(select);
+    refrescarOpcionesMunicipios();
   }
 
-  function inicializarSelect2Municipio($elemento) {
+  function inicializarSelectorMunicipio(select) {
+    if (!select) return;
+    if (
+      window.SelectRosaBuscable &&
+      typeof window.SelectRosaBuscable.inicializar === "function"
+    ) {
+      window.SelectRosaBuscable.inicializar(select, {
+        placeholder: "Buscar municipio...",
+        defaultText: "Puebla",
+      });
+      return;
+    }
+
+    var $elemento = $(select);
     if (!$elemento.length || typeof $.fn.select2 === "undefined") return;
 
     if ($elemento.data("select2")) {
@@ -1538,6 +1637,22 @@
       language: "es",
       dropdownParent: $modal,
     });
+  }
+
+  function destruirSelectorMunicipio(select) {
+    if (!select) return;
+    if (
+      window.SelectRosaBuscable &&
+      typeof window.SelectRosaBuscable.destruir === "function"
+    ) {
+      window.SelectRosaBuscable.destruir(select);
+      return;
+    }
+
+    var $elemento = $(select);
+    if ($elemento.data("select2")) {
+      $elemento.select2("destroy");
+    }
   }
 
   function actualizarTotalMunicipio(cantidadRequerida) {
