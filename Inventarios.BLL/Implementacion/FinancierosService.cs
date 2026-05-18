@@ -131,7 +131,7 @@ namespace Inventario.BLL.Implementacion
                 // o que esten en estatus 13 (listas para asignar). Esto evita que desaparezcan
                 // al cambiar de estatus (14, 15, 17, etc.) mientras tengan IdUsuarioFinan.
                 query = query.Where(c => c.IdUsuarioFinan.HasValue || c.IdEstatus == 13);
-                query = query.Where(c => c.IdEstatus != 7);
+                query = query.Where(c => c.IdEstatus != 7 && c.IdEstatus != 5 && c.IdEstatus != 12);
             }
             else
             {
@@ -1526,6 +1526,44 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
         }
 
+        public async Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiPorConsolidadaAsync(int idConsolidada)
+        {
+            var query = await _repoHistorial.Consultar(
+                h => h.IdConsolidada == idConsolidada
+                  && (h.Observacion == null || !h.Observacion.StartsWith("Pedido")));
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdRequisicion,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
+            return lista.Select(h => new TablaApiHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = h.IdRequisicion ?? 0,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                        .Deserialize<TablaApiEditableDTO>(h.DatosJson, opciones)
+            }).ToList();
+        }
+
         private Table CrearTablaEncabezadoApi(PdfFont bold, PdfFont regular, string fechaElaboracion, string ejercicioAnio)
         {
             var borde = new SolidBorder(PdfApiEstiloRequi.Borde, 1f);
@@ -2502,6 +2540,45 @@ namespace Inventario.BLL.Implementacion
         {
             var query = await _repoHistorial.Consultar(
                 h => h.IdRequisicion == idRequisicion
+                  && h.Observacion != null
+                  && h.Observacion.StartsWith("Pedido"));
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdRequisicion,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
+            return lista.Select(h => new PedidoHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = h.IdRequisicion ?? 0,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                .Deserialize<PedidoVistaDTO>(h.DatosJson, opciones)
+            }).ToList();
+        }
+
+        public async Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoPorConsolidadaAsync(int idConsolidada)
+        {
+            var query = await _repoHistorial.Consultar(
+                h => h.IdConsolidada == idConsolidada
                   && h.Observacion != null
                   && h.Observacion.StartsWith("Pedido"));
 

@@ -22,5 +22,7 @@ namespace Inventario.BLL.DTO
         public bool? RequiServicio { get; set; }
         public string? ComentarioRechazo { get; set; }
         public int? ConsolidadaId { get; set; }
+        public bool EsConsolidada { get; set; }
+        public List<int> IdsRequisiciones { get; set; } = new();
     }
 }

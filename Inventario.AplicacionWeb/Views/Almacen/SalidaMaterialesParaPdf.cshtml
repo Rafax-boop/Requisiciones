@@ -2,8 +2,9 @@
 @using System.Globalization
 @{
     Layout = null;
+    var esConsolidada = Model.EsConsolidada == true;
     var fechaTexto = Model.FechaEmision?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—";
-    var requisicion = Model.NumRequisicion ?? "—";
+    var requisicion = esConsolidada ? (Model.FolioConsolidada ?? Model.NumRequisicion ?? "—") : (Model.NumRequisicion ?? "—");
     var solicitante = Model.NomResponsableDepartamento ?? "—";
     var esDonativo = Model.UsoMaterial == true;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
@@ -66,9 +67,16 @@
                     <span class="pdf-campo-valor">—</span>
                 </div>
                 <div class="pdf-campo">
-                    <span class="pdf-campo-label">Requisición</span>
+                    <span class="pdf-campo-label">@(esConsolidada ? "Consolidada" : "Requisición")</span>
                     <span class="pdf-campo-valor">@requisicion</span>
                 </div>
+                @if (esConsolidada && !string.IsNullOrEmpty(Model.DepartamentosConsolidada))
+                {
+                    <div class="pdf-campo">
+                        <span class="pdf-campo-label">Departamento</span>
+                        <span class="pdf-campo-valor">@Model.DepartamentosConsolidada</span>
+                    </div>
+                }
             </div>
 
             <div class="pdf-salida-cuerpo">

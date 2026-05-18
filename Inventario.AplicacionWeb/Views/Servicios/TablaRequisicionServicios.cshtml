@@ -65,7 +65,8 @@
      data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")"
      data-url-obtener-id-adquisicion="@Url.Action("ObtenerIdAdquisicion", "Requisicion")"
      data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
-     data-url-finalizar-consolidada="@Url.Action("FinalizarConsolidada", "Consolidada")">
+     data-url-finalizar-consolidada="@Url.Action("FinalizarConsolidada", "Consolidada")"
+     data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -148,7 +149,7 @@
         }
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => (r.IdEstatus == 7 || r.IdEstatus == 12) && r.ConsolidadaId == null).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5 && r.ConsolidadaId == null).ToList();
-        var requisicionesVerificadas = Model.Requisiciones.Where(r => (r.IdEstatus == 16 || r.IdEstatus == 18) && r.ConsolidadaId == null).ToList();
+        var requisicionesVerificadas = Model.Requisiciones.Where(r => (r.IdEstatus == 15 || r.IdEstatus == 18) && r.ConsolidadaId == null).ToList();
     }
 
     <!-- Pestaña En seguimiento -->
@@ -213,7 +214,7 @@
                             }
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    @if (!User.IsInRole("7"))
+                                    @if (User.IsInRole("1") || item.IdEstatus <= 2)
                                     {
                                         <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                             <i class="fa-solid fa-eye"></i>
@@ -241,7 +242,7 @@
                                             <i class="fa-solid fa-hand-holding"></i>
                                         </button>
                                     }
-                                    @if (User.IsInRole("7") && item.IdEstatus != 2)
+                                    @if (!User.IsInRole("1") && item.IdEstatus > 2)
                                     {
                                         <button class="btn-accion btn-ver" title="Ver detalle"
                                                 onclick="verDetalle(@item.IdRequi, 'readonly')">
@@ -1275,7 +1276,7 @@
 
 <!-- Modal ver cotizaciones (solo lectura) -->
 <div class="modal" id="modalVerCotizaciones" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-dialog modal-dialog-centered modal-detalle-requisicion">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
@@ -1288,7 +1289,7 @@
             </div>
             <div class="modal-body modal-body-premium">
                 <div id="listaCotizacionesModal"
-                     style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
+                     style="display:flex;flex-direction:column;gap:16px;min-height:60px;">
                 </div>
             </div>
         </div>

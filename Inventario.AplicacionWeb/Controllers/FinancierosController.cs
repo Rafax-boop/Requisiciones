@@ -362,17 +362,30 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> HistorialTablaApi(int idRequisicion)
+        public async Task<IActionResult> HistorialTablaApi(int idRequisicion = 0, int idConsolidada = 0)
         {
+            if (idConsolidada > 0)
+            {
+                var consolidada = await _consolidadaService.ObtenerConsolidada(idConsolidada);
+                var vm = new HistorialDocumentosVM
+                {
+                    IdConsolidada = idConsolidada,
+                    NumRequisicion = consolidada?.FolioConsolidada ?? "",
+                    HistorialTablaApi = await _financierosService.ObtenerHistorialTablaApiPorConsolidadaAsync(idConsolidada),
+                    HistorialPedido = await _financierosService.ObtenerHistorialPedidoPorConsolidadaAsync(idConsolidada)
+                };
+                return View(vm);
+            }
+
             var requi = await _requisicionesService.ObtenerRequisicionCompletaPorId(idRequisicion);
-            var vm = new HistorialDocumentosVM
+            var vm2 = new HistorialDocumentosVM
             {
                 IdRequisicion = idRequisicion,
                 NumRequisicion = requi?.NumRequisicion ?? "",
                 HistorialTablaApi = await _financierosService.ObtenerHistorialTablaApiAsync(idRequisicion),
                 HistorialPedido = await _financierosService.ObtenerHistorialPedidoAsync(idRequisicion)
             };
-            return View(vm);
+            return View(vm2);
         }
 
         [HttpGet]

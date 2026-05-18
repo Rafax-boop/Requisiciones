@@ -6,8 +6,9 @@
     var fechaTexto = Model.FechaEmision.HasValue
         ? Model.FechaEmision.Value.ToDateTime(TimeOnly.MinValue).ToString("dd/MM/yyyy", cultura)
         : DateTime.Now.ToString("dd/MM/yyyy", cultura);
-    var requisicion = Model.NumRequisicion ?? "—";
+    var requisicion = Model.EsConsolidada == true ? (Model.FolioConsolidada ?? Model.NumRequisicion ?? "—") : (Model.NumRequisicion ?? "—");
     var solicitante = Model.NomResponsableDepartamento ?? "—";
+    var esConsolidada = Model.EsConsolidada == true;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
     var folioEstatico = Model.NumeroFormato.HasValue
         ? Model.NumeroFormato.Value.ToString().PadLeft(4, '0')
@@ -177,10 +178,19 @@
                         <span class="pdf-entrada-valor">@solicitante</span>
                     </div>
                     <div class="pdf-entrada-campo">
-                        <span class="pdf-entrada-label">Requisición No.:</span>
+                        <span class="pdf-entrada-label">@(esConsolidada ? "Consolidada No.:" : "Requisición No.:")</span>
                         <span class="pdf-entrada-valor">@requisicion</span>
                     </div>
                 </div>
+                @if (esConsolidada && !string.IsNullOrEmpty(Model.DepartamentosConsolidada))
+                {
+                    <div class="pdf-entrada-fila">
+                        <div class="pdf-entrada-campo" style="flex:1;">
+                            <span class="pdf-entrada-label">Departamentos:</span>
+                            <span class="pdf-entrada-valor">@Model.DepartamentosConsolidada</span>
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- ══ TABLA DE ARTÍCULOS ════════════════════════════════ -->

@@ -19,6 +19,8 @@ namespace Inventario.BLL.Implementacion
         private readonly IEmailService _emailService;
         private readonly IGenericRepository<TblRegistroDiseno> _repoRegistroDiseno;
         private readonly IGenericRepository<TblUsuario> _repoUsuario;
+        private readonly IGenericRepository<TblConsolidada> _repoConsolidada;
+        private readonly IGenericRepository<TblDepartamento> _repoDepartamento;
 
         private const int ESTATUS_EN_ALMACEN = 9;
         private const int ESTATUS_APROBADA_ALMACEN = 4;
@@ -38,7 +40,9 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblFormato> repoFormato,
             IGenericRepository<TblRegistroDiseno> repoRegistroDiseno,
             IEmailService emailService,
-            IGenericRepository<TblUsuario> repoUsuario)
+            IGenericRepository<TblUsuario> repoUsuario,
+            IGenericRepository<TblConsolidada> repoConsolidada,
+            IGenericRepository<TblDepartamento> repoDepartamento)
         {
             _repositoryRequisicion = requisicionRepository;
             _repoInventario = repoInventario;
@@ -50,6 +54,8 @@ namespace Inventario.BLL.Implementacion
             _repoRegistroDiseno = repoRegistroDiseno;
             _emailService = emailService;
             _repoUsuario = repoUsuario;
+            _repoConsolidada = repoConsolidada;
+            _repoDepartamento = repoDepartamento;
         }
 
         // ─────────────────────────────────────────────
@@ -110,7 +116,7 @@ namespace Inventario.BLL.Implementacion
                 .ToListAsync();
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ListarPedidosEstatus7()
+        public async Task<List<RequisicionMaestraDTO>> ListarPedidosAlmacen()
         {
             var movCompraQuery = await _repoMovimiento.Consultar(
                 m => m.TipoMovimiento == "COMPRA" && m.Confirmado != true);
@@ -138,32 +144,76 @@ namespace Inventario.BLL.Implementacion
                 r => r.IdEstatus == 7 && idsConCompra.Contains(r.IdRequisicion));
 
             var requisiciones = await query
+                .Include(r => r.IdDepartamentoNavigation)
+                .Include(r => r.IdEstatusNavigation)
+                .Include(r => r.Consolidada)
                 .OrderByDescending(r => r.FechaModificacion)
-                .Select(r => new
-                {
-                    IdRequi = r.IdRequisicion,
-                    NumRequi = r.NumRequisicion,
-                    FechaEmision = r.FechaEmision,
-                    FechaModificacion = r.FechaModificacion,
-                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
-                    Responsable = r.NomResponsableDepartamento,
-                    IdEstatus = r.IdEstatus ?? 0,
-                    Estatus = r.IdEstatusNavigation.NombreEstatus
-                })
                 .ToListAsync();
 
-            return requisiciones.Select(r => new RequisicionMaestraDTO
+            var individuales = new List<RequisicionMaestraDTO>();
+            var consolidadosMap = new Dictionary<int, (TblConsolidada cons, List<TblRequisicion> hijas)>();
+
+            foreach (var r in requisiciones)
             {
-                IdRequi = r.IdRequi,
-                NumRequi = r.NumRequi,
-                FechaEmision = r.FechaEmision,
-                FechaModificacion = r.FechaModificacion,
-                Departamento = r.Departamento,
-                Responsable = r.Responsable,
-                IdEstatus = r.IdEstatus,
-                Estatus = r.Estatus,
-                CantidadPartidas = cantidadPartidasCompraPorRequi.GetValueOrDefault(r.IdRequi, 0)
-            }).ToList();
+                var partidas = cantidadPartidasCompraPorRequi.GetValueOrDefault(r.IdRequisicion, 0);
+                if (r.ConsolidadaId == null)
+                {
+                    individuales.Add(new RequisicionMaestraDTO
+                    {
+                        IdRequi = r.IdRequisicion,
+                        NumRequi = r.NumRequisicion,
+                        FechaEmision = r.FechaEmision,
+                        FechaModificacion = r.FechaModificacion,
+                        Departamento = r.IdDepartamentoNavigation?.NombreDepartamento,
+                        Responsable = r.NomResponsableDepartamento,
+                        IdEstatus = r.IdEstatus ?? 0,
+                        Estatus = r.IdEstatusNavigation?.NombreEstatus,
+                        CantidadPartidas = partidas,
+                        ConsolidadaId = null,
+                        EsConsolidada = false
+                    });
+                }
+                else
+                {
+                    var cid = r.ConsolidadaId.Value;
+                    if (!consolidadosMap.ContainsKey(cid))
+                    {
+                        consolidadosMap[cid] = (r.Consolidada!, new List<TblRequisicion>());
+                    }
+                    consolidadosMap[cid].hijas.Add(r);
+                }
+            }
+
+            var resultado = new List<RequisicionMaestraDTO>();
+
+            foreach (var (cid, (cons, hijas)) in consolidadosMap)
+            {
+                var totalPartidas = hijas.Sum(h => cantidadPartidasCompraPorRequi.GetValueOrDefault(h.IdRequisicion, 0));
+                var deptos = string.Join(", ",
+                    hijas.Select(h => h.IdDepartamentoNavigation?.NombreDepartamento)
+                         .Where(n => !string.IsNullOrEmpty(n))
+                         .Distinct());
+
+                resultado.Add(new RequisicionMaestraDTO
+                {
+                    IdRequi = cons.ConsolidadaId,
+                    NumRequi = cons.FolioConsolidada,
+                    FechaEmision = hijas.Min(h => h.FechaEmision),
+                    FechaModificacion = hijas.Max(h => h.FechaModificacion),
+                    Departamento = deptos,
+                    Responsable = hijas.First().NomResponsableDepartamento,
+                    IdEstatus = cons.IdEstatus,
+                    Estatus = cons.IdEstatusNavigation?.NombreEstatus ?? "En compra",
+                    CantidadPartidas = totalPartidas,
+                    ConsolidadaId = cons.ConsolidadaId,
+                    EsConsolidada = true,
+                    IdsRequisiciones = hijas.Select(h => h.IdRequisicion).ToList()
+                });
+            }
+
+            resultado.AddRange(individuales);
+            resultado = resultado.OrderByDescending(r => r.FechaModificacion).ToList();
+            return resultado;
         }
 
         public async Task<List<EntregaPendienteDTO>> ListarEntregasPendientes()
@@ -335,6 +385,278 @@ namespace Inventario.BLL.Implementacion
                         (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion))?.IdEstatus ?? 0,
                         idUsuario,
                         $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).");
+                }
+
+                await _uow.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<EntregaPendienteDTO>> ListarEntregasPendientesAlmacen()
+        {
+            var movQuery = await _repoMovimiento.Consultar(
+                m => m.TipoMovimiento == "ENTREGA" && m.Confirmado != true);
+
+            var movimientos = await movQuery
+                .Include(m => m.IdRequisicionNavigation)
+                    .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                .ToListAsync();
+
+            var gruposPorRequi = movimientos
+                .GroupBy(m => m.IdRequisicion)
+                .ToList();
+
+            var individuales = new List<EntregaPendienteDTO>();
+            var consolidadosData = new Dictionary<int, (TblConsolidada? cons, List<TblRequisicion> reqs, List<TblRequisicionDetalleMovimiento> movs)>();
+
+            foreach (var g in gruposPorRequi)
+            {
+                var req = g.First().IdRequisicionNavigation;
+                if (req?.ConsolidadaId == null)
+                {
+                    individuales.Add(new EntregaPendienteDTO
+                    {
+                        IdRequisicion = g.Key,
+                        NumRequi = req?.NumRequisicion ?? "",
+                        FechaEmision = req?.FechaEmision,
+                        Departamento = req?.IdDepartamentoNavigation?.NombreDepartamento ?? "",
+                        Responsable = req?.NomResponsableDepartamento ?? "",
+                        EsConsolidada = false,
+                        Articulos = g.Select(m => new ArticuloEntregaDTO
+                        {
+                            IdMovimiento = m.IdMovimiento,
+                            IdRequisicionDetalle = m.IdRequisicionDetalle,
+                            Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
+                            UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
+                            CantidadOriginal = m.CantidadOriginal,
+                            CantidadMovimiento = m.CantidadMovimiento,
+                            Confirmado = m.Confirmado ?? false
+                        }).ToList()
+                    });
+                }
+                else
+                {
+                    var cid = req.ConsolidadaId.Value;
+                    if (!consolidadosData.ContainsKey(cid))
+                        consolidadosData[cid] = (req.Consolidada, new List<TblRequisicion>(), new List<TblRequisicionDetalleMovimiento>());
+                    var entry = consolidadosData[cid];
+                    entry.reqs.Add(req);
+                    entry.movs.AddRange(g);
+                }
+            }
+
+            var cidsOrphan = consolidadosData.Where(kv => kv.Value.cons == null).Select(kv => kv.Key).ToList();
+            if (cidsOrphan.Any())
+            {
+                var consQuery = await _repoConsolidada.Consultar(c => cidsOrphan.Contains(c.ConsolidadaId));
+                var consList = await consQuery.ToListAsync();
+                foreach (var c in consList)
+                {
+                    if (consolidadosData.TryGetValue(c.ConsolidadaId, out var entry) && entry.cons == null)
+                        consolidadosData[c.ConsolidadaId] = (c, entry.reqs, entry.movs);
+                }
+            }
+
+            var resultado = new List<EntregaPendienteDTO>(individuales);
+
+            foreach (var (cid, (cons, reqs, movs)) in consolidadosData)
+            {
+                var idsRequisiciones = reqs.Select(r => r.IdRequisicion).Distinct().ToList();
+                var deptos = string.Join(", ",
+                    reqs.Select(r => r.IdDepartamentoNavigation?.NombreDepartamento)
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .Distinct());
+                var fechaMin = reqs.Min(r => r.FechaEmision);
+
+                resultado.Add(new EntregaPendienteDTO
+                {
+                    IdRequisicion = -cid,
+                    ConsolidadaId = cid,
+                    NumRequi = cons?.FolioConsolidada ?? $"CONS-{cid}",
+                    FechaEmision = fechaMin,
+                    Departamento = deptos,
+                    Responsable = "CONSOLIDADA",
+                    EsConsolidada = true,
+                    IdsRequisiciones = idsRequisiciones,
+                    Articulos = movs.Select(m => new ArticuloEntregaDTO
+                    {
+                        IdMovimiento = m.IdMovimiento,
+                        IdRequisicionDetalle = m.IdRequisicionDetalle,
+                        Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
+                        UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
+                        CantidadOriginal = m.CantidadOriginal,
+                        CantidadMovimiento = m.CantidadMovimiento,
+                        Confirmado = m.Confirmado ?? false
+                    }).ToList()
+                });
+            }
+
+            return resultado;
+        }
+
+        public async Task<int> GenerarFormatoSalidaConsolidada(int idConsolidada, int idUsuario)
+        {
+            var queryExistente = await _repoFormato.Consultar(
+                f => f.TipoFormato == "SALIDA" && f.IdConsolidada == idConsolidada && f.RutaArchivo == "PENDIENTE");
+            var existente = await queryExistente.FirstOrDefaultAsync();
+            if (existente != null)
+                return existente.NumeroFormato;
+
+            var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "SALIDA");
+            var listaFormatos = await queryFormatos.ToListAsync();
+            var nuevoNumero = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
+
+            await _repoFormato.Crear(new TblFormato
+            {
+                NumeroFormato = nuevoNumero,
+                TipoFormato = "SALIDA",
+                IdConsolidada = idConsolidada,
+                FechaFormato = DateTime.Now,
+                IdUsuario = idUsuario,
+                RutaArchivo = "PENDIENTE"
+            });
+
+            return nuevoNumero;
+        }
+
+        public async Task<bool> ConfirmarEntregaConsolidada(int idConsolidada, List<int> idsMovimientos, int idUsuario, string rutaArchivoFirmado)
+        {
+            if (idsMovimientos == null || idsMovimientos.Count == 0)
+                throw new Exception("Debe seleccionar al menos un artículo para confirmar.");
+
+            var childQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var children = await childQuery.ToListAsync();
+            if (!children.Any())
+                throw new Exception("No se encontraron requisiciones hijas para esta consolidada.");
+
+            var childIds = children.Select(c => c.IdRequisicion).ToHashSet();
+
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                var queryFormato = await _repoFormato.Consultar(
+                    f => f.TipoFormato == "SALIDA" && f.IdConsolidada == idConsolidada && f.RutaArchivo == "PENDIENTE");
+                var formato = await queryFormato.FirstOrDefaultAsync()
+                    ?? throw new Exception("No se encontró el formato de salida generado para esta consolidada.");
+
+                formato.RutaArchivo = rutaArchivoFirmado;
+                await _repoFormato.Editar(formato);
+
+                var movsPorChild = idsMovimientos
+                    .GroupBy(idMov => idMov)
+                    .ToDictionary(g => g.Key, g => g.Key);
+
+                var allMovsQuery = await _repoMovimiento.Consultar(
+                    m => idsMovimientos.Contains(m.IdMovimiento) && childIds.Contains(m.IdRequisicion));
+                var allMovs = await allMovsQuery.ToListAsync();
+
+                if (allMovs.Count != idsMovimientos.Count)
+                    throw new Exception("Algunos movimientos no pertenecen a las requisiciones de esta consolidada.");
+
+                foreach (var child in children)
+                {
+                    var childMovs = allMovs.Where(m => m.IdRequisicion == child.IdRequisicion).ToList();
+                    if (!childMovs.Any()) continue;
+
+                    var childConDetalles = await ObtenerRequisicionConDetallesAsync(child.IdRequisicion);
+                    var detallesPorId = childConDetalles.TblRequisicionDetalles
+                        .ToDictionary(d => d.IdRequisicionDetalle);
+
+                    foreach (var mov in childMovs)
+                    {
+                        var det = detallesPorId.GetValueOrDefault(mov.IdRequisicionDetalle)
+                            ?? throw new Exception($"No se encontró el detalle del movimiento {mov.IdMovimiento} en la requisición {child.IdRequisicion}.");
+
+                        var clave = (det.IdArticuloNavigation?.Clave ?? "").Trim();
+                        var desc = (det.Descripcion ?? "").Trim();
+
+                        if (string.IsNullOrWhiteSpace(clave))
+                            throw new Exception($"El artículo '{desc}' no tiene clave registrada.");
+
+                        var inv = await _repoInventario.Obtener(i => i.Clave == clave)
+                            ?? throw new Exception($"No existe el material en inventario con clave: {clave} ({desc}).");
+
+                        if (inv.Existencia < mov.CantidadMovimiento)
+                            throw new Exception(
+                                $"Stock insuficiente al confirmar entrega de: {desc}. " +
+                                $"Disponible: {inv.Existencia}, a entregar: {mov.CantidadMovimiento}.");
+
+                        inv.Existencia -= mov.CantidadMovimiento;
+                        await _repoInventario.Editar(inv);
+
+                        mov.Confirmado = true;
+                        mov.FechaConfirmacion = DateTime.Now;
+                        mov.IdUsuarioConfirmacion = idUsuario;
+                        mov.IdFormato = formato.IdFormato;
+                        await _repoMovimiento.Editar(mov);
+                    }
+
+                    var todosEntregasQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == child.IdRequisicion && m.TipoMovimiento == "ENTREGA");
+                    var todosEntregas = await todosEntregasQuery.ToListAsync();
+
+                    bool todoConfirmado = todosEntregas.Any() && todosEntregas.All(m => m.Confirmado == true);
+
+                    if (todoConfirmado)
+                    {
+                        var req = children.First(r => r.IdRequisicion == child.IdRequisicion);
+
+                        var comprasPendientesQuery = await _repoMovimiento.Consultar(
+                            m => m.IdRequisicion == child.IdRequisicion
+                              && m.TipoMovimiento == "COMPRA"
+                              && m.Confirmado != true);
+                        var comprasPendientes = await comprasPendientesQuery.ToListAsync();
+                        bool hayComprasPendientes = comprasPendientes.Any();
+
+                        if (hayComprasPendientes)
+                        {
+                            req.IdEstatus = 7;
+                            req.FechaModificacion = DateTime.Now;
+                            await _repositoryRequisicion.Editar(req);
+
+                            await RegistrarBitacoraAsync(child.IdRequisicion, 7, idUsuario,
+                                "Almacén confirmó entrega física de los artículos recibidos. " +
+                                "Requisición regresa a Pedidos por material faltante del proveedor.");
+                        }
+                        else if (req.IdEstatus != ESTATUS_EN_COMPRA)
+                        {
+                            req.IdEstatus = ESTATUS_ENTREGADO;
+                            req.FechaModificacion = DateTime.Now;
+                            await _repositoryRequisicion.Editar(req);
+
+                            await RegistrarBitacoraAsync(child.IdRequisicion, ESTATUS_ENTREGADO, idUsuario,
+                                "Almacén confirmó entrega física de todos los artículos.");
+                        }
+                        else
+                        {
+                            await RegistrarBitacoraAsync(child.IdRequisicion, req.IdEstatus ?? 0, idUsuario,
+                                "Almacén confirmó entrega física de artículos (pendiente proceso de compra).");
+                        }
+                    }
+                    else
+                    {
+                        await RegistrarBitacoraAsync(child.IdRequisicion,
+                            (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == child.IdRequisicion))?.IdEstatus ?? 0,
+                            idUsuario,
+                            $"Almacén confirmó entrega parcial en consolidada: {childMovs.Count} artículo(s) entregado(s).");
+                    }
+                }
+
+                var consolidadaRec = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+                if (consolidadaRec != null)
+                {
+                    if (children.All(c => c.IdEstatus == ESTATUS_ENTREGADO))
+                        consolidadaRec.IdEstatus = ESTATUS_ENTREGADO;
+                    else if (children.Any(c => c.IdEstatus == 7))
+                        consolidadaRec.IdEstatus = 7;
+                    consolidadaRec.FechaModificacion = DateTime.Now;
+                    await _repoConsolidada.Editar(consolidadaRec);
                 }
 
                 await _uow.CommitAsync();
@@ -953,6 +1275,379 @@ namespace Inventario.BLL.Implementacion
                 await _uow.RollbackAsync();
                 throw;
             }
+        }
+
+        // ─────────────────────────────────────────────
+        // Entradas — Consolidada
+        // ─────────────────────────────────────────────
+
+        public async Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraConsolidada(int idConsolidada)
+        {
+            var childQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var childIds = await childQuery.Select(r => r.IdRequisicion).ToListAsync();
+            if (!childIds.Any()) return new List<PartidaCompraEntradaDTO>();
+
+            var query = await _repoMovimiento.Consultar(
+                m => childIds.Contains(m.IdRequisicion)
+                  && m.TipoMovimiento == "COMPRA"
+                  && m.Confirmado != true);
+
+            var movimientosCompra = await query
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
+                .ToListAsync();
+
+            return movimientosCompra
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .Select(g =>
+                {
+                    var det = g.First().IdRequisicionDetalleNavigation;
+                    return new PartidaCompraEntradaDTO
+                    {
+                        IdRequisicionDetalle = g.Key,
+                        IdRequisicion = g.First().IdRequisicion,
+                        NumPartida = det?.NumPartida,
+                        IdArticulo = det?.IdArticulo,
+                        ClaveMaterial = det?.IdArticuloNavigation?.Clave ?? string.Empty,
+                        Descripcion = det?.Descripcion ?? string.Empty,
+                        UnidadMedida = det?.UnidadMedida ?? string.Empty,
+                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento)
+                    };
+                })
+                .OrderBy(x => x.IdRequisicion)
+                .ThenBy(x => x.NumPartida)
+                .ThenBy(x => x.IdRequisicionDetalle)
+                .ToList();
+        }
+
+        public async Task GuardarBorradorIngresoConsolidada(int idConsolidada, int idUsuario, List<CantidadRecibidaDTO> cantidades)
+        {
+            var childQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var childIds = await childQuery.Select(r => r.IdRequisicion).ToListAsync();
+            if (!childIds.Any())
+                throw new Exception("No se encontraron requisiciones hijas para la consolidada.");
+
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                foreach (var childId in childIds)
+                {
+                    var compraQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == childId
+                          && m.TipoMovimiento == "COMPRA"
+                          && m.Confirmado != true);
+                    var childCompraDetalles = await compraQuery
+                        .Select(m => m.IdRequisicionDetalle)
+                        .Distinct()
+                        .ToListAsync();
+
+                    if (!childCompraDetalles.Any()) continue;
+
+                    var borradorQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == childId
+                          && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                          && m.Confirmado != true);
+                    var borradorPrevio = await borradorQuery.ToListAsync();
+                    foreach (var b in borradorPrevio)
+                        await _repoMovimiento.Eliminar(b);
+
+                    var compraConDetalles = await compraQuery
+                        .Include(m => m.IdRequisicionDetalleNavigation)
+                        .ToListAsync();
+
+                    var movsPorDetalle = compraConDetalles
+                        .GroupBy(m => m.IdRequisicionDetalle)
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    foreach (var item in cantidades.Where(c => childCompraDetalles.Contains(c.IdRequisicionDetalle)))
+                    {
+                        if (!movsPorDetalle.TryGetValue(item.IdRequisicionDetalle, out var movsDetalle))
+                            continue;
+
+                        var cantSolicitada = movsDetalle.Sum(m => (decimal)m.CantidadMovimiento);
+                        var cantRecibida = Math.Min(item.CantidadRecibida, cantSolicitada);
+                        if (cantRecibida <= 0) continue;
+
+                        await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                        {
+                            IdRequisicion = childId,
+                            IdRequisicionDetalle = item.IdRequisicionDetalle,
+                            TipoMovimiento = TIPO_COMPRA_BORRADOR,
+                            CantidadOriginal = (int)cantSolicitada,
+                            CantidadMovimiento = (int)cantRecibida,
+                            FechaMovimiento = DateTime.Now,
+                            IdUsuario = idUsuario,
+                            Confirmado = false,
+                            Observacion = "Borrador consolidado — pendiente de confirmar con formato firmado"
+                        });
+                    }
+                }
+
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<int> GenerarFormatoEntradaConsolidada(int idConsolidada, int idUsuario)
+        {
+            var queryExistente = await _repoFormato.Consultar(
+                f => f.TipoFormato == "ENTRADA" && f.IdConsolidada == idConsolidada && f.RutaArchivo == "PENDIENTE");
+            var existente = await queryExistente.FirstOrDefaultAsync();
+            if (existente != null)
+                return existente.NumeroFormato;
+
+            var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "ENTRADA");
+            var listaFormatos = await queryFormatos.ToListAsync();
+            var nuevoNumero = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
+
+            await _repoFormato.Crear(new TblFormato
+            {
+                NumeroFormato = nuevoNumero,
+                TipoFormato = "ENTRADA",
+                IdConsolidada = idConsolidada,
+                FechaFormato = DateTime.Now,
+                IdUsuario = idUsuario,
+                RutaArchivo = "PENDIENTE"
+            });
+
+            return nuevoNumero;
+        }
+
+        public async Task<List<PartidaCompraEntradaDTO>> ObtenerBorradorIngresoConsolidada(int idConsolidada)
+        {
+            var childQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var childIds = await childQuery.Select(r => r.IdRequisicion).ToListAsync();
+            if (!childIds.Any()) return new List<PartidaCompraEntradaDTO>();
+
+            var query = await _repoMovimiento.Consultar(
+                m => childIds.Contains(m.IdRequisicion)
+                  && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                  && m.Confirmado != true);
+
+            var movs = await query
+                .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
+                .ToListAsync();
+
+            return movs
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .Select(g =>
+                {
+                    var det = g.First().IdRequisicionDetalleNavigation;
+                    return new PartidaCompraEntradaDTO
+                    {
+                        IdRequisicionDetalle = g.Key,
+                        IdRequisicion = g.First().IdRequisicion,
+                        NumPartida = det?.NumPartida,
+                        IdArticulo = det?.IdArticulo,
+                        ClaveMaterial = det?.IdArticuloNavigation?.Clave ?? "",
+                        Descripcion = det?.Descripcion ?? "",
+                        UnidadMedida = det?.UnidadMedida ?? "",
+                        CantidadComprar = g.Sum(x => (decimal)x.CantidadMovimiento)
+                    };
+                })
+                .OrderBy(x => x.IdRequisicion)
+                .ThenBy(x => x.NumPartida)
+                .ThenBy(x => x.IdRequisicionDetalle)
+                .ToList();
+        }
+
+        public async Task<bool> ConfirmarIngresoPedidoConsolidada(int idConsolidada, int idUsuario, string rutaArchivoFirmado)
+        {
+            var childQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var childIds = await childQuery.Select(r => r.IdRequisicion).ToListAsync();
+            if (!childIds.Any())
+                throw new Exception("No se encontraron requisiciones hijas para la consolidada.");
+
+            await _uow.BeginTransactionAsync();
+            try
+            {
+                var fmtQuery = await _repoFormato.Consultar(
+                    f => f.TipoFormato == "ENTRADA"
+                      && f.IdConsolidada == idConsolidada
+                      && f.RutaArchivo == "PENDIENTE");
+                var formato = await fmtQuery.FirstOrDefaultAsync();
+                if (formato != null)
+                {
+                    formato.RutaArchivo = rutaArchivoFirmado;
+                    await _repoFormato.Editar(formato);
+                }
+
+                bool hayFaltanteGlobal = false;
+
+                foreach (var childId in childIds)
+                {
+                    var borradorQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == childId
+                          && m.TipoMovimiento == TIPO_COMPRA_BORRADOR
+                          && m.Confirmado != true);
+                    var borradores = await borradorQuery
+                        .Include(m => m.IdRequisicionDetalleNavigation)
+                        .ToListAsync();
+
+                    if (!borradores.Any()) continue;
+
+                    var borradorPorDetalle = borradores
+                        .GroupBy(m => m.IdRequisicionDetalle)
+                        .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.CantidadMovimiento));
+
+                    var compraQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == childId
+                          && m.TipoMovimiento == "COMPRA"
+                          && m.Confirmado != true);
+                    var movsCompra = await compraQuery
+                        .Include(m => m.IdRequisicionDetalleNavigation)
+                            .ThenInclude(d => d.IdArticuloNavigation)
+                        .ToListAsync();
+
+                    if (!movsCompra.Any()) continue;
+
+                    var resumenEntregas = new List<string>();
+                    var resumenFaltantes = new List<string>();
+                    bool hayFaltante = false;
+
+                    var movsPorDetalle = movsCompra
+                        .GroupBy(m => m.IdRequisicionDetalle)
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    foreach (var (idDetalle, movsOriginales) in movsPorDetalle)
+                    {
+                        var det = movsOriginales.First().IdRequisicionDetalleNavigation;
+                        var desc = (det?.Descripcion ?? "").Trim();
+                        var clave = (det?.IdArticuloNavigation?.Clave ?? "").Trim();
+                        var unidad = (det?.UnidadMedida ?? "").Trim();
+                        var cantSolicitada = movsOriginales.Sum(m => (decimal)m.CantidadMovimiento);
+                        var cantRecibida = borradorPorDetalle.GetValueOrDefault(idDetalle, 0);
+                        var cantFaltante = cantSolicitada - cantRecibida;
+
+                        foreach (var mov in movsOriginales)
+                        {
+                            mov.Confirmado = true;
+                            mov.FechaConfirmacion = DateTime.Now;
+                            mov.IdUsuarioConfirmacion = idUsuario;
+                            await _repoMovimiento.Editar(mov);
+                        }
+
+                        if (cantRecibida > 0)
+                        {
+                            await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                            {
+                                IdRequisicion = childId,
+                                IdRequisicionDetalle = idDetalle,
+                                TipoMovimiento = "ENTREGA",
+                                CantidadOriginal = (int)cantSolicitada,
+                                CantidadMovimiento = (int)cantRecibida,
+                                FechaMovimiento = DateTime.Now,
+                                IdUsuario = idUsuario,
+                                Confirmado = false
+                            });
+                            resumenEntregas.Add($"{desc} — {cantRecibida} {unidad}");
+
+                            if (!string.IsNullOrWhiteSpace(clave))
+                            {
+                                var inv = await _repoInventario.Obtener(i => i.Clave == clave);
+                                if (inv != null)
+                                {
+                                    inv.Existencia += (int)cantRecibida;
+                                    await _repoInventario.Editar(inv);
+                                }
+                                else
+                                {
+                                    await _repoInventario.Crear(new TblInventario
+                                    {
+                                        Clave = clave,
+                                        Descripcion = desc,
+                                        UnidadMedida = unidad,
+                                        Existencia = (int)cantRecibida,
+                                        Entrada = (int)cantRecibida,
+                                        Costo = 0,
+                                        Iva = 0,
+                                        CostoUnitario = 0,
+                                        Total = 0
+                                    });
+                                }
+                            }
+                        }
+
+                        if (cantFaltante > 0)
+                        {
+                            hayFaltante = true;
+                            await _repoMovimiento.Crear(new TblRequisicionDetalleMovimiento
+                            {
+                                IdRequisicion = childId,
+                                IdRequisicionDetalle = idDetalle,
+                                TipoMovimiento = "COMPRA",
+                                CantidadOriginal = (int)cantSolicitada,
+                                CantidadMovimiento = (int)cantFaltante,
+                                FechaMovimiento = DateTime.Now,
+                                IdUsuario = idUsuario,
+                                Confirmado = false,
+                                Observacion = $"Faltante del proveedor — entrega anterior: {cantRecibida}"
+                            });
+                            resumenFaltantes.Add($"{desc} faltante: x{cantFaltante}");
+                        }
+                    }
+
+                    foreach (var b in borradores)
+                        await _repoMovimiento.Eliminar(b);
+
+                    var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == childId);
+                    if (req != null)
+                    {
+                        if (!hayFaltante)
+                        {
+                            req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
+                            req.FechaModificacion = DateTime.Now;
+                            await _repositoryRequisicion.Editar(req);
+                        }
+
+                        var obs = new StringBuilder("Almacén registró ingreso de material del proveedor (consolidada).");
+                        if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
+                        if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
+
+                        await RegistrarBitacoraAsync(childId, req.IdEstatus ?? 7, idUsuario, obs.ToString());
+                    }
+
+                    if (hayFaltante) hayFaltanteGlobal = true;
+                }
+
+                await _uow.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await _uow.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<TblConsolidada?> ObtenerConsolidadaAsync(int idConsolidada)
+        {
+            return await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+        }
+
+        public async Task<TblDepartamento?> ObtenerDepartamentoRecursosMateriales()
+            => await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
+
+        public async Task<List<RequisicionMaestraDTO>> ObtenerChildRequisicionData(int idConsolidada)
+        {
+            var query = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            return await query
+                .Include(r => r.IdDepartamentoNavigation)
+                .Select(r => new RequisicionMaestraDTO
+                {
+                    IdRequi = r.IdRequisicion,
+                    NumRequi = r.NumRequisicion,
+                    FechaEmision = r.FechaEmision,
+                    FechaModificacion = r.FechaModificacion,
+                    Departamento = r.IdDepartamentoNavigation.NombreDepartamento,
+                    Responsable = r.NomResponsableDepartamento
+                })
+                .ToListAsync();
         }
 
         public async Task<List<RequisicionMaestraDTO>> ListarRequisicionesConDocumentos()
