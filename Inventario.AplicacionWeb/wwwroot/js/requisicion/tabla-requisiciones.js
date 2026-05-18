@@ -1092,9 +1092,12 @@
     }
     };
 
-    document.getElementById("modalFinalizar").addEventListener("hidden.bs.modal", function () {
-        _idConsolidadaFinalizar = null;
-    });
+    var modalFinalizar = document.getElementById("modalFinalizar");
+    if (modalFinalizar) {
+        modalFinalizar.addEventListener("hidden.bs.modal", function () {
+            _idConsolidadaFinalizar = null;
+        });
+    }
 
     window.verDetalleConsolidada = function (idConsolidada) {
         document.getElementById("consolidadaTitulo").textContent = "Requisición Consolidada";

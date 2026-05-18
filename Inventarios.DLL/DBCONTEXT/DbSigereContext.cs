@@ -408,12 +408,17 @@ public partial class DbSigereContext : DbContext
 
             entity.ToTable("tblProvedor");
 
-            entity.Property(e => e.Direccion)
+            entity.Property(e => e.Correo)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaBaja).HasColumnType("datetime");
+            entity.Property(e => e.Direccion)
+                .HasMaxLength(500)
+                .IsUnicode(false);
             entity.Property(e => e.NombreProvedor)
                 .HasMaxLength(200)
+                .IsUnicode(false);
+            entity.Property(e => e.Representante)
+                .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.Rfc)
                 .HasMaxLength(15)

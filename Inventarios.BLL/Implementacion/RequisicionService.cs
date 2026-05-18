@@ -560,10 +560,8 @@ namespace Inventario.BLL.Implementacion
             try
             {
                 var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequi);
-
                 if (requisicion == null)
                     return false;
-
 
                 requisicion.IdUsuarioMat = idUsuarioMat;
                 requisicion.IdEstatus = 2;
@@ -579,7 +577,40 @@ namespace Inventario.BLL.Implementacion
                     Observacion = "AsignarRequisiciones",
                     IdUsuario = idUsuario
                 };
-                var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
+                await _repositoryBitacora.Crear(bitacora);
+
+                // Solo requisiciones de compra (no servicios) que van directo al analista
+                if (requisicion.RequiServicio == false)
+                {
+                    // Verificar que no existan ya movimientos para no duplicar
+                    // (por si pasó antes por almacén)
+                    var movExistentesQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == idRequi);
+                    var movExistentes = await movExistentesQuery.ToListAsync();
+
+                    if (!movExistentes.Any())
+                    {
+                        var detallesQuery = await _repositoryRequisicionDetalle
+                            .Consultar(d => d.IdRequisicion == idRequi);
+                        var detalles = await detallesQuery.ToListAsync();
+
+                        var movimientos = detalles.Select(d => new TblRequisicionDetalleMovimiento
+                        {
+                            IdRequisicion = idRequi,
+                            IdRequisicionDetalle = d.IdRequisicionDetalle,
+                            TipoMovimiento = "COMPRA",
+                            CantidadOriginal = (int)Math.Ceiling(d.Cantidad ?? 0m),
+                            CantidadMovimiento = (int)Math.Ceiling(d.Cantidad ?? 0m),
+                            FechaMovimiento = DateTime.Now,
+                            IdUsuario = idUsuario,
+                            Confirmado = false,
+                            Observacion = "Asignación directa a analista"
+                        }).ToList();
+
+                        if (movimientos.Any())
+                            await _repoMovimiento.CrearRango(movimientos);
+                    }
+                }
 
                 return true;
             }
