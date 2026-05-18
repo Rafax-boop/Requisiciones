@@ -24,6 +24,10 @@
     var urlGuardarBorradorIngreso = container ? container.getAttribute("data-url-guardar-borrador-ingreso") : "";
     var urlConfirmarIngresoPedido = container ? container.getAttribute("data-url-confirmar-ingreso-pedido") : "";
     var urlObtenerPartidasCompra = container ? container.getAttribute("data-url-obtener-partidas-compra") : "";
+    var urlObtenerPartidasCompraConsolidada = container ? container.getAttribute("data-url-obtener-partidas-compra-consolidada") : "";
+    var urlVerPdfSalidaConsolidada = container
+      ? container.getAttribute("data-url-ver-pdf-salida-consolidada")
+      : "";
 
   /* ========== HELPERS ========== */
 
@@ -939,6 +943,7 @@
   /* ========== MODAL ENTREGA FÍSICA ========== */
 
   var entregaActualId = null; // IdRequisicion en el modal de entrega
+  var entregaEsConsolidada = false; // true cuando se trabaja con una consolidada
   var entregaArticulos = []; // Artículos (movimientos) del modal de entrega
   var inputFormatoFirmado = document.getElementById(
     "inputFormatoSalidaFirmado",
@@ -990,6 +995,27 @@
     var btnPdf = e.target.closest("[data-ver-pdf-salida]");
     if (btnPdf) {
       e.preventDefault();
+
+      var esConsPdf = btnPdf.getAttribute("data-es-consolidada") === "true";
+
+      if (esConsPdf) {
+        if (!urlVerPdfSalidaConsolidada) {
+          swalError("URL de PDF consolidado no configurada.");
+          return;
+        }
+        var idConsPdf = parseInt(btnPdf.getAttribute("data-entrega-id"), 10);
+        if (!idConsPdf || idConsPdf <= 0) {
+          swalWarning("No se pudo identificar la consolidada.");
+          return;
+        }
+        var urlPdfCons =
+          (urlVerPdfSalidaConsolidada || "").replace(/\/$/, "") +
+          "?idConsolidada=" +
+          encodeURIComponent(idConsPdf);
+        window.open(urlPdfCons, "_blank");
+        return;
+      }
+
       if (!urlVerPdfSalida) {
         swalError("URL de PDF no configurada.");
         return;
@@ -1015,6 +1041,7 @@
     if (!btn) return;
     e.preventDefault();
 
+    entregaEsConsolidada = btn.getAttribute("data-es-consolidada") === "true";
     entregaActualId = parseInt(btn.getAttribute("data-entrega-id"), 10);
     var folio = btn.getAttribute("data-entrega-folio") || "";
     var depto = btn.getAttribute("data-entrega-depto") || "";
@@ -1045,8 +1072,10 @@
         return r.ok ? r.json() : Promise.reject();
       })
       .then(function (data) {
-        // Buscar la requisición actual
+        // Buscar la requisición actual (por ConsolidadaId si es consolidada, o IdRequisicion si es individual)
         var grupo = (data || []).find(function (g) {
+          if (entregaEsConsolidada)
+            return (g.consolidadaId || g.ConsolidadaId) === entregaActualId;
           return (g.idRequisicion || g.IdRequisicion) === entregaActualId;
         });
 
@@ -1167,7 +1196,11 @@
           });
 
           var form = new FormData();
-          form.append("IdRequisicion", String(entregaActualId));
+          if (entregaEsConsolidada) {
+            form.append("IdConsolidada", String(entregaActualId));
+          } else {
+            form.append("IdRequisicion", String(entregaActualId));
+          }
           seleccionados.forEach(function (idMov) {
             form.append("IdsMovimientos", String(idMov));
           });
@@ -1540,7 +1573,8 @@
 
     var ingresoPedidoActualId = null;
     var ingresoPedidoArticulos = [];
-    var borradorGuardado = false;   // ← controla si ya se guardó en paso 1
+    var ingresoPedidoEsConsolidada = false;
+    var borradorGuardado = false;
 
     var inputFormatoEntradaFirmado = document.getElementById("inputFormatoEntradaFirmado");
     var estadoFormatoEntradaFirmado = document.getElementById("formatoEntradaFirmadoEstado");
@@ -1655,11 +1689,15 @@
         if (!btn) return;
         e.preventDefault();
 
-        ingresoPedidoActualId = parseInt(btn.getAttribute("data-id"), 10);
+        ingresoPedidoEsConsolidada = btn.getAttribute("data-es-consolidada") === "true";
+        ingresoPedidoActualId = ingresoPedidoEsConsolidada
+            ? parseInt(btn.getAttribute("data-id-consolidada"), 10)
+            : parseInt(btn.getAttribute("data-id"), 10);
         borradorGuardado = false;
         ingresoPedidoArticulos = [];
 
         document.getElementById("modalIngresoPedidoTitulo").textContent =
+            (ingresoPedidoEsConsolidada ? "Consolidada — " : "") +
             "Registrar Ingreso — " + (btn.getAttribute("data-folio") || "");
         document.getElementById("modalIngresoPedidoSubtitulo").textContent =
             (btn.getAttribute("data-depto") || "") + " · Material recibido del proveedor";
@@ -1675,11 +1713,11 @@
         }
         setEstadoFormatoEntrada("info", "Primero guarda las cantidades para generar el formato.");
 
-        fetch(
-            (urlObtenerPartidasCompra || "").replace(/\/$/, "") +
-            "?id=" + encodeURIComponent(ingresoPedidoActualId),
-            { credentials: "same-origin", headers: { Accept: "application/json" } }
-        )
+        var url = ingresoPedidoEsConsolidada
+            ? ((urlObtenerPartidasCompraConsolidada || "").replace(/\/$/, "") + "?idConsolidada=" + encodeURIComponent(ingresoPedidoActualId))
+            : ((urlObtenerPartidasCompra || "").replace(/\/$/, "") + "?id=" + encodeURIComponent(ingresoPedidoActualId));
+
+        fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
             .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
             .then(function (data) {
                 ingresoPedidoArticulos = Array.isArray(data) ? data : [];
@@ -1719,10 +1757,11 @@
             btnGuardarBorrador.innerHTML =
                 '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
-            postJson(urlGuardarBorradorIngreso, {
-                idRequisicion: ingresoPedidoActualId,
-                cantidades: cantidades
-            })
+            var payload = ingresoPedidoEsConsolidada
+                ? { idConsolidada: ingresoPedidoActualId, idRequisicion: 0, cantidades: cantidades }
+                : { idRequisicion: ingresoPedidoActualId, cantidades: cantidades };
+
+            postJson(urlGuardarBorradorIngreso, payload)
                 .then(function (r) {
                     if (!r.ok) throw r.error || "No se pudo guardar.";
 
@@ -1770,7 +1809,12 @@
                 });
 
                 var form = new FormData();
-                form.append("IdRequisicion", String(ingresoPedidoActualId));
+                if (ingresoPedidoEsConsolidada) {
+                    form.append("IdConsolidada", String(ingresoPedidoActualId));
+                    form.append("IdRequisicion", "0");
+                } else {
+                    form.append("IdRequisicion", String(ingresoPedidoActualId));
+                }
                 form.append("FormatoEntradaFirmado", inputFormatoEntradaFirmado.files[0]);
 
                 fetch(urlConfirmarIngresoPedido, {

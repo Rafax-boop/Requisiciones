@@ -16,5 +16,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public bool? RequiServicio { get; set; }
         public string? ComentarioRechazo { get; set; }
         public int? ConsolidadaId { get; set; }
+        public bool EsConsolidada { get; set; }
     }
 }

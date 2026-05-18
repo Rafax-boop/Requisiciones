@@ -20,7 +20,9 @@
      data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
      data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")"
      data-url-confirmar-entrega="@Url.Action("ConfirmarEntrega", "Almacen")"
+     data-url-ver-pdf-salida-consolidada="@Url.Action("VerSalidaParaPdfConsolidada", "Almacen")"
      data-url-obtener-partidas-compra="@Url.Action("ObtenerPartidasCompra", "Almacen")"
+     data-url-obtener-partidas-compra-consolidada="@Url.Action("ObtenerPartidasCompraConsolidada", "Almacen")"
      data-url-guardar-borrador-ingreso="@Url.Action("GuardarBorradorIngreso", "Almacen")"
      data-url-confirmar-ingreso-pedido="@Url.Action("ConfirmarIngresoPedido", "Almacen")"
      data-url-documentos="@Url.Action("ObtenerDocumentos", "Almacen")">
@@ -175,27 +177,39 @@
                     @foreach (var e in Model.EntregasPendientes)
                     {
                         idxE++;
-                        <tr data-requi="@e.IdRequisicion"
+                        var esConsE = e.EsConsolidada;
+                        <tr data-requi="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
                             data-folio="@e.NumRequi"
-                            data-depto="@(e.Departamento ?? "")">
+                            data-depto="@(e.Departamento ?? "")"
+                            @if (esConsE) { <text>data-es-consolidada="true" data-id-consolidada="@e.ConsolidadaId"</text> }>
                             <td style="text-align:center">@idxE</td>
-                            <td><span class="folio-badge">@e.NumRequi</span></td>
+                            <td>
+                                <span class="folio-badge @(esConsE ? "folio-badge-cons" : "")">
+                                    @if (esConsE)
+                                    {
+                                        <span class="badge-cons">CONS</span>
+                                    }
+                                    @e.NumRequi
+                                </span>
+                            </td>
                             <td>@e.FechaEmision?.ToString("dd/MM/yyyy")</td>
                             <td>@e.Departamento</td>
-                            <td>@e.Responsable</td>
+                            <td>@(esConsE ? "" : e.Responsable)</td>
                             <td style="text-align:center">@e.Articulos.Count</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <button type="button" class="btn-accion btn-ver" title="Formato de salida (PDF)"
-                                            data-entrega-id="@e.IdRequisicion"
-                                            data-ver-pdf-salida>
+                                            data-entrega-id="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
+                                            data-ver-pdf-salida
+                                            @if (esConsE) { <text>data-es-consolidada="true"</text> }>
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                     <button type="button" class="btn-accion btn-ver" title="Ver artículos a entregar"
-                                            data-entrega-id="@e.IdRequisicion"
+                                            data-entrega-id="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
                                             data-entrega-folio="@e.NumRequi"
                                             data-entrega-depto="@e.Departamento"
-                                            data-abrir-entrega>
+                                            data-abrir-entrega
+                                            @if (esConsE) { <text>data-es-consolidada="true"</text> }>
                                         <i class="fa-solid fa-truck-ramp-box"></i>
                                     </button>
                                 </div>
@@ -255,27 +269,34 @@
                     @foreach (var p in Model.Pedidos)
                     {
                         idxP++;
-                        <tr data-id="@p.IdRequi" data-folio="@(p.NumRequi ?? "")" data-depto="@(p.Departamento ?? "")">
+                        var esConsolidada = p.EsConsolidada;
+                        <tr data-id="@(esConsolidada ? p.ConsolidadaId : p.IdRequi)"
+                            data-folio="@(p.NumRequi ?? "")"
+                            data-depto="@(p.Departamento ?? "")"
+                            data-es-consolidada="@(esConsolidada ? "true" : "false")">
                             <td style="text-align:center">@idxP</td>
-                            <td><span class="folio-badge">@p.NumRequi</span></td>
+                            <td>
+                                <span class="folio-badge">
+                                    @if (esConsolidada) {
+                                        <span style="font-size:9px;background:#3b82f6;color:#fff;padding:1px 6px;border-radius:4px;margin-right:4px;font-weight:600;">CONS</span>
+                                    }
+                                    @p.NumRequi
+                                </span>
+                            </td>
                             <td>@p.FechaEmision?.ToString("dd/MM/yyyy")</td>
                             <td>@p.Departamento</td>
                             <td>@p.Responsable</td>
                             <td style="text-align:center">@p.CantidadPartidas</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    @* <a href="@Url.Action("FormatoEntradaPdf", "Almacen", new { id = p.IdRequi })"
-                                       target="_blank"
-                                       class="btn-accion btn-ver"
-                                       title="Ver Formato de Entrada">
-                                        <i class="fa-solid fa-file-arrow-down"></i>
-                                    </a> *@
                                     <button type="button"
                                             class="btn-accion btn-ver"
                                             title="Registrar ingreso de material"
-                                            data-id="@p.IdRequi"
+                                            data-id="@(esConsolidada ? null : p.IdRequi.ToString())"
+                                            data-id-consolidada="@(esConsolidada ? p.ConsolidadaId.ToString() : null)"
                                             data-folio="@(p.NumRequi ?? "")"
                                             data-depto="@(p.Departamento ?? "")"
+                                            data-es-consolidada="@(esConsolidada ? "true" : "false")"
                                             data-abrir-ingreso-pedido>
                                         <i class="fa-solid fa-truck-arrow-right"></i>
                                     </button>

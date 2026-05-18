@@ -109,7 +109,7 @@
         </div>
         <div class="requisicion-info">
             <div class="requisicion">
-                <p class="info-body">Requisición:</p>
+                <p class="info-body">@(Model.IdConsolidada > 0 ? "Consolidada:" : "Requisición:")</p>
                 <label class="info-body">@numReq</label>
             </div>
         </div>

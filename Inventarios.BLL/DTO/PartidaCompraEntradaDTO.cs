@@ -3,6 +3,7 @@ namespace Inventario.BLL.DTO
     public class PartidaCompraEntradaDTO
     {
         public int IdRequisicionDetalle { get; set; }
+        public int IdRequisicion { get; set; }
         public int? NumPartida { get; set; }
         public int? IdArticulo { get; set; }
         public string ClaveMaterial { get; set; } = string.Empty;

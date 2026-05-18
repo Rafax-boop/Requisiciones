@@ -81,6 +81,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
     public class ConfirmarEntregaRequest
     {
         public int IdRequisicion { get; set; }
+        public int? IdConsolidada { get; set; }
         public List<int> IdsMovimientos { get; set; } = new();
         public IFormFile? FormatoSalidaFirmado { get; set; }
     }
@@ -95,18 +96,21 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
     public class GuardarBorradorIngresoRequest
     {
         public int IdRequisicion { get; set; }
+        public int? IdConsolidada { get; set; }
         public List<CantidadRecibidaDTO> Cantidades { get; set; } = new();
     }
 
     public class ConfirmarIngresoPedidoRequest
     {
         public int IdRequisicion { get; set; }
+        public int? IdConsolidada { get; set; }
         public IFormFile? FormatoEntradaFirmado { get; set; }
     }
 
     public class HistorialDocumentosVM
     {
         public int IdRequisicion { get; set; }
+        public int IdConsolidada { get; set; }
         public string NumRequisicion { get; set; } = "";
         public List<TablaApiHistorialDTO> HistorialTablaApi { get; set; } = new();
         public List<PedidoHistorialDTO> HistorialPedido { get; set; } = new();

@@ -313,9 +313,16 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false);
 
+            entity.Property(e => e.IdConsolidada).HasColumnName("IdConsolidada");
+
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblFormatos)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_Formato_Requisicion");
+
+            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblFormatos)
+                .HasForeignKey(d => d.IdConsolidada)
+                .HasConstraintName("FK_Formato_Consolidada")
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<TblFuentesFinanciamiento>(entity =>

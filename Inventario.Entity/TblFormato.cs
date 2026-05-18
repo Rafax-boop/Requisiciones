@@ -13,6 +13,8 @@ public partial class TblFormato
 
     public int? IdRequisicion { get; set; }
 
+    public int? IdConsolidada { get; set; }
+
     public DateTime FechaFormato { get; set; }
 
     public int IdUsuario { get; set; }
@@ -20,6 +22,8 @@ public partial class TblFormato
     public string RutaArchivo { get; set; } = null!;
 
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
+
+    public virtual TblConsolidada? IdConsolidadaNavigation { get; set; }
 
     public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();
 }

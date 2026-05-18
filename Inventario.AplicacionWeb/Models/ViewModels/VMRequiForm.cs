@@ -28,6 +28,9 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public DateOnly? FechaServicio { get; set; }
         public bool? RequiServicio { get; set; }
         public int? NumeroFormato { get; set; }
+        public bool? EsConsolidada { get; set; }
+        public string? FolioConsolidada { get; set; }
+        public string? DepartamentosConsolidada { get; set; }
         public List<ItemRequiVM> Articulos { get; set; } = new();
         public List<VMFotoExistente> FotosExistentes { get; set; } = new();
     }

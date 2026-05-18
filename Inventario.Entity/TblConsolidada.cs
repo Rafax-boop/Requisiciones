@@ -52,4 +52,6 @@ public partial class TblConsolidada
     public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 
     public virtual ICollection<TblTablaApiHistorial> TblTablaApiHistorials { get; set; } = new List<TblTablaApiHistorial>();
+
+    public virtual ICollection<TblFormato> TblFormatos { get; set; } = new List<TblFormato>();
 }

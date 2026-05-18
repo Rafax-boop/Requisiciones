@@ -1,12 +1,11 @@
 (function () {
     var container = document.querySelector(".tabla-requi-page");
     var obtenerDetallesUrl = container ? container.getAttribute("data-url-obtener-detalles") : "";
-    var verPdfRequisicionUrl = container ? container.getAttribute("data-url-ver-pdf-requi") : "";
-    var verPdfServicioUrl = container ? container.getAttribute("data-url-ver-pdf-servicio") : "";
     var urlUsuariosFinancieros = container ? container.getAttribute("data-url-usuarios-financieros") : "";
     var urlAsignar = container ? container.getAttribute("data-url-asignar") : "";
     var urlRechazar = container ? container.getAttribute("data-url-rechazar") : "";
     var urlObtenerProgreso = container ? container.getAttribute("data-url-obtener-progreso") : "";
+    var urlHistorialApi = container ? container.getAttribute("data-url-historial-api") : "";
     var urlObtenerCotizaciones = container
         ? container.getAttribute("data-url-obtener-cotizaciones") : "";
     var expedienteFinActual = null;
@@ -1712,12 +1711,14 @@
 
                     var accionesHtml = '<div class="acciones-grupo" style="justify-content:center">' +
                         '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidadaFinancieros(' + item.consolidadaId + ')">' +
-                        '<i class="fa-solid fa-eye"></i></button>';
+                        '<i class="fa-solid fa-eye"></i></button>' +
+                        '<button class="btn-accion" title="Ver historial" onclick="event.stopPropagation(); window.location.href=\'' + urlHistorialApi + '?idConsolidada=' + item.consolidadaId + '\'">' +
+                        '<i class="fa-solid fa-clock-rotate-left"></i></button>';
                     if (esRol8 && item.idEstatus === 13) {
                         accionesHtml += '<button class="btn-accion" title="Asignar Consolidada" onclick="abrirModalAsignar(' + item.consolidadaId + ', \'consolidada\')">' +
                             '<i class="fa-solid fa-clipboard-user"></i></button>';
                     }
-                    if (esRol9 && item.idEstatus >= 14) {
+                    if (esRol9 && item.idEstatus === 14) {
                         accionesHtml += '<button class="btn-accion" title="Atender" onclick="atenderConsolidada(' + item.consolidadaId + ')">' +
                             '<i class="fa-solid fa-hand-holding"></i></button>';
                     }
@@ -1800,8 +1801,8 @@
                     var accionesHtml = '<div class="acciones-grupo" style="justify-content:center">' +
                         '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidadaFinancieros(' + item.consolidadaId + ')">' +
                         '<i class="fa-solid fa-eye"></i></button>' +
-                        '<button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="Swal.fire({ icon: \'info\', title: \'No disponible\', text: \'La exportación a PDF no está disponible para consolidadas.\', confirmButtonText: \'Aceptar\' })">' +
-                        '<i class="fa-solid fa-file-pdf"></i></button>' +
+                        '<button class="btn-accion" title="Ver historial" onclick="event.stopPropagation(); window.location.href=\'' + urlHistorialApi + '?idConsolidada=' + item.consolidadaId + '\'">' +
+                        '<i class="fa-solid fa-clock-rotate-left"></i></button>' +
                         '</div>';
 
                     var celdas = '';
@@ -1875,8 +1876,7 @@
                 '<td><div class="acciones-grupo" style="justify-content:center">' +
                 '<button class="btn-accion btn-ver" title="Ver expediente" onclick="verExpedienteFinancieros(' + item.id + ', ' + item.esConsolidada + ')">' +
                 '<i class="fa-solid fa-folder-open"></i></button>' +
-                '<button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(' + item.id + ')">' +
-                '<i class="fa-solid fa-file-pdf"></i></button></div></td>';
+                '</div></td>';
             tbody.appendChild(tr);
         });
 
@@ -2340,20 +2340,6 @@
     if (filtroNumReq) filtroNumReq.addEventListener("input", filtrarTabla);
     if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
     if (filtroEstado) filtroEstado.addEventListener("change", filtrarTabla);
-
-    // ── PDF ─────────────────────────────────────────────────────────────────
-    window.verPdf = function (id) {
-        var fila = document.querySelector('tr.fila-requi[data-requi-id="' + id + '"]')
-            || document.querySelector('tr.fila-requi[data-id="' + id + '"]');
-        var esConsolidada = fila && fila.getAttribute('data-es-consolidada') === 'true';
-        if (esConsolidada) {
-            Swal.fire({ icon: "info", title: "No disponible", text: "La exportaci\u00f3n a PDF no est\u00e1 disponible para consolidadas.", confirmButtonText: "Aceptar" });
-            return;
-        }
-        var esServicio = fila && fila.getAttribute('data-requi-servicio') === 'true';
-        var urlBase = esServicio ? verPdfServicioUrl : verPdfRequisicionUrl;
-        window.open(urlBase.replace(/\/$/, "") + "/" + id, "_blank");
-    };
 
     // ── Panel descripción detallada ─────────────────────────────────────────
     var _descPanelModalTrigger = null;

@@ -14,6 +14,9 @@ namespace Inventario.BLL.DTO
         public string Departamento { get; set; }
         public string Responsable { get; set; }
         public List<ArticuloEntregaDTO> Articulos { get; set; }
+        public bool EsConsolidada { get; set; }
+        public int? ConsolidadaId { get; set; }
+        public List<int> IdsRequisiciones { get; set; } = new();
     }
 
     public class ArticuloEntregaDTO
