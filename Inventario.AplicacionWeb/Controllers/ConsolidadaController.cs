@@ -1,5 +1,6 @@
 ﻿using Inventario.AplicacionWeb.Models.ViewModels;
 using Inventario.BLL.DTO;
+using Inventario.BLL.Implementacion;
 using Inventario.BLL.Interfaces;
 using Inventario.Entity;
 using Microsoft.AspNetCore.Authorization;
@@ -14,11 +15,13 @@ namespace Inventario.AplicacionWeb.Controllers
     {
         private readonly IConsolidadaService _consolidadaService;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IRequisicionesService _requisicionesService;
 
-        public ConsolidadaController(IConsolidadaService consolidadaService, IWebHostEnvironment webHostEnvironment)
+        public ConsolidadaController(IConsolidadaService consolidadaService, IWebHostEnvironment webHostEnvironment, IRequisicionesService requisicionesService)
         {
             _consolidadaService = consolidadaService;
             _webHostEnvironment = webHostEnvironment;
+            _requisicionesService = requisicionesService;
         }
 
         [HttpGet]
@@ -36,7 +39,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 return BadRequest(new { mensaje = "Se requieren al menos 2 requisiciones." });
 
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario, false);
+            var resultado = await _consolidadaService.CrearConsolidada(modelo.IdsRequisiciones, idUsuario, servicio);
 
             if (resultado == null)
                 return BadRequest(new { mensaje = "No se pudo crear la consolidada. Verifica que las requisiciones no estén ya consolidadas." });
@@ -219,6 +222,14 @@ namespace Inventario.AplicacionWeb.Controllers
             zipStream.Position = 0;
             var nombreZip = "Consolidada_" + (consolidada.FolioConsolidada ?? idConsolidada.ToString()) + ".zip";
             return File(zipStream.ToArray(), "application/zip", nombreZip);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FinalizarConsolidada([FromBody] FinalizarConsolidadaRequest modelo)
+        {
+            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _consolidadaService.FinalizarConsolidada(modelo.IdConsolidada, idUsuario, modelo.Observaciones);
+            return Ok(new { success = ok });
         }
 
         private static string ObtenerNombreZipDisponible(string nombreOriginal, HashSet<string> nombresUsados)

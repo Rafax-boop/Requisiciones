@@ -9,13 +9,17 @@ public partial class TblProvedor
 
     public string NombreProvedor { get; set; } = null!;
 
-    public string Direccion { get; set; } = null!;
-
     public string Rfc { get; set; } = null!;
 
-    public bool Activo { get; set; }
+    public string? Direccion { get; set; }
 
-    public DateTime? FechaBaja { get; set; }
+    public int? Telefono { get; set; }
+
+    public string? Correo { get; set; }
+
+    public string? Representante { get; set; }
+
+    public bool Activo { get; set; }
 
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 }

@@ -371,7 +371,7 @@ namespace Inventario.BLL.Implementacion
                         .ThenInclude(r => r.TblRequisicionDetalles)
                 .ToListAsync();
 
-            var estatusValidos = servicio ? new[] { 16, 18 } : new[] { 15, 18 };
+            var estatusValidos = servicio ? new[] { 15, 18 } : new[] { 15, 18 };
 
             var resultado = consolidadas
                 .Where(c => c.TblConsolidadasDetalles
@@ -606,6 +606,44 @@ namespace Inventario.BLL.Implementacion
                 })
                 .OrderByDescending(c => c.ConsolidadaID)
                 .ToListAsync();
+        }
+
+        public async Task<bool> FinalizarConsolidada(int idConsolidada, int idUsuario, string observaciones)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null) return false;
+
+            // Obtener hijas
+            var detallesQuery = await _repoDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var detalles = await detallesQuery.ToListAsync();
+            var idsHijas = detalles.Select(d => d.IdRequisicion).ToList();
+
+            var requisQuery = await _repoRequisicion.Consultar(r => idsHijas.Contains(r.IdRequisicion));
+            var requis = await requisQuery.ToListAsync();
+
+            // Finalizar hijas
+            foreach (var r in requis)
+            {
+                r.IdEstatus = 12;
+                r.FechaModificacion = DateTime.Now;
+                await _repoRequisicion.Editar(r);
+
+                await _repoBitacora.Crear(new TblBitacoraEstatus
+                {
+                    IdRequisicion = r.IdRequisicion,
+                    IdEstatus = 12,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = observaciones,
+                    IdUsuario = idUsuario
+                });
+            }
+
+            // Finalizar consolidada
+            consolidada.IdEstatus = 12;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
+
+            return true;
         }
     }
 }
