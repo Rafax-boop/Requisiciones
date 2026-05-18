@@ -23,6 +23,9 @@ namespace Inventario.BLL.DTO
     {
         public int IdMovimiento { get; set; }
         public int IdRequisicionDetalle { get; set; }
+        public int? IdArticulo { get; set; }
+        public int? NumPartida { get; set; }
+        public string? ClaveMaterial { get; set; }
         public string Descripcion { get; set; }
         public string UnidadMedida { get; set; }
         public decimal? CantidadOriginal { get; set; }

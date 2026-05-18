@@ -225,6 +225,7 @@ namespace Inventario.BLL.Implementacion
                 .Include(m => m.IdRequisicionNavigation)
                     .ThenInclude(r => r.IdDepartamentoNavigation)
                 .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
                 .ToListAsync();
 
             var grupos = movimientos
@@ -243,6 +244,9 @@ namespace Inventario.BLL.Implementacion
                         {
                             IdMovimiento = m.IdMovimiento,
                             IdRequisicionDetalle = m.IdRequisicionDetalle,
+                            IdArticulo = m.IdRequisicionDetalleNavigation?.IdArticulo,
+                            NumPartida = m.IdRequisicionDetalleNavigation?.NumPartida,
+                            ClaveMaterial = m.IdRequisicionDetalleNavigation?.IdArticuloNavigation?.Clave ?? "",
                             Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
                             UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
                             CantidadOriginal = m.CantidadOriginal,
@@ -406,6 +410,7 @@ namespace Inventario.BLL.Implementacion
                 .Include(m => m.IdRequisicionNavigation)
                     .ThenInclude(r => r.IdDepartamentoNavigation)
                 .Include(m => m.IdRequisicionDetalleNavigation)
+                    .ThenInclude(d => d.IdArticuloNavigation)
                 .ToListAsync();
 
             var gruposPorRequi = movimientos
@@ -432,6 +437,9 @@ namespace Inventario.BLL.Implementacion
                         {
                             IdMovimiento = m.IdMovimiento,
                             IdRequisicionDetalle = m.IdRequisicionDetalle,
+                            IdArticulo = m.IdRequisicionDetalleNavigation?.IdArticulo,
+                            NumPartida = m.IdRequisicionDetalleNavigation?.NumPartida,
+                            ClaveMaterial = m.IdRequisicionDetalleNavigation?.IdArticuloNavigation?.Clave ?? "",
                             Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
                             UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
                             CantidadOriginal = m.CantidadOriginal,
@@ -488,6 +496,9 @@ namespace Inventario.BLL.Implementacion
                     {
                         IdMovimiento = m.IdMovimiento,
                         IdRequisicionDetalle = m.IdRequisicionDetalle,
+                        IdArticulo = m.IdRequisicionDetalleNavigation?.IdArticulo,
+                        NumPartida = m.IdRequisicionDetalleNavigation?.NumPartida,
+                        ClaveMaterial = m.IdRequisicionDetalleNavigation?.IdArticuloNavigation?.Clave ?? "",
                         Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
                         UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
                         CantidadOriginal = m.CantidadOriginal,

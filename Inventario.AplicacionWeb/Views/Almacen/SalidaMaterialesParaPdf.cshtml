@@ -6,7 +6,7 @@
     var fechaTexto = Model.FechaEmision?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—";
     var requisicion = esConsolidada ? (Model.FolioConsolidada ?? Model.NumRequisicion ?? "—") : (Model.NumRequisicion ?? "—");
     var solicitante = Model.NomResponsableDepartamento ?? "—";
-    var esDonativo = Model.UsoMaterial == true;
+    var pedido = string.IsNullOrWhiteSpace(Model.NumPedido) ? "—" : Model.NumPedido;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
     var folioEstatico = Model.NumeroFormato.HasValue
         ? Model.NumeroFormato.Value.ToString().PadLeft(4, '0')
@@ -48,7 +48,7 @@
             <div class="pdf-seccion pdf-grid-2">
                 <div class="pdf-campo">
                     <span class="pdf-campo-label">Recibo de donativos</span>
-                    <span class="pdf-campo-valor">@(esDonativo ? "Sí" : "No")</span>
+                    <span class="pdf-campo-valor">No</span>
                 </div>
                 <div class="pdf-campo">
                     <span class="pdf-campo-label">Fecha</span>
@@ -60,7 +60,7 @@
                 </div>
                 <div class="pdf-campo">
                     <span class="pdf-campo-label">Pedido</span>
-                    <span class="pdf-campo-valor">—</span>
+                    <span class="pdf-campo-valor">@pedido</span>
                 </div>
                 <div class="pdf-campo">
                     <span class="pdf-campo-label">Entrada</span>

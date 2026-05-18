@@ -149,6 +149,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
+                NumPedido = dto.NumPedido,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -200,19 +201,20 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = null,
                 NumRequisicion = consolidada.FolioConsolidada,
+                NumPedido = consolidada.NumPedido,
                 FechaEmision = childQuery.Min(r => r.FechaEmision),
                 Departamento = depto19?.NombreDepartamento ?? "RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 NomResponsableDepartamento = depto19?.NombreJefe ?? childQuery.FirstOrDefault()?.Responsable,
-                UsoMaterial = true,
+                UsoMaterial = false,
                 NumeroFormato = numeroFormato,
                 EsConsolidada = true,
                 FolioConsolidada = consolidada.FolioConsolidada,
                 DepartamentosConsolidada = depto19?.NombreDepartamento,
                 Articulos = articulosPendientes.Select(a => new ItemRequiVM
                 {
-                    IdArticulo = null,
-                    Cog = null,
-                    ClaveMaterial = null,
+                    IdArticulo = a.IdArticulo,
+                    Cog = a.NumPartida,
+                    ClaveMaterial = a.ClaveMaterial,
                     Cantidad = a.CantidadMovimiento,
                     UnidadMedida = a.UnidadMedida,
                     Descripcion = a.Descripcion,
@@ -244,6 +246,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
+                NumPedido = dto.NumPedido,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -514,6 +517,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
+                NumPedido = dto.NumPedido,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -562,6 +566,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = null,
                 NumRequisicion = consolidada.FolioConsolidada,
+                NumPedido = consolidada.NumPedido,
                 FechaEmision = childQuery.Min(r => r.FechaEmision),
                 Departamento = depto19?.NombreDepartamento ?? "RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 NomResponsableDepartamento = depto19?.NombreJefe ?? childQuery.First().Responsable,

@@ -108,15 +108,16 @@
                     @foreach (var r in Model.Requisiciones.OrderBy(x => x.FechaEmision))
                     {
                         idx++;
-                        <tr data-id="@r.IdRequi"
+                        <tr class="fila-requi"
+                            data-id="@r.IdRequi"
                             data-folio="@r.NumRequi"
                             data-depto="@(r.Departamento ?? "")"
                             data-estatus="@(r.Estatus ?? "")">
                             <td style="text-align:center">@idx</td>
                             <td><span class="folio-badge">@r.NumRequi</span></td>
                             <td>@r.FechaEmision?.ToString("dd/MM/yyyy")</td>
-                            <td>@r.Departamento</td>
-                            <td>@r.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(r.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(r.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@r.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(r.IdEstatus, r.Estatus))</td>
                             <td>
@@ -178,7 +179,8 @@
                     {
                         idxE++;
                         var esConsE = e.EsConsolidada;
-                        <tr data-requi="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
+                        <tr class="fila-requi"
+                            data-requi="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
                             data-folio="@e.NumRequi"
                             data-depto="@(e.Departamento ?? "")"
                             @if (esConsE) { <text>data-es-consolidada="true" data-id-consolidada="@e.ConsolidadaId"</text> }>
@@ -193,8 +195,8 @@
                                 </span>
                             </td>
                             <td>@e.FechaEmision?.ToString("dd/MM/yyyy")</td>
-                            <td>@e.Departamento</td>
-                            <td>@(esConsE ? "" : e.Responsable)</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(e.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(esConsE ? "Consolidada" : e.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@e.Articulos.Count</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
@@ -270,7 +272,8 @@
                     {
                         idxP++;
                         var esConsolidada = p.EsConsolidada;
-                        <tr data-id="@(esConsolidada ? p.ConsolidadaId : p.IdRequi)"
+                        <tr class="fila-requi"
+                            data-id="@(esConsolidada ? p.ConsolidadaId : p.IdRequi)"
                             data-folio="@(p.NumRequi ?? "")"
                             data-depto="@(p.Departamento ?? "")"
                             data-es-consolidada="@(esConsolidada ? "true" : "false")">
@@ -284,8 +287,8 @@
                                 </span>
                             </td>
                             <td>@p.FechaEmision?.ToString("dd/MM/yyyy")</td>
-                            <td>@p.Departamento</td>
-                            <td>@p.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(p.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(p.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@p.CantidadPartidas</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
@@ -352,12 +355,12 @@
                     @foreach (var e in Model.RequisicionesConDocumentos)
                     {
                         idxExp++;
-                        <tr>
+                        <tr class="fila-requi">
                             <td style="text-align:center">@idxExp</td>
                             <td><span class="folio-badge">@e.NumRequi</span></td>
                             <td>@e.FechaEmision?.ToString("dd/MM/yyyy")</td>
-                            <td>@e.Departamento</td>
-                            <td>@e.Responsable</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(e.Departamento, "fa-solid fa-building"))</td>
+                            <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(e.Responsable, "fa-solid fa-user"))</td>
                             <td style="text-align:center">@e.CantidadPartidas</td>
                             <td style="text-align:center">
                                 <div class="acciones-grupo" style="justify-content:center">
@@ -423,12 +426,23 @@
                         var claseSituacion = i.Situacion == "Sin stock" ? "almacen-estado-sin-stock"
                         : i.Situacion == "Stock bajo" ? "almacen-estado-bajo"
                         : "almacen-estado-ok";
-                        <tr data-unidad="@(i.UnidadMedida ?? "")">
+                        var claseBadgeSituacion = i.Situacion == "Sin stock" ? "badge-estado-danger"
+                        : i.Situacion == "Stock bajo" ? "badge-estado-warning"
+                        : "badge-estado-success";
+                        var iconoSituacion = i.Situacion == "Sin stock" ? "fa-circle-xmark"
+                        : i.Situacion == "Stock bajo" ? "fa-triangle-exclamation"
+                        : "fa-circle-check";
+                        <tr class="fila-requi" data-unidad="@(i.UnidadMedida ?? "")">
                             <td>@i.Descripcion</td>
                             <td>@i.UnidadMedida</td>
-                            <td class="@claseSituacion"><strong>@i.Existencia</strong></td>
+                            <td><strong class="@claseSituacion">@i.Existencia</strong></td>
                             <td>@i.Minimo</td>
-                            <td class="@claseSituacion">@i.Situacion</td>
+                            <td>
+                                <span class="badge-estado-premium @claseBadgeSituacion">
+                                    <i class="fa-solid @iconoSituacion"></i>
+                                    @i.Situacion
+                                </span>
+                            </td>
                         </tr>
                     }
                     <tr id="filaInventarioVacio" class="almacen-inv-empty" style="display:none;">

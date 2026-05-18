@@ -8,6 +8,7 @@
         : DateTime.Now.ToString("dd/MM/yyyy", cultura);
     var requisicion = Model.EsConsolidada == true ? (Model.FolioConsolidada ?? Model.NumRequisicion ?? "—") : (Model.NumRequisicion ?? "—");
     var solicitante = Model.NomResponsableDepartamento ?? "—";
+    var pedido = string.IsNullOrWhiteSpace(Model.NumPedido) ? "—" : Model.NumPedido;
     var esConsolidada = Model.EsConsolidada == true;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
     var folioEstatico = Model.NumeroFormato.HasValue
@@ -153,7 +154,7 @@
                     </div>
                     <div class="pdf-entrada-campo">
                         <span class="pdf-entrada-label">Pedido:</span>
-                        <span class="pdf-entrada-valor"></span>
+                        <span class="pdf-entrada-valor">@pedido</span>
                     </div>
                     <div class="pdf-entrada-campo">
                         <span class="pdf-entrada-label">Fecha:</span>
@@ -161,7 +162,7 @@
                     </div>
                     <div class="pdf-entrada-campo">
                         <span class="pdf-entrada-label">Almacén:</span>
-                        <span class="pdf-entrada-valor">Almacén e Inventarios</span>
+                        <span class="pdf-entrada-valor">Almacén General</span>
                     </div>
                 </div>
                 <!-- Fila 2: Proveedor -->

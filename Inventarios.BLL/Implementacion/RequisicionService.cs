@@ -448,6 +448,7 @@ namespace Inventario.BLL.Implementacion
             return new RequisicionCompletaDTO
             {
                 NumRequisicion = requisicion.NumRequisicion,
+                NumPedido = requisicion.NumPedido,
                 FechaEmision = requisicion.FechaEmision,
                 IdDepartamento = requisicion.IdDepartamento,
                 Departamento = nombreDepartamento ?? requisicion.IdDepartamento?.ToString(),
