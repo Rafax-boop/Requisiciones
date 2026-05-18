@@ -1992,29 +1992,8 @@
             var subtitle = document.querySelector("#modalDetalle .modal-subtitulo-premium");
             if (subtitle) subtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " · " + data.articulos.length + " partidas" : "");
 
-            // ── Header info ────────────────────────────────────────────────
-            var headerHtml = '<div class="row mb-3" style="padding:0 4px;">' +
-                '<div class="col-md-3"><strong>Folio:</strong> ' + (data.folioConsolidada || "") + '</div>' +
-                '<div class="col-md-3"><strong>Estatus:</strong> ' + (data.estatus || "") + '</div>' +
-                '<div class="col-md-3"><strong>Creado:</strong> ' + (data.fechaCreacion || "") + '</div>' +
-                '<div class="col-md-3"><strong>Por:</strong> ' + (data.creadoPor || "") + '</div>' +
-                '</div>';
-            if (data.nombreAsignado) {
-                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
-                    '<div class="col-md-6"><strong>Analista asignado:</strong> ' + data.nombreAsignado + '</div>' +
-                    '<div class="col-md-6"><strong>Días asignado:</strong> ' + (data.diasAsignado > 0 ? data.diasAsignado + " día(s)" : "Hoy") + '</div>' +
-                    '</div>';
-            }
-            if (data.idPp || data.ff || data.tipoPrograma) {
-                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
-                    (data.idPp ? '<div class="col-md-4"><strong>PP:</strong> ' + data.idPp + '</div>' : '') +
-                    (data.ff ? '<div class="col-md-4"><strong>FF:</strong> ' + data.ff + '</div>' : '') +
-                    (data.tipoPrograma ? '<div class="col-md-4"><strong>Tipo Programa:</strong> ' + data.tipoPrograma + '</div>' : '') +
-                    '</div>';
-            }
-
             // ── Articles table ─────────────────────────────────────────────
-            var articulosHtml = '<div style="margin-top:16px;"><h6 style="font-weight:600;margin-bottom:8px;">Artículos consolidados</h6>' +
+            var articulosHtml = '<div class="consolidada-articulos-section"><h6 class="consolidada-section-title"><i class="fa-solid fa-layer-group"></i> Artículos consolidados</h6>' +
                 '<div class="table-responsive-container"><table class="tabla-requisiciones" id="tablaDetalleConsolidada"><thead><tr>' +
                 '<th>Requisición</th><th>Partida</th><th style="width:100px;">Cantidad</th><th style="width:135px;">Unidad</th><th>Descripción</th>' +
                 '</tr></thead><tbody>';
@@ -2051,7 +2030,7 @@
             }
             archivosHtml += '</div>';
 
-            var contenidoCompleto = headerHtml + articulosHtml + archivosHtml;
+            var contenidoCompleto = articulosHtml + archivosHtml;
             var contenedor = document.getElementById("tablaDetalle");
             if (contenedor) {
                 // Instead of replacing tablaDetalle which is inside the table, wrap everything
@@ -2077,8 +2056,8 @@
                 }
             }
 
-            // Hide selects section
-            document.querySelectorAll(".seccionAtender").forEach(function (s) { s.style.display = "none"; });
+            // Hide upload/observations section.
+            document.querySelectorAll(".modal-body .seccionAtender").forEach(function (s) { s.style.display = "none"; });
 
             new bootstrap.Modal(document.getElementById("modalDetalle")).show();
         }).fail(function () {
@@ -2137,26 +2116,9 @@
             modalTitle.textContent = "Consolidada: " + (data.folioConsolidada || "");
             modalSubtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " \u00B7 " + data.articulos.length + " partidas" : "");
 
-            // ── Header info ────────────────────────────────────────────────
-            var headerHtml = '<div class="row mb-3" style="padding:0 4px;">' +
-                '<div class="col-md-3"><strong>Folio:</strong> ' + (data.folioConsolidada || "") + '</div>' +
-                '<div class="col-md-3"><strong>Estatus:</strong> ' + (data.estatus || "") + '</div>' +
-                '<div class="col-md-3"><strong>Creado:</strong> ' + (data.fechaCreacion || "") + '</div>' +
-                '<div class="col-md-3"><strong>Por:</strong> ' + (data.creadoPor || "") + '</div>' +
-                '</div>';
-            if (data.nombreAsignado) {
-                headerHtml += '<div class="row mb-3" style="padding:0 4px;">' +
-                    '<div class="col-md-6"><strong>Analista asignado:</strong> ' + data.nombreAsignado + '</div>' +
-                    '<div class="col-md-6"><strong>D\u00edas asignado:</strong> ' + (data.diasAsignado > 0 ? data.diasAsignado + " d\u00eda(s)" : "Hoy") + '</div>' +
-                    '</div>';
-            }
-
             // ── Articles table with "Req." column ──────────────────────────
             var articulosHtml = "";
             if (data.articulos && data.articulos.length) {
-                articulosHtml += '<div class="table-responsive-container" style="margin-top:12px;"><table class="tabla-requisiciones"><thead><tr>' +
-                    '<th style="width:80px;">Req.</th><th>N\u00ba Partida</th><th style="width:100px;">Cantidad</th><th style="width:135px;">Unidad Medida</th><th style="width:150px;">Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>' +
-                    '</tr></thead><tbody>';
                 data.articulos.forEach(function (a) {
                     var txtCompleto = a.descripcionDetallada || "";
                     var txtCorto = txtCompleto.length > 28 ? txtCompleto.substring(0, 28) + "\u2026" : txtCompleto || "Sin descripci\u00f3n...";
@@ -2172,8 +2134,10 @@
                         '<i class="fa-solid fa-eye desc-icon"></i></div></td>' +
                         '</tr>';
                 });
-                articulosHtml += '</tbody></table></div>';
+            } else {
+                articulosHtml = '<tr class="fila-vacia"><td colspan="6" class="text-center">Sin art\u00edculos</td></tr>';
             }
+            $("#tablaDetalle").html(articulosHtml);
 
             // ── Files: Cuadro Comparativo + Anexos ─────────────────────────
             var archivosHtml = '<div style="margin-top:16px;">';
@@ -2187,10 +2151,8 @@
             }
             archivosHtml += '</div>';
 
-            // Insert all into tablaDetalle (replacing the tbody content)
-            var contenedor = document.getElementById("tablaDetalle");
-            if (contenedor) {
-                contenedor.innerHTML = headerHtml + articulosHtml + archivosHtml;
+            if (archivosReadonly) {
+                archivosReadonly.innerHTML = archivosHtml;
             }
 
             // Render files using ModalAdjuntos
