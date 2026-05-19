@@ -27,8 +27,7 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> ObtenerRequisicionesConsolidables()
         {
-            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var lista = await _consolidadaService.ObtenerRequisicionesConsolidables(idUsuario);
+            var lista = await _consolidadaService.ObtenerRequisicionesConsolidables();
             return Ok(lista);
         }
 
@@ -230,6 +229,14 @@ namespace Inventario.AplicacionWeb.Controllers
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var ok = await _consolidadaService.FinalizarConsolidada(modelo.IdConsolidada, idUsuario, modelo.Observaciones);
             return Ok(new { success = ok });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario)
+        {
+            var idUsuarioActual = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ok = await _consolidadaService.AsignarAnalistaConsolidada(idConsolidada, idUsuario, idUsuarioActual);
+            return Json(new { success = ok });
         }
 
         private static string ObtenerNombreZipDisponible(string nombreOriginal, HashSet<string> nombresUsados)

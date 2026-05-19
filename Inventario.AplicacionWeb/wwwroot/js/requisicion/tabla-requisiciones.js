@@ -132,6 +132,9 @@
     var urlDescargarReqDirectaConsolidada = container
         ? container.getAttribute("data-url-descargar-req-directa-consolidada")
         : "";
+    var urlAsignarAnalistaConsolidada = container
+        ? container.getAttribute("data-url-asignar-analista-consolidada")
+        : "";
 
     window._modoConsolidada = false;
     window._idConsolidadaWizard = null;
@@ -1447,7 +1450,71 @@
     ).fail(function () {
       Swal.fire({ icon: "error", title: "Error al enviar la solicitud" });
     });
-  };
+    };
+
+    window.abrirAsignarConsolidada = function (idConsolidada) {
+        window._idConsolidadaAsignar = idConsolidada;
+
+        var $select = $("#selectUsuarioAsignar");
+        if ($select.data("select2")) $select.select2("destroy");
+        $select.html('<option value="">-- Seleccionar responsable --</option>');
+
+        var urlUsuarios = urlUsuariosServicios || urlUsuariosMateriales;
+
+        $.get(urlUsuarios, function (data) {
+            data.forEach(function (u) {
+                $select.append('<option value="' + u.id + '">' + u.nombre + "</option>");
+            });
+            $select.select2({
+                language: "es",
+                placeholder: "-- Seleccionar responsable --",
+                allowClear: false,
+                minimumResultsForSearch: Infinity,
+                width: "100%",
+            });
+        });
+
+        // Reusar el modal de asignar existente, mostrando solo el paso de asignar
+        ocultarTodosPasos();
+        document.getElementById("pasoAsignar").style.display = "block";
+
+        // Sobreescribir temporalmente el botón confirmar para usar el flujo consolidada
+        var $btnConfirmar = document.querySelector("#pasoAsignar .btn.boton-rosa");
+        if ($btnConfirmar) {
+            $btnConfirmar.setAttribute("onclick", "confirmarAsignacionConsolidada()");
+        }
+
+        var modal = new bootstrap.Modal(document.getElementById("modalAsignar"));
+        modal.show();
+    };
+
+    window.confirmarAsignacionConsolidada = function () {
+        var idUsuario = $("#selectUsuarioAsignar").val();
+        if (!idUsuario) {
+            Swal.fire({ icon: "warning", title: "Selecciona un responsable", confirmButtonText: "Ok" });
+            return;
+        }
+
+        $.post(
+            urlAsignarAnalistaConsolidada,
+            { idConsolidada: window._idConsolidadaAsignar, idUsuario: idUsuario },
+            function (res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById("modalAsignar")).hide();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Analista asignado correctamente",
+                        confirmButtonColor: "#fe6291",
+                        confirmButtonText: "Aceptar",
+                        timer: 3500,
+                        timerProgressBar: true,
+                    }).then(function () { location.reload(); });
+                } else {
+                    Swal.fire({ icon: "error", title: "No se pudo asignar el analista." });
+                }
+            }
+        );
+    };
 
   window.confirmarAsignacion = function () {
     var idUsuario = $("#selectUsuarioAsignar").val();
@@ -1855,6 +1922,16 @@
             }
         });
     };
+
+
+    document.getElementById("modalAsignar").addEventListener("hidden.bs.modal", function () {
+        var $btnConfirmar = document.querySelector("#pasoAsignar .btn.boton-rosa");
+        if ($btnConfirmar) {
+            $btnConfirmar.setAttribute("onclick", "confirmarAsignacion()");
+        }
+        window._idConsolidadaAsignar = null;
+    });
+
 
   function renderizarArchivosReadonly(cotizaciones, cuadro) {
     if (
@@ -3756,8 +3833,13 @@
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
                           'onclick="verDetalleConsolidada(' + c.consolidadaID + ')">' +
                           '<i class="fa-solid fa-eye"></i>' +
-                          "</button>" +
-                          (c.idEstatus === 2
+                      "</button>" +
+                      (window.esAdmin && c.idEstatus === 1
+                          ? '<button class="btn-accion" title="Asignar analista" ' +
+                          'onclick="abrirAsignarConsolidada(' + c.consolidadaID + ')">' +
+                          '<i class="fa-solid fa-clipboard-user"></i></button>'
+                          : "") +
+                          (c.idEstatus === 2 && !window.esAdmin
                           ? '<button class="btn-accion" title="Atender" ' +
                           'onclick="atenderConsolidada(' + c.consolidadaID + ')">' +
                           '<i class="fa-solid fa-hand-holding"></i></button>'

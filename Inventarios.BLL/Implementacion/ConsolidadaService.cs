@@ -34,12 +34,11 @@ namespace Inventario.BLL.Implementacion
             _repoDiseno = repoDiseno;
         }
 
-        public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables(int idUsuario)
+        public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables()
         {
             var query = await _repoRequisicion.Consultar(r =>
-                r.IdUsuarioMat == idUsuario &&
-                r.IdEstatus == 2 &&
-                r.ConsolidadaId == null);   // ← campo que agregaste con el ALTER
+                r.IdEstatus == 1 &&
+                r.ConsolidadaId == null);
 
             return await query.Select(r => new RequisicionMaestraDTO
             {
@@ -76,9 +75,8 @@ namespace Inventario.BLL.Implementacion
                 FolioConsolidada = folio,
                 Hash = hash,
                 RequiServicio = servicio,
-                IdUsuarioMat = idUsuario,
                 IdUsuario = idUsuario,
-                IdEstatus = 2,
+                IdEstatus = 1,
                 FechaCreacion = DateTime.Now,
                 FechaModificacion = DateTime.Now
             };
@@ -642,6 +640,44 @@ namespace Inventario.BLL.Implementacion
             consolidada.IdEstatus = 12;
             consolidada.FechaModificacion = DateTime.Now;
             await _repoConsolidada.Editar(consolidada);
+
+            return true;
+        }
+
+        public async Task<bool> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario, int idUsuarioAsignador)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null) return false;
+
+            consolidada.IdUsuarioMat = idUsuario;
+            consolidada.IdEstatus = 2;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
+
+            // Propagar a hijas
+            var detallesQuery = await _repoDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var detalles = await detallesQuery.ToListAsync();
+            var idsHijas = detalles.Select(d => d.IdRequisicion).ToList();
+
+            var requisQuery = await _repoRequisicion.Consultar(r => idsHijas.Contains(r.IdRequisicion));
+            var requis = await requisQuery.ToListAsync();
+
+            foreach (var r in requis)
+            {
+                r.IdUsuarioMat = idUsuario;
+                r.IdEstatus = 2;
+                r.FechaModificacion = DateTime.Now;
+                await _repoRequisicion.Editar(r);
+
+                await _repoBitacora.Crear(new TblBitacoraEstatus
+                {
+                    IdRequisicion = r.IdRequisicion,
+                    IdEstatus = r.IdEstatus ?? 2,
+                    FechaEstatus = DateTime.Now,
+                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Asignada a analista.",
+                    IdUsuario = idUsuarioAsignador
+                });
+            }
 
             return true;
         }

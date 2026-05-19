@@ -66,7 +66,8 @@
      data-url-obtener-docs-proveedor-consolidada="@Url.Action("ObtenerDocumentosProveedorConsolidada", "Consolidada")"
      data-url-editar-pedido-consolidada="@Url.Action("EditarPedidoCompraConsolidada", "Financieros")"
      data-url-generar-pedido-pdf-consolidada="@Url.Action("GenerarPedidoPdfConsolidada", "Financieros")"
-     data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")">
+     data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")"
+     data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -87,7 +88,7 @@
                 </a>
             }
         }
-        @if (User.IsInRole("3"))
+        @if (User.IsInRole("4"))
         {
             <a href="#" class="boton-gris"
                    data-bs-toggle="modal"
@@ -1375,7 +1376,7 @@
                         No tienes requisiciones disponibles para consolidar.
                     </p>
                     <p style="color:#9ca3af; font-size:12px; margin:4px 0 0;">
-                        Solo se muestran las asignadas a ti, en estatus <strong>En proceso</strong>
+                        Solo se muestran en estatus <strong>En proceso</strong>
                         y que aún no pertenezcan a una consolidada.
                     </p>
                 </div>
@@ -1651,6 +1652,9 @@
 </div>
 
 @section Scripts {
+    <script>
+        window.esAdmin = @(User.IsInRole("4") ? "true" : "false");
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
