@@ -243,7 +243,7 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        public async Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro)
+        public async Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro, bool soloCompra = false)
         {
             var queryMaestra = await _repositoryRequisicion.Consultar(r => r.IdRequisicion == idMaestro);
             var maestra = await queryMaestra.FirstOrDefaultAsync();
@@ -296,6 +296,18 @@ namespace Inventario.BLL.Implementacion
                         : maestra?.IdEstatus == 7 ? "En entrega"
                         : "En compra";
                 }
+            }
+
+            if (soloCompra)
+            {
+                var idsEnCompra = movimientos
+                    .Where(m => m.TipoMovimiento == "COMPRA")
+                    .Select(m => m.IdRequisicionDetalle)
+                    .Distinct()
+                    .ToHashSet();
+                lista = idsEnCompra.Count > 0
+                    ? lista.Where(a => idsEnCompra.Contains(a.IdRequisicionDetalle)).ToList()
+                    : new List<DetalleArticuloDTO>();
             }
 
             var consolidadaId = maestra?.ConsolidadaId;

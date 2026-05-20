@@ -11,7 +11,7 @@ namespace Inventario.BLL.Interfaces
 {
     public interface IConsolidadaService
     {
-        Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables(int idUsuario);
+        Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables();
         Task<TblConsolidada> CrearConsolidada(List<int> idsRequisiciones, int idUsuario, bool servicio);
         Task<List<ConsolidadaDTO>> ListarConsolidadas(bool servicio, int? idUsuario = null);
         Task<ConsolidadaDetalleDTO> ObtenerDetalleConsolidada(int idConsolidada);
@@ -29,5 +29,6 @@ namespace Inventario.BLL.Interfaces
         Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null);
         Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada);
         Task<bool> FinalizarConsolidada(int idConsolidada, int idUsuario, string observaciones);
+        Task<bool> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario, int idUsuarioAsignador);
     }
 }

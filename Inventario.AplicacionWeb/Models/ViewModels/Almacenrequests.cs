@@ -37,6 +37,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public List<PartidaEntregaRequest>? Entregas { get; set; }
         public List<PartidaCompraRequest>? Compras { get; set; }
+        public bool EnviarCorreo { get; set; } = true;
     }
 
     public class PartidaEntregaRequest
@@ -105,6 +106,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int IdRequisicion { get; set; }
         public int? IdConsolidada { get; set; }
         public IFormFile? FormatoEntradaFirmado { get; set; }
+        public bool EnviarCorreo { get; set; } = true;
     }
 
     public class HistorialDocumentosVM
