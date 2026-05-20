@@ -11,6 +11,7 @@ namespace Inventario.BLL.DTO
         public int IdProveedor { get; set; }
         public decimal Importe { get; set; }
         public string NombreProveedor { get; set; }
+        public int? Vigencia { get; set; }
         public int? IdPartida { get; set; }
         public int? NumPartida { get; set; }
         public string NombrePartida { get; set; }

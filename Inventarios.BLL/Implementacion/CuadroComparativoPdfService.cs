@@ -65,6 +65,11 @@ namespace Inventario.BLL.Implementacion
             var ganador = await _cotizacionesService.ObtenerProveedorGanador(idRequisicion);
             var idProveedorGanado = ganador?.IdProveedor ?? 0;
 
+            var vigenciasPorProveedor = cotizaciones
+                .Where(c => c.Vigencia.HasValue)
+                .GroupBy(c => c.IdProveedor)
+                .ToDictionary(g => g.Key, g => g.First().Vigencia);
+
             // ── NUEVOS: tipo adjudicación y criterio ───────────────────────
             string tipoProcedimiento = "PENDIENTE DE CAPTURA";
             string criterioAdjudicacion = "SELECCION AL PROVEEDOR QUE CUMPLA CON REQUISITOS LEGALES Y OFERTE EL PRECIO MAS BAJO.";
@@ -135,6 +140,8 @@ namespace Inventario.BLL.Implementacion
                 .ToList() ?? new List<CuadroComparativoFilaPdf>();
 
             var nombresProveedores = proveedores.Select(p => p.NombreProveedor).ToArray();
+            var vigenciasOrdenadas = proveedores.Select(p =>
+                vigenciasPorProveedor.TryGetValue(p.IdProveedor, out var vig) ? vig : null).ToArray();
 
             var bytes = GenerarCuadroComparativoPdf(
                 webRootPath,
@@ -144,6 +151,7 @@ namespace Inventario.BLL.Implementacion
                 justificacion: dto.Justificacion ?? "",
                 filas: filas,
                 nombresProveedores: nombresProveedores,
+                vigenciasPorProveedor: vigenciasOrdenadas,
                 indiceGanadorForzado: indiceGanadorForzado,
                 tipoProcedimiento: tipoProcedimiento,
                 criterioAdjudicacion: criterioAdjudicacion);
@@ -163,6 +171,7 @@ namespace Inventario.BLL.Implementacion
             string justificacion,
             List<CuadroComparativoFilaPdf> filas,
             string[] nombresProveedores,
+            int?[]? vigenciasPorProveedor = null,
             int indiceGanadorForzado = -1,
             string tipoProcedimiento = "PENDIENTE DE CAPTURA",
             string criterioAdjudicacion = "SELECCION AL PROVEEDOR...")
@@ -216,7 +225,6 @@ namespace Inventario.BLL.Implementacion
             static string MonedaFmt(decimal? v) => v.HasValue && v.Value != 0
                 ? v.Value.ToString("C2", new CultureInfo("es-MX"))
                 : "";
-
             var ms = new MemoryStream();
             using var writer = new PdfWriter(ms);
             using var pdf = new PdfDocument(writer);
@@ -420,8 +428,12 @@ namespace Inventario.BLL.Implementacion
             tabla.AddCell(CellHead("CONDICIONES DE PAGO", 4, 1, TextAlignment.CENTER));
             for (var p = 0; p < 3; p++)
             {
+                var vigencia = vigenciasPorProveedor != null && p < vigenciasPorProveedor.Length
+                    ? vigenciasPorProveedor[p]
+                    : null;
                 var esGanador = indiceGanador == p;
-                tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER,
+                var textoVigencia = FormatearVigenciaTexto(vigencia);
+                tabla.AddCell(CellBody(textoVigencia, 2, 1, TextAlignment.CENTER,
                     bgOverride: esGanador ? verdeGanador : null,
                     fgOverride: esGanador ? verdeTexto : null));
             }
@@ -527,6 +539,9 @@ namespace Inventario.BLL.Implementacion
             var cotizacionesGanador = cotizaciones
                 .Where(c => ganador != null && c.IdProveedor == ganador.IdProveedor)
                 .ToDictionary(c => c.IdPartida ?? 0, c => c.Importe);
+            var vigenciaGanador = ganador != null
+                ? cotizaciones.FirstOrDefault(c => c.IdProveedor == ganador.IdProveedor)?.Vigencia
+                : null;
 
             // Construir filas
             var filas = articulos.Select((a, idx) =>
@@ -557,7 +572,8 @@ namespace Inventario.BLL.Implementacion
                 requisicion: dto.NumRequisicion ?? $"REQ-{idRequisicion}",
                 fecha: DateTime.Now.Date,
                 areasSolicitantes: dto.Departamento ?? "",
-                filas: filas);
+                filas: filas,
+                condicionesPago: FormatearVigenciaTexto(vigenciaGanador));
 
             var nombreArchivo =
                 $"ReqDirecta_{(dto.NumRequisicion ?? idRequisicion.ToString()).Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
@@ -570,7 +586,8 @@ namespace Inventario.BLL.Implementacion
             string requisicion,
             DateTime? fecha,
             string areasSolicitantes,
-            List<ReqDirectaFila> filas)
+            List<ReqDirectaFila> filas,
+            string condicionesPago = "")
         {
             const decimal tasaIva = 0.16m;
 
@@ -778,7 +795,7 @@ namespace Inventario.BLL.Implementacion
 
             // ── Condiciones de pago ───────────────────────────────────────
             tabla.AddCell(CellHead("CONDICIONES DE PAGO", 4, 1, TextAlignment.CENTER));
-            tabla.AddCell(CellBody("CREDITO 30 DIAS", 2, 1, TextAlignment.CENTER));
+            tabla.AddCell(CellBody(condicionesPago ?? "", 2, 1, TextAlignment.CENTER));
 
             doc.Add(tabla);
             doc.Add(new Paragraph(" ").SetMargin(4f));
@@ -914,11 +931,17 @@ namespace Inventario.BLL.Implementacion
                             NombreProveedor = cot.NombreProveedor,
                             Importe = cot.Importe,
                             IVA = cot.IVA,
+                            Vigencia = cot.Vigencia,
                             IdPartida = detalle.IdArticulo // ← clave: agrupamos por artículo
                         });
                     }
                 }
             }
+
+            var vigenciasPorProveedor = todasLasCotizaciones
+                .Where(c => c.Vigencia.HasValue)
+                .GroupBy(c => c.IdProveedor)
+                .ToDictionary(g => g.Key, g => g.First().Vigencia);
 
             // Rebuild cotsPorPartida usando idArticulo como clave
             var cotsPorPartidaConsolidada = todasLasCotizaciones
@@ -975,6 +998,8 @@ namespace Inventario.BLL.Implementacion
                 .ObtenerRequisicionCompletaPorId(idReqReferencia);
 
             var nombresProveedores = proveedores.Select(p => p.NombreProveedor).ToArray();
+            var vigenciasOrdenadas = proveedores.Select(p =>
+                vigenciasPorProveedor.TryGetValue(p.IdProveedor, out var vig) ? vig : null).ToArray();
 
             var bytes = GenerarCuadroComparativoPdf(
                 webRootPath,
@@ -984,6 +1009,7 @@ namespace Inventario.BLL.Implementacion
                 justificacion: primeraReq?.Justificacion ?? "",
                 filas: filas,
                 nombresProveedores: nombresProveedores,
+                vigenciasPorProveedor: vigenciasOrdenadas,
                 indiceGanadorForzado: indiceGanadorForzado,
                 tipoProcedimiento: tipoProcedimiento,
                 criterioAdjudicacion: criterioAdjudicacion);
@@ -1018,12 +1044,14 @@ namespace Inventario.BLL.Implementacion
             var ganador = await _cotizacionesService.ObtenerProveedorGanador(idReqReferencia);
 
             var cotizacionesTodas = new List<(int IdArticulo, decimal Importe)>();
+            int? vigenciaGanador = null;
             foreach (var idReq in idsRequisiciones)
             {
                 var cots = await _cotizacionesService.ObtenerCotizaciones(idReq);
                 var detallesReq = todosLosArticulos.Where(a => a.IdRequisicion == idReq).ToList();
                 foreach (var cot in cots.Where(c => ganador != null && c.IdProveedor == ganador.IdProveedor))
                 {
+                    vigenciaGanador ??= cot.Vigencia;
                     var detalle = detallesReq.FirstOrDefault(d => d.IdRequisicionDetalle == cot.IdPartida);
                     if (detalle?.IdArticulo != null)
                         cotizacionesTodas.Add((detalle.IdArticulo.Value, cot.Importe));
@@ -1066,7 +1094,8 @@ namespace Inventario.BLL.Implementacion
                 requisicion: consolidada.FolioConsolidada,
                 fecha: DateTime.Now.Date,
                 areasSolicitantes: "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES",
-                filas: articulosAgrupados);
+                filas: articulosAgrupados,
+                condicionesPago: FormatearVigenciaTexto(vigenciaGanador));
 
             var nombreArchivo =
                 $"ReqDirecta_Cons_{consolidada.FolioConsolidada.Replace("/", "-")}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
@@ -1099,6 +1128,14 @@ namespace Inventario.BLL.Implementacion
             public string UnidadMedida { get; set; } = "";
             public decimal PrecioUnitario { get; set; }
             public decimal Total { get; set; }
+        }
+
+        private static string FormatearVigenciaTexto(int? vigencia)
+        {
+            if (!vigencia.HasValue || vigencia.Value <= 0)
+                return "";
+
+            return $"Vigencia de {vigencia.Value} dia(s)";
         }
     }
 }

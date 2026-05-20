@@ -1021,15 +1021,22 @@
 
                 <!-- Nombre de la partida activa -->
                 <div id="wizardProveedorActual">
-                    <div class="formulario-input" style="margin-bottom:16px;">
-                        <label>Proveedor</label>
-                        <select id="wizardProveedorSelect" class="rosa-select-form" title="Proveedor">
-                            <option value="">-- Seleccione proveedor --</option>
-                            @foreach (var act in Model.ListaProveedores)
-                            {
-                                <option value="@act.Value">@act.Text</option>
-                            }
-                        </select>
+                    <div class="formulario-input" style="margin-bottom:16px; display:grid; grid-template-columns: 75% 25%; gap:12px; align-items:end; width:100%;">
+                        <div style="min-width:0;">
+                            <label>Proveedor</label>
+                            <select id="wizardProveedorSelect" class="rosa-select-form" title="Proveedor" style="width:100%;">
+                                <option value="">-- Seleccione proveedor --</option>
+                                @foreach (var act in Model.ListaProveedores)
+                                {
+                                    <option value="@act.Value">@act.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div style="min-width:0;">
+                            <label>Vigencia (días)</label>
+                            <input id="wizardProveedorVigencia" type="text" class="form-control"
+                                   inputmode="numeric" placeholder="30" autocomplete="off" />
+                        </div>
                     </div>
 
                     <div class="table-responsive-container" style="margin-bottom:16px;">

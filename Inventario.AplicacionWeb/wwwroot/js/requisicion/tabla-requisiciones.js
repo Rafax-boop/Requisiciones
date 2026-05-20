@@ -286,6 +286,96 @@
     );
   }
 
+  function calcularTimelineEstado(idEstatus) {
+    var faseMap = {
+      1: 1,
+      2: 2,
+      13: 2,
+      14: 2,
+      3: 3,
+      9: 3,
+      11: 3,
+      18: 3,
+      4: 4,
+      10: 4,
+      15: 4,
+      16: 4,
+      12: 5,
+      7: 5,
+      17: 5,
+    };
+
+    var esTerminalNegativo = idEstatus === 5 || idEstatus === 6;
+    var esMod = idEstatus === 3 || idEstatus === 18;
+    var fase = esTerminalNegativo ? 1 : (faseMap[idEstatus] || 1);
+    var progress = fase === 5 ? 100 : fase === 4 ? 75 : fase === 3 ? 50 : fase === 2 ? 25 : 0;
+
+    return {
+      fase: fase,
+      esMod: esMod,
+      progress: progress,
+    };
+  }
+
+  function construirTimelineConsolidadaHtml(item) {
+    var timeline = calcularTimelineEstado(parseInt(item.idEstatus, 10) || 0);
+    var estatus = escapeHtml(item.estatus || "Pendiente");
+    var fecha = escapeHtml(item.fechaCreacion || item.fechaEmision || "Sin fecha");
+
+    return (
+      '<div class="timeline-container">' +
+      '<ul class="timeline-track" style="--progress: ' + timeline.progress + '%;">' +
+      '<li class="timeline-step completed">' +
+      '<div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>' +
+      '<div class="step-label">Capturada</div>' +
+      '<div class="step-tooltip"><strong>Consolidada Capturada</strong><span>Emision ' + fecha + '</span></div>' +
+      '</li>' +
+      '<li class="timeline-step ' + (timeline.fase >= 2 ? "completed" : "") + '">' +
+      '<div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>' +
+      '<div class="step-label">Cotizacion</div>' +
+      '<div class="step-tooltip"><strong>Cotizacion / Presupuesto</strong><span>' + (timeline.fase >= 2 ? estatus : "Pendiente") + '</span></div>' +
+      '</li>' +
+      '<li class="timeline-step ' + (timeline.fase >= 3 ? (timeline.esMod ? "warning" : "completed") : "") + '">' +
+      '<div class="step-icon"><i class="fa-solid ' + (timeline.esMod ? "fa-rotate-left" : "fa-spinner") + '"></i></div>' +
+      '<div class="step-label">' + (timeline.esMod ? "A Modificar" : "Tramite") + '</div>' +
+      '<div class="step-tooltip"><strong>' + (timeline.esMod ? "Modificacion" : "Tramite Operativo") + '</strong><span>' + (timeline.esMod ? "Regresada para cambios" : (timeline.fase >= 3 ? estatus : "Pendiente")) + '</span></div>' +
+      '</li>' +
+      '<li class="timeline-step ' + (timeline.fase >= 4 ? "completed" : "") + '">' +
+      '<div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>' +
+      '<div class="step-label">Autorizacion</div>' +
+      '<div class="step-tooltip"><strong>Autorizacion Documental</strong><span>' + (timeline.fase >= 4 ? estatus : "Pendiente") + '</span></div>' +
+      '</li>' +
+      '<li class="timeline-step ' + (timeline.fase >= 5 ? "completed" : "") + '">' +
+      '<div class="step-icon"><i class="fa-solid fa-check-double"></i></div>' +
+      '<div class="step-label">Cierre</div>' +
+      '<div class="step-tooltip"><strong>Entregado / Finalizado</strong><span>' + (timeline.fase >= 5 ? estatus : "Pendiente") + '</span></div>' +
+      '</li>' +
+      '</ul>' +
+      '</div>'
+    );
+  }
+
+  function crearFilaDetalleConsolidada(item, tabla) {
+    var detalle = document.createElement("tr");
+    detalle.className = "fila-detalle collapsed";
+
+    if (item.consolidadaID != null) {
+      detalle.setAttribute("data-consolidada-id", item.consolidadaID);
+    } else if (item.consolidadaId != null) {
+      detalle.setAttribute("data-consolidada-id", item.consolidadaId);
+    }
+
+    var td = document.createElement("td");
+    var colspan = tabla && tabla.querySelectorAll("thead th").length
+      ? tabla.querySelectorAll("thead th").length
+      : 8;
+    td.colSpan = colspan;
+    td.innerHTML = construirTimelineConsolidadaHtml(item);
+    detalle.appendChild(td);
+
+    return detalle;
+  }
+
   function actualizarEstadoProveedoresSeleccionados(tieneCotizaciones) {
     var mensaje = document.getElementById("estadoProveedoresSeleccionados");
     var textoBoton = document.getElementById("textoBtnProveedores");
@@ -3177,6 +3267,7 @@
     }
 
     function cargarCatalogoProveedores() {
+      if (proveedoresCatalogo.length) return;
       proveedoresCatalogo = [];
       $("#wizardProveedorSelect option").each(function () {
         if (this.value) {
@@ -3226,6 +3317,7 @@
     function crearProveedorVacio() {
       return {
         idProveedor: 0,
+        vigencia: "",
         partidas: crearPartidasVacias(),
       };
     }
@@ -3241,6 +3333,7 @@
         };
       });
 
+      proveedor.vigencia = proveedor.vigencia != null ? String(proveedor.vigencia) : "";
       proveedor.partidas = CACHE_PARTIDAS.map(function (partida) {
         return (
           mapa[partida.idRequiDetalle] || {
@@ -3407,6 +3500,7 @@
         "Proveedor " + (proveedorIdx + 1) + " de " + proveedoresWizard.length;
 
       inicializarSelectProveedor(proveedor.idProveedor || 0);
+      $("#wizardProveedorVigencia").val(proveedor.vigencia || "");
       renderizarPartidasProveedor(proveedor);
       actualizarBotonesWizard();
     }
@@ -3416,6 +3510,7 @@
 
       var proveedor = proveedoresWizard[proveedorIdx] || crearProveedorVacio();
       proveedor.idProveedor = parseInt($selectProveedor().val(), 10) || 0;
+      proveedor.vigencia = ($("#wizardProveedorVigencia").val() || "").trim();
       proveedor.partidas = [];
 
       $bodyPartidas()
@@ -3445,6 +3540,11 @@
       },
     );
 
+    $(document).off("input.vigenciaProveedor", "#wizardProveedorVigencia");
+    $(document).on("input.vigenciaProveedor", "#wizardProveedorVigencia", function () {
+      this.value = (this.value || "").replace(/[^0-9]/g, "").slice(0, 4);
+    });
+
     function validarProveedorActual() {
       guardarProveedorActual();
 
@@ -3464,6 +3564,15 @@
         Swal.fire({
           icon: "warning",
           title: "Ese proveedor ya fue capturado.",
+        });
+        return false;
+      }
+
+      var vigencia = parseInt(String(proveedor.vigencia || "").replace(/,/g, ""), 10);
+      if (!vigencia || vigencia <= 0) {
+        Swal.fire({
+          icon: "warning",
+          title: "Captura la vigencia de cotización.",
         });
         return false;
       }
@@ -3494,6 +3603,7 @@
             importe: parseFloat(String(fila.importe).replace(/,/g, "")) || 0,
             idPartida: fila.idPartida,
             iva: fila.iva === true,
+            vigencia: parseInt(String(proveedor.vigencia || "").replace(/,/g, ""), 10) || 0,
           });
         });
       });
@@ -3718,6 +3828,7 @@
 
       window.cargarConsolidadas = function () {
           var tbody = document.getElementById("tbodyConsolidadas");
+          var tabla = document.getElementById("tablaConsolidadas");
           if (!tbody) return;
 
           // Si ya tiene datos reales, no recargar
@@ -3765,6 +3876,7 @@
                           "</div>" +
                           "</td>";
                       tbody.appendChild(tr);
+                      tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
                   });
 
                   aplicarPaginacionRequisiciones();
@@ -3778,6 +3890,7 @@
 
       window.cargarVerificadasConsolidadas = function () {
           var tbody = document.getElementById("tbodyVerificadasConsolidadas");
+          var tabla = document.getElementById("tablaRequisicionesVerificadas");
           if (!tbody) return;
 
           if (tbody.getAttribute("data-cargado") === "1") return;
@@ -3815,6 +3928,7 @@
                           "</div>" +
                           "</td>";
                       tbody.appendChild(tr);
+                      tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
                   });
 
                   // Después de insertar filas, re-evaluar la paginación para remover/ajustar el mensaje vacío
@@ -3829,6 +3943,7 @@
 
       window.cargarConsolidadasAutorizadas = function () {
           var tbody = document.getElementById("tbodyAutorizadasConsolidadas");
+          var tabla = document.getElementById("tablaRequisicionesAutorizadas");
           if (!tbody) return;
 
           if (tbody.getAttribute("data-cargado") === "1") return;
@@ -3872,6 +3987,7 @@
                       "</div>"
                           "</td>";
                       tbody.appendChild(tr);
+                      tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
                   });
 
                   aplicarPaginacionRequisiciones();
@@ -3882,6 +3998,83 @@
                       "Error al cargar las consolidadas autorizadas</td></tr>";
               });
       };
+
+      // Sobrescribe el render dinamico de consolidadas autorizadas para respetar
+      // las mismas columnas y badges que usa la tabla estandar.
+      /* window.cargarConsolidadasAutorizadas = function () {
+          var tbody = document.getElementById("tbodyAutorizadasConsolidadas");
+          var tablaAutorizadas = document.getElementById("tablaRequisicionesAutorizadas");
+          if (!tbody) return;
+
+          if (tbody.getAttribute("data-cargado") === "1") return;
+          if (!urlConsolidadasAutorizadas) return;
+
+          fetch(urlConsolidadasAutorizadas + "?servicio=" + esTablaServicios, { credentials: "same-origin" })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                  tbody.setAttribute("data-cargado", "1");
+
+                  if (!data || !data.length) return;
+
+                  document.getElementById("filaVaciaAutorizadas")?.remove();
+
+                  var encabezadosAutorizadas = tablaAutorizadas
+                      ? Array.from(tablaAutorizadas.querySelectorAll("thead th")).map(function (th) {
+                          return (th.textContent || "").trim().toLowerCase();
+                      })
+                      : [];
+                  var tieneColumnaAsignado = encabezadosAutorizadas.some(function (texto) {
+                      return texto === "asignado";
+                  });
+                  var tieneColumnaEstatus = encabezadosAutorizadas.some(function (texto) {
+                      return texto === "estatus";
+                  });
+
+                  tbody.innerHTML = "";
+                  data.forEach(function (c, idx) {
+                      var tr = document.createElement("tr");
+                      var folioConsolidado = escapeHtml(c.folioConsolidada || "-");
+                      var cantidadRequis = Number(c.cantidadRequis || 0);
+
+                      tr.className = "fila-requi fila-consolidada";
+                      tr.setAttribute("data-consolidada-id", c.consolidadaID);
+                      tr.innerHTML =
+                          '<td style="text-align:center">' + (idx + 1) + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="folio-badge">' + folioConsolidado + '</span><span class="tabla-meta-secundaria"><i class="fa-solid fa-layer-group"></i>Consolidada' + (cantidadRequis > 0 ? " - " + cantidadRequis + " requisiciones" : "") + "</span></div></td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "-") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "-", "fa-solid fa-building") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "-", "fa-solid fa-user") + "</td>" +
+                          '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "-") + "</td>" +
+                          (tieneColumnaAsignado
+                              ? '<td><span class="text-muted" style="font-size: 11px; font-style: italic;">No aplica</span></td>'
+                              : "") +
+                          (tieneColumnaEstatus
+                              ? '<td><span class="text-muted" style="font-size: 11px; font-style: italic;">No aplica</span></td>'
+                              : "") +
+                          '<td style="text-align:center"><div class="acciones-grupo" style="justify-content:center">' +
+                          '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidada(' + c.consolidadaID + ')">' +
+                          '<i class="fa-solid fa-eye"></i>' +
+                          "</button>" +
+                          (c.idEstatus === 7
+                              ? '<button class="btn-accion" title="Confirmar entrega" onclick="abrirModalFinalizarConsolidada(' + c.consolidadaID + ')">' +
+                                '<i class="fa-solid fa-circle-check"></i>' +
+                                "</button>"
+                              : "") +
+                          "</div></td>";
+                      tbody.appendChild(tr);
+                  });
+
+                  aplicarPaginacionRequisiciones();
+              })
+              .catch(function () {
+                  if (tbody) tbody.innerHTML =
+                      '<tr class="fila-vacia"><td colspan="8" class="text-center">' +
+                      "Error al cargar las consolidadas autorizadas</td></tr>";
+              });
+      };
+
+      */
 
       function guardarGanadorSeleccionado() {
           var justificacion = ($("#wizardGanadorJustificacion").val() || "").trim();
@@ -3949,6 +4142,7 @@
         if (!mapa[idProveedor]) {
           mapa[idProveedor] = {
             idProveedor: idProveedor,
+            vigencia: "",
             partidas: [],
           };
         }
@@ -3958,6 +4152,9 @@
           importe: cotizacion.importe != null ? String(cotizacion.importe) : "",
           iva: cotizacion.iva === true,
         });
+        if (!mapa[idProveedor].vigencia && cotizacion.vigencia != null) {
+          mapa[idProveedor].vigencia = String(cotizacion.vigencia);
+        }
       });
 
       proveedoresWizard = Object.keys(mapa).map(function (idProveedor) {
@@ -4105,7 +4302,8 @@
                           idProveedor: cot.idProveedor,
                           importe: cot.importe,
                           idPartida: idDetalle,
-                          iva: cot.iva
+                          iva: cot.iva,
+                          vigencia: cot.vigencia
                       });
                   });
               });

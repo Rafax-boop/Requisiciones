@@ -1984,6 +1984,7 @@ namespace Inventario.BLL.Implementacion
                     c.IdRequiDetalle,
                     c.Importe,
                     c.Iva,
+                    c.Vigencia,
                     ProvNombre = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.NombreProvedor : "",
                     ProvDireccion = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Direccion : "",
                     ProvRfc = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Rfc : ""
@@ -2022,6 +2023,7 @@ namespace Inventario.BLL.Implementacion
             var provGanador = idGanador.HasValue
                 ? cotizaciones.FirstOrDefault(c => c.IdProveedor == idGanador)
                 : null;
+            var vigenciaGanador = provGanador?.Vigencia;
 
             var cotGanadora = cotizaciones
                 .Where(c => c.IdProveedor == idGanador && c.IdRequiDetalle.HasValue)
@@ -2080,7 +2082,8 @@ namespace Inventario.BLL.Implementacion
                 Departamento = nombreDepartamento,
                 Responsable = requisicion.NomResponsableDepartamento ?? "",
                 LugarEntrega = requisicion.LugarEntrega ?? "",
-                PartidaPresupuestal = requisicion.IdPp?.ToString() ?? ""
+                PartidaPresupuestal = requisicion.IdPp?.ToString() ?? "",
+                CondicionesPago = FormatearVigenciaPago(vigenciaGanador)
             };
 
             for (int i = 0; i < detalles.Count; i++)
@@ -2134,6 +2137,14 @@ namespace Inventario.BLL.Implementacion
             return dto;
         }
 
+        private static string FormatearVigenciaPago(int? vigencia)
+        {
+            if (!vigencia.HasValue || vigencia.Value <= 0)
+                return "vigencia de cotizacion";
+
+            return $"vigencia de {vigencia.Value} dias";
+        }
+
         public async Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath)
         {
             var vista = form.IdConsolidada.HasValue
@@ -2141,7 +2152,9 @@ namespace Inventario.BLL.Implementacion
                 : await ObtenerPedidoEditableAsync(form.IdRequisicion!.Value);
             vista.NumeroPedido = form.NumeroPedido;
             vista.TiempoEntrega = form.TiempoEntrega;
-            vista.CondicionesPago = form.CondicionesPago;
+            vista.CondicionesPago = string.IsNullOrWhiteSpace(form.CondicionesPago)
+                ? vista.CondicionesPago
+                : form.CondicionesPago;
 
             // Usar totales editados por el usuario
             decimal suma       = form.Suma;
@@ -2662,6 +2675,7 @@ namespace Inventario.BLL.Implementacion
                     c.IdRequiDetalle,
                     c.Importe,
                     c.Iva,
+                    c.Vigencia,
                     ProvNombre = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.NombreProvedor : "",
                     ProvDireccion = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Direccion : "",
                     ProvRfc = c.IdProveedorNavigation != null ? c.IdProveedorNavigation.Rfc : ""
@@ -2679,6 +2693,7 @@ namespace Inventario.BLL.Implementacion
             var provGanador = idGanador.HasValue
                 ? cotizaciones.FirstOrDefault(c => c.IdProveedor == idGanador)
                 : null;
+            var vigenciaGanador = provGanador?.Vigencia;
 
             var cotGanadora = cotizaciones
                 .Where(c => c.IdProveedor == idGanador && c.IdRequiDetalle.HasValue)
@@ -2725,7 +2740,8 @@ namespace Inventario.BLL.Implementacion
                 Departamento = nombreDepartamento,
                 Responsable = responsableDepto,
                 LugarEntrega = "ALMACEN GENERAL",
-                PartidaPresupuestal = consolidada.IdPp?.ToString() ?? ""
+                PartidaPresupuestal = consolidada.IdPp?.ToString() ?? "",
+                CondicionesPago = FormatearVigenciaPago(vigenciaGanador)
             };
 
             foreach (var part in partidasConsolidadas)
