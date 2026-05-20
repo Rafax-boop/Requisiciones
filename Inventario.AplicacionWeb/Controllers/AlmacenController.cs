@@ -440,7 +440,7 @@ namespace Inventario.AplicacionWeb.Controllers
             try
             {
                 await _almacenService.ProcesarRequisicion(
-                    request.IdRequisicion, userId.Value, entregas, compras);
+                    request.IdRequisicion, userId.Value, entregas, compras, request.EnviarCorreo);
                 return Json(new { ok = true, mensaje = "Requisición procesada correctamente." });
             }
             catch (Exception ex)
@@ -629,7 +629,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 else
                 {
                     await _almacenService.ConfirmarIngresoPedido(
-                        request.IdRequisicion, userId.Value, rutaDb);
+                        request.IdRequisicion, userId.Value, rutaDb, request.EnviarCorreo);
                 }
 
                 return Json(new { ok = true, mensaje = "Ingreso registrado correctamente." });

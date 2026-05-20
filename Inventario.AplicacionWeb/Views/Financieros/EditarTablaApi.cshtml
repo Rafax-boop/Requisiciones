@@ -14,6 +14,35 @@
 (function () {
     var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
+    var idRequisicion = @(Model.IdRequisicion > 0 ? Model.IdRequisicion : 0);
+    var idConsolidada = @((Model.IdConsolidada ?? 0) > 0 ? Model.IdConsolidada.Value : 0);
+
+    document.querySelector('form.no-loader button[type="submit"]')?.addEventListener('click', function (e) {
+        var url, params;
+        if (idConsolidada > 0) {
+            url = "/Financieros/ObtenerNumeroApiConsolidada";
+            params = { idConsolidada: idConsolidada };
+        } else if (idRequisicion > 0) {
+            url = "/Financieros/ObtenerNumeroApi";
+            params = { idRequisicion: idRequisicion };
+        }
+        if (url) {
+            $.get(url, params, function (res) {
+                if (res && res.numApi) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "N\u00famero de API asignado",
+                        text: res.numApi,
+                        confirmButtonText: "Aceptar",
+                        confirmButtonColor: "#fe6291",
+                        timer: 4000,
+                        timerProgressBar: true
+                    });
+                }
+            });
+        }
+    });
+
     function parsearImporte(str) {
         if (!str) return 0;
         var limpio = String(str).replace(/\$/, "").replace(/,/g, "").trim();

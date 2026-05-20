@@ -750,6 +750,12 @@
       });
 
       html += "</tbody></table></div>";
+      html += '<div style="margin-top:12px;padding:8px 0;border-top:1px solid #eee;">';
+      html += '<label class="checkbox-almacen" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">';
+      html += '<input type="checkbox" id="chkEnviarCorreoProcesar" checked style="accent-color:#d63384;width:16px;height:16px;">';
+      html += ' Enviar notificaci\u00f3n por correo al solicitante';
+      html += '</label>';
+      html += '</div>';
       modalBody.innerHTML = html;
 
       modalBody.querySelectorAll(".almacen-chk-compra").forEach(function (chk) {
@@ -1357,10 +1363,12 @@
               Swal.showLoading();
             },
           });
+          var chkCorreo = document.getElementById("chkEnviarCorreoProcesar");
           postJson(urlProcesarRequisicion, {
             idRequisicion: reqActualId,
             entregas: entregas,
             compras: compras,
+            enviarCorreo: chkCorreo ? chkCorreo.checked : true,
           })
             .then(function (r) {
               if (r.ok) {
@@ -1814,6 +1822,8 @@
                     form.append("IdRequisicion", "0");
                 } else {
                     form.append("IdRequisicion", String(ingresoPedidoActualId));
+                    var chkCorreo = document.getElementById("chkEnviarCorreoIngreso");
+                    form.append("EnviarCorreo", chkCorreo ? chkCorreo.checked ? "true" : "false" : "true");
                 }
                 form.append("FormatoEntradaFirmado", inputFormatoEntradaFirmado.files[0]);
 

@@ -156,9 +156,9 @@ namespace Inventario.AplicacionWeb.Controllers
             return Json(resultado);
         }
 
-        public async Task<JsonResult> ObtenerDetalles(int idMaestro)
+        public async Task<JsonResult> ObtenerDetalles(int idMaestro, bool soloCompra = false)
         {
-            var detalles = await _requisicionService.ObtenerDetallePorIdMaestro(idMaestro);
+            var detalles = await _requisicionService.ObtenerDetallePorIdMaestro(idMaestro, soloCompra);
             return Json(detalles);
         }
 

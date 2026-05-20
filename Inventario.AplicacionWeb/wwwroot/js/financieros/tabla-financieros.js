@@ -380,12 +380,22 @@
             return;
         }
 
-        // Construir la URL con el parámetro y abrir en nueva pestaña
-        // El endpoint devuelve el PDF con Content-Disposition: attachment
-        // así que el navegador lo descargará directamente.
-        var url = (urlDescargarTablaApi || "").replace(/\/$/, "")
-            + "?idRequisicion=" + requisicionActual;
+        var id = requisicionActual;
+        $.get("/Financieros/ObtenerNumeroApi", { idRequisicion: id }, function (res) {
+            if (res && res.numApi) {
+                Swal.fire({
+                    icon: "success",
+                    title: "Tabla API generada",
+                    html: "N\u00famero de API asignado:<br><strong style=\"font-size:1.4rem;color:#166534;letter-spacing:.05em;\">"
+                        + res.numApi + "</strong>",
+                    confirmButtonText: "Aceptar",
+                    confirmButtonColor: "#fe6291"
+                });
+            }
+        });
 
+        var url = (urlDescargarTablaApi || "").replace(/\/$/, "")
+            + "?idRequisicion=" + id;
         window.open(url, "_blank");
     };
 
@@ -403,6 +413,37 @@
 
         var url = (urlEditarTablaApi || "").replace(/\/$/, "")
             + "?idRequisicion=" + requisicionActual;
+        window.open(url, "_blank");
+    };
+
+    window.descargarTablaApiConsolidada = function () {
+        if (!consolidadaActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin consolidada",
+                text: "No se pudo identificar la consolidada actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        var id = consolidadaActual;
+        $.get("/Financieros/ObtenerNumeroApiConsolidada", { idConsolidada: id }, function (res) {
+            if (res && res.numApi) {
+                Swal.fire({
+                    icon: "success",
+                    title: "Tabla API generada",
+                    html: "N\u00famero de API asignado:<br><strong style=\"font-size:1.4rem;color:#166534;letter-spacing:.05em;\">"
+                        + res.numApi + "</strong>",
+                    confirmButtonText: "Aceptar",
+                    confirmButtonColor: "#fe6291"
+                });
+            }
+        });
+
+        var url = (urlDescargarTablaApiConsolidada || "").replace(/\/$/, "")
+            + "?idConsolidada=" + id;
         window.open(url, "_blank");
     };
 
@@ -450,10 +491,8 @@
         // Donde limpias los inputs al abrir el modal
         var inputSiaf = document.getElementById("inputSiaf");
         var inputTablaApi = document.getElementById("inputTablaApi");
-        var inputNumeroApi = document.getElementById("inputNumeroApi");
         if (inputSiaf) inputSiaf.value = "";
         if (inputTablaApi) inputTablaApi.value = "";
-        if (inputNumeroApi) inputNumeroApi.value = "";
 
         // Restore modal title (in case it was changed by consolidada detail)
         var modalTitle = document.querySelector("#modalDetalle .modal-titulo-premium");
@@ -479,7 +518,7 @@
 
         if (!obtenerDetallesUrl) return;
 
-        $.get(obtenerDetallesUrl, { idMaestro: idMaestro }, function (data) {
+        $.get(obtenerDetallesUrl, { idMaestro: idMaestro, soloCompra: true }, function (data) {
             var articulos = data.articulos || [];
 
             // Tabla artículos
@@ -872,7 +911,7 @@
             return;
         }
 
-        $.get(obtenerDetallesUrl, { idMaestro: id }, function (data) {
+        $.get(obtenerDetallesUrl, { idMaestro: id, soloCompra: true }, function (data) {
             var articulos = data.articulos || [];
             document.getElementById("expFinSubtitulo").textContent =
                 "Expediente completo · " + articulos.length + " partidas";
@@ -1236,10 +1275,7 @@
                 Swal.fire({
                     icon: "success",
                     title: titulo,
-                    html: res && res.numApi
-                        ? "N\u00famero de API asignado:<br><strong style=\"font-size:1.4rem;color:#166534;letter-spacing:.05em;\">"
-                        + res.numApi + "</strong>"
-                        : "La " + (esConsolidada ? "consolidada" : "requisici\u00f3n") + " fue autorizada correctamente.",
+                    text: "Se autoriz\u00f3 correctamente.",
                     confirmButtonText: "Aceptar",
                     confirmButtonColor: "#fe6291"
                 }).then(function () { location.reload(); });
@@ -2089,10 +2125,8 @@
         if (seccionFotos) seccionFotos.style.display = "none";
         var inputSiaf = document.getElementById("inputSiaf");
         var inputTablaApi = document.getElementById("inputTablaApi");
-        var inputNumeroApi = document.getElementById("inputNumeroApi");
         if (inputSiaf) inputSiaf.value = "";
         if (inputTablaApi) inputTablaApi.value = "";
-        if (inputNumeroApi) inputNumeroApi.value = "";
 
         // Restore modal title
         var modalTitle = document.querySelector("#modalDetalle .modal-titulo-premium");

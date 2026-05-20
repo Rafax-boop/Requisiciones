@@ -233,11 +233,9 @@ namespace Inventario.BLL.Implementacion
             var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == modelo.IdConsolidada);
             if (consolidada == null) return new AtenderResultadoDTO { Exito = false };
 
-            var numApi = await GenerarNumeroApiAsync();
             var numPedido = await GenerarNumeroPedidoAsync();
 
             consolidada.IdEstatus = 15;
-            consolidada.NumApi = numApi;
             consolidada.NumPedido = numPedido;
             consolidada.FechaModificacion = DateTime.Now;
             await _repoConsolidada.Editar(consolidada);
@@ -248,7 +246,6 @@ namespace Inventario.BLL.Implementacion
             foreach (var hija in hijas)
             {
                 hija.IdEstatus = 15;
-                hija.NumApi = numApi;
                 hija.NumPedido = numPedido;
                 hija.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(hija);
@@ -266,7 +263,7 @@ namespace Inventario.BLL.Implementacion
             await GuardarArchivosConsolidada(modelo.DocSiaf, modelo.IdConsolidada, "SIAF", "DocumentoSIAF");
             await GuardarArchivosConsolidada(modelo.TablaApi, modelo.IdConsolidada, "TablaApi", "TablaApi");
 
-            return new AtenderResultadoDTO { Exito = true, NumApi = numApi, NumPedido = numPedido };
+            return new AtenderResultadoDTO { Exito = true, NumPedido = numPedido };
         }
 
         public async Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario, IFormFile? archivo = null, string? webRootPath = null)
@@ -465,12 +462,10 @@ namespace Inventario.BLL.Implementacion
                 .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
             if (requisicion == null) return new AtenderResultadoDTO { Exito = false };
 
-            var numApi = await GenerarNumeroApiAsync();
             var numPedido = await GenerarNumeroPedidoAsync();
 
             requisicion.IdEstatus = 15;
             requisicion.FechaModificacion = DateTime.Now;
-            requisicion.NumApi = numApi;
             requisicion.NumPedido = numPedido;
 
             await _repositoryRequisicion.Editar(requisicion);
@@ -487,7 +482,7 @@ namespace Inventario.BLL.Implementacion
             await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
             await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
 
-            return new AtenderResultadoDTO { Exito = true, NumApi = numApi, NumPedido = numPedido };
+            return new AtenderResultadoDTO { Exito = true, NumPedido = numPedido };
         }
 
         public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario)
@@ -1855,6 +1850,47 @@ namespace Inventario.BLL.Implementacion
             foreach (var n in numPedCons) ExtraerMaximo(n);
 
             return $"PED-{(maxConsecutivo + 1):D4}/{sufAno}";
+        }
+
+        public async Task<string> AsegurarNumeroApiAsync(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (requisicion == null)
+                throw new Exception($"No se encontró la requisición {idRequisicion}.");
+
+            if (!string.IsNullOrEmpty(requisicion.NumApi))
+                return requisicion.NumApi;
+
+            var numApi = await GenerarNumeroApiAsync();
+            requisicion.NumApi = numApi;
+            await _repositoryRequisicion.Editar(requisicion);
+            return numApi;
+        }
+
+        public async Task<string> AsegurarNumeroApiConsolidadaAsync(int idConsolidada)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null)
+                throw new Exception($"No se encontró la consolidada {idConsolidada}.");
+
+            if (!string.IsNullOrEmpty(consolidada.NumApi))
+                return consolidada.NumApi;
+
+            var numApi = await GenerarNumeroApiAsync();
+            consolidada.NumApi = numApi;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
+
+            var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+            foreach (var hija in hijas)
+            {
+                hija.NumApi = numApi;
+                await _repositoryRequisicion.Editar(hija);
+            }
+
+            return numApi;
         }
 
         // DESPUÉS: jala el ganador guardado en BD

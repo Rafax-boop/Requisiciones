@@ -222,7 +222,7 @@
                             }
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
-                                    @if (User.IsInRole("1") || item.IdEstatus != 2 || item.IdEstatus != 1)
+                                    @if (User.IsInRole("1") || item.IdEstatus <= 2 || item.IdEstatus == 11)
                                     {
                                         <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                             <i class="fa-solid fa-eye"></i></button>
@@ -249,7 +249,7 @@
                                             <i class="fa-solid fa-hand-holding"></i>
                                         </button>
                                     }
-                                    @if (!User.IsInRole("1") && item.IdEstatus > 2)
+                                    @if (!User.IsInRole("1") && item.IdEstatus > 2 && item.IdEstatus != 11)
                                     {
                                         <button class="btn-accion btn-ver" title="Ver detalle"
                                                 onclick="verDetalle(@item.IdRequi, 'readonly')">

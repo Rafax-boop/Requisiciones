@@ -819,7 +819,8 @@ namespace Inventario.BLL.Implementacion
             int idRequisicion,
             int idUsuario,
             IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
-            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras)
+            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras,
+            bool enviarCorreo = true)
         {
             var listaEntregas = (entregas ?? Enumerable.Empty<(int, int)>()).ToList();
             var listaCompras = (compras ?? Enumerable.Empty<(int, int)>()).ToList();
@@ -915,10 +916,10 @@ namespace Inventario.BLL.Implementacion
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, estatusFinal, idUsuario, obs.ToString());
 
-                if (resumenEntregas.Count > 0)
+                if (resumenEntregas.Count > 0 && enviarCorreo)
                 {
                     // Ajusta req.CorreoResponsable al campo real de tu entidad
-                    var correo = req.IdUsuarioNavigation.Correo ?? "";
+                    var correo = req.Correo ?? "";
                     if (!string.IsNullOrWhiteSpace(correo))
                     {
                         try
@@ -1110,7 +1111,7 @@ namespace Inventario.BLL.Implementacion
                 .ToList();
         }
 
-        public async Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado)
+        public async Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado, bool enviarCorreo = true)
         {
             await _uow.BeginTransactionAsync();
             try
@@ -1268,14 +1269,17 @@ namespace Inventario.BLL.Implementacion
                 await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 7, idUsuario, obs.ToString());
 
                 var usuario = await _repoUsuario.Obtener(u => u.IdUsuario == req.IdUsuario);
-                var correoResponsable = usuario?.Correo ?? "";
-                if (!string.IsNullOrWhiteSpace(correoResponsable))
+                if (enviarCorreo)
                 {
-                    await _emailService.NotificarPedidoRecibidoParcialAsync(
-                        correoResponsable,
-                        req.NumRequisicion ?? "",
-                        resumenEntregas,
-                        resumenFaltantes);
+                    var correoResponsable = usuario?.Correo ?? "";
+                    if (!string.IsNullOrWhiteSpace(correoResponsable))
+                    {
+                        await _emailService.NotificarPedidoRecibidoParcialAsync(
+                            correoResponsable,
+                            req.NumRequisicion ?? "",
+                            resumenEntregas,
+                            resumenFaltantes);
+                    }
                 }
 
                 await _uow.CommitAsync();

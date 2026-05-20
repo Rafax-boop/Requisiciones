@@ -14,7 +14,7 @@ namespace Inventario.BLL.Interfaces
         Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio);
         Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idDepartamento, bool servicio, int? idUsuarioMat = null);
         Task<List<RequisicionMaestraDTO>> ListarRequisicionesAutorizadas();
-        Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro);
+        Task<DetallesRequiDTO> ObtenerDetallePorIdMaestro(int idMaestro, bool soloCompra = false);
         Task<RequisicionCompletaDTO?> ObtenerRequisicionCompletaPorId(int idRequisicion);
         Task<bool> ActualizarRequisicion(int idRequisicion, FormularioRequisicionDTO modelo, int idUsuario);
         Task<bool> AsignarRequisicion(int idRequi, int idUsuario,int idUsuarioMat);

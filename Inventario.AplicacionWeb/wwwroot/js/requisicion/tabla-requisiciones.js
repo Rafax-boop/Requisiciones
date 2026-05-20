@@ -4583,7 +4583,7 @@
     document.getElementById("tablaExpedienteBody").innerHTML = "";
     document.getElementById("expedienteSubtitulo").textContent = "Cargando...";
 
-    $.get(obtenerDetallesUrl, { idMaestro: idRequi }, function (data) {
+    $.get(obtenerDetallesUrl, { idMaestro: idRequi, soloCompra: true }, function (data) {
       // Subtítulo
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =

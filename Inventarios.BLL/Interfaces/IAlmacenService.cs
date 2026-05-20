@@ -21,7 +21,8 @@ namespace Inventario.BLL.Interfaces
             int idRequisicion,
             int idUsuario,
             IEnumerable<(int idRequisicionDetalle, int cantidadAprobada)> entregas,
-            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras);
+            IEnumerable<(int idRequisicionDetalle, int cantidadComprar)> compras,
+            bool enviarCorreo = true);
 
         //ENTREGAS
         Task<List<EntregaPendienteDTO>> ListarEntregasPendientes();
@@ -36,7 +37,7 @@ namespace Inventario.BLL.Interfaces
         Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraParaEntrada(int idRequisicion);
         Task GuardarBorradorIngreso(int idRequisicion, int idUsuario, List<CantidadRecibidaDTO> cantidades);
         Task<List<PartidaCompraEntradaDTO>> ObtenerBorradorIngreso(int idRequisicion);
-        Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado);
+        Task<bool> ConfirmarIngresoPedido(int idRequisicion, int idUsuario, string rutaArchivoFirmado, bool enviarCorreo = true);
 
         //ENTRADAS (consolidada)
         Task<List<PartidaCompraEntradaDTO>> ObtenerPartidasCompraConsolidada(int idConsolidada);

@@ -210,7 +210,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var resultado = await _financierosService.AtenderRequisicion(modelo, idUsuario);
             if (!resultado.Exito) return BadRequest();
-            return Ok(new { success = true, numApi = resultado.NumApi, numPedido = resultado.NumPedido });
+            return Ok(new { success = true, numPedido = resultado.NumPedido });
         }
 
         [HttpPost]
@@ -219,7 +219,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var resultado = await _financierosService.AtenderConsolidadaFinancieros(modelo, idUsuario);
             if (!resultado.Exito) return BadRequest();
-            return Ok(new { success = true, numApi = resultado.NumApi, numPedido = resultado.NumPedido });
+            return Ok(new { success = true, numPedido = resultado.NumPedido });
         }
 
         [HttpPost]
@@ -258,6 +258,7 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             try
             {
+                var numApi = await _financierosService.AsegurarNumeroApiAsync(idRequisicion);
                 var bytes = await _financierosService.GenerarTablaApiAsync(idRequisicion);
 
                 var nombreArchivo = $"TablaAPI_{idRequisicion}_{DateTime.Now:yyyyMMdd}.pdf";
@@ -311,6 +312,7 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             try
             {
+                var numApi = await _financierosService.AsegurarNumeroApiConsolidadaAsync(idConsolidada);
                 var modelo = await _financierosService.ObtenerTablaApiEditableConsolidadaAsync(idConsolidada);
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
 
@@ -330,6 +332,34 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ObtenerNumeroApi(int idRequisicion)
+        {
+            try
+            {
+                var numApi = await _financierosService.AsegurarNumeroApiAsync(idRequisicion);
+                return Ok(new { numApi });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerNumeroApiConsolidada(int idConsolidada)
+        {
+            try
+            {
+                var numApi = await _financierosService.AsegurarNumeroApiConsolidadaAsync(idConsolidada);
+                return Ok(new { numApi });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GenerarTablaApiEditada([FromForm] TablaApiEditableDTO modelo)
@@ -340,6 +370,11 @@ namespace Inventario.AplicacionWeb.Controllers
                     return BadRequest("La requisición o consolidada es requerida.");
 
                 int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                if (modelo.IdConsolidada > 0)
+                    await _financierosService.AsegurarNumeroApiConsolidadaAsync(modelo.IdConsolidada.Value);
+                else
+                    await _financierosService.AsegurarNumeroApiAsync(modelo.IdRequisicion);
 
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
 

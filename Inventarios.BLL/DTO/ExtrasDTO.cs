@@ -22,7 +22,6 @@ namespace Inventario.BLL.DTO
     public class AtenderResultadoDTO
     {
         public bool Exito { get; set; }
-        public string? NumApi { get; set; }
         public string? NumPedido { get; set; }
     }
 
