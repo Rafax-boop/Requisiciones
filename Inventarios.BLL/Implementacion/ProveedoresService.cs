@@ -89,7 +89,8 @@ namespace Inventario.BLL.Implementacion
                     IdProveedor = cot.IdProveedor,
                     Importe = cot.Importe,
                     IdRequiDetalle = cot.IdPartida,
-                    Iva = cot.IVA
+                    Iva = cot.IVA,
+                    Vigencia = cot.Vigencia
                 });
             }
             return true;
@@ -103,6 +104,7 @@ namespace Inventario.BLL.Implementacion
                 IdProveedor = c.IdProveedor ?? 0,
                 Importe = c.Importe ?? 0,
                 NombreProveedor = c.IdProveedorNavigation.NombreProvedor,
+                Vigencia = c.Vigencia,
                 IdPartida = c.IdRequiDetalle,
                 NumPartida = c.IdRequiDetalleNavigation.NumPartida,
                 NombrePartida = c.IdRequiDetalleNavigation.DescripcionDetallada,

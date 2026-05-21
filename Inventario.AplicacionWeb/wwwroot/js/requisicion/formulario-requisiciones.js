@@ -208,8 +208,6 @@
       '<tr data-index="',
       index,
       '">',
-      '<td class="cog-' + index + '">' + (art.cog || "-") + "</td>",
-      '<td class="clave-' + index + '">' + (art.claveMaterial || "-") + "</td>",
       "<td>",
       '<select name="Articulos[' +
         index +
@@ -275,8 +273,6 @@
       $select.append(option);
 
       // Llenar celdas y hiddens directamente con los datos que ya tienes
-      $(".cog-" + index).text(art.cog || "-");
-      $(".clave-" + index).text(art.claveMaterial || "-");
       $(".descripcion-hidden-" + index).val(art.descripcion || "");
       $(".cog-hidden-" + index).val(art.cog || "");
       $(".clave-hidden-" + index).val(art.claveMaterial || "");
@@ -296,8 +292,6 @@
       '<tr data-index="',
       index,
       '">',
-      '<td class="cog-' + index + '">-</td>',
-      '<td class="clave-' + index + '">-</td>',
       "<td>",
       '<select name="Articulos[' +
         index +
@@ -439,16 +433,12 @@
 
     if (idArticulo && urlObtenerInfoArticulo) {
       $.get(urlObtenerInfoArticulo, { id: idArticulo }, function (data) {
-        $(".cog-" + index).text(data.cog);
-        $(".clave-" + index).text(data.clave);
         $(".descripcion-hidden-" + index).val(data.descripcion);
         $(".cog-hidden-" + index).val(data.cog);
         $(".clave-hidden-" + index).val(data.clave);
         establecerUnidadFila(index, data.unidadMedida);
       });
     } else {
-      $(".cog-" + index).text("-");
-      $(".clave-" + index).text("-");
       $(".descripcion-hidden-" + index).val("");
       $(".cog-hidden-" + index).val("");
       $(".clave-hidden-" + index).val("");

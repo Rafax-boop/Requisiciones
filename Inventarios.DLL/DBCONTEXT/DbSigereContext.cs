@@ -270,6 +270,7 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Iva).HasColumnName("IVA");
+            entity.Property(e => e.Vigencia);
 
             entity.HasOne(d => d.IdProveedorNavigation).WithMany(p => p.TblCotizaciones)
                 .HasForeignKey(d => d.IdProveedor)

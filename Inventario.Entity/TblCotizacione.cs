@@ -17,6 +17,8 @@ public partial class TblCotizacione
 
     public bool? Iva { get; set; }
 
+    public int? Vigencia { get; set; }
+
     public virtual TblProvedor? IdProveedorNavigation { get; set; }
 
     public virtual TblRequisicionDetalle? IdRequiDetalleNavigation { get; set; }
