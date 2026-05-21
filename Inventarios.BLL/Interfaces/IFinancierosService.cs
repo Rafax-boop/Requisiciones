@@ -42,5 +42,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> RebotarDocumentosConsolidada(int idConsolidada, string observaciones, List<string> docsObservados, int idUsuario);
         Task<string> AsegurarNumeroApiAsync(int idRequisicion);
         Task<string> AsegurarNumeroApiConsolidadaAsync(int idConsolidada);
+        Task PoblarApiPartidasAsync(int idHistorial, TablaApiEditableDTO modelo);
     }
 }
