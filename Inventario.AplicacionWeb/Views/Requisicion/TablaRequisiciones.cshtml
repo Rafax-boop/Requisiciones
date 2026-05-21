@@ -788,8 +788,7 @@
 
                     <!-- Modo edición (estatus 15 y 18) -->
                     <div id="pedidoModoEdicion" style="display:none; flex-direction:column; gap:10px; align-items:flex-start; width:100%;">
-                        <button type="button" class="btn boton-gris"
-                                onclick="(function(){ var id=window._expedienteActualGlobal; if(!id){alert('Abre un expediente primero.');return;} window.open('@Url.Action("EditarPedidoCompra", "Financieros")'+'?idRequisicion='+id,'_blank'); })()">
+                        <button type="button" class="btn boton-gris" id="btnEditarPedidoCompra">
                             <i class="fa-solid fa-pen-to-square"></i> Editar Pedido de Compra
                         </button>
                         <div class="formulario-input" style="width:100%; max-width:400px; margin-top:4px;">

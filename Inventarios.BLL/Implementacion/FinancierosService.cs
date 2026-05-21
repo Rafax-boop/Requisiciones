@@ -2401,35 +2401,31 @@ namespace Inventario.BLL.Implementacion
             var tblTot = new Table(UnitValue.CreatePercentArray(new float[] { 70f, 18f, 12f }))
                 .UseAllAvailableWidth();
 
-            tblTot.AddCell(new Cell(aplicaRetencion ? 9 : 8, 1)
-                .SetBorder(borde).SetBackgroundColor(ColorConstants.WHITE));
+            // Armar lista dinámica de filas
+            var filas = new List<(string Label, string Valor, bool EsTotal, bool EsNota)>();
 
-            // Filas base siempre presentes
-            var filas = new List<(string Label, string Valor, bool EsTotal, bool EsNota)>
-{
-    ("SUMA",       Fmt(suma),      false, false),
-    ("I.V.A. 16%", Fmt(iva),       false, false),
-    ("DESCUENTO",  Fmt(descuento), false, false),
-    ("SUBTOTAL",   Fmt(subtotal),  false, false),
-};
-
-            // Subtotales por fuente solo si hay mezcla o es relevante mostrarlos
+            // Desglose por fuente solo si hay mezcla
             if (sumaFederal > 0 && sumaEstatal > 0)
             {
-                filas.Add(($"  └ Recursos Federales", Fmt(sumaFederal), false, true));
-                filas.Add(($"  └ Recursos Estatales", Fmt(sumaEstatal), false, true));
+                filas.Add(("  └ Recursos Federales", Fmt(sumaFederal), false, true));
+                filas.Add(("  └ Recursos Estatales", Fmt(sumaEstatal), false, true));
             }
 
-            // Retención: siempre se muestra la fila, pero con $0 si no aplica
-            string labelRet = aplicaRetencion
-                ? "RET. 5 AL MILLAR\n(recursos estatales)"
-                : "RET. 5 AL MILLAR\n(no aplica)";
+            filas.Add(("SUMA", Fmt(suma), false, false));
+            filas.Add(("I.V.A. 16%", Fmt(iva), false, false));
+            filas.Add(("DESCUENTO", Fmt(descuento), false, false));
+            filas.Add(("SUBTOTAL", Fmt(subtotal), false, false));
+
+            // Etiqueta de retención según aplique
+            string labelRet = !aplicaRetencion
+                ? "RET. 5 AL MILLAR\n(no aplica)"
+                : (sumaFederal > 0
+                    ? "RET. 5 AL MILLAR\n(solo rec. estatales)"
+                    : "RET. 5 AL MILLAR\n(recursos estatales)");
+
             filas.Add((labelRet, Fmt(retencion), false, false));
             filas.Add(("TOTAL", Fmt(total), true, false));
 
-            // Ajustar rowspan de celda vacía
-            tblTot = new Table(UnitValue.CreatePercentArray(new float[] { 70f, 18f, 12f }))
-                .UseAllAvailableWidth();
             tblTot.AddCell(new Cell(filas.Count, 1)
                 .SetBorder(borde).SetBackgroundColor(ColorConstants.WHITE));
 

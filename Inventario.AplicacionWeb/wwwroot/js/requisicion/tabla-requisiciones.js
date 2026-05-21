@@ -5001,7 +5001,17 @@
           document.getElementById("pedidoModoReadonly").style.display = "none";
           // Limpiar el input por si quedó algo de una apertura anterior
           var inputPedido = document.getElementById("inputSubirPedido");
-          if (inputPedido) inputPedido.value = "";
+            if (inputPedido) inputPedido.value = "";
+            var btnEditar = document.getElementById("btnEditarPedidoCompra");
+            if (btnEditar) {
+                btnEditar.onclick = function () {
+                    var urlPedido = container ? container.getAttribute("data-url-obtener-pedido") : "";
+                    var urlGenerar = container ? container.getAttribute("data-url-generar-pedido-pdf") : "";
+                    // Usar la URL de editar pedido individual
+                    var urlBase = (urlPedido || "").replace("ObtenerPedidoEditable", "EditarPedidoCompra");
+                    window.open(urlBase + "?idRequisicion=" + idRequi, "_blank");
+                };
+            }
         } else {
           // Cualquier otro estatus (17, etc.): solo lectura
           document.getElementById("pedidoModoEdicion").style.display = "none";
@@ -5167,14 +5177,12 @@
       // Pedido de compra consolidado
       document.getElementById("pedidoModoEdicion").style.display = "flex";
       document.getElementById("pedidoModoReadonly").style.display = "none";
-      var editarBtn = document.querySelector("#pedidoModoEdicion .btn");
-      if (editarBtn && urlEditarPedidoConsolidada) {
-        editarBtn.setAttribute("data-consolidada-override", "true");
-        editarBtn.onclick = function () {
-          window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
-        };
-        editarBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Pedido de Compra';
-      }
+        var editarBtn = document.getElementById("btnEditarPedidoCompra");
+        if (editarBtn && urlEditarPedidoConsolidada) {
+            editarBtn.onclick = function () {
+                window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
+            };
+        }
 
       new bootstrap.Modal(document.getElementById("modalExpediente")).show();
     });
@@ -5550,7 +5558,9 @@
   if (modalExp) {
     modalExp.addEventListener("hidden.bs.modal", function () {
       window._modoConsolidada = false;
-      window._idConsolidadaExpediente = null;
+        window._idConsolidadaExpediente = null;
+        var btnEditar = document.getElementById("btnEditarPedidoCompra");
+        if (btnEditar) btnEditar.onclick = null;
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
         theadTr.innerHTML = '<th>N\u00ba Partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>';
