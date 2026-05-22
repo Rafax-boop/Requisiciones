@@ -4,7 +4,7 @@
     "codegraph": {
       "type": "local",
       "command": [
-        "codegraph",
+        "C:\\nvm\\v22.22.3\\node_modules\\@colbymchenry\\codegraph\\node_modules\\@colbymchenry\\codegraph-win32-x64\\bin\\codegraph.cmd",
         "serve",
         "--mcp"
       ],

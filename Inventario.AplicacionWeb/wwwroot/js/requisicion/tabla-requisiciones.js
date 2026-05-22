@@ -74,10 +74,6 @@
     ? container.getAttribute("data-url-guardar-ganador")
     : "";
 
-  var urlFinalizar = container
-    ? container.getAttribute("data-url-finalizar")
-    : "";
-
   var urlSubirDocumentoPedido = container
     ? container.getAttribute("data-url-subir-documento-pedido")
     : "";
@@ -161,10 +157,6 @@
     var urlEnviarFinancierosDocsConsolidada = container
         ? container.getAttribute("data-url-enviar-financieros-docs-consolidada")
         : "";
-    var urlFinalizarConsolidada = container
-        ? container.getAttribute("data-url-finalizar-consolidada")
-        : "";
-
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
     { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
@@ -180,6 +172,7 @@
     { clave: "ActaConst", label: "Acta Constitutiva" },
     { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
     { clave: "MemoPago", label: "Memorandum Instrucción de Pago" },
+    { clave: "FormatoEntrega", label: "Formato de Entrega" },
   ];
 
   var CACHE_PARTIDAS = [];
@@ -876,6 +869,8 @@
         if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
 
         DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            if (doc.clave === "FormatoEntrega") return;
+
             var subido = clavesSubidas.indexOf(doc.clave) !== -1;
             var observado = clavesObservadas.indexOf(doc.clave) !== -1;
 
@@ -897,6 +892,45 @@
         var todosResueltos = true;
 
         DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            if (doc.clave === "FormatoEntrega" && !esTablaServicios) {
+                var formatos = docsSubidos.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
+                var hayFormatos = formatos.length > 0;
+
+                if (!hayFormatos) todosResueltos = false;
+
+                var fila = document.createElement("div");
+                fila.style.cssText =
+                    "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
+                    "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                    "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+
+                if (hayFormatos) {
+                    var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
+                    formatos.forEach(function (f) {
+                        var lbl = f.label || "Formato de Entrega";
+                        linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
+                            '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
+                            ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
+                    });
+                    linksHtml += '</div>';
+
+                    fila.innerHTML =
+                        '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
+                        '<div style="flex:1;">' +
+                        '<span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' +
+                        linksHtml +
+                        '</div>';
+                } else {
+                    fila.innerHTML =
+                        '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
+                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
+                }
+
+                checklist.appendChild(fila);
+                return;
+            }
+
             var subido = clavesSubidas.indexOf(doc.clave) !== -1;
             var noAplica = window._noAplica[idRequi][doc.clave] === true;
             var observado = clavesObservadas.indexOf(doc.clave) !== -1;
@@ -954,7 +988,7 @@
             }
 
             var chkNoAplica = "";
-            if ((idEstatus === 15 || idEstatus === 18) && !subido) {
+            if ((idEstatus === 15 || idEstatus === 18) && !subido && !(doc.clave === "FormatoEntrega" && esTablaServicios)) {
                 chkNoAplica =
                     '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;' +
                     'font-size:11px;color:var(--color-text-secondary);flex-shrink:0;white-space:nowrap;">' +
@@ -1152,45 +1186,7 @@
     });
   };
 
-  var _idRequiFinalizar = null;
-    var _idConsolidadaFinalizar = null;
 
-    window.abrirModalFinalizarConsolidada = function (idConsolidada) {
-        _idConsolidadaFinalizar = idConsolidada;
-        _idRequiFinalizar = null;  // ← limpiar el otro para no confundir
-        document.getElementById("txtObservacionesFinalizar").value = "";
-
-        var el = document.getElementById("modalFinalizar");
-        var instancia = bootstrap.Modal.getInstance(el);
-        if (instancia) {
-            instancia.show();
-        } else {
-            new bootstrap.Modal(el, { backdrop: false, keyboard: true }).show();
-        }
-    };
-
-  window.abrirModalFinalizar = function (idRequi) {
-    _idRequiFinalizar = idRequi;
-    document.getElementById("txtObservacionesFinalizar").value = "";
-
-    var el = document.getElementById("modalFinalizar");
-    var instancia = bootstrap.Modal.getInstance(el);
-    if (instancia) {
-      instancia.show();
-    } else {
-      new bootstrap.Modal(el, {
-        backdrop: false,
-        keyboard: true,
-      }).show();
-    }
-    };
-
-    var modalFinalizar = document.getElementById("modalFinalizar");
-    if (modalFinalizar) {
-        modalFinalizar.addEventListener("hidden.bs.modal", function () {
-            _idConsolidadaFinalizar = null;
-        });
-    }
 
     window.verDetalleConsolidada = function (idConsolidada) {
         document.getElementById("consolidadaTitulo").textContent = "Requisición Consolidada";
@@ -1297,49 +1293,7 @@
         });
     };
 
-    window.confirmarFinalizar = function () {
-        var obs = document.getElementById("txtObservacionesFinalizar").value.trim();
-        if (!obs) {
-            Swal.fire({
-                icon: "warning",
-                title: "Escribe una observación de cierre.",
-                confirmButtonColor: "#fe6291",
-            });
-            return;
-        }
 
-        var esConsolidada = _idConsolidadaFinalizar !== null;
-        var url = esConsolidada ? urlFinalizarConsolidada : urlFinalizar;
-        var body = esConsolidada
-            ? { idConsolidada: _idConsolidadaFinalizar, observaciones: obs }
-            : { idRequisicion: _idRequiFinalizar, observaciones: obs };
-
-        $.ajax({
-            url: url,
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(body),
-            success: function (res) {
-                if (res.success) {
-                    _idConsolidadaFinalizar = null;
-                    bootstrap.Modal.getInstance(
-                        document.getElementById("modalFinalizar")
-                    ).hide();
-                    Swal.fire({
-                        icon: "success",
-                        title: "Requisición finalizada",
-                        timer: 2000,
-                        showConfirmButton: false,
-                    }).then(function () { location.reload(); });
-                } else {
-                    Swal.fire({ icon: "error", title: "No se pudo finalizar." });
-                }
-            },
-            error: function () {
-                Swal.fire({ icon: "error", title: "Error al procesar la solicitud." });
-            },
-        });
-    };
 
   window.volverOpciones = function () {
     ocultarTodosPasos();
@@ -4060,13 +4014,7 @@
                           'onclick="verDetalleConsolidada(' + c.consolidadaID + ')">' +
                           '<i class="fa-solid fa-eye"></i>' +
                       '</button>' +
-                      (c.idEstatus === 7
-                          ? '<button class="btn-accion" title="Confirmar entrega" ' +
-                          'onclick="abrirModalFinalizarConsolidada(' + c.consolidadaID + ')">' +
-                          '<i class="fa-solid fa-circle-check"></i>' +
-                          '</button>'
-                          : "") +
-                      "</div>"
+                        "</div>"
                           "</td>";
                       tbody.appendChild(tr);
                       tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
@@ -4138,12 +4086,7 @@
                           '<button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalleConsolidada(' + c.consolidadaID + ')">' +
                           '<i class="fa-solid fa-eye"></i>' +
                           "</button>" +
-                          (c.idEstatus === 7
-                              ? '<button class="btn-accion" title="Confirmar entrega" onclick="abrirModalFinalizarConsolidada(' + c.consolidadaID + ')">' +
-                                '<i class="fa-solid fa-circle-check"></i>' +
-                                "</button>"
-                              : "") +
-                          "</div></td>";
+                            "</div></td>";
                       tbody.appendChild(tr);
                   });
 

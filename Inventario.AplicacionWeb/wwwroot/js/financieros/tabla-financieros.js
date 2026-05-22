@@ -70,7 +70,8 @@
         { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
         { clave: "ActaConst", label: "Acta Constitutiva" },
         { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
-        { clave: "MemoPago", label: "Memorandum Instrucción de Pago" }
+        { clave: "MemoPago", label: "Memorandum Instrucción de Pago" },
+        { clave: "FormatoEntrega", label: "Formato de Entrega" }
     ];
     function obtenerBadgeEstatusHtml(idEstatus, nombreEstatus) {
         var nombreSafe = (nombreEstatus || "Desconocido").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -887,6 +888,51 @@
                     seccion.style.display = "block";
                     var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
                     DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+                        if (doc.clave === "FormatoEntrega") {
+                            var formatos = docs.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
+                            var hayFormatos = formatos.length > 0;
+                            var desdeAlmacen = formatos.some(function (f) { return f.label && f.label.indexOf("Formato de Entrada #") === 0; });
+                            var fila = document.createElement("div");
+
+                            if (desdeAlmacen) {
+                                fila.style.cssText = "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
+                                    "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                                    "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                                if (hayFormatos) {
+                                    var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
+                                    formatos.forEach(function (f) {
+                                        var lbl = f.label || "Formato de Entrega";
+                                        linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
+                                            '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
+                                            ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
+                                    });
+                                    linksHtml += '</div>';
+                                    fila.innerHTML =
+                                        '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
+                                        '<div style="flex:1;"><span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' + linksHtml + '</div>';
+                                } else {
+                                    fila.innerHTML =
+                                        '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
+                                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
+                                }
+                            } else {
+                                var subido = formatos.length > 0;
+                                fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                                    "border-radius:8px; border:1px solid " + (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                                    "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                                fila.innerHTML =
+                                    (subido
+                                        ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                                        : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>') +
+                                    '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                                    (subido
+                                        ? '<a href="' + formatos[0].ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
+                                        : '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de carga</span>');
+                            }
+                            checklist.appendChild(fila);
+                            return;
+                        }
                         var subido = clavesSubidas.indexOf(doc.clave) !== -1;
                         var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
                         var noAplica = !subido;
@@ -1065,6 +1111,52 @@
                 var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
 
                 DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+                    if (doc.clave === "FormatoEntrega") {
+                        var formatos = docs.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
+                        var hayFormatos = formatos.length > 0;
+                        var desdeAlmacen = formatos.some(function (f) { return f.label && f.label.indexOf("Formato de Entrada #") === 0; });
+                        var fila = document.createElement("div");
+
+                        if (desdeAlmacen) {
+                            fila.style.cssText = "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
+                                "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                                "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                            if (hayFormatos) {
+                                var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
+                                formatos.forEach(function (f) {
+                                    var lbl = f.label || "Formato de Entrega";
+                                    linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
+                                        '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
+                                        ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
+                                });
+                                linksHtml += '</div>';
+                                fila.innerHTML =
+                                    '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
+                                    '<div style="flex:1;"><span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' + linksHtml + '</div>';
+                            } else {
+                                fila.innerHTML =
+                                    '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
+                                    '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                                    '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
+                            }
+                        } else {
+                            var subido = formatos.length > 0;
+                            fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                                "border-radius:8px; border:1px solid " + (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                                "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                            fila.innerHTML =
+                                (subido
+                                    ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                                    : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>') +
+                                '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                                (subido
+                                    ? '<a href="' + formatos[0].ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
+                                    : '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de carga</span>');
+                        }
+                        checklist.appendChild(fila);
+                        return;
+                    }
+
                     var subido = clavesSubidas.indexOf(doc.clave) !== -1;
                     var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
 

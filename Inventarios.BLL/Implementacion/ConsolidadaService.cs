@@ -19,19 +19,25 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblConsolidadasDetalle> _repoDetalle;
         private readonly IGenericRepository<TblBitacoraEstatus> _repoBitacora;
         private readonly IGenericRepository<TblRegistroDiseno> _repoDiseno;
+        private readonly IGenericRepository<TblFormato> _repoFormato;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
 
         public ConsolidadaService(
             IGenericRepository<TblRequisicion> repoRequisicion,
             IGenericRepository<TblConsolidada> repoConsolidada,
             IGenericRepository<TblConsolidadasDetalle> repoDetalle,
             IGenericRepository<TblBitacoraEstatus> repoBitacora,
-            IGenericRepository<TblRegistroDiseno> repoDiseno)
+            IGenericRepository<TblRegistroDiseno> repoDiseno,
+            IGenericRepository<TblFormato> repoFormato,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento)
         {
             _repoRequisicion = repoRequisicion;
             _repoConsolidada = repoConsolidada;
             _repoDetalle = repoDetalle;
             _repoBitacora = repoBitacora;
             _repoDiseno = repoDiseno;
+            _repoFormato = repoFormato;
+            _repoMovimiento = repoMovimiento;
         }
 
         public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables()
@@ -539,11 +545,37 @@ namespace Inventario.BLL.Implementacion
             var query = await _repoDiseno.Consultar(f =>
                 f.IdConsolidada == idConsolidada && f.Tipo.StartsWith("proveedor_"));
 
-            return await query.Select(f => new ArchivoAtencionDTO
+            var docs = await query.Select(f => new ArchivoAtencionDTO
             {
                 Ruta = f.Ruta,
                 NombreArchivo = f.Tipo.Replace("proveedor_", "")
             }).ToListAsync();
+
+            // Formato de Entrega - desde formatos de entrada firmados de almacén (solo materiales)
+            var hijosQuery = await _repoRequisicion.Consultar(r => r.ConsolidadaId == idConsolidada);
+            var hijos = await hijosQuery.ToListAsync();
+            var idsRequisicion = hijos.Select(r => r.IdRequisicion).ToList();
+
+            var esServicio = hijos.Any(r => r.RequiServicio == true);
+
+            if (idsRequisicion.Any() && !esServicio)
+            {
+                var formatosQuery = await _repoFormato.Consultar(f =>
+                    idsRequisicion.Contains(f.IdRequisicion ?? 0) && f.TipoFormato == "ENTRADA" && f.RutaArchivo != "PENDIENTE");
+                var formatos = await formatosQuery.ToListAsync();
+
+                foreach (var fmt in formatos)
+                {
+                    docs.Add(new ArchivoAtencionDTO
+                    {
+                        Ruta = fmt.RutaArchivo,
+                        NombreArchivo = "FormatoEntrega",
+                        Label = $"Formato de Entrada #{fmt.NumeroFormato} ({fmt.FechaFormato:dd/MM/yyyy})"
+                    });
+                }
+            }
+
+            return docs;
         }
 
         public async Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada)
