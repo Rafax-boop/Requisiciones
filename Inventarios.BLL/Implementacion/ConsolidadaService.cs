@@ -18,6 +18,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblConsolidada> _repoConsolidada;
         private readonly IGenericRepository<TblConsolidadasDetalle> _repoDetalle;
         private readonly IGenericRepository<TblBitacoraEstatus> _repoBitacora;
+        private readonly IGenericRepository<TblEstatus> _repoEstatus;
         private readonly IGenericRepository<TblRegistroDiseno> _repoDiseno;
         private readonly IGenericRepository<TblFormato> _repoFormato;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
@@ -27,6 +28,7 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblConsolidada> repoConsolidada,
             IGenericRepository<TblConsolidadasDetalle> repoDetalle,
             IGenericRepository<TblBitacoraEstatus> repoBitacora,
+            IGenericRepository<TblEstatus> repoEstatus,
             IGenericRepository<TblRegistroDiseno> repoDiseno,
             IGenericRepository<TblFormato> repoFormato,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento)
@@ -35,6 +37,7 @@ namespace Inventario.BLL.Implementacion
             _repoConsolidada = repoConsolidada;
             _repoDetalle = repoDetalle;
             _repoBitacora = repoBitacora;
+            _repoEstatus = repoEstatus;
             _repoDiseno = repoDiseno;
             _repoFormato = repoFormato;
             _repoMovimiento = repoMovimiento;
@@ -110,9 +113,6 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<ConsolidadaDetalleDTO> ObtenerDetalleConsolidada(int idConsolidada)
         {
-            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
-            if (consolidada == null) return null;
-
             var detallesQuery = await _repoDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
             var detalles = await detallesQuery
                 .Include(d => d.IdRequisicionNavigation)
@@ -121,47 +121,44 @@ namespace Inventario.BLL.Implementacion
                     .ThenInclude(r => r.TblRequisicionDetalles)
                 .ToListAsync();
 
-            var requisHijas = detalles.Select(d => new RequiHijaDTO
+            var consolidada = await (await _repoConsolidada.Consultar(c => c.ConsolidadaId == idConsolidada))
+                .Include(c => c.IdEstatusNavigation)
+                .Include(c => c.IdUsuarioNavigation)
+                .FirstOrDefaultAsync();
+
+            if (consolidada == null) return null;
+
+            var requisHijas = detalles
+                .Where(d => d.IdRequisicionNavigation != null)
+                .Select(d => new RequiHijaDTO
             {
                 IdRequi = d.IdRequisicion,
-                NumRequi = d.IdRequisicionNavigation.NumRequisicion,
-                Departamento = d.IdRequisicionNavigation.IdDepartamentoNavigation.NombreDepartamento,
-                Responsable = d.IdRequisicionNavigation.NomResponsableDepartamento,
-                CantidadPartidas = d.IdRequisicionNavigation.TblRequisicionDetalles
-                                    .Count(x => x.Activo != false)
+                NumRequi = d.IdRequisicionNavigation!.NumRequisicion ?? "Sin folio",
+                Departamento = d.IdRequisicionNavigation.IdDepartamentoNavigation?.NombreDepartamento ?? "Sin departamento",
+                Responsable = d.IdRequisicionNavigation.NomResponsableDepartamento ?? "Sin responsable",
+                CantidadPartidas = d.IdRequisicionNavigation.TblRequisicionDetalles?
+                                    .Count(x => x.Activo != false) ?? 0
             }).ToList();
 
             var articulos = detalles
-                .SelectMany(d => d.IdRequisicionNavigation.TblRequisicionDetalles
+                .Where(d => d.IdRequisicionNavigation != null)
+                .SelectMany(d => (d.IdRequisicionNavigation!.TblRequisicionDetalles ?? new List<TblRequisicionDetalle>())
                     .Where(a => a.Activo != false)
                     .Select(a => new ArticuloConsolidadoDTO
                     {
-                        NumRequi = d.IdRequisicionNavigation.NumRequisicion,
+                        NumRequi = d.IdRequisicionNavigation!.NumRequisicion ?? "Sin folio",
                         NumPartida = a.NumPartida,
                         Cantidad = a.Cantidad,
-                        UnidadMedida = a.UnidadMedida,
-                        Descripcion = a.Descripcion,
-                        DescripcionDetallada = a.DescripcionDetallada
+                        UnidadMedida = a.UnidadMedida ?? "",
+                        Descripcion = a.Descripcion ?? "",
+                        DescripcionDetallada = a.DescripcionDetallada ?? ""
                     }))
                 .OrderBy(a => a.NumRequi)
                 .ThenBy(a => a.NumPartida)
                 .ToList();
 
-            // Datos del encabezado — navegaciones simples
             var estatusNombre = consolidada.IdEstatusNavigation?.NombreEstatus ?? "";
             var creadoPor = consolidada.IdUsuarioNavigation?.Usuario ?? "";
-
-            // Si las navegaciones no están cargadas, hacer consulta separada
-            if (string.IsNullOrEmpty(estatusNombre))
-            {
-                var conQuery = await _repoConsolidada.Consultar(c => c.ConsolidadaId == idConsolidada);
-                var con = await conQuery
-                    .Include(c => c.IdEstatusNavigation)
-                    .Include(c => c.IdUsuarioNavigation)
-                    .FirstOrDefaultAsync();
-                estatusNombre = con?.IdEstatusNavigation?.NombreEstatus ?? "";
-                creadoPor = con?.IdUsuarioNavigation?.Usuario ?? "";
-            }
 
             var queryDocs = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
 
@@ -310,6 +307,104 @@ namespace Inventario.BLL.Implementacion
         public async Task<TblConsolidada?> ObtenerConsolidada(int idConsolidada)
         {
             return await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+        }
+
+        public async Task<List<ProgresoPasoDTO>> ObtenerProgresoConsolidada(int idConsolidada)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            if (consolidada == null)
+                return new List<ProgresoPasoDTO>();
+
+            var nombresEstatus = await _repoEstatus.Consultar();
+            var dictEstatus = await nombresEstatus.ToDictionaryAsync(e => e.IdEstatus, e => e.NombreEstatus);
+
+            var esMx = System.Globalization.CultureInfo.GetCultureInfo("es-MX");
+            var resultado = new List<ProgresoPasoDTO>();
+
+            var detallesQuery = await _repoDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var idsHijas = await detallesQuery.Select(d => d.IdRequisicion).ToListAsync();
+
+            if (idsHijas.Count == 0)
+            {
+                resultado.Add(CrearPasoSintetico(consolidada, dictEstatus, esMx, "active"));
+                return resultado;
+            }
+
+            var bitacoraQuery = await _repoBitacora.Consultar(b => b.IdRequisicion.HasValue && idsHijas.Contains(b.IdRequisicion.Value));
+            var eventosDb = await bitacoraQuery
+                .Include(b => b.IdUsuarioNavigation)
+                .OrderBy(b => b.FechaEstatus)
+                .ThenBy(b => b.IdBitacoraEstatus)
+                .ToListAsync();
+
+            var requisQuery = await _repoRequisicion.Consultar(r => idsHijas.Contains(r.IdRequisicion));
+            var dictFolios = await requisQuery
+                .ToDictionaryAsync(r => r.IdRequisicion, r => r.NumRequisicion ?? "Sin folio");
+
+            for (int i = 0; i < eventosDb.Count; i++)
+            {
+                var ev = eventosDb[i];
+                int idEst = ev.IdEstatus ?? 0;
+                bool esUltimo = i == eventosDb.Count - 1;
+
+                string state = "active";
+                if (!esUltimo)
+                    state = "done";
+                else if (EstatusFlow.EsTerminalNegativo(idEst))
+                    state = "cancelled";
+                else if (EstatusFlow.TerminalPositivos.Contains(idEst))
+                    state = "completed";
+
+                string date = "—", time = "—";
+                if (ev.FechaEstatus.HasValue)
+                {
+                    var dt = ev.FechaEstatus.Value;
+                    date = dt.ToString("dd MMM yyyy", esMx);
+                    time = dt.ToString("hh:mm tt", esMx);
+                }
+
+                var folio = ev.IdRequisicion.HasValue && dictFolios.TryGetValue(ev.IdRequisicion.Value, out var f) ? f : "Sin folio";
+                var obs = string.IsNullOrWhiteSpace(ev.Observacion)
+                    ? $"[{folio}]"
+                    : $"[{folio}] {ev.Observacion}";
+
+                resultado.Add(new ProgresoPasoDTO
+                {
+                    Dept = dictEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}"),
+                    Date = date,
+                    State = state,
+                    By = string.IsNullOrWhiteSpace(ev.IdUsuarioNavigation?.Usuario) ? "—" : ev.IdUsuarioNavigation.Usuario,
+                    Time = time,
+                    Action = obs,
+                    Comment = obs
+                });
+            }
+
+            if (consolidada.IdEstatus > 0 && (eventosDb.Count == 0 || (eventosDb.Last().IdEstatus ?? 0) != consolidada.IdEstatus))
+            {
+                string synState = EstatusFlow.EsTerminalNegativo(consolidada.IdEstatus) ? "cancelled"
+                    : EstatusFlow.TerminalPositivos.Contains(consolidada.IdEstatus) ? "completed"
+                    : "active";
+
+                resultado.Add(CrearPasoSintetico(consolidada, dictEstatus, esMx, synState));
+            }
+
+            return resultado;
+        }
+
+        private static ProgresoPasoDTO CrearPasoSintetico(TblConsolidada consolidada, Dictionary<int, string> dictEstatus, System.Globalization.CultureInfo esMx, string state)
+        {
+            var fechaBase = consolidada.FechaModificacion ?? consolidada.FechaCreacion;
+            return new ProgresoPasoDTO
+            {
+                Dept = dictEstatus.GetValueOrDefault(consolidada.IdEstatus, $"Estatus {consolidada.IdEstatus}"),
+                Date = fechaBase.ToString("dd MMM yyyy", esMx),
+                State = state,
+                By = "—",
+                Time = fechaBase.ToString("hh:mm tt", esMx),
+                Action = "",
+                Comment = ""
+            };
         }
 
         public async Task<List<PartidaConsolidadaDTO>> ObtenerPartidasConsolidada(int idConsolidada)

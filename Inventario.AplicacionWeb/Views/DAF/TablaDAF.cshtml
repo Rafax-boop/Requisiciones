@@ -1,0 +1,325 @@
+@using Inventario.AplicacionWeb.Models.ViewModels
+@using Inventario.AplicacionWeb.Utilidades
+@model VMTablaRequisiciones
+@{
+    ViewData["Title"] = "DAF";
+    var totalCols = 8;
+    var indice = 0;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/componentes/select-rosa-buscable.css" asp-append-version="true" />
+}
+
+<div class="tabla-requi-page"
+     data-url-obtener-detalles="@Url.Action("ObtenerDetalles", "Requisicion")"
+     data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidada", "Consolidada")"
+     data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
+     data-url-obtener-progreso-consolidada="@Url.Action("ObtenerProgresoConsolidada", "DAF")"
+     data-url-historial-pdf-materiales="@Url.Action("HistorialParaPdf", "Requisicion")"
+     data-url-historial-pdf-servicios="@Url.Action("HistorialParaPdf", "Servicios")"
+     data-url-historial-pdf-consolidada="@Url.Action("HistorialConsolidadaParaPdf", "DAF")"
+     data-url-obtener-todos-archivos="@Url.Action("ObtenerTodosLosArchivos", "Requisicion")"
+     data-url-descargar-todos-archivos-zip="@Url.Action("DescargarTodosLosArchivosZip", "Requisicion")"
+     data-url-obtener-archivos-consolidada="@Url.Action("ObtenerArchivosConsolidada", "Consolidada")"
+     data-url-descargar-archivos-consolidada-zip="@Url.Action("DescargarArchivosConsolidadaZip", "Consolidada")"
+     data-url-autorizar-requi="@Url.Action("AutorizarRequisicion", "DAF")"
+     data-url-autorizar-consolidada="@Url.Action("AutorizarConsolidada", "DAF")"
+     data-url-rechazar-requi="@Url.Action("RechazarRequisicion", "DAF")"
+     data-url-rechazar-consolidada="@Url.Action("RechazarConsolidada", "DAF")"
+     data-url-modificar-requi="@Url.Action("SolicitarModificacionRequisicion", "DAF")"
+     data-url-modificar-consolidada="@Url.Action("SolicitarModificacionConsolidada", "DAF")">
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="info-titulo">Jefe de Areas</h1>
+            <p class="tabla-requi-subtitulo">Requisiciones pendientes por autorizacion documental</p>
+        </div>
+    </div>
+
+    <div class="container-formulario filtros-container">
+        <div class="filtro-grupo">
+            <label>No Requisicion</label>
+            <input type="text" id="filtroNumReq" placeholder="Buscar folio..." />
+        </div>
+        <div class="filtro-grupo">
+            <label>Fecha</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="text" id="filtroFecha" placeholder="Seleccionar fecha" readonly style="width:100%;" />
+                <button type="button" id="btnLimpiarFecha"
+                        style="display:none; background:none; border:none; cursor:pointer; color:#888; font-size:14px;"
+                        title="Limpiar fecha">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="filtro-grupo">
+            <label>Departamento</label>
+            <input type="text" id="filtroDepartamento" placeholder="Buscar departamento..." />
+        </div>
+        <div class="filtro-grupo">
+            <label>Estado</label>
+            <select id="filtroEstado" class="filtro-select-almacen rosa-select-form">
+                <option value="">Todos los estados</option>
+                @foreach (var e in Model.Estatus)
+                {
+                    <option value="@e">@e</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="container-formulario tabla-container">
+        <table class="tabla-requisiciones" id="tablaDaf">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Folio</th>
+                    <th>Fecha de emision</th>
+                    <th>Departamento</th>
+                    <th>Responsable</th>
+                    <th style="text-align:center">Partida(s)</th>
+                    <th>Estado</th>
+                    <th style="text-align:center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyDaf">
+                @foreach (var item in Model.Requisiciones)
+                {
+                    indice++;
+                    <tr class="fila-requi" data-requi-id="@item.IdRequi" data-tipo="requisicion" data-requi-servicio="@(item.RequiServicio?.ToString().ToLower() ?? "false")">
+                        <td style="text-align:center">@indice</td>
+                        <td>@Html.Raw(TablaCampoHelper.ObtenerFolio(item.NumRequi))</td>
+                        <td>@item.FechaEmision</td>
+                        <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamento, "fa-solid fa-building"))</td>
+                        <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Responsable, "fa-solid fa-user"))</td>
+                        <td style="text-align:center">@item.CantidadPartidas</td>
+                        <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
+                        <td>
+                            <div class="acciones-grupo" style="justify-content:center">
+                                <button class="btn-accion btn-ver" title="Ver detalles" onclick="event.stopPropagation(); verDetalleDaf(@item.IdRequi, false)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                <button class="btn-accion" title="Documentos" onclick="event.stopPropagation(); verDocumentosDaf(@item.IdRequi, false)">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="fila-detalle collapsed" data-requi-id="@item.IdRequi">
+                        <td colspan="@totalCols">
+                            <div class="timeline-container">
+                                @{
+                                    var (fase, _, esMod, progress) = TimelineHelper.Calcular(item.IdEstatus);
+                                }
+                                <ul class="timeline-track" style="--progress: @(progress)%;">
+                                    <li class="timeline-step completed">
+                                        <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                        <div class="step-label">Capturada</div>
+                                        <div class="step-tooltip">
+                                            <strong>Requisici&oacute;n Capturada</strong>
+                                            <span>Emisi&oacute;n @item.FechaEmision</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(fase >= 2 ? "completed" : "")">
+                                        <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
+                                        <div class="step-label">Cotizaci&oacute;n</div>
+                                        <div class="step-tooltip">
+                                            <strong>Cotizaci&oacute;n / Presupuesto</strong>
+                                            <span>@(fase >= 2 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(fase >= 3 ? (esMod ? "warning" : "completed") : "")">
+                                        <div class="step-icon"><i class="fa-solid @(esMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                        <div class="step-label">@Html.Raw(esMod ? "A Modificar" : "Tr&aacute;mite")</div>
+                                        <div class="step-tooltip">
+                                            <strong>@Html.Raw(esMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                            <span>@(esMod ? "Regresada para cambios" : (fase >= 3 ? item.Estatus : "Pendiente"))</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(fase >= 4 ? "completed" : "")">
+                                        <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                        <div class="step-label">Autorizaci&oacute;n</div>
+                                        <div class="step-tooltip">
+                                            <strong>Autorizaci&oacute;n Documental</strong>
+                                            <span>@(fase >= 4 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(fase >= 5 ? "completed" : "")">
+                                        <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi', @(item.RequiServicio == true ? "true" : "false"))">
+                                            <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                        </button>
+                                        <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                        <div class="step-label">Cierre</div>
+                                        <div class="step-tooltip">
+                                            <strong>Entregado / Finalizado</strong>
+                                            <span>@(fase >= 5 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                @foreach (var item in Model.Consolidadas)
+                {
+                    indice++;
+                    <tr class="fila-requi fila-consolidada" data-consolidada-id="@item.ConsolidadaID" data-tipo="consolidada">
+                        <td style="text-align:center">@indice</td>
+                        <td>
+                            <span class="folio-badge">@item.FolioConsolidada</span>
+                            <span style="font-size:10px;color:var(--color-text-secondary);">
+                                (<i class="fa-solid fa-layer-group"></i> Consolidada)
+                            </span>
+                        </td>
+                        <td>@item.FechaCreacion</td>
+                        <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono(item.Departamentos, "fa-solid fa-building"))</td>
+                        <td>@Html.Raw(TablaCampoHelper.ObtenerCampoConIcono($"{item.CantidadRequis} requisiciones", "fa-solid fa-layer-group"))</td>
+                        <td style="text-align:center">@item.TotalPartidas</td>
+                        <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
+                        <td>
+                            <div class="acciones-grupo" style="justify-content:center">
+                                <button class="btn-accion btn-ver" title="Ver detalles" onclick="event.stopPropagation(); verDetalleDaf(@item.ConsolidadaID, true)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                <button class="btn-accion" title="Documentos" onclick="event.stopPropagation(); verDocumentosDaf(@item.ConsolidadaID, true)">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="fila-detalle collapsed" data-consolidada-id="@item.ConsolidadaID">
+                        <td colspan="@totalCols">
+                            <div class="timeline-container">
+                                @{
+                                    var (faseConsolidada, _, consEsMod, consProgress) = TimelineHelper.Calcular(item.IdEstatus);
+                                }
+                                <ul class="timeline-track" style="--progress: @(consProgress)%;">
+                                    <li class="timeline-step completed">
+                                        <div class="step-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                        <div class="step-label">Capturada</div>
+                                        <div class="step-tooltip">
+                                            <strong>Consolidada Capturada</strong>
+                                            <span>Emisi&oacute;n @item.FechaCreacion</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(faseConsolidada >= 2 ? "completed" : "")">
+                                        <div class="step-icon"><i class="fa-solid fa-search-dollar"></i></div>
+                                        <div class="step-label">Cotizaci&oacute;n</div>
+                                        <div class="step-tooltip">
+                                            <strong>Cotizaci&oacute;n / Presupuesto</strong>
+                                            <span>@(faseConsolidada >= 2 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(faseConsolidada >= 3 ? (consEsMod ? "warning" : "completed") : "")">
+                                        <div class="step-icon"><i class="fa-solid @(consEsMod ? "fa-rotate-left" : "fa-spinner")"></i></div>
+                                        <div class="step-label">@Html.Raw(consEsMod ? "A Modificar" : "Tr&aacute;mite")</div>
+                                        <div class="step-tooltip">
+                                            <strong>@Html.Raw(consEsMod ? "Modificaci&oacute;n" : "Tr&aacute;mite Operativo")</strong>
+                                            <span>@(consEsMod ? "Regresada para cambios" : (faseConsolidada >= 3 ? item.Estatus : "Pendiente"))</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(faseConsolidada >= 4 ? "completed" : "")">
+                                        <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                        <div class="step-label">Autorizaci&oacute;n</div>
+                                        <div class="step-tooltip">
+                                            <strong>Autorizaci&oacute;n Documental</strong>
+                                            <span>@(faseConsolidada >= 4 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-step @(faseConsolidada >= 5 ? "completed" : "")">
+                                        <button type="button" class="btn-historial-timeline" onclick="event.stopPropagation(); verHistorialConsolidadaTimeline(@item.ConsolidadaID, '@item.FolioConsolidada')">
+                                            <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
+                                        </button>
+                                        <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                                        <div class="step-label">Cierre</div>
+                                        <div class="step-tooltip">
+                                            <strong>Entregado / Finalizado</strong>
+                                            <span>@(faseConsolidada >= 5 ? item.Estatus : "Pendiente")</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div id="paginacionDaf" class="almacen-paginacion"></div>
+    </div>
+</div>
+
+<div class="modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-historial-dialog">
+        <div class="modal-content modal-premium modal-historial-content">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" style="font-family: var(--font-display); font-size: 1.25rem;">Historial completo</h5>
+                    <p class="modal-subtitulo-premium" id="historialSubtitle" style="font-size: 0.75rem;">Cargando...</p>
+                </div>
+                <div class="modal-historial-actions">
+                    <a id="btnDescargarHistorialPdf" class="btn-descargar-historial disabled" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Descargar historico">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Descargar</span>
+                    </a>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="modal-summary" id="historialSummary"></div>
+                <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
+                <div class="modal-tl" id="historialTl"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalDetalleDaf" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-detalle-requisicion">
+        <div class="modal-content modal-premium modal-premium-ancha">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="dafDetalleTitulo">Detalle de requisicion</h5>
+                    <p class="modal-subtitulo-premium" id="dafDetalleSubtitulo">Vista previa</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div id="dafDetalleContenido"></div>
+
+                <div class="formulario-input" style="margin-top:20px;">
+                    <label>Observaciones</label>
+                    <textarea id="dafObservaciones" class="form-control" rows="4"
+                              placeholder="Escribe una observacion para la autorizacion, rechazo o solicitud de modificacion..."></textarea>
+                </div>
+
+                <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+                    <button type="button" class="btn boton-gris" onclick="solicitarModificacionDaf()">
+                        <i class="fa-solid fa-rotate-left"></i> Pedir modificacion
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="rechazarDaf()">
+                        <i class="fa-solid fa-circle-xmark"></i> Rechazar
+                    </button>
+                    <button type="button" class="btn boton-rosa" onclick="autorizarDaf()">
+                        <i class="fa-solid fa-check"></i> Autorizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
+    <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
+    <script src="~/js/daf/tabla-daf.js" asp-append-version="true"></script>
+}

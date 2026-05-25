@@ -1,0 +1,6 @@
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.csproj.AssemblyReference.cache
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.AssemblyInfoInputs.cache
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.AssemblyInfo.cs
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.csproj.CoreCompileInputs.cache
+C:\Users\Oscar-PC\Desktop\Requisiciones\build-check\daf-validate-obj\Debug\net9.0\Inventario.Entity.sourcelink.json
