@@ -35,7 +35,7 @@
      data-url-obtener-opciones-ganador="@Url.Action("ObtenerOpcionesGanador", "Requisicion")"
      data-url-obtener-ganador="@Url.Action("ObtenerProveedorGanador", "Requisicion")"
      data-url-guardar-ganador="@Url.Action("GuardarProveedorGanador", "Requisicion")"
-     data-url-finalizar="@Url.Action("FinalizarRequisicion", "Servicios")"
+
      data-url-obtener-pedido="@Url.Action("ObtenerPedidoEditable", "Financieros")"
      data-url-generar-pedido-pdf="@Url.Action("GenerarPedidoPdf", "Financieros")"
      data-url-subir-documento-pedido="@Url.Action("SubirDocumentoPedido", "Requisicion")"
@@ -64,7 +64,7 @@
      data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")"
      data-url-obtener-id-adquisicion="@Url.Action("ObtenerIdAdquisicion", "Requisicion")"
      data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
-     data-url-finalizar-consolidada="@Url.Action("FinalizarConsolidada", "Consolidada")"
+
      data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")"
      data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")">
     <div class="tabla-requi-header">
@@ -817,7 +817,7 @@
                     <div id="expChecklistDocs" style="display:flex; flex-direction:column; gap:8px;"></div>
                     <div id="expAccionesProveedor" style="margin-top:16px; text-align:right; display:none;">
                         <button type="button" class="btn boton-rosa" onclick="enviarDocumentosAFinancieros()">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar a financieros
+                            <i class="fa-solid fa-paper-plane"></i> Enviar a autorización
                         </button>
                     </div>
                 </div>

@@ -20,12 +20,6 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int CantidadAprobada { get; set; }
     }
 
-    public class FinalizarRequiVM
-    {
-        public int IdRequisicion { get; set; }
-        public string Observaciones { get; set; } = "";
-    }
-
     public class RechazarRequest
     {
         public int IdRequisicion { get; set; }

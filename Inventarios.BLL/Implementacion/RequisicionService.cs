@@ -694,7 +694,7 @@ namespace Inventario.BLL.Implementacion
 
                 if (requisicion == null) return false;
 
-                requisicion.IdEstatus = 17;
+                requisicion.IdEstatus = 16;
                 requisicion.FechaModificacion = DateTime.Now;
 
                 await _repositoryRequisicion.Editar(requisicion);
@@ -702,9 +702,9 @@ namespace Inventario.BLL.Implementacion
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = idRequisicion,
-                    IdEstatus = 17,
+                    IdEstatus = 16,
                     FechaEstatus = DateTime.Now,
-                    Observacion = "Enviado a proceso de pago",
+                    Observacion = "Enviada a DAF para su autorización",
                     IdUsuario = idUsuario
                 };
 
@@ -1089,16 +1089,16 @@ namespace Inventario.BLL.Implementacion
                 await SubirDocumentoPedido(idRequisicion, archivoPedido, webRootPath);
             }
 
-            requisicion.IdEstatus = 17;
+            requisicion.IdEstatus = 16;
             requisicion.FechaModificacion = DateTime.Now;
             await _repositoryRequisicion.Editar(requisicion);
 
             await _repositoryBitacora.Crear(new TblBitacoraEstatus
             {
                 IdRequisicion = idRequisicion,
-                IdEstatus = 17,
+                IdEstatus = 16,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Documentos del proveedor enviados a revisión",
+                Observacion = "Enviada a DAF para su autorización",
                 IdUsuario = idUsuario
             });
 
@@ -1124,27 +1124,6 @@ namespace Inventario.BLL.Implementacion
                 IdEstatus = 18,
                 FechaEstatus = DateTime.Now,
                 Observacion = notaCompleta,
-                IdUsuario = idUsuario
-            });
-
-            return true;
-        }
-
-        public async Task<bool> FinalizarRequisicion(int idRequisicion, string observaciones, int idUsuario)
-        {
-            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
-            if (requisicion == null) return false;
-
-            requisicion.IdEstatus = 12;
-            requisicion.FechaModificacion = DateTime.Now;
-            await _repositoryRequisicion.Editar(requisicion);
-
-            await _repositoryBitacora.Crear(new TblBitacoraEstatus
-            {
-                IdRequisicion = idRequisicion,
-                IdEstatus = 12,
-                FechaEstatus = DateTime.Now,
-                Observacion = observaciones,
                 IdUsuario = idUsuario
             });
 

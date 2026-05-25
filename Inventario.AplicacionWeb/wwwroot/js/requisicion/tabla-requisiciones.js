@@ -1098,7 +1098,7 @@
     }
 
     Swal.fire({
-      title: "\u00bfEnviar a financieros?",
+      title: "\u00bfEnviar a autorizaci\u00f3n?",
       text: esConsolidada
         ? "Se enviar\u00e1n los documentos de la consolidada para revisi\u00f3n."
         : "Se enviar\u00e1n todos los documentos para revisi\u00f3n.",

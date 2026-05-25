@@ -25,8 +25,6 @@ namespace Inventario.BLL.Interfaces
         Task<bool> EnviarAModificacion(int idRequisicion, int idUsuario, string observaciones);
         Task<bool> RechazarRequisicion(int idRequisicion, int idUsuario, string motivo);
         Task<bool> AceptarExpediente(int idRequisicion, int idUsuario);
-        Task<bool> FinalizarRequisicion(int idRequisicion, string observaciones, int idUsuario);
-
         //metodos para las iamgenes de los diseños
         Task<bool> GuardarFotosRequisicion(int idRequisicion, List<IFormFile> fotos, string webRootPath);
         Task<List<string>> ObtenerFotosRequisicion(int idRequisicion);

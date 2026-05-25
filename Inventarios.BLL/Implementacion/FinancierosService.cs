@@ -300,7 +300,7 @@ namespace Inventario.BLL.Implementacion
                 });
             }
 
-            consolidada.IdEstatus = 17;
+            consolidada.IdEstatus = 16;
             consolidada.FechaModificacion = DateTime.Now;
             await _repoConsolidada.Editar(consolidada);
 
@@ -309,16 +309,16 @@ namespace Inventario.BLL.Implementacion
 
             foreach (var hija in hijas)
             {
-                hija.IdEstatus = 17;
+                hija.IdEstatus = 16;
                 hija.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(hija);
 
                 await _repositoryBitacora.Crear(new TblBitacoraEstatus
                 {
                     IdRequisicion = hija.IdRequisicion,
-                    IdEstatus = 17,
+                    IdEstatus = 16,
                     FechaEstatus = DateTime.Now,
-                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Documentos del proveedor enviados a revisión",
+                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Enviada a DAF para su autorización",
                     IdUsuario = idUsuario
                 });
             }
