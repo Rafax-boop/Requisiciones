@@ -81,6 +81,8 @@ public partial class TblRequisicion
 
     public virtual TblUsuario? IdUsuarioNavigation { get; set; }
 
+    public virtual ICollection<TblApiPartida> TblApiPartida { get; set; } = new List<TblApiPartida>();
+
     public virtual ICollection<TblArticulosProgramado> TblArticulosProgramados { get; set; } = new List<TblArticulosProgramado>();
 
     public virtual ICollection<TblBitacoraEstatus> TblBitacoraEstatuses { get; set; } = new List<TblBitacoraEstatus>();

@@ -28,7 +28,6 @@ namespace Inventario.BLL.Interfaces
         Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedorConsolidada(int idConsolidada);
         Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null);
         Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada);
-        Task<bool> FinalizarConsolidada(int idConsolidada, int idUsuario, string observaciones);
         Task<bool> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario, int idUsuarioAsignador);
     }
 }

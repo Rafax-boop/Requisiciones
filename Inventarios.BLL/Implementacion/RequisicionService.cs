@@ -23,6 +23,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblArticulosProgramado> _repositoryProgramacion;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
         private readonly IGenericRepository<TblRequisicionDetalleMunicipio> _repoMunicipiosDetalle;
+        private readonly IGenericRepository<TblFormato> _repoFormato;
         private readonly IUnitOfWork _unitOfWork;
 
         public RequisicionService(
@@ -35,7 +36,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblArticulosProgramado> repositoryProgramacion,
             IUnitOfWork unitOfWork,
             IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
-            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle
+            IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle,
+            IGenericRepository<TblFormato> repoFormato
         )
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -48,6 +50,7 @@ namespace Inventario.BLL.Implementacion
             _unitOfWork = unitOfWork;
             _repoMovimiento = repoMovimiento;
             _repoMunicipiosDetalle = repoMunicipiosDetalle;
+            _repoFormato = repoFormato;
         }
 
         public async Task<TblRequisicion> CrearRequisicion(FormularioRequisicionDTO modelo, int idUsuario, bool servicio)
@@ -691,7 +694,7 @@ namespace Inventario.BLL.Implementacion
 
                 if (requisicion == null) return false;
 
-                requisicion.IdEstatus = 17;
+                requisicion.IdEstatus = 16;
                 requisicion.FechaModificacion = DateTime.Now;
 
                 await _repositoryRequisicion.Editar(requisicion);
@@ -699,9 +702,9 @@ namespace Inventario.BLL.Implementacion
                 var bitacora = new TblBitacoraEstatus
                 {
                     IdRequisicion = idRequisicion,
-                    IdEstatus = 17,
+                    IdEstatus = 16,
                     FechaEstatus = DateTime.Now,
-                    Observacion = "Enviado a proceso de pago",
+                    Observacion = "Enviada a DAF para su autorización",
                     IdUsuario = idUsuario
                 };
 
@@ -1039,11 +1042,41 @@ namespace Inventario.BLL.Implementacion
             else
                 query = await _repositoryDisenos.Consultar(f => f.IdRequisicion == idRequisicion && f.Tipo.StartsWith("proveedor_"));
 
-            return await query.Select(f => new ArchivoAtencionDTO
+            var docs = await query.Select(f => new ArchivoAtencionDTO
             {
                 Ruta = f.Ruta,
                 NombreArchivo = f.Tipo.Replace("proveedor_", "")
             }).ToListAsync();
+
+            if (req != null && req.RequiServicio != true)
+            {
+                var idsRequisicion = new List<int>();
+                if (req.ConsolidadaId != null)
+                {
+                    var hijosQuery = await _repositoryRequisicion.Consultar(r => r.ConsolidadaId == req.ConsolidadaId);
+                    idsRequisicion = await hijosQuery.Select(r => r.IdRequisicion).ToListAsync();
+                }
+                else
+                {
+                    idsRequisicion = new List<int> { idRequisicion };
+                }
+
+                var formatosQuery = await _repoFormato.Consultar(f =>
+                    idsRequisicion.Contains(f.IdRequisicion ?? 0) && f.TipoFormato == "ENTRADA" && f.RutaArchivo != "PENDIENTE");
+                var formatos = await formatosQuery.ToListAsync();
+
+                foreach (var fmt in formatos)
+                {
+                    docs.Add(new ArchivoAtencionDTO
+                    {
+                        Ruta = fmt.RutaArchivo,
+                        NombreArchivo = "FormatoEntrega",
+                        Label = $"Formato de Entrada #{fmt.NumeroFormato} ({fmt.FechaFormato:dd/MM/yyyy})"
+                    });
+                }
+            }
+
+            return docs;
         }
 
         public async Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario, IFormFile archivoPedido, string webRootPath)
@@ -1056,16 +1089,16 @@ namespace Inventario.BLL.Implementacion
                 await SubirDocumentoPedido(idRequisicion, archivoPedido, webRootPath);
             }
 
-            requisicion.IdEstatus = 17;
+            requisicion.IdEstatus = 16;
             requisicion.FechaModificacion = DateTime.Now;
             await _repositoryRequisicion.Editar(requisicion);
 
             await _repositoryBitacora.Crear(new TblBitacoraEstatus
             {
                 IdRequisicion = idRequisicion,
-                IdEstatus = 17,
+                IdEstatus = 16,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Documentos del proveedor enviados a revisión",
+                Observacion = "Enviada a DAF para su autorización",
                 IdUsuario = idUsuario
             });
 
@@ -1091,27 +1124,6 @@ namespace Inventario.BLL.Implementacion
                 IdEstatus = 18,
                 FechaEstatus = DateTime.Now,
                 Observacion = notaCompleta,
-                IdUsuario = idUsuario
-            });
-
-            return true;
-        }
-
-        public async Task<bool> FinalizarRequisicion(int idRequisicion, string observaciones, int idUsuario)
-        {
-            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
-            if (requisicion == null) return false;
-
-            requisicion.IdEstatus = 12;
-            requisicion.FechaModificacion = DateTime.Now;
-            await _repositoryRequisicion.Editar(requisicion);
-
-            await _repositoryBitacora.Crear(new TblBitacoraEstatus
-            {
-                IdRequisicion = idRequisicion,
-                IdEstatus = 12,
-                FechaEstatus = DateTime.Now,
-                Observacion = observaciones,
                 IdUsuario = idUsuario
             });
 

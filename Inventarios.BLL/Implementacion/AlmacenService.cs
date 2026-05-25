@@ -141,7 +141,7 @@ namespace Inventario.BLL.Implementacion
                 .ToDictionary(x => x.IdRequisicion, x => x.CantidadPartidasCompra);
 
             var query = await _repositoryRequisicion.Consultar(
-                r => r.IdEstatus == 7 && idsConCompra.Contains(r.IdRequisicion));
+                r => r.IdEstatus == 15 && idsConCompra.Contains(r.IdRequisicion));
 
             var requisiciones = await query
                 .Include(r => r.IdDepartamentoNavigation)
@@ -337,58 +337,18 @@ namespace Inventario.BLL.Implementacion
                     await _repoMovimiento.Editar(mov);
                 }
 
-                var todosMovQuery = await _repoMovimiento.Consultar(
-    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
-                var todosMovs = await todosMovQuery.ToListAsync();
-
-                bool todoConfirmado = todosMovs.Any() && todosMovs.All(m => m.Confirmado == true);
-
-                if (todoConfirmado)
+                var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+                if (req != null)
                 {
-                    var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
-                              ?? throw new Exception("No se encontró la requisición.");
+                    var todosEntregasQuery = await _repoMovimiento.Consultar(
+                        m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "ENTREGA");
+                    var todosEntregas = await todosEntregasQuery.ToListAsync();
+                    bool todoConfirmado = todosEntregas.Any() && todosEntregas.All(m => m.Confirmado == true);
 
-                    // ── NUEVO: verificar si aún hay compras pendientes ──
-                    var comprasPendientesQuery = await _repoMovimiento.Consultar(
-                        m => m.IdRequisicion == idRequisicion
-                          && m.TipoMovimiento == "COMPRA"
-                          && m.Confirmado != true);
-                    var comprasPendientes = await comprasPendientesQuery.ToListAsync();
-                    bool hayComprasPendientes = comprasPendientes.Any();
-
-                    if (hayComprasPendientes)
-                    {
-                        // Aún faltan materiales del proveedor → volver a estatus 7 (Pedidos)
-                        req.IdEstatus = 7;
-                        req.FechaModificacion = DateTime.Now;
-                        await _repositoryRequisicion.Editar(req);
-
-                        await RegistrarBitacoraAsync(idRequisicion, 7, idUsuario,
-                            "Almacén confirmó entrega física de los artículos recibidos. " +
-                            "Requisición regresa a Pedidos por material faltante del proveedor.");
-                    }
-                    else if (req.IdEstatus != ESTATUS_EN_COMPRA)
-                    {
-                        // Todo entregado y sin compras pendientes → Entregado
-                        req.IdEstatus = ESTATUS_ENTREGADO;
-                        req.FechaModificacion = DateTime.Now;
-                        await _repositoryRequisicion.Editar(req);
-
-                        await RegistrarBitacoraAsync(idRequisicion, ESTATUS_ENTREGADO, idUsuario,
-                            "Almacén confirmó entrega física de todos los artículos.");
-                    }
-                    else
-                    {
-                        await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 0, idUsuario,
-                            "Almacén confirmó entrega física de artículos (pendiente proceso de compra).");
-                    }
-                }
-                else
-                {
-                    await RegistrarBitacoraAsync(idRequisicion,
-                        (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion))?.IdEstatus ?? 0,
-                        idUsuario,
-                        $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).");
+                    var mensaje = todoConfirmado
+                        ? "Almacén confirmó entrega física de todos los artículos."
+                        : $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).";
+                    await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 0, idUsuario, mensaje);
                 }
 
                 await _uow.CommitAsync();
@@ -608,66 +568,16 @@ namespace Inventario.BLL.Implementacion
                         await _repoMovimiento.Editar(mov);
                     }
 
+                    var req = children.First(r => r.IdRequisicion == child.IdRequisicion);
                     var todosEntregasQuery = await _repoMovimiento.Consultar(
                         m => m.IdRequisicion == child.IdRequisicion && m.TipoMovimiento == "ENTREGA");
                     var todosEntregas = await todosEntregasQuery.ToListAsync();
-
                     bool todoConfirmado = todosEntregas.Any() && todosEntregas.All(m => m.Confirmado == true);
 
-                    if (todoConfirmado)
-                    {
-                        var req = children.First(r => r.IdRequisicion == child.IdRequisicion);
-
-                        var comprasPendientesQuery = await _repoMovimiento.Consultar(
-                            m => m.IdRequisicion == child.IdRequisicion
-                              && m.TipoMovimiento == "COMPRA"
-                              && m.Confirmado != true);
-                        var comprasPendientes = await comprasPendientesQuery.ToListAsync();
-                        bool hayComprasPendientes = comprasPendientes.Any();
-
-                        if (hayComprasPendientes)
-                        {
-                            req.IdEstatus = 7;
-                            req.FechaModificacion = DateTime.Now;
-                            await _repositoryRequisicion.Editar(req);
-
-                            await RegistrarBitacoraAsync(child.IdRequisicion, 7, idUsuario,
-                                "Almacén confirmó entrega física de los artículos recibidos. " +
-                                "Requisición regresa a Pedidos por material faltante del proveedor.");
-                        }
-                        else if (req.IdEstatus != ESTATUS_EN_COMPRA)
-                        {
-                            req.IdEstatus = ESTATUS_ENTREGADO;
-                            req.FechaModificacion = DateTime.Now;
-                            await _repositoryRequisicion.Editar(req);
-
-                            await RegistrarBitacoraAsync(child.IdRequisicion, ESTATUS_ENTREGADO, idUsuario,
-                                "Almacén confirmó entrega física de todos los artículos.");
-                        }
-                        else
-                        {
-                            await RegistrarBitacoraAsync(child.IdRequisicion, req.IdEstatus ?? 0, idUsuario,
-                                "Almacén confirmó entrega física de artículos (pendiente proceso de compra).");
-                        }
-                    }
-                    else
-                    {
-                        await RegistrarBitacoraAsync(child.IdRequisicion,
-                            (await _repositoryRequisicion.Obtener(r => r.IdRequisicion == child.IdRequisicion))?.IdEstatus ?? 0,
-                            idUsuario,
-                            $"Almacén confirmó entrega parcial en consolidada: {childMovs.Count} artículo(s) entregado(s).");
-                    }
-                }
-
-                var consolidadaRec = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
-                if (consolidadaRec != null)
-                {
-                    if (children.All(c => c.IdEstatus == ESTATUS_ENTREGADO))
-                        consolidadaRec.IdEstatus = ESTATUS_ENTREGADO;
-                    else if (children.Any(c => c.IdEstatus == 7))
-                        consolidadaRec.IdEstatus = 7;
-                    consolidadaRec.FechaModificacion = DateTime.Now;
-                    await _repoConsolidada.Editar(consolidadaRec);
+                    var mensaje = todoConfirmado
+                        ? "Almacén confirmó entrega física de todos los artículos (consolidada)."
+                        : $"Almacén confirmó entrega parcial en consolidada: {childMovs.Count} artículo(s) entregado(s).";
+                    await RegistrarBitacoraAsync(child.IdRequisicion, req.IdEstatus ?? 0, idUsuario, mensaje);
                 }
 
                 await _uow.CommitAsync();
@@ -981,7 +891,7 @@ namespace Inventario.BLL.Implementacion
             var query = await _repoMovimiento.Consultar(
                 m => m.IdRequisicion == idRequisicion
                   && m.TipoMovimiento == "COMPRA"
-                  && m.Confirmado != true);   // ← solo pendientes
+                  && m.Confirmado != true);
 
             var movimientosCompra = await query
                 .Include(m => m.IdRequisicionDetalleNavigation)
@@ -1250,17 +1160,8 @@ namespace Inventario.BLL.Implementacion
                 foreach (var b in borradores)
                     await _repoMovimiento.Eliminar(b);
 
-                // ── Estatus final ──
                 var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                           ?? throw new Exception("No se encontró la requisición.");
-
-                if (!hayFaltante)
-                {
-                    req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
-                    req.FechaModificacion = DateTime.Now;
-                    await _repositoryRequisicion.Editar(req);
-                }
-                // Si hay faltante → permanece en estatus 7 (sigue en Pedidos)
 
                 var obs = new StringBuilder("Almacén registró ingreso de material del proveedor.");
                 if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
@@ -1613,13 +1514,6 @@ namespace Inventario.BLL.Implementacion
                     var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == childId);
                     if (req != null)
                     {
-                        if (!hayFaltante)
-                        {
-                            req.IdEstatus = ESTATUS_APROBADA_ALMACEN;
-                            req.FechaModificacion = DateTime.Now;
-                            await _repositoryRequisicion.Editar(req);
-                        }
-
                         var obs = new StringBuilder("Almacén registró ingreso de material del proveedor (consolidada).");
                         if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
                         if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");

@@ -18,6 +18,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblAdjudicacion> TblAdjudicacions { get; set; }
 
+    public virtual DbSet<TblApiPartida> TblApiPartidas { get; set; }
+
     public virtual DbSet<TblArticulo> TblArticulos { get; set; }
 
     public virtual DbSet<TblArticulosProgramado> TblArticulosProgramados { get; set; }
@@ -77,6 +79,38 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.MontoMax).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.MontoMin).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Tipo).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<TblApiPartida>(entity =>
+        {
+            entity.HasKey(e => e.IdApiPartida);
+
+            entity.Property(e => e.Actividad).HasMaxLength(10);
+            entity.Property(e => e.ClaveFuente).HasMaxLength(10);
+            entity.Property(e => e.ClaveMunicipio).HasMaxLength(10);
+            entity.Property(e => e.Componente).HasMaxLength(10);
+            entity.Property(e => e.ImporteAutorizado).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ImporteSolicitado).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.NumeroPartida).HasMaxLength(10);
+            entity.Property(e => e.ObjetoGasto).HasMaxLength(20);
+            entity.Property(e => e.Pp).HasMaxLength(10);
+            entity.Property(e => e.Region).HasMaxLength(10);
+            entity.Property(e => e.Ua)
+                .HasMaxLength(10)
+                .HasColumnName("UA");
+
+            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblApiPartida)
+                .HasForeignKey(d => d.IdConsolidada)
+                .HasConstraintName("FK_TblApiPartidas_TblConsolidadas");
+
+            entity.HasOne(d => d.IdHistorialNavigation).WithMany(p => p.TblApiPartida)
+                .HasForeignKey(d => d.IdHistorial)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TblApiPartidas_TblTablaApiHistorial");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblApiPartida)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblApiPartidas_tblRequisicion");
         });
 
         modelBuilder.Entity<TblArticulo>(entity =>
@@ -314,16 +348,9 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false);
 
-            entity.Property(e => e.IdConsolidada).HasColumnName("IdConsolidada");
-
             entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblFormatos)
                 .HasForeignKey(d => d.IdRequisicion)
                 .HasConstraintName("FK_Formato_Requisicion");
-
-            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblFormatos)
-                .HasForeignKey(d => d.IdConsolidada)
-                .HasConstraintName("FK_Formato_Consolidada")
-                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<TblFuentesFinanciamiento>(entity =>

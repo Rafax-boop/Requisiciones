@@ -49,6 +49,8 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRequisicionDetalleMunicipio> _repoMunicipiosDetalle;
         private readonly IGenericRepository<TblConsolidada> _repoConsolidada;
         private readonly IGenericRepository<TblConsolidadasDetalle> _repoConsolidadaDetalle;
+        private readonly IGenericRepository<TblApiPartida> _repoApiPartidas;
+        private readonly IGenericRepository<TblFuentesFinanciamiento> _repoFuentes;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -62,7 +64,9 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblProveedorGanador> repositoryGanador,
             IGenericRepository<TblRequisicionDetalleMunicipio> repoMunicipiosDetalle,
             IGenericRepository<TblConsolidada> repoConsolidada,
-            IGenericRepository<TblConsolidadasDetalle> repoConsolidadaDetalle)
+            IGenericRepository<TblConsolidadasDetalle> repoConsolidadaDetalle,
+            IGenericRepository<TblApiPartida> repoApiPartidas,
+            IGenericRepository<TblFuentesFinanciamiento> repoFuentes)
         {
             _repositoryRequisicion = repositoryRequisicion;
             _repositoryBitacora = repositoryBitacora;
@@ -76,6 +80,8 @@ namespace Inventario.BLL.Implementacion
             _repoMunicipiosDetalle = repoMunicipiosDetalle;
             _repoConsolidada = repoConsolidada;
             _repoConsolidadaDetalle = repoConsolidadaDetalle;
+            _repoApiPartidas = repoApiPartidas;
+            _repoFuentes = repoFuentes;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -294,7 +300,7 @@ namespace Inventario.BLL.Implementacion
                 });
             }
 
-            consolidada.IdEstatus = 17;
+            consolidada.IdEstatus = 16;
             consolidada.FechaModificacion = DateTime.Now;
             await _repoConsolidada.Editar(consolidada);
 
@@ -303,16 +309,16 @@ namespace Inventario.BLL.Implementacion
 
             foreach (var hija in hijas)
             {
-                hija.IdEstatus = 17;
+                hija.IdEstatus = 16;
                 hija.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(hija);
 
                 await _repositoryBitacora.Crear(new TblBitacoraEstatus
                 {
                     IdRequisicion = hija.IdRequisicion,
-                    IdEstatus = 17,
+                    IdEstatus = 16,
                     FechaEstatus = DateTime.Now,
-                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Documentos del proveedor enviados a revisión",
+                    Observacion = $"[CONSOLIDADA {consolidada.FolioConsolidada}] Enviada a DAF para su autorización",
                     IdUsuario = idUsuario
                 });
             }
@@ -1481,6 +1487,7 @@ namespace Inventario.BLL.Implementacion
             };
 
             await _repoHistorial.Crear(registro);
+            await PoblarApiPartidasAsync(registro.IdHistorial, modelo);
         }
 
         public async Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiAsync(int idRequisicion)
@@ -2066,16 +2073,13 @@ namespace Inventario.BLL.Implementacion
                 .GroupBy(c => c.IdRequiDetalle!.Value)
                 .ToDictionary(g => g.Key, g => g.First());
 
-            // ── NUEVO: cargar importes autorizados del último historial TablaAPI ──────
-            // Mapeamos por posición ordinal (índice 0-based) para evitar colisiones
-            // cuando dos partidas comparten el mismo ObjetoGasto.
+            // ── Cargar importes autorizados del último historial TablaAPI ──────────
             var importesAutorizadosPorIndice = new Dictionary<int, decimal>();
             try
             {
                 var queryHist = await _repoHistorial.Consultar(
                     h => h.IdRequisicion == idRequisicion
                       && (h.Observacion == null || h.Observacion != "Pedido"));
-
                 var ultimaTablaApi = await queryHist
                     .OrderByDescending(h => h.FechaGeneracion)
                     .FirstOrDefaultAsync();
@@ -2084,7 +2088,6 @@ namespace Inventario.BLL.Implementacion
                 {
                     var tablaApiDto = System.Text.Json.JsonSerializer
                         .Deserialize<TablaApiEditableDTO>(ultimaTablaApi.DatosJson);
-
                     if (tablaApiDto?.Partidas != null)
                     {
                         for (int idx = 0; idx < tablaApiDto.Partidas.Count; idx++)
@@ -2092,7 +2095,6 @@ namespace Inventario.BLL.Implementacion
                             var partida = tablaApiDto.Partidas[idx];
                             var importeStr = (partida.ImporteAutorizado ?? "")
                                 .Replace("$", "").Replace(",", "").Trim();
-
                             if (decimal.TryParse(importeStr,
                                     System.Globalization.NumberStyles.Any,
                                     System.Globalization.CultureInfo.InvariantCulture,
@@ -2105,7 +2107,6 @@ namespace Inventario.BLL.Implementacion
                 }
             }
             catch { /* si falla, usa precios del proveedor ganador sin modificar */ }
-            // ── FIN NUEVO ─────────────────────────────────────────────────────────────
 
             var dto = new PedidoVistaDTO
             {
@@ -2126,25 +2127,19 @@ namespace Inventario.BLL.Implementacion
             {
                 var det = detalles[i];
                 cotGanadora.TryGetValue(det.IdRequisicionDetalle, out var cot);
-
                 bool tieneIva = cot?.Iva ?? false;
                 decimal cantidad = det.Cantidad ?? 1m;
-                decimal precioUnitario = cot?.Importe ?? 0m;   // precio del proveedor (sin IVA)
+                decimal precioUnitario = cot?.Importe ?? 0m;
 
-                // ── NUEVO: si el analista capturó un importe autorizado, lo usa ──────
                 if (importesAutorizadosPorIndice.TryGetValue(i, out var totalAutorizadoConIva))
                 {
-                    // totalAutorizadoConIva = precio_unitario × cantidad × 1.16
-                    // → precio_unitario = totalAutorizadoConIva / 1.16 / cantidad
                     decimal totalSinIva = tieneIva
                         ? totalAutorizadoConIva / 1.16m
                         : totalAutorizadoConIva;
-
                     precioUnitario = cantidad > 0
                         ? Math.Round(totalSinIva / cantidad, 2)
                         : precioUnitario;
                 }
-                // ── FIN NUEVO ─────────────────────────────────────────────────────────
 
                 dto.Partidas.Add(new PedidoPartidaVistaDTO
                 {
@@ -2158,17 +2153,61 @@ namespace Inventario.BLL.Implementacion
                 });
             }
 
-            // Precalcular totales
-            decimal sumaInicial = dto.Partidas.Sum(p => p.PrecioUnitario * p.Cantidad);
+            // ── Resolver EsEstatal por partida desde TblApiPartidas ───────────────
+            var queryApiPartidas = await _repoApiPartidas.Consultar(
+                p => p.IdRequisicion == idRequisicion);
+            var apiPartidas = await queryApiPartidas
+                .OrderByDescending(p => p.IdHistorial)
+                .ToListAsync();
+
+            bool hayPartidasApi = apiPartidas.Any();
+
+            for (int i = 0; i < dto.Partidas.Count; i++)
+            {
+                var partida = dto.Partidas[i];
+                bool? esEstatal = true; // conservador: si no hay datos, aplica retención
+
+                if (hayPartidasApi)
+                {
+                    TblApiPartida? apiPartida = i < apiPartidas.Count ? apiPartidas[i] : null;
+
+                    if (apiPartida == null)
+                        apiPartida = apiPartidas.FirstOrDefault(p =>
+                            string.Equals(p.ObjetoGasto, partida.Clave, StringComparison.OrdinalIgnoreCase));
+
+                    if (apiPartida != null)
+                        esEstatal = apiPartida.EsEstatal;
+                }
+
+                partida.EsEstatal = esEstatal;
+            }
+
+            // ── Totales con retención condicional ─────────────────────────────────
+            int? idAdjudicacion = requisicion.IdAdjudicacion;
+
+            decimal sumaEstatal = dto.Partidas
+                .Where(p => p.EsEstatal == true)
+                .Sum(p => p.PrecioUnitario * p.Cantidad);
+            decimal sumaFederal = dto.Partidas
+                .Where(p => p.EsEstatal == false)
+                .Sum(p => p.PrecioUnitario * p.Cantidad);
+
+            decimal sumaInicial = sumaEstatal + sumaFederal;
             decimal ivaInicial = sumaInicial * 0.16m;
             decimal subtotalInicial = sumaInicial + ivaInicial;
-            decimal retencionInicial = subtotalInicial * 0.005m;
+
+            bool aplicaRetencion = idAdjudicacion.HasValue && idAdjudicacion.Value > 1;
+            decimal retencionInicial = aplicaRetencion ? sumaEstatal * 0.005m : 0m;
+
             dto.Suma = sumaInicial;
             dto.Iva = ivaInicial;
             dto.Descuento = 0m;
             dto.Subtotal = subtotalInicial;
             dto.Retencion = retencionInicial;
             dto.Total = subtotalInicial - retencionInicial;
+            dto.SumaEstatal = sumaEstatal;
+            dto.SumaFederal = sumaFederal;
+            dto.AplicaRetencion = aplicaRetencion;
 
             return dto;
         }
@@ -2355,30 +2394,55 @@ namespace Inventario.BLL.Implementacion
             doc.Add(tblArt);
 
             // ── TOTALES ───────────────────────────────────────────────────
+            decimal sumaEstatal = form.SumaEstatal;
+            decimal sumaFederal = form.SumaFederal;
+            bool aplicaRetencion = form.AplicaRetencion;
+
             var tblTot = new Table(UnitValue.CreatePercentArray(new float[] { 70f, 18f, 12f }))
                 .UseAllAvailableWidth();
 
-            // Celda vacía izquierda que ocupa todas las filas de totales
-            tblTot.AddCell(new Cell(6, 1).SetBorder(borde).SetBackgroundColor(ColorConstants.WHITE));
+            // Armar lista dinámica de filas
+            var filas = new List<(string Label, string Valor, bool EsTotal, bool EsNota)>();
 
-            var totalesFilas = new (string Label, string Valor, bool esTotal)[]
+            // Desglose por fuente solo si hay mezcla
+            if (sumaFederal > 0 && sumaEstatal > 0)
             {
-                ("SUMA",             Fmt(suma),      false),
-                ("I.V.A. 16%",       Fmt(iva),       false),
-                ("DESCUENTO",        Fmt(descuento), false),
-                ("SUBTOTAL",         Fmt(subtotal),  false),
-                ("RET. 5 AL MILLAR", Fmt(retencion), false),
-                ("TOTAL",            Fmt(total),     true)
-            };
+                filas.Add(("  └ Recursos Federales", Fmt(sumaFederal), false, true));
+                filas.Add(("  └ Recursos Estatales", Fmt(sumaEstatal), false, true));
+            }
 
-            foreach (var (lbl, val, esTotal) in totalesFilas)
+            filas.Add(("SUMA", Fmt(suma), false, false));
+            filas.Add(("I.V.A. 16%", Fmt(iva), false, false));
+            filas.Add(("DESCUENTO", Fmt(descuento), false, false));
+            filas.Add(("SUBTOTAL", Fmt(subtotal), false, false));
+
+            // Etiqueta de retención según aplique
+            string labelRet = !aplicaRetencion
+                ? "RET. 5 AL MILLAR\n(no aplica)"
+                : (sumaFederal > 0
+                    ? "RET. 5 AL MILLAR\n(solo rec. estatales)"
+                    : "RET. 5 AL MILLAR\n(recursos estatales)");
+
+            filas.Add((labelRet, Fmt(retencion), false, false));
+            filas.Add(("TOTAL", Fmt(total), true, false));
+
+            tblTot.AddCell(new Cell(filas.Count, 1)
+                .SetBorder(borde).SetBackgroundColor(ColorConstants.WHITE));
+
+            foreach (var (lbl, val, esTotal, esNota) in filas)
             {
-                var bgTotal = esTotal ? PdfApiEstiloRequi.RosaAcento : PdfApiEstiloRequi.FondoEncabezadoTabla;
-                var fgTotal = esTotal ? ColorConstants.WHITE : PdfApiEstiloRequi.TextoEncabezadoTabla;
-                var bgVal   = esTotal ? new DeviceRgb(255, 235, 240) : ColorConstants.WHITE;
-                tblTot.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bgTotal).SetPadding(4f)
+                var bgLabel = esTotal ? PdfApiEstiloRequi.RosaAcento
+                            : esNota ? new DeviceRgb(240, 244, 250)
+                                       : PdfApiEstiloRequi.FondoEncabezadoTabla;
+                var fgLabel = esTotal ? ColorConstants.WHITE
+                                       : PdfApiEstiloRequi.TextoEncabezadoTabla;
+                var bgVal = esTotal ? new DeviceRgb(255, 235, 240) : ColorConstants.WHITE;
+                float szLabel = esNota ? 5.8f : 6.6f;
+
+                tblTot.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bgLabel).SetPadding(4f)
                     .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .Add(new Paragraph(lbl).SetFont(bold).SetFontSize(6.6f).SetFontColor(fgTotal)));
+                    .Add(new Paragraph(lbl).SetFont(esNota ? regular : bold).SetFontSize(szLabel)
+                        .SetFontColor(fgLabel)));
                 tblTot.AddCell(new Cell().SetBorder(borde).SetBackgroundColor(bgVal).SetPadding(4f)
                     .SetTextAlignment(TextAlignment.RIGHT).SetVerticalAlignment(VerticalAlignment.MIDDLE)
                     .Add(new Paragraph(val).SetFont(bold).SetFontSize(7f)
@@ -2678,12 +2742,10 @@ namespace Inventario.BLL.Implementacion
             var hijas = detalles.Select(d => d.IdRequisicionNavigation).ToList();
             var idsHijas = hijas.Select(r => (int?)r.IdRequisicion).ToList();
 
-            // Departamento fijo: Recursos Materiales (ID=19)
             var depto19 = await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
             var nombreDepartamento = depto19?.NombreDepartamento ?? "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES";
             var responsableDepto = depto19?.NombreJefe ?? "";
 
-            // Partidas de todas las hijas
             var todasPartidas = hijas
                 .SelectMany(r => r.TblRequisicionDetalles.Where(a => a.Activo != false))
                 .Select(a => new
@@ -2701,7 +2763,6 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToList();
 
-            // Cotizaciones de todas las hijas
             var cotQuery = await _repositoryCotizaciones.Consultar(
                 c => idsHijas.Contains(c.IdRequisicion) && c.IdRequiDetalle.HasValue && c.Importe.HasValue);
             var cotizaciones = await cotQuery
@@ -2718,7 +2779,6 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
-            // Reutilizar ganador adjudicado de las requisiciones hijas
             var queryGanador = await _repositoryGanador.Consultar(g => idsHijas.Contains(g.IdRequisicion));
             var ganador = await queryGanador.FirstOrDefaultAsync();
             int? idGanador = ganador?.IdProveedor;
@@ -2736,7 +2796,6 @@ namespace Inventario.BLL.Implementacion
                 .GroupBy(c => c.IdRequiDetalle!.Value)
                 .ToDictionary(g => g.Key, g => g.First());
 
-            // Agrupar partidas por IdArticulo (consolidar cantidades)
             var partidasConsolidadas = todasPartidas
                 .GroupBy(p => new { p.IdArticulo, p.Clave, p.ClaveMaterial, p.Descripcion, p.UnidadMedida })
                 .Select(g =>
@@ -2746,7 +2805,6 @@ namespace Inventario.BLL.Implementacion
                     bool tieneIva = cot?.Iva ?? false;
                     decimal precioUnitario = cot?.Importe ?? 0m;
                     decimal cantidadTotal = g.Sum(p => p.Cantidad ?? 1m);
-
                     return new
                     {
                         primera.IdRequisicionDetalle,
@@ -2794,16 +2852,61 @@ namespace Inventario.BLL.Implementacion
                 });
             }
 
-            decimal sumaInicial = dto.Partidas.Sum(p => p.PrecioUnitario * p.Cantidad);
-            decimal ivaInicial = sumaInicial * 0.16m;
-            decimal subtotalInicial = sumaInicial + ivaInicial;
-            decimal retencionInicial = subtotalInicial * 0.005m;
-            dto.Suma = sumaInicial;
-            dto.Iva = ivaInicial;
+            // ── Resolver EsEstatal por partida desde TblApiPartidas ───────────────
+            var queryApiPartidas = await _repoApiPartidas.Consultar(
+                p => p.IdConsolidada == idConsolidada);
+            var apiPartidas = await queryApiPartidas
+                .OrderByDescending(p => p.IdHistorial)
+                .ToListAsync();
+
+            bool hayPartidasApi = apiPartidas.Any();
+
+            for (int i = 0; i < dto.Partidas.Count; i++)
+            {
+                var partida = dto.Partidas[i];
+                bool? esEstatal = true;
+
+                if (hayPartidasApi)
+                {
+                    TblApiPartida? apiPartida = i < apiPartidas.Count ? apiPartidas[i] : null;
+
+                    if (apiPartida == null)
+                        apiPartida = apiPartidas.FirstOrDefault(p =>
+                            string.Equals(p.ObjetoGasto, partida.Clave, StringComparison.OrdinalIgnoreCase));
+
+                    if (apiPartida != null)
+                        esEstatal = apiPartida.EsEstatal;
+                }
+
+                partida.EsEstatal = esEstatal;
+            }
+
+            // ── Totales con retención condicional ─────────────────────────────────
+            int? idAdjudicacion = consolidada.IdAdjudicacion;
+
+            decimal sumaEstatal = dto.Partidas
+                .Where(p => p.EsEstatal == true)
+                .Sum(p => p.PrecioUnitario * p.Cantidad);
+            decimal sumaFederal = dto.Partidas
+                .Where(p => p.EsEstatal == false)
+                .Sum(p => p.PrecioUnitario * p.Cantidad);
+
+            decimal sumaCons = sumaEstatal + sumaFederal;
+            decimal ivaCons = sumaCons * 0.16m;
+            decimal subtotalCons = sumaCons + ivaCons;
+
+            bool aplicaRetencion = idAdjudicacion.HasValue && idAdjudicacion.Value > 1;
+            decimal retencionCons = aplicaRetencion ? sumaEstatal * 0.005m : 0m;
+
+            dto.Suma = sumaCons;
+            dto.Iva = ivaCons;
             dto.Descuento = 0m;
-            dto.Subtotal = subtotalInicial;
-            dto.Retencion = retencionInicial;
-            dto.Total = subtotalInicial - retencionInicial;
+            dto.Subtotal = subtotalCons;
+            dto.Retencion = retencionCons;
+            dto.Total = subtotalCons - retencionCons;
+            dto.SumaEstatal = sumaEstatal;
+            dto.SumaFederal = sumaFederal;
+            dto.AplicaRetencion = aplicaRetencion;
 
             return dto;
         }
@@ -2830,6 +2933,65 @@ namespace Inventario.BLL.Implementacion
             };
 
             await _repoHistorial.Crear(registro);
+        }
+
+        public async Task PoblarApiPartidasAsync(int idHistorial, TablaApiEditableDTO modelo)
+        {
+            // 1. Cargar todas las fuentes de financiamiento para resolver EsEstatal
+            var queryFuentes = await _repoFuentes.Consultar();
+            var fuentes = await queryFuentes.ToListAsync();
+            var mapaFuentes = fuentes.ToDictionary(
+                f => f.Clave ?? "",
+                f => f,
+                StringComparer.OrdinalIgnoreCase);
+
+            // 2. Borrar partidas anteriores de este historial si existieran (idempotente)
+            var queryExistentes = await _repoApiPartidas.Consultar(
+                p => p.IdHistorial == idHistorial);
+            var existentes = await queryExistentes.ToListAsync();
+            foreach (var e in existentes)
+                await _repoApiPartidas.Eliminar(e);
+
+            // 3. Insertar una fila por cada partida del JSON
+            foreach (var partida in modelo.Partidas ?? new())
+            {
+                var claveFuente = (partida.FuenteFinanciamiento ?? "").Trim();
+                bool esEstatal = false;
+
+                if (mapaFuentes.TryGetValue(claveFuente, out var fuente))
+                    esEstatal = !string.Equals(fuente.Tipo, "Recursos federales",
+                                    StringComparison.OrdinalIgnoreCase);
+
+                // Parsear importes (vienen como "$25,520,000.00")
+                decimal ParseImporte(string? s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return 0m;
+                    var limpio = s.Replace("$", "").Replace(",", "").Trim();
+                    return decimal.TryParse(limpio,
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var v) ? v : 0m;
+                }
+
+                await _repoApiPartidas.Crear(new TblApiPartida
+                {
+                    IdHistorial = idHistorial,
+                    IdRequisicion = modelo.IdRequisicion > 0 ? modelo.IdRequisicion : null,
+                    IdConsolidada = modelo.IdConsolidada > 0 ? modelo.IdConsolidada : null,
+                    NumeroPartida = partida.Numero,
+                    Ua = partida.Ua,
+                    Region = partida.Region,
+                    ClaveMunicipio = partida.ClaveMunicipio,
+                    ClaveFuente = claveFuente,
+                    Pp = partida.Pp,
+                    Componente = partida.Componente,
+                    Actividad = partida.Actividad,
+                    ObjetoGasto = partida.ObjetoGasto,
+                    ImporteSolicitado = ParseImporte(partida.ImporteSolicitado),
+                    ImporteAutorizado = ParseImporte(partida.ImporteAutorizado),
+                    EsEstatal = esEstatal
+                });
+            }
         }
     }
 }

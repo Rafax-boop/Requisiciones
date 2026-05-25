@@ -24,4 +24,6 @@ public partial class TblTablaApiHistorial
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
 
     public virtual TblUsuario IdUsuarioNavigation { get; set; } = null!;
+
+    public virtual ICollection<TblApiPartida> TblApiPartida { get; set; } = new List<TblApiPartida>();
 }

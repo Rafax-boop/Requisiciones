@@ -224,14 +224,6 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> FinalizarConsolidada([FromBody] FinalizarConsolidadaRequest modelo)
-        {
-            var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var ok = await _consolidadaService.FinalizarConsolidada(modelo.IdConsolidada, idUsuario, modelo.Observaciones);
-            return Ok(new { success = ok });
-        }
-
-        [HttpPost]
         public async Task<IActionResult> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario)
         {
             var idUsuarioActual = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

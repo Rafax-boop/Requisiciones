@@ -16,3 +16,5 @@ Inventario.AplicacionWeb/appsettings.Development.json
 *.pubxml.user
 
 *.log
+.codegraph/
+AGENTS.md

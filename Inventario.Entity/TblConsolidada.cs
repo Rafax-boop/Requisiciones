@@ -45,6 +45,8 @@ public partial class TblConsolidada
 
     public virtual TblUsuario? IdUsuarioNavigation { get; set; }
 
+    public virtual ICollection<TblApiPartida> TblApiPartida { get; set; } = new List<TblApiPartida>();
+
     public virtual ICollection<TblConsolidadasDetalle> TblConsolidadasDetalles { get; set; } = new List<TblConsolidadasDetalle>();
 
     public virtual ICollection<TblRegistroDiseno> TblRegistroDisenos { get; set; } = new List<TblRegistroDiseno>();
@@ -52,6 +54,4 @@ public partial class TblConsolidada
     public virtual ICollection<TblRequisicion> TblRequisicions { get; set; } = new List<TblRequisicion>();
 
     public virtual ICollection<TblTablaApiHistorial> TblTablaApiHistorials { get; set; } = new List<TblTablaApiHistorial>();
-
-    public virtual ICollection<TblFormato> TblFormatos { get; set; } = new List<TblFormato>();
 }

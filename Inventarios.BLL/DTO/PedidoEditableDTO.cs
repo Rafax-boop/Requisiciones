@@ -27,6 +27,10 @@ namespace Inventario.BLL.DTO
         public decimal Subtotal { get; set; }
         public decimal Retencion { get; set; }
         public decimal Total { get; set; }
+
+        public decimal SumaEstatal { get; set; }
+        public decimal SumaFederal { get; set; }
+        public bool AplicaRetencion { get; set; }
     }
 
     public class PedidoPartidaVistaDTO
@@ -38,5 +42,6 @@ namespace Inventario.BLL.DTO
         public string UnidadMedida { get; set; } = "";
         public decimal PrecioUnitario { get; set; }
         public bool TieneIva { get; set; }
+        public bool? EsEstatal { get; set; }
     }
 }

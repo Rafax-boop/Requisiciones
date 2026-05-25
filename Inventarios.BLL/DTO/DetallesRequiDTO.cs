@@ -58,5 +58,6 @@ namespace Inventario.BLL.DTO
     {
         public string Ruta { get; set; }
         public string NombreArchivo { get; set; }
+        public string Label { get; set; }
     }
 }

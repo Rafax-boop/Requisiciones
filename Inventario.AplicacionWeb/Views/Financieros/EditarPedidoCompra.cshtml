@@ -31,46 +31,49 @@
 }
 
 @section Scripts {
-<script>
-(function () {
-    var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+    <script>
+        (function () {
+            var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
-    function parsear(id) {
-        var v = document.getElementById(id)?.value ?? "0";
-        v = v.replace(/\$/g, "").replace(/,/g, "").trim();
-        return parseFloat(v) || 0;
-    }
+            // Leer valores del servidor (ya calculados correctamente en el backend)
+            // Solo el descuento es editable; recalculamos subtotal, retención y total
+            var sumaEstatal = parseFloat(document.getElementById("hSumaEstatal")?.value || "0") || 0;
+            var aplicaRetencion = (document.getElementById("hAplicaRetencion")?.value || "false") === "true";
 
-    function fmt(n) { return MX.format(n); }
+            function parsearInput(id) {
+                var v = document.getElementById(id)?.value ?? "0";
+                v = v.replace(/\$/g, "").replace(/,/g, "").trim();
+                return parseFloat(v) || 0;
+            }
 
-    function recalcular() {
-        var suma = parsear("totSuma");
-        var iva = suma * 0.16;
-        var desc = parsear("totDescuento");
-        var subtotal = suma + iva - desc;
-        var ret = subtotal * 0.005;
-        var tot = subtotal - ret;
+            function recalcular() {
+                var suma      = parsearInput("totSuma");
+                var iva       = suma * 0.16;
+                var desc      = parsearInput("totDescuento");
+                var subtotal  = suma + iva - desc;
+                // Retención: solo 5 al millar sobre recursos ESTATALES, y solo si aplica
+                var ret       = (aplicaRetencion && sumaEstatal > 0) ? sumaEstatal * 0.005 : 0;
+                var tot       = subtotal - ret;
 
-        document.getElementById("totIva").value = fmt(iva);
-        document.getElementById("totSubtotal").value = fmt(subtotal);
-        document.getElementById("totRetencion").value = fmt(ret);
-        document.getElementById("totTotal").value = fmt(tot);
+                document.getElementById("totIva").value       = MX.format(iva);
+                document.getElementById("totSubtotal").value  = MX.format(subtotal);
+                document.getElementById("totRetencion").value = MX.format(ret);
+                document.getElementById("totTotal").value     = MX.format(tot);
 
-        // sincronizar hiddens para el POST
-        document.getElementById("hSuma").value = suma;
-        document.getElementById("hIva").value = iva;
-        document.getElementById("hDescuento").value = desc;
-        document.getElementById("hSubtotal").value = subtotal;
-        document.getElementById("hRetencion").value = ret;
-        document.getElementById("hTotal").value = tot;
-    }
+                // Sincronizar hiddens para el POST
+                document.getElementById("hSuma").value       = suma;
+                document.getElementById("hIva").value        = iva;
+                document.getElementById("hDescuento").value  = desc;
+                document.getElementById("hSubtotal").value   = subtotal;
+                document.getElementById("hRetencion").value  = ret;
+                document.getElementById("hTotal").value      = tot;
+            }
 
-    document.getElementById("totSuma")?.addEventListener("change", recalcular);
-    document.getElementById("totDescuento")?.addEventListener("change", recalcular);
+            document.getElementById("totDescuento")?.addEventListener("change", recalcular);
 
-    recalcular();
-})();
-</script>
+            recalcular();
+        })();
+    </script>
 }
 
 <div class="mt-3 container tabla-api-editor-page">
@@ -109,6 +112,9 @@
             <input type="hidden" name="Partidas[@i].UnidadMedida" value="@Model.Partidas[i].UnidadMedida" />
             <input type="hidden" name="Partidas[@i].PrecioUnitario" value="@Model.Partidas[i].PrecioUnitario" />
             <input type="hidden" name="Partidas[@i].TieneIva" value="@Model.Partidas[i].TieneIva" />
+            <input type="hidden" id="hSumaEstatal" name="SumaEstatal" value="@Model.SumaEstatal" />
+            <input type="hidden" id="hSumaFederal" name="SumaFederal" value="@Model.SumaFederal" />
+            <input type="hidden" id="hAplicaRetencion" name="AplicaRetencion" value="@Model.AplicaRetencion.ToString().ToLower()" />
         }
         <!-- Totales hiddens para POST -->
         <input type="hidden" id="hSuma" name="Suma" value="@Model.Suma" />
@@ -215,11 +221,28 @@
             <!-- Totales editables -->
             <div class="totales-wrap" style="margin-top:16px;">
                 <table class="totales-table">
+                    @if (Model.SumaFederal > 0 && Model.SumaEstatal > 0)
+                    {
+                        <tr>
+                            <td class="lbl" style="font-size:11px;color:#64748b;">└ Recursos Federales</td>
+                            <td class="val">
+                                <input type="text" id="totSumaFederal" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.SumaFederal.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl" style="font-size:11px;color:#64748b;">└ Recursos Estatales</td>
+                            <td class="val">
+                                <input type="text" id="totSumaEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.SumaEstatal.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                    }
                     <tr>
                         <td class="lbl">SUMA</td>
                         <td class="val">
-                            <input type="text" id="totSuma" class="form-control form-control-sm"
-                                   value="@Model.Suma.ToString("C2", MX)" />
+                            <input type="text" id="totSuma" class="form-control form-control-sm pedido-readonly"
+                                   value="@Model.Suma.ToString("C2", MX)" readonly />
                         </td>
                     </tr>
                     <tr>
@@ -244,7 +267,17 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="lbl">RET. 5 AL MILLAR</td>
+                        <td class="lbl">
+                            RET. 5 AL MILLAR
+                            @if (!Model.AplicaRetencion)
+                            {
+                                <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(no aplica)</span>
+                            }
+                            else if (Model.SumaFederal > 0)
+                            {
+                                <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(solo rec. estatales)</span>
+                            }
+                        </td>
                         <td class="val">
                             <input type="text" id="totRetencion" class="form-control form-control-sm pedido-readonly"
                                    value="@Model.Retencion.ToString("C2", MX)" readonly />

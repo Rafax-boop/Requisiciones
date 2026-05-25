@@ -16,9 +16,4 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? Justificacion { get; set; }
     }
 
-    public class FinalizarConsolidadaRequest
-    {
-        public int IdConsolidada { get; set; }
-        public string Observaciones { get; set; }
-    }
 }
