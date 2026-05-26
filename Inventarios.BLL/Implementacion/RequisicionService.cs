@@ -301,7 +301,7 @@ namespace Inventario.BLL.Implementacion
                 }
             }
 
-            if (soloCompra)
+            if (soloCompra && maestra?.RequiServicio != true)
             {
                 var idsEnCompra = movimientos
                     .Where(m => m.TipoMovimiento == "COMPRA")
