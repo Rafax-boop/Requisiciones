@@ -38,6 +38,16 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             ViewData["Title"] = "DAF";
 
+            var materiales = await _requisicionesService.ListarRequisiciones(null, false);
+            var servicios = await _requisicionesService.ListarRequisiciones(null, true);
+
+            var requisiciones = materiales
+                .Concat(servicios)
+                .Where(r => r.IdEstatus == 16)
+                .OrderBy(r => r.FechaModificacion)
+                .ThenBy(r => r.IdRequi)
+                .ToList();
+
             var consolidadasMateriales = await _consolidadaService.ListarConsolidadas(false);
             var consolidadasServicios = await _consolidadaService.ListarConsolidadas(true);
 
@@ -50,7 +60,7 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var vm = new VMTablaRequisiciones
             {
-                Requisiciones = new List<VMRequisicionMaestra>(),
+                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones),
                 Consolidadas = consolidadas,
                 Estatus = await _almacenService.ObtenerEstatus()
             };
