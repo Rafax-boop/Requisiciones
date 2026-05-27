@@ -95,7 +95,7 @@
         var numColsReq = 8;
         if (User.IsInRole("8")) numColsReq++;
         if (User.IsInRole("9") || User.IsInRole("8")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).ToList();
+        var requisicionesPrincipal = Model.Requisiciones.ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesProcesoPago = Model.Requisiciones.Where(r => r.IdEstatus == 17).ToList();
@@ -164,13 +164,10 @@
                             <td>
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <div class="acciones-grupo" style="justify-content:center">
-                                        @if (!User.IsInRole("9"))
-                                        {
-                                            <button class="btn-accion btn-ver" title="Ver detalle"
-                                                    onclick="verDetalle(@item.IdRequi, 'readonly')">
-                                                <i class="fa-solid fa-eye"></i>
-                                            </button>
-                                        }
+                                        <button class="btn-accion btn-ver" title="Ver detalle"
+                                                onclick="verDetalle(@item.IdRequi, 'readonly')">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
                                         @if (User.IsInRole("8") && item.IdEstatus == 13)
                                         {
                                             <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi)">
@@ -183,14 +180,11 @@
                                                 <i class="fa-solid fa-hand-holding"></i>
                                             </button>
                                         }
-                                        @if (item.IdEstatus == 14)
-                                        {
-                                            <a class="btn btn-accion"
-                                                   href="@Url.Action("HistorialTablaApi", "Financieros", new { idRequisicion = item.IdRequi })"
-                                                   title="Ver histórico Tabla API">
-                                                <i class="fa-solid fa-clock-rotate-left"></i>
-                                            </a>
-                                        }
+                                        <a class="btn btn-accion"
+                                               href="@Url.Action("HistorialTablaApi", "Financieros", new { idRequisicion = item.IdRequi })"
+                                               title="Ver histórico Tabla API">
+                                            <i class="fa-solid fa-clock-rotate-left"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </td>

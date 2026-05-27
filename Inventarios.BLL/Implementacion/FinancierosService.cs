@@ -100,7 +100,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             var resultado = await query
-                .Where(r => (r.IdUsuarioFinan.HasValue || r.IdEstatus == 13) && r.ConsolidadaId == null)
+                .Where(r => r.ConsolidadaId == null && (r.IdEstatus >= 13 && r.IdEstatus <= 18 || r.IdEstatus == 7 || r.IdEstatus == 5 || r.IdEstatus == 12))
                 .OrderBy(r => r.FechaModificacion)
                 .ThenBy(r => r.IdRequisicion)
                 .Select(r => new RequisicionMaestraDTO
@@ -136,11 +136,8 @@ namespace Inventario.BLL.Implementacion
 
             if (estatusPermitidos == null || estatusPermitidos.Count == 0)
             {
-                // Por defecto: traer todas las consolidadas asignadas a un analista financiero
-                // o que esten en estatus 13 (listas para asignar). Esto evita que desaparezcan
-                // al cambiar de estatus (14, 15, 17, etc.) mientras tengan IdUsuarioFinan.
-                query = query.Where(c => c.IdUsuarioFinan.HasValue || c.IdEstatus == 13);
-                query = query.Where(c => c.IdEstatus != 7 && c.IdEstatus != 5 && c.IdEstatus != 12);
+                // Mostrar todas las consolidadas en flujo financiero (estatus 13-18) + estados finales
+                query = query.Where(c => c.IdEstatus >= 13 && c.IdEstatus <= 18 || c.IdEstatus == 7 || c.IdEstatus == 5 || c.IdEstatus == 12);
             }
             else
             {
@@ -2693,11 +2690,38 @@ namespace Inventario.BLL.Implementacion
         }
 
         public async Task GuardarHistorialPedidoAsync(
-    PedidoVistaDTO modelo,
-    int idUsuario,
-    string? observacion = null)
+            PedidoVistaDTO modelo,
+            int idUsuario,
+            string? observacion = null)
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(modelo, new System.Text.Json.JsonSerializerOptions
+            // Recargar modelo completo desde BD (incluye Partidas)
+            var vista = modelo.IdConsolidada.HasValue
+                ? await ObtenerPedidoEditableConsolidadaAsync(modelo.IdConsolidada.Value)
+                : await ObtenerPedidoEditableAsync(modelo.IdRequisicion!.Value);
+
+            // Copiar campos editados del formulario
+            vista.NumeroPedido = modelo.NumeroPedido;
+            vista.NumeroPedidoEstatal = modelo.NumeroPedidoEstatal;
+            vista.NumeroPedidoFederal = modelo.NumeroPedidoFederal;
+            vista.TipoRecurso = modelo.TipoRecurso;
+            vista.TiempoEntrega = modelo.TiempoEntrega;
+            vista.CondicionesPago = modelo.CondicionesPago;
+            vista.Suma = modelo.Suma;
+            vista.Iva = modelo.Iva;
+            vista.Descuento = modelo.Descuento;
+            vista.Subtotal = modelo.Subtotal;
+            vista.Retencion = modelo.Retencion;
+            vista.Total = modelo.Total;
+            vista.AplicaRetencion = modelo.AplicaRetencion;
+
+            // Filtrar partidas si es recurso dual
+            if (!string.IsNullOrWhiteSpace(modelo.TipoRecurso))
+            {
+                bool esEstatal = modelo.TipoRecurso == "Estatal";
+                vista.Partidas = vista.Partidas.Where(p => p.EsEstatal == esEstatal).ToList();
+            }
+
+            var json = System.Text.Json.JsonSerializer.Serialize(vista, new System.Text.Json.JsonSerializerOptions
             {
                 WriteIndented = false,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -2993,7 +3017,32 @@ namespace Inventario.BLL.Implementacion
             int idUsuario,
             string? observacion = null)
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(modelo, new System.Text.Json.JsonSerializerOptions
+            // Recargar modelo completo desde BD (incluye Partidas)
+            var vista = await ObtenerPedidoEditableConsolidadaAsync(modelo.IdConsolidada!.Value);
+
+            // Copiar campos editados del formulario
+            vista.NumeroPedido = modelo.NumeroPedido;
+            vista.NumeroPedidoEstatal = modelo.NumeroPedidoEstatal;
+            vista.NumeroPedidoFederal = modelo.NumeroPedidoFederal;
+            vista.TipoRecurso = modelo.TipoRecurso;
+            vista.TiempoEntrega = modelo.TiempoEntrega;
+            vista.CondicionesPago = modelo.CondicionesPago;
+            vista.Suma = modelo.Suma;
+            vista.Iva = modelo.Iva;
+            vista.Descuento = modelo.Descuento;
+            vista.Subtotal = modelo.Subtotal;
+            vista.Retencion = modelo.Retencion;
+            vista.Total = modelo.Total;
+            vista.AplicaRetencion = modelo.AplicaRetencion;
+
+            // Filtrar partidas si es recurso dual
+            if (!string.IsNullOrWhiteSpace(modelo.TipoRecurso))
+            {
+                bool esEstatal = modelo.TipoRecurso == "Estatal";
+                vista.Partidas = vista.Partidas.Where(p => p.EsEstatal == esEstatal).ToList();
+            }
+
+            var json = System.Text.Json.JsonSerializer.Serialize(vista, new System.Text.Json.JsonSerializerOptions
             {
                 WriteIndented = false,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping

@@ -563,8 +563,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 .ThenBy(r => r.IdRequi)
                 .ToList();
 
-            var principal = listaDTO.Where(r => r.IdEstatus == 13 || r.IdEstatus == 14).Select(r => r.IdRequi).ToList();
-            var autorizadas = listaDTO.Where(r => r.IdEstatus == 15).Select(r => r.IdRequi).ToList();
+            var principal = listaDTO.Select(r => r.IdRequi).ToList();
+            var autorizadas = listaDTO.Where(r => r.IdEstatus == 15 || r.IdEstatus == 7 || r.IdEstatus == 12).Select(r => r.IdRequi).ToList();
             var rechazadas = listaDTO.Where(r => r.IdEstatus == 5).Select(r => r.IdRequi).ToList();
             var procesopago = listaDTO.Where(r => r.IdEstatus == 17).Select(r => r.IdRequi).ToList();
 
@@ -573,7 +573,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 User.IsInRole("9") ? idUsuario : null,
                 new List<int> { 13, 14, 15, 17 });
 
-            var consPrincipal = consolidadas.Where(c => c.IdEstatus == 13 || c.IdEstatus == 14)
+            var consPrincipal = consolidadas
                 .Select(c => c.ConsolidadaId * -1).ToList(); // negativo para distinguir de individuales
             var consAutorizadas = consolidadas.Where(c => c.IdEstatus == 15)
                 .Select(c => c.ConsolidadaId * -1).ToList();
