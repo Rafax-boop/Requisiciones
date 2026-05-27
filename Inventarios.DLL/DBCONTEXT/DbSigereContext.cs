@@ -46,6 +46,8 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblPartidaPresupuestal> TblPartidaPresupuestals { get; set; }
 
+    public virtual DbSet<TblPedido> TblPedidos { get; set; }
+
     public virtual DbSet<TblProgramaPresupuestario> TblProgramaPresupuestarios { get; set; }
 
     public virtual DbSet<TblProvedor> TblProvedors { get; set; }
@@ -214,9 +216,6 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.NumApi)
                 .HasMaxLength(15)
                 .IsUnicode(false);
-            entity.Property(e => e.NumPedido)
-                .HasMaxLength(15)
-                .IsUnicode(false);
             entity.Property(e => e.TipoPrograma)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -270,7 +269,6 @@ public partial class DbSigereContext : DbContext
 
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Iva).HasColumnName("IVA");
-            entity.Property(e => e.Vigencia);
 
             entity.HasOne(d => d.IdProveedorNavigation).WithMany(p => p.TblCotizaciones)
                 .HasForeignKey(d => d.IdProveedor)
@@ -406,6 +404,39 @@ public partial class DbSigereContext : DbContext
             entity.Property(e => e.Disponible).HasColumnType("decimal(18, 4)");
         });
 
+        modelBuilder.Entity<TblPedido>(entity =>
+        {
+            entity.HasKey(e => e.IdPedido).HasName("PK__TblPedid__9D335DC3FC640E88");
+
+            entity.ToTable("TblPedido");
+
+            entity.HasIndex(e => e.IdConsolidada, "IX_TblPedido_Consolidada");
+
+            entity.HasIndex(e => e.IdRequisicion, "IX_TblPedido_Requisicion");
+
+            entity.Property(e => e.FechaGeneracion)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.NumPedido)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.TipoRecurso)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdConsolidadaNavigation).WithMany(p => p.TblPedidos)
+                .HasForeignKey(d => d.IdConsolidada)
+                .HasConstraintName("FK_TblPedido_Consolidada");
+
+            entity.HasOne(d => d.IdRequisicionNavigation).WithMany(p => p.TblPedidos)
+                .HasForeignKey(d => d.IdRequisicion)
+                .HasConstraintName("FK_TblPedido_Requisicion");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.TblPedidos)
+                .HasForeignKey(d => d.IdUsuario)
+                .HasConstraintName("FK_TblPedido_Usuario");
+        });
+
         modelBuilder.Entity<TblProgramaPresupuestario>(entity =>
         {
             entity.ToTable("TblProgramaPresupuestario");
@@ -528,9 +559,6 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(150)
                 .IsUnicode(false);
             entity.Property(e => e.NumApi)
-                .HasMaxLength(15)
-                .IsUnicode(false);
-            entity.Property(e => e.NumPedido)
                 .HasMaxLength(15)
                 .IsUnicode(false);
             entity.Property(e => e.NumRequisicion)

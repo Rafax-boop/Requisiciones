@@ -1110,40 +1110,6 @@
     }).then(function (result) {
       if (!result.isConfirmed) return;
 
-      var ajaxOpts;
-
-      if (esConsolidada) {
-        var formData = new FormData();
-        formData.append("idConsolidada", id);
-        var archivoInput = document.getElementById("inputSubirPedido");
-        var archivo = archivoInput ? archivoInput.files[0] : null;
-        if (archivo) {
-          formData.append("archivo", archivo);
-        }
-        ajaxOpts = {
-          url: urlEnviarFinancierosDocsConsolidada,
-          type: "POST",
-          data: formData,
-          processData: false,
-          contentType: false
-        };
-      } else {
-        var formData = new FormData();
-        formData.append("idRequisicion", id);
-        var archivoInput = document.getElementById("inputSubirPedido");
-        var archivo = archivoInput ? archivoInput.files[0] : null;
-        if (archivo) {
-          formData.append("archivo", archivo);
-        }
-        ajaxOpts = {
-          url: urlEnviarFinancierosDocs,
-          type: "POST",
-          data: formData,
-          processData: false,
-          contentType: false
-        };
-      }
-
       Swal.fire({
         title: "Enviando...",
         allowOutsideClick: false,
@@ -1152,37 +1118,105 @@
         },
       });
 
-      $.ajax(ajaxOpts)
-        .done(function (res) {
-          if (res && typeof res === "object" && res.success) {
-            bootstrap.Modal.getInstance(
-              document.getElementById("modalExpediente"),
-            ).hide();
-            Swal.fire({
-              icon: "success",
-              title: "Enviado a financieros",
-              timer: 2000,
-              showConfirmButton: false,
-            }).then(function () {
-              location.reload();
-            });
-          } else {
-            var msg =
-              (res && res.message) ||
-              "No se pudo completar el env\u00edo. Verifica los documentos.";
-            Swal.fire({ icon: "error", title: msg });
-          }
-        })
-        .fail(function (jqXHR) {
-          var mensaje = "Error al enviar a financieros.";
-          if (jqXHR && jqXHR.responseText) {
-            try {
-              var parsed = JSON.parse(jqXHR.responseText);
-              if (parsed && parsed.message) mensaje = parsed.message;
-            } catch (e) {}
-          }
-          Swal.fire({ icon: "error", title: mensaje });
+      // Detectar si es modo simple (un pedido) o dual
+      var esDual = document.getElementById("pedidoSubirDual").style.display === "block";
+
+      var subirArchivo = function (tipoRecurso, callback) {
+        var inputId;
+        if (esDual) {
+          inputId = tipoRecurso === "Federal" ? "inputSubirPedidoFederal" : "inputSubirPedidoEstatal";
+        } else {
+          inputId = "inputSubirPedido";
+          tipoRecurso = ""; // el backend lo determina solo
+        }
+        var input = document.getElementById(inputId);
+        var archivo = input ? input.files[0] : null;
+        if (!archivo) { callback(); return; }
+
+        var fd = new FormData();
+        fd.append("idRequisicion", id);
+        fd.append("archivo", archivo);
+        fd.append("tipoRecurso", tipoRecurso);
+        $.ajax({
+          url: urlSubirDocumentoPedido,
+          type: "POST",
+          data: fd,
+          processData: false,
+          contentType: false,
+          success: function () { callback(); },
+          error: function () { callback(); }
         });
+      };
+
+      var hacerEnvio = function () {
+        var ajaxOpts;
+
+        if (esConsolidada) {
+          var formData = new FormData();
+          formData.append("idConsolidada", id);
+          ajaxOpts = {
+            url: urlEnviarFinancierosDocsConsolidada,
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false
+          };
+        } else {
+          var formData = new FormData();
+          formData.append("idRequisicion", id);
+          ajaxOpts = {
+            url: urlEnviarFinancierosDocs,
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false
+          };
+        }
+
+        $.ajax(ajaxOpts)
+          .done(function (res) {
+            if (res && typeof res === "object" && res.success) {
+              bootstrap.Modal.getInstance(
+                document.getElementById("modalExpediente"),
+              ).hide();
+              Swal.fire({
+                icon: "success",
+                title: "Enviado a financieros",
+                timer: 2000,
+                showConfirmButton: false,
+              }).then(function () {
+                location.reload();
+              });
+            } else {
+              var msg =
+                (res && res.message) ||
+                "No se pudo completar el env\u00edo. Verifica los documentos.";
+              Swal.fire({ icon: "error", title: msg });
+            }
+          })
+          .fail(function (jqXHR) {
+            var mensaje = "Error al enviar a financieros.";
+            if (jqXHR && jqXHR.responseText) {
+              try {
+                var parsed = JSON.parse(jqXHR.responseText);
+                if (parsed && parsed.message) mensaje = parsed.message;
+              } catch (e) {}
+            }
+            Swal.fire({ icon: "error", title: mensaje });
+          });
+      };
+
+      if (esDual) {
+        subirArchivo("Estatal", function () {
+          subirArchivo("Federal", function () {
+            hacerEnvio();
+          });
+        });
+      } else {
+        subirArchivo("", function () {
+          hacerEnvio();
+        });
+      }
     });
   };
 
@@ -4937,20 +4971,31 @@
       (function () {
         var idEstatus = data.idEstatus || 0;
         var pedidoCompra = data.archivosPedidoCompra || [];
+        var numPedidos = data.numPedidos || [];
+        var esDual = numPedidos.length > 1;
 
         // Estatus 15 (autorizada) o 18 (rebotada): modo edición
         if (idEstatus === 15) {
           document.getElementById("pedidoModoEdicion").style.display = "flex";
           document.getElementById("pedidoModoReadonly").style.display = "none";
-          // Limpiar el input por si quedó algo de una apertura anterior
-          var inputPedido = document.getElementById("inputSubirPedido");
-            if (inputPedido) inputPedido.value = "";
+
+          // Mostrar modo simple o dual según cantidad de pedidos
+          document.getElementById("pedidoSubirSimple").style.display = esDual ? "none" : "block";
+          document.getElementById("pedidoSubirDual").style.display = esDual ? "block" : "none";
+
+          // Limpiar inputs
+          var inputSimple = document.getElementById("inputSubirPedido");
+          if (inputSimple) inputSimple.value = "";
+          var inputEstatal = document.getElementById("inputSubirPedidoEstatal");
+          if (inputEstatal) inputEstatal.value = "";
+          var inputFederal = document.getElementById("inputSubirPedidoFederal");
+          if (inputFederal) inputFederal.value = "";
+
             var btnEditar = document.getElementById("btnEditarPedidoCompra");
             if (btnEditar) {
                 btnEditar.onclick = function () {
                     var urlPedido = container ? container.getAttribute("data-url-obtener-pedido") : "";
                     var urlGenerar = container ? container.getAttribute("data-url-generar-pedido-pdf") : "";
-                    // Usar la URL de editar pedido individual
                     var urlBase = (urlPedido || "").replace("ObtenerPedidoEditable", "EditarPedidoCompra");
                     window.open(urlBase + "?idRequisicion=" + idRequi, "_blank");
                 };

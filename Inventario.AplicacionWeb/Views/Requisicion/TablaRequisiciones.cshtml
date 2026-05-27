@@ -791,11 +791,29 @@
                         <button type="button" class="btn boton-gris" id="btnEditarPedidoCompra">
                             <i class="fa-solid fa-pen-to-square"></i> Editar Pedido de Compra
                         </button>
-                        <div class="formulario-input" style="width:100%; max-width:400px; margin-top:4px;">
-                            <label style="font-size:13px; font-weight:600; color:var(--slate-600); margin-bottom:8px; display:block;">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> Subir documento de pedido
-                            </label>
-                            <input type="file" id="inputSubirPedido" class="input-file-rosa" />
+                        <!-- Modo simple: un solo pedido -->
+                        <div id="pedidoSubirSimple" style="display:none; width:100%; max-width:400px;">
+                            <div class="formulario-input">
+                                <label style="font-size:13px; font-weight:600; color:var(--slate-600); margin-bottom:8px; display:block;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir pedido firmado
+                                </label>
+                                <input type="file" id="inputSubirPedido" class="input-file-rosa" />
+                            </div>
+                        </div>
+                        <!-- Modo dual: dos pedidos (Estatal + Federal) -->
+                        <div id="pedidoSubirDual" style="display:none; width:100%; max-width:400px;">
+                            <div class="formulario-input" style="margin-top:4px;">
+                                <label style="font-size:13px; font-weight:600; color:var(--slate-600); margin-bottom:8px; display:block;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir pedido firmado — Estatal
+                                </label>
+                                <input type="file" id="inputSubirPedidoEstatal" class="input-file-rosa" />
+                            </div>
+                            <div class="formulario-input">
+                                <label style="font-size:13px; font-weight:600; color:var(--slate-600); margin-bottom:8px; display:block;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir pedido firmado — Federal
+                                </label>
+                                <input type="file" id="inputSubirPedidoFederal" class="input-file-rosa" />
+                            </div>
                         </div>
                     </div>
 

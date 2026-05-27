@@ -5,7 +5,6 @@ namespace Inventario.BLL.DTO
         public int? IdRequisicion { get; set; }
         public int? IdConsolidada { get; set; }
         public string NumRequisicion { get; set; } = "";
-        public string NumPedido { get; set; } = "";
         public string ProveedorNombre { get; set; } = "";
         public string ProveedorDireccion { get; set; } = "";
         public string ProveedorRfc { get; set; } = "";
@@ -17,6 +16,9 @@ namespace Inventario.BLL.DTO
 
         // Campos editables del encabezado
         public string NumeroPedido { get; set; } = "";
+        public string NumeroPedidoEstatal { get; set; } = "";
+        public string NumeroPedidoFederal { get; set; } = "";
+        public string TipoRecurso { get; set; } = "";
         public string TiempoEntrega { get; set; } = "15 DIAS NATURALES POSTERIORES A LA FIRMA DEL PEDIDO";
         public string CondicionesPago { get; set; } = "30 DÍAS NAT POST A LA PRES. DE LA FACT";
 
@@ -30,6 +32,12 @@ namespace Inventario.BLL.DTO
 
         public decimal SumaEstatal { get; set; }
         public decimal SumaFederal { get; set; }
+        public decimal IvaEstatal => SumaEstatal * 0.16m;
+        public decimal IvaFederal => SumaFederal * 0.16m;
+        public decimal SubtotalEstatal => SumaEstatal + IvaEstatal;
+        public decimal SubtotalFederal => SumaFederal + IvaFederal;
+        public decimal RetencionEstatal => AplicaRetencion ? SumaEstatal * 0.005m : 0m;
+        public decimal RetencionFederal => 0m;
         public bool AplicaRetencion { get; set; }
     }
 

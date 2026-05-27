@@ -21,8 +21,6 @@ public partial class TblConsolidada
 
     public string? NumApi { get; set; }
 
-    public string? NumPedido { get; set; }
-
     public int? IdUsuarioMat { get; set; }
 
     public int? IdUsuarioFinan { get; set; }
@@ -48,6 +46,8 @@ public partial class TblConsolidada
     public virtual ICollection<TblApiPartida> TblApiPartida { get; set; } = new List<TblApiPartida>();
 
     public virtual ICollection<TblConsolidadasDetalle> TblConsolidadasDetalles { get; set; } = new List<TblConsolidadasDetalle>();
+
+    public virtual ICollection<TblPedido> TblPedidos { get; set; } = new List<TblPedido>();
 
     public virtual ICollection<TblRegistroDiseno> TblRegistroDisenos { get; set; } = new List<TblRegistroDiseno>();
 

@@ -51,6 +51,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblConsolidadasDetalle> _repoConsolidadaDetalle;
         private readonly IGenericRepository<TblApiPartida> _repoApiPartidas;
         private readonly IGenericRepository<TblFuentesFinanciamiento> _repoFuentes;
+        private readonly IGenericRepository<TblPedido> _repoPedido;
 
         public FinancierosService(
             IRequisicionRepository repositoryRequisicion,
@@ -66,6 +67,7 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblConsolidada> repoConsolidada,
             IGenericRepository<TblConsolidadasDetalle> repoConsolidadaDetalle,
             IGenericRepository<TblApiPartida> repoApiPartidas,
+            IGenericRepository<TblPedido> repoPedido,
             IGenericRepository<TblFuentesFinanciamiento> repoFuentes)
         {
             _repositoryRequisicion = repositoryRequisicion;
@@ -82,6 +84,7 @@ namespace Inventario.BLL.Implementacion
             _repoConsolidadaDetalle = repoConsolidadaDetalle;
             _repoApiPartidas = repoApiPartidas;
             _repoFuentes = repoFuentes;
+            _repoPedido = repoPedido;
         }
         public async Task<List<RequisicionMaestraDTO>> ListarRequisiciones(int? idUsuarioFinancieros = null)
         {
@@ -239,20 +242,53 @@ namespace Inventario.BLL.Implementacion
             var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == modelo.IdConsolidada);
             if (consolidada == null) return new AtenderResultadoDTO { Exito = false };
 
-            var numPedido = await GenerarNumeroPedidoAsync();
-
-            consolidada.IdEstatus = 15;
-            consolidada.NumPedido = numPedido;
-            consolidada.FechaModificacion = DateTime.Now;
-            await _repoConsolidada.Editar(consolidada);
-
             var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == modelo.IdConsolidada);
             var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
+
+            var idRequisHijas = hijas.Select(h => (int?)h.IdRequisicion).ToList();
+
+            var queryApiPartidas = await _repoApiPartidas.Consultar(
+                p => p.IdRequisicion.HasValue && idRequisHijas.Contains(p.IdRequisicion.Value));
+            var apiPartidas = await queryApiPartidas.ToListAsync();
+            var hayEstatal = apiPartidas.Any(p => p.EsEstatal == true);
+            var hayFederal = apiPartidas.Any(p => p.EsEstatal == false);
+            var tipos = hayEstatal && hayFederal ? new[] { "Estatal", "Federal" } : new[] { "Estatal" };
+
+            var numPedidos = new List<string>();
+            foreach (var tipo in tipos)
+            {
+                var numPedido = await GenerarNumeroPedidoAsync();
+                numPedidos.Add(numPedido);
+
+                await _repoPedido.Crear(new TblPedido
+                {
+                    IdConsolidada = consolidada.ConsolidadaId,
+                    NumPedido = numPedido,
+                    TipoRecurso = tipo,
+                    FechaGeneracion = DateTime.Now,
+                    IdUsuario = idUsuario
+                });
+
+                foreach (var hija in hijas)
+                {
+                    await _repoPedido.Crear(new TblPedido
+                    {
+                        IdRequisicion = hija.IdRequisicion,
+                        NumPedido = numPedido,
+                        TipoRecurso = tipo,
+                        FechaGeneracion = DateTime.Now,
+                        IdUsuario = idUsuario
+                    });
+                }
+            }
+
+            consolidada.IdEstatus = 15;
+            consolidada.FechaModificacion = DateTime.Now;
+            await _repoConsolidada.Editar(consolidada);
 
             foreach (var hija in hijas)
             {
                 hija.IdEstatus = 15;
-                hija.NumPedido = numPedido;
                 hija.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(hija);
 
@@ -269,7 +305,7 @@ namespace Inventario.BLL.Implementacion
             await GuardarArchivosConsolidada(modelo.DocSiaf, modelo.IdConsolidada, "SIAF", "DocumentoSIAF");
             await GuardarArchivosConsolidada(modelo.TablaApi, modelo.IdConsolidada, "TablaApi", "TablaApi");
 
-            return new AtenderResultadoDTO { Exito = true, NumPedido = numPedido };
+            return new AtenderResultadoDTO { Exito = true, NumPedidos = numPedidos };
         }
 
         public async Task<(bool Success, string Message)> EnviarFinancierosConsolidadaAsync(int idConsolidada, int idUsuario, IFormFile? archivo = null, string? webRootPath = null)
@@ -287,7 +323,7 @@ namespace Inventario.BLL.Implementacion
                 var rutaBase = System.IO.Path.Combine(webRootPath, "uploads", "PedidoCompra", carpeta);
                 System.IO.Directory.CreateDirectory(rutaBase);
 
-                var nombre = $"{Guid.NewGuid()}{System.IO.Path.GetExtension(archivo.FileName)}";
+                var nombre = $"{Guid.NewGuid().ToString("N").Substring(0, 8)}_{System.IO.Path.GetFileName(archivo.FileName)}";
                 using (var stream = new System.IO.FileStream(System.IO.Path.Combine(rutaBase, nombre), System.IO.FileMode.Create))
                     await archivo.CopyToAsync(stream);
 
@@ -468,12 +504,31 @@ namespace Inventario.BLL.Implementacion
                 .Obtener(r => r.IdRequisicion == modelo.IdRequisicion);
             if (requisicion == null) return new AtenderResultadoDTO { Exito = false };
 
-            var numPedido = await GenerarNumeroPedidoAsync();
+            var queryApiPartidas = await _repoApiPartidas.Consultar(
+                p => p.IdRequisicion == modelo.IdRequisicion);
+            var apiPartidas = await queryApiPartidas.ToListAsync();
+            var hayEstatal = apiPartidas.Any(p => p.EsEstatal == true);
+            var hayFederal = apiPartidas.Any(p => p.EsEstatal == false);
+            var tipos = hayEstatal && hayFederal ? new[] { "Estatal", "Federal" } : new[] { "Estatal" };
+
+            var numPedidos = new List<string>();
+            foreach (var tipo in tipos)
+            {
+                var numPedido = await GenerarNumeroPedidoAsync();
+                numPedidos.Add(numPedido);
+
+                await _repoPedido.Crear(new TblPedido
+                {
+                    IdRequisicion = requisicion.IdRequisicion,
+                    NumPedido = numPedido,
+                    TipoRecurso = tipo,
+                    FechaGeneracion = DateTime.Now,
+                    IdUsuario = idUsuario
+                });
+            }
 
             requisicion.IdEstatus = 15;
             requisicion.FechaModificacion = DateTime.Now;
-            requisicion.NumPedido = numPedido;
-
             await _repositoryRequisicion.Editar(requisicion);
 
             await _repositoryBitacora.Crear(new TblBitacoraEstatus
@@ -488,7 +543,7 @@ namespace Inventario.BLL.Implementacion
             await GuardarArchivos(modelo.DocSiaf, modelo.IdRequisicion, "SIAF", "DocumentoSIAF");
             await GuardarArchivos(modelo.TablaApi, modelo.IdRequisicion, "TablaApi", "TablaApi");
 
-            return new AtenderResultadoDTO { Exito = true, NumPedido = numPedido };
+            return new AtenderResultadoDTO { Exito = true, NumPedidos = numPedidos };
         }
 
         public async Task<bool> FinalizarRequisicion(int idRequisicion, List<IFormFile>? transferencias, int idUsuario)
@@ -1842,19 +1897,12 @@ namespace Inventario.BLL.Implementacion
                 return null;
             }
 
-            var queryReq = await _repositoryRequisicion.Consultar(r =>
-                r.NumPedido != null &&
-                r.NumPedido.StartsWith(prefijo) &&
-                r.NumPedido.EndsWith(terminacion));
-            var numPedReq = await queryReq.Select(r => r.NumPedido).ToListAsync();
-            foreach (var n in numPedReq) ExtraerMaximo(n);
-
-            var queryCons = await _repoConsolidada.Consultar(c =>
-                c.NumPedido != null &&
-                c.NumPedido.StartsWith(prefijo) &&
-                c.NumPedido.EndsWith(terminacion));
-            var numPedCons = await queryCons.Select(c => c.NumPedido).ToListAsync();
-            foreach (var n in numPedCons) ExtraerMaximo(n);
+            var queryPed = await _repoPedido.Consultar(p =>
+                p.NumPedido != null &&
+                p.NumPedido.StartsWith(prefijo) &&
+                p.NumPedido.EndsWith(terminacion));
+            var nums = await queryPed.Select(p => p.NumPedido).ToListAsync();
+            foreach (var n in nums) ExtraerMaximo(n);
 
             return $"PED-{(maxConsecutivo + 1):D4}/{sufAno}";
         }
@@ -2108,11 +2156,22 @@ namespace Inventario.BLL.Implementacion
             }
             catch { /* si falla, usa precios del proveedor ganador sin modificar */ }
 
+            // ── Cargar pedidos desde TblPedido ────────────────────────────────
+            var queryPedidos = await _repoPedido.Consultar(p => p.IdRequisicion == idRequisicion);
+            var listaPedidos = await queryPedidos.ToListAsync();
+            var numPedidoEstatal = listaPedidos.FirstOrDefault(p => p.TipoRecurso == "Estatal")?.NumPedido ?? "";
+            var numPedidoFederal = listaPedidos.FirstOrDefault(p => p.TipoRecurso == "Federal")?.NumPedido ?? "";
+            var numPedidoUnico = string.IsNullOrEmpty(numPedidoFederal)
+                ? numPedidoEstatal
+                : string.IsNullOrEmpty(numPedidoEstatal) ? numPedidoFederal : "";
+
             var dto = new PedidoVistaDTO
             {
                 IdRequisicion = idRequisicion,
                 NumRequisicion = requisicion.NumRequisicion ?? "",
-                NumeroPedido = requisicion.NumPedido ?? "",
+                NumeroPedido = numPedidoUnico,
+                NumeroPedidoEstatal = numPedidoEstatal,
+                NumeroPedidoFederal = numPedidoFederal,
                 ProveedorNombre = provGanador?.ProvNombre ?? "",
                 ProveedorDireccion = provGanador?.ProvDireccion ?? "",
                 ProveedorRfc = provGanador?.ProvRfc ?? "",
@@ -2220,7 +2279,7 @@ namespace Inventario.BLL.Implementacion
             return $"vigencia de {vigencia.Value} dias";
         }
 
-        public async Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath)
+        public async Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath, string tipoRecurso)
         {
             var vista = form.IdConsolidada.HasValue
                 ? await ObtenerPedidoEditableConsolidadaAsync(form.IdConsolidada.Value)
@@ -2230,6 +2289,13 @@ namespace Inventario.BLL.Implementacion
             vista.CondicionesPago = string.IsNullOrWhiteSpace(form.CondicionesPago)
                 ? vista.CondicionesPago
                 : form.CondicionesPago;
+
+            // Filtrar partidas según el tipo de recurso
+            if (!string.IsNullOrWhiteSpace(tipoRecurso))
+            {
+                bool esEstatal = tipoRecurso == "Estatal";
+                vista.Partidas = vista.Partidas.Where(p => p.EsEstatal == esEstatal).ToList();
+            }
 
             // Usar totales editados por el usuario
             decimal suma       = form.Suma;
@@ -2822,12 +2888,23 @@ namespace Inventario.BLL.Implementacion
                 .OrderBy(p => p.NumPartida)
                 .ToList();
 
+            // ── Cargar pedidos desde TblPedido ────────────────────────────────
+            var queryPedidos = await _repoPedido.Consultar(p => p.IdConsolidada == idConsolidada);
+            var listaPedidos = await queryPedidos.ToListAsync();
+            var numPedidoEstatal = listaPedidos.FirstOrDefault(p => p.TipoRecurso == "Estatal")?.NumPedido ?? "";
+            var numPedidoFederal = listaPedidos.FirstOrDefault(p => p.TipoRecurso == "Federal")?.NumPedido ?? "";
+            var numPedidoUnico = string.IsNullOrEmpty(numPedidoFederal)
+                ? numPedidoEstatal
+                : string.IsNullOrEmpty(numPedidoEstatal) ? numPedidoFederal : "";
+
             var dto = new PedidoVistaDTO
             {
                 IdRequisicion = null,
                 IdConsolidada = idConsolidada,
                 NumRequisicion = consolidada.FolioConsolidada ?? "",
-                NumeroPedido = consolidada.NumPedido ?? "",
+                NumeroPedido = numPedidoUnico,
+                NumeroPedidoEstatal = numPedidoEstatal,
+                NumeroPedidoFederal = numPedidoFederal,
                 ProveedorNombre = provGanador?.ProvNombre ?? "",
                 ProveedorDireccion = provGanador?.ProvDireccion ?? "",
                 ProveedorRfc = provGanador?.ProvRfc ?? "",

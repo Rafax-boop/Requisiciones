@@ -210,7 +210,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var resultado = await _financierosService.AtenderRequisicion(modelo, idUsuario);
             if (!resultado.Exito) return BadRequest();
-            return Ok(new { success = true, numPedido = resultado.NumPedido });
+            return Ok(new { success = true, numPedidos = resultado.NumPedidos });
         }
 
         [HttpPost]
@@ -219,7 +219,7 @@ namespace Inventario.AplicacionWeb.Controllers
             int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var resultado = await _financierosService.AtenderConsolidadaFinancieros(modelo, idUsuario);
             if (!resultado.Exito) return BadRequest();
-            return Ok(new { success = true, numPedido = resultado.NumPedido });
+            return Ok(new { success = true, numPedidos = resultado.NumPedidos });
         }
 
         [HttpPost]
@@ -458,19 +458,23 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             try
             {
-                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath);
+                var tipoRecurso = form.TipoRecurso;
+                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath, tipoRecurso);
 
-                // ── NUEVO: guardar historial igual que Tabla API ──────────────
                 int idUsuario = int.Parse(
                     User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                var obs = string.IsNullOrWhiteSpace(tipoRecurso)
+                    ? "Pedido PDF generado"
+                    : $"Pedido PDF {tipoRecurso} generado";
 
                 await _financierosService.GuardarHistorialPedidoAsync(
                     form,
                     idUsuario,
-                    observacion: $"Pedido PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
-                // ─────────────────────────────────────────────────────────────
+                    observacion: $"{obs} el {DateTime.Now:dd/MM/yyyy HH:mm}");
 
-                var nombre = $"Pedido_{form.IdRequisicion ?? 0}_{DateTime.Now:yyyyMMdd}.pdf";
+                var suffix = string.IsNullOrWhiteSpace(tipoRecurso) ? "" : $"_{tipoRecurso}";
+                var nombre = $"Pedido_{form.IdRequisicion ?? 0}{suffix}_{DateTime.Now:yyyyMMdd}.pdf";
                 return File(bytes, "application/pdf", nombre);
             }
             catch (Exception ex)
@@ -485,17 +489,23 @@ namespace Inventario.AplicacionWeb.Controllers
         {
             try
             {
-                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath);
+                var tipoRecurso = form.TipoRecurso;
+                var bytes = await _financierosService.GenerarPedidoPdfAsync(form, _env.WebRootPath, tipoRecurso);
 
                 int idUsuario = int.Parse(
                     User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+                var obs = string.IsNullOrWhiteSpace(tipoRecurso)
+                    ? "Pedido PDF generado"
+                    : $"Pedido PDF {tipoRecurso} generado";
+
                 await _financierosService.GuardarHistorialPedidoConsolidadaAsync(
                     form,
                     idUsuario,
-                    observacion: $"Pedido PDF generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
+                    observacion: $"{obs} el {DateTime.Now:dd/MM/yyyy HH:mm}");
 
-                var nombre = $"Pedido_Consolidada_{form.IdConsolidada ?? 0}_{DateTime.Now:yyyyMMdd}.pdf";
+                var suffix = string.IsNullOrWhiteSpace(tipoRecurso) ? "" : $"_{tipoRecurso}";
+                var nombre = $"Pedido_Consolidada_{form.IdConsolidada ?? 0}{suffix}_{DateTime.Now:yyyyMMdd}.pdf";
                 return File(bytes, "application/pdf", nombre);
             }
             catch (Exception ex)

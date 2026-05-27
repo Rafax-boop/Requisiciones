@@ -61,8 +61,6 @@ public partial class TblRequisicion
 
     public string? NumApi { get; set; }
 
-    public string? NumPedido { get; set; }
-
     public int? ConsolidadaId { get; set; }
 
     public virtual TblConsolidada? Consolidada { get; set; }
@@ -92,6 +90,8 @@ public partial class TblRequisicion
     public virtual ICollection<TblCotizacione> TblCotizaciones { get; set; } = new List<TblCotizacione>();
 
     public virtual ICollection<TblFormato> TblFormatos { get; set; } = new List<TblFormato>();
+
+    public virtual ICollection<TblPedido> TblPedidos { get; set; } = new List<TblPedido>();
 
     public virtual ICollection<TblRegistroDiseno> TblRegistroDisenos { get; set; } = new List<TblRegistroDiseno>();
 

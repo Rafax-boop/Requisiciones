@@ -22,13 +22,13 @@ namespace Inventario.BLL.DTO
     public class AtenderResultadoDTO
     {
         public bool Exito { get; set; }
-        public string? NumPedido { get; set; }
+        public List<string> NumPedidos { get; set; } = new();
     }
 
     public class DescargaArchivosRequisicionDTO
     {
         public string? NumRequisicion { get; set; }
         public string? NumApi { get; set; }
-        public string? NumPedido { get; set; }
+        public List<string> NumPedidos { get; set; } = new();
     }
 }

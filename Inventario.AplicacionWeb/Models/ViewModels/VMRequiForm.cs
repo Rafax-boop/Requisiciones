@@ -7,7 +7,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public int? IdRequiMaestra { get; set; }
         public string? ObservacionesBitacora { get; set; }
         public string? NumRequisicion { get; set; }
-        public string? NumPedido { get; set; }
+        public List<string> NumPedidos { get; set; } = new();
         public DateOnly? FechaEmision { get; set; }
         public int? IdDepartamento { get; set; }
         public string? Departamento { get; set; }

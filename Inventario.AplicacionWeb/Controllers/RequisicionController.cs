@@ -542,10 +542,10 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> EnviarAFinancierosConDocs([FromForm] int idRequisicion, IFormFile archivo)
+        public async Task<IActionResult> EnviarAFinancierosConDocs([FromForm] int idRequisicion, [FromForm] string tipoRecurso, IFormFile archivo)
         {
             var idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var ok = await _requisicionService.EnviarAFinancierosConDocs(idRequisicion, idUsuario, archivo, _webHostEnvironment.WebRootPath);
+            var ok = await _requisicionService.EnviarAFinancierosConDocs(idRequisicion, idUsuario, archivo, _webHostEnvironment.WebRootPath, tipoRecurso);
             return Ok(new { success = ok });
         }
 
@@ -652,9 +652,9 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion, IFormFile archivo)
+        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string tipoRecurso)
         {
-            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath);
+            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath, tipoRecurso);
             return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
         }
 
@@ -797,11 +797,15 @@ namespace Inventario.AplicacionWeb.Controllers
 
         private static string ConstruirNombreZip(DescargaArchivosRequisicionDTO datos)
         {
+            var pedidosStr = datos.NumPedidos.Any()
+                ? string.Join("-", datos.NumPedidos)
+                : "SIN-PEDIDO";
+
             var partes = new[]
             {
                 LimpiarSegmentoNombreArchivo(datos.NumRequisicion, "SIN-REQUISICION"),
                 LimpiarSegmentoNombreArchivo(datos.NumApi, "SIN-API"),
-                LimpiarSegmentoNombreArchivo(datos.NumPedido, "SIN-PEDIDO")
+                LimpiarSegmentoNombreArchivo(pedidosStr, "SIN-PEDIDO")
             };
 
             return string.Join("_", partes) + ".zip";

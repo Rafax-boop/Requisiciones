@@ -44,12 +44,12 @@ namespace Inventario.BLL.Interfaces
 
         Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedor(int idRequisicion);
 
-        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario, IFormFile archivoPedido, string webRootPath);
+        Task<bool> EnviarAFinancierosConDocs(int idRequisicion, int idUsuario, IFormFile archivoPedido, string webRootPath, string tipoRecurso);
 
         Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
             List<string> docsObservados, int idUsuario);
 
-        Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath);
+        Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath, string tipoRecurso);
 
         Task<Dictionary<int, List<MunicipioItemDTO>>> ObtenerDistribucionMunicipiosPorRequisicion(int idRequisicion);
 

@@ -8,7 +8,7 @@
         : DateTime.Now.ToString("dd/MM/yyyy", cultura);
     var requisicion = Model.EsConsolidada == true ? (Model.FolioConsolidada ?? Model.NumRequisicion ?? "—") : (Model.NumRequisicion ?? "—");
     var solicitante = Model.NomResponsableDepartamento ?? "—";
-    var pedido = string.IsNullOrWhiteSpace(Model.NumPedido) ? "—" : Model.NumPedido;
+    var pedido = Model.NumPedidos.Any() ? string.Join(" / ", Model.NumPedidos) : "—";
     var esConsolidada = Model.EsConsolidada == true;
     var articulos = Model.Articulos ?? new List<Inventario.AplicacionWeb.Models.ViewModels.ItemRequiVM>();
     var folioEstatico = Model.NumeroFormato.HasValue

@@ -285,7 +285,7 @@ namespace Inventario.BLL.Implementacion
                 foreach (var archivo in archivos)
                 {
                     if (archivo.Length == 0) continue;
-                    var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+                    var nombre = $"{Guid.NewGuid().ToString("N").Substring(0, 8)}_{Path.GetFileName(archivo.FileName)}";
                     using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
                         await archivo.CopyToAsync(stream);
 
@@ -595,7 +595,7 @@ namespace Inventario.BLL.Implementacion
                     .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
                     .ToList(),
                 ArchivosPedidoCompra = docs
-                    .Where(f => f.Tipo == "pedido_compra")
+                    .Where(f => f.Tipo.StartsWith("pedido_compra"))
                     .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = Path.GetFileName(f.Ruta) })
                     .ToList(),
                 DocumentosProveedor = docs
@@ -614,7 +614,7 @@ namespace Inventario.BLL.Implementacion
             var rutaBase = Path.Combine(webRootPath, "uploads", "Proveedor", carpeta);
             Directory.CreateDirectory(rutaBase);
 
-            var nombre = $"{Guid.NewGuid()}{Path.GetExtension(archivo.FileName)}";
+            var nombre = $"{Guid.NewGuid().ToString("N").Substring(0, 8)}_{Path.GetFileName(archivo.FileName)}";
             using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
                 await archivo.CopyToAsync(stream);
 

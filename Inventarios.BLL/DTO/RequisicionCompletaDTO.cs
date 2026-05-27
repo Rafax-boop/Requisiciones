@@ -6,7 +6,7 @@ namespace Inventario.BLL.DTO
     public class RequisicionCompletaDTO
     {
         public string? NumRequisicion { get; set; }
-        public string? NumPedido { get; set; }
+        public List<string> NumPedidos { get; set; } = new();
         public DateOnly? FechaEmision { get; set; }
         public int? IdDepartamento { get; set; }
         public string? Departamento { get; set; }

@@ -3,6 +3,10 @@
 @{
     ViewData["Title"] = "Pedido de Compra";
     var MX = new System.Globalization.CultureInfo("es-MX");
+    var tieneAmbos = Model.SumaFederal > 0 && Model.SumaEstatal > 0;
+    var tipoUnico = !tieneAmbos ? (Model.SumaEstatal > 0 ? "Estatal" : "Federal") : "Estatal";
+    var urlAction = Model.IdConsolidada.HasValue ? "GenerarPedidoPdfConsolidada" : "GenerarPedidoPdf";
+    var actionUrl = Url.Action(urlAction, "Financieros");
 }
 
 @section Styles {
@@ -34,44 +38,63 @@
     <script>
         (function () {
             var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+            var aplicaRetencion = @Model.AplicaRetencion.ToString().ToLower();
 
-            // Leer valores del servidor (ya calculados correctamente en el backend)
-            // Solo el descuento es editable; recalculamos subtotal, retención y total
-            var sumaEstatal = parseFloat(document.getElementById("hSumaEstatal")?.value || "0") || 0;
-            var aplicaRetencion = (document.getElementById("hAplicaRetencion")?.value || "false") === "true";
-
-            function parsearInput(id) {
+            function parsearValor(id) {
                 var v = document.getElementById(id)?.value ?? "0";
                 v = v.replace(/\$/g, "").replace(/,/g, "").trim();
                 return parseFloat(v) || 0;
             }
 
-            function recalcular() {
-                var suma      = parsearInput("totSuma");
+            function recalcular(tipo) {
+                var suma      = parseFloat(document.getElementById("hSuma" + tipo)?.value || "0") || 0;
                 var iva       = suma * 0.16;
-                var desc      = parsearInput("totDescuento");
+                var desc      = parsearValor("totDescuento" + tipo);
                 var subtotal  = suma + iva - desc;
-                // Retención: solo 5 al millar sobre recursos ESTATALES, y solo si aplica
-                var ret       = (aplicaRetencion && sumaEstatal > 0) ? sumaEstatal * 0.005 : 0;
+                var ret       = (aplicaRetencion && tipo === "Estatal") ? parseFloat(document.getElementById("hSuma" + tipo)?.value || "0") * 0.005 : 0;
                 var tot       = subtotal - ret;
 
-                document.getElementById("totIva").value       = MX.format(iva);
-                document.getElementById("totSubtotal").value  = MX.format(subtotal);
-                document.getElementById("totRetencion").value = MX.format(ret);
-                document.getElementById("totTotal").value     = MX.format(tot);
+                document.getElementById("totSuma" + tipo).value       = MX.format(suma);
+                document.getElementById("totIva" + tipo).value        = MX.format(iva);
+                document.getElementById("totSubtotal" + tipo).value   = MX.format(subtotal);
+                document.getElementById("totRetencion" + tipo).value  = MX.format(ret);
+                document.getElementById("totTotal" + tipo).value      = MX.format(tot);
 
-                // Sincronizar hiddens para el POST
-                document.getElementById("hSuma").value       = suma;
-                document.getElementById("hIva").value        = iva;
-                document.getElementById("hDescuento").value  = desc;
-                document.getElementById("hSubtotal").value   = subtotal;
-                document.getElementById("hRetencion").value  = ret;
-                document.getElementById("hTotal").value      = tot;
+                document.getElementById("hSuma" + tipo).value       = suma;
+                document.getElementById("hIva" + tipo).value        = iva;
+                document.getElementById("hDescuento" + tipo).value  = desc;
+                document.getElementById("hSubtotal" + tipo).value   = subtotal;
+                document.getElementById("hRetencion" + tipo).value  = ret;
+                document.getElementById("hTotal" + tipo).value      = tot;
             }
 
-            document.getElementById("totDescuento")?.addEventListener("change", recalcular);
+            @if (tieneAmbos)
+            {
+                <text>
+                var sharedTiempo = document.getElementById("inputTiempoEntrega");
+                var sharedCondiciones = document.getElementById("inputCondicionesPago");
+                document.querySelectorAll(".form-pedido-dual").forEach(function (form) {
+                    form.addEventListener("submit", function () {
+                        var hTiempo = form.querySelector('[name="TiempoEntrega"]');
+                        var hCond = form.querySelector('[name="CondicionesPago"]');
+                        if (hTiempo) hTiempo.value = sharedTiempo.value;
+                        if (hCond) hCond.value = sharedCondiciones.value;
+                    });
+                });
 
-            recalcular();
+                document.getElementById("totDescuentoEstatal")?.addEventListener("change", function () { recalcular("Estatal"); });
+                document.getElementById("totDescuentoFederal")?.addEventListener("change", function () { recalcular("Federal"); });
+                recalcular("Estatal");
+                recalcular("Federal");
+                </text>
+            }
+            else
+            {
+                <text>
+                document.getElementById("totDescuento@(tipoUnico)")?.addEventListener("change", function () { recalcular("@tipoUnico"); });
+                recalcular("@tipoUnico");
+                </text>
+            }
         })();
     </script>
 }
@@ -90,64 +113,32 @@
         </div>
     </div>
 
-    <form method="post" target="_blank" class="no-loader"
-          action="@(Model.IdConsolidada.HasValue ? Url.Action("GenerarPedidoPdfConsolidada", "Financieros") : Url.Action("GenerarPedidoPdf", "Financieros"))">
-        @Html.AntiForgeryToken()
-        <input type="hidden" asp-for="IdRequisicion" />
-        <input type="hidden" asp-for="IdConsolidada" />
-        <input type="hidden" asp-for="ProveedorNombre" />
-        <input type="hidden" asp-for="ProveedorDireccion" />
-        <input type="hidden" asp-for="ProveedorRfc" />
-        <input type="hidden" asp-for="Departamento" />
-        <input type="hidden" asp-for="Responsable" />
-        <input type="hidden" asp-for="LugarEntrega" />
-        <input type="hidden" asp-for="PartidaPresupuestal" />
-        <input type="hidden" asp-for="NumeroPedido" />
-        @for (int i = 0; i < Model.Partidas.Count; i++)
-        {
-            <input type="hidden" name="Partidas[@i].Numero" value="@Model.Partidas[i].Numero" />
-            <input type="hidden" name="Partidas[@i].Clave" value="@Model.Partidas[i].Clave" />
-            <input type="hidden" name="Partidas[@i].Descripcion" value="@Model.Partidas[i].Descripcion" />
-            <input type="hidden" name="Partidas[@i].Cantidad" value="@Model.Partidas[i].Cantidad" />
-            <input type="hidden" name="Partidas[@i].UnidadMedida" value="@Model.Partidas[i].UnidadMedida" />
-            <input type="hidden" name="Partidas[@i].PrecioUnitario" value="@Model.Partidas[i].PrecioUnitario" />
-            <input type="hidden" name="Partidas[@i].TieneIva" value="@Model.Partidas[i].TieneIva" />
-            <input type="hidden" id="hSumaEstatal" name="SumaEstatal" value="@Model.SumaEstatal" />
-            <input type="hidden" id="hSumaFederal" name="SumaFederal" value="@Model.SumaFederal" />
-            <input type="hidden" id="hAplicaRetencion" name="AplicaRetencion" value="@Model.AplicaRetencion.ToString().ToLower()" />
-        }
-        <!-- Totales hiddens para POST -->
-        <input type="hidden" id="hSuma" name="Suma" value="@Model.Suma" />
-        <input type="hidden" id="hIva" name="Iva" value="@Model.Iva" />
-        <input type="hidden" id="hDescuento" name="Descuento" value="@Model.Descuento" />
-        <input type="hidden" id="hSubtotal" name="Subtotal" value="@Model.Subtotal" />
-        <input type="hidden" id="hRetencion" name="Retencion" value="@Model.Retencion" />
-        <input type="hidden" id="hTotal" name="Total" value="@Model.Total" />
-
-        <!-- Proveedor ganador (solo lectura) -->
-        <div class="pedido-section">
-            <p class="pedido-section-title"><i class="fa-solid fa-store"></i> Proveedor adjudicado</p>
-            <div class="container-formulario">
-                <div class="seccion-1">
-                    <div class="formulario-input">
-                        <label>Nombre del proveedor</label>
-                        <input type="text" value="@Model.ProveedorNombre" class="pedido-readonly" readonly />
-                    </div>
-                    <div class="formulario-input">
-                        <label>R.F.C.</label>
-                        <input type="text" value="@Model.ProveedorRfc" class="pedido-readonly" readonly />
-                    </div>
+    <!-- Proveedor ganador (solo lectura) -->
+    <div class="pedido-section">
+        <p class="pedido-section-title"><i class="fa-solid fa-store"></i> Proveedor adjudicado</p>
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Nombre del proveedor</label>
+                    <input type="text" value="@Model.ProveedorNombre" class="pedido-readonly" readonly />
                 </div>
-                <div class="seccion-2">
-                    <div class="formulario-input">
-                        <label>Dirección</label>
-                        <input type="text" value="@Model.ProveedorDireccion" class="pedido-readonly" readonly />
-                    </div>
+                <div class="formulario-input">
+                    <label>R.F.C.</label>
+                    <input type="text" value="@Model.ProveedorRfc" class="pedido-readonly" readonly />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Dirección</label>
+                    <input type="text" value="@Model.ProveedorDireccion" class="pedido-readonly" readonly />
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Datos del pedido (editables) -->
+    @if (tieneAmbos)
+    {
+        <!-- Datos del pedido compartidos (fuera de ambos forms) -->
         <div class="pedido-section">
             <p class="pedido-section-title"><i class="fa-solid fa-file-invoice"></i> Datos del pedido</p>
             <div class="container-formulario">
@@ -167,141 +158,425 @@
                 </div>
                 <div class="seccion-2">
                     <div class="formulario-input">
-                        <label>Nº de Pedido</label>
-                        <input type="text" value="@Model.NumeroPedido" class="pedido-readonly" readonly />
-                    </div>
-                    <div class="formulario-input">
                         <label>Tiempo de entrega</label>
-                        <input asp-for="TiempoEntrega" type="text" />
+                        <input type="text" id="inputTiempoEntrega" value="@Model.TiempoEntrega" />
                     </div>
                     <div class="formulario-input">
                         <label>Condiciones de pago</label>
-                        <input asp-for="CondicionesPago" type="text" />
+                        <input type="text" id="inputCondicionesPago" value="@Model.CondicionesPago" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla de artículos -->
-        <div class="pedido-section">
-            <p class="pedido-section-title"><i class="fa-solid fa-box"></i> Artículos del pedido</p>
-            <div class="pedido-grid-wrap">
-                <table class="pedido-table">
-                    <thead>
-                        <tr>
-                            <th>No.</th>
-                            <th>Clave</th>
-                            <th>Descripción</th>
-                            <th>Cantidad</th>
-                            <th>Unidad</th>
-                            <th>Precio unitario</th>
-                            <th>Precio total</th>
-                            <th>IVA</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in Model.Partidas)
-                        {
-                            decimal precioTotal = p.PrecioUnitario * p.Cantidad;
-                            <tr>
-                                <td class="num">@p.Numero</td>
-                                <td>@p.Clave</td>
-                                <td>@p.Descripcion</td>
-                                <td class="num">@p.Cantidad.ToString("N0")</td>
-                                <td class="num">@p.UnidadMedida</td>
-                                <td class="monto">@p.PrecioUnitario.ToString("C2", MX)</td>
-                                <td class="monto">@precioTotal.ToString("C2", MX)</td>
-                                <td class="num">@(p.TieneIva ? "Sí" : "No")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+        <!-- Form 1: Pedido Estatal -->
+        <form method="post" target="_blank" class="no-loader form-pedido-dual" action="@actionUrl">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="IdRequisicion" value="@Model.IdRequisicion" />
+            <input type="hidden" name="IdConsolidada" value="@Model.IdConsolidada" />
+            <input type="hidden" name="TipoRecurso" value="Estatal" />
+            <input type="hidden" name="NumeroPedido" value="@Model.NumeroPedidoEstatal" />
+            <input type="hidden" name="TiempoEntrega" value="@Model.TiempoEntrega" />
+            <input type="hidden" name="CondicionesPago" value="@Model.CondicionesPago" />
+            <input type="hidden" id="hSumaEstatal" name="Suma" value="@Model.SumaEstatal" />
+            <input type="hidden" id="hIvaEstatal" name="Iva" value="@(Model.SumaEstatal * 0.16m)" />
+            <input type="hidden" id="hDescuentoEstatal" name="Descuento" value="0" />
+            <input type="hidden" id="hSubtotalEstatal" name="Subtotal" value="@(Model.SumaEstatal * 1.16m)" />
+            <input type="hidden" id="hRetencionEstatal" name="Retencion" value="@(Model.AplicaRetencion ? Model.SumaEstatal * 0.005m : 0m)" />
+            <input type="hidden" id="hTotalEstatal" name="Total" value="@(Model.SumaEstatal * 1.16m - (Model.AplicaRetencion ? Model.SumaEstatal * 0.005m : 0m))" />
+            <input type="hidden" name="AplicaRetencion" value="@Model.AplicaRetencion.ToString().ToLower()" />
 
-            <!-- Totales editables -->
-            <div class="totales-wrap" style="margin-top:16px;">
-                <table class="totales-table">
-                    @if (Model.SumaFederal > 0 && Model.SumaEstatal > 0)
-                    {
+            <div class="pedido-section">
+                <p class="pedido-section-title" style="color:#2563eb;">
+                    <i class="fa-solid fa-file-signature"></i> Pedido - Recursos Estatales
+                </p>
+                <div class="container-formulario">
+                    <div class="seccion-1">
+                        <div class="formulario-input">
+                            <label>Nº de Pedido</label>
+                            <input type="text" value="@Model.NumeroPedidoEstatal" class="pedido-readonly" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                @{
+                    var partidasEstatal = Model.Partidas.Where(p => p.EsEstatal == true).ToList();
+                }
+                <div class="pedido-grid-wrap">
+                    <table class="pedido-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Clave</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Precio unitario</th>
+                                <th>Precio total</th>
+                                <th>IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in partidasEstatal)
+                            {
+                                decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                                <tr>
+                                    <td class="num">@p.Numero</td>
+                                    <td>@p.Clave</td>
+                                    <td>@p.Descripcion</td>
+                                    <td class="num">@p.Cantidad.ToString("N0")</td>
+                                    <td class="num">@p.UnidadMedida</td>
+                                    <td class="monto">@p.PrecioUnitario.ToString("C2", MX)</td>
+                                    <td class="monto">@precioTotal.ToString("C2", MX)</td>
+                                    <td class="num">@(p.TieneIva ? "Sí" : "No")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="totales-wrap" style="margin-top:16px;">
+                    <table class="totales-table">
                         <tr>
-                            <td class="lbl" style="font-size:11px;color:#64748b;">└ Recursos Federales</td>
+                            <td class="lbl">SUMA</td>
+                            <td class="val">
+                                <input type="text" id="totSumaEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.SumaEstatal.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">I.V.A. 16%</td>
+                            <td class="val">
+                                <input type="text" id="totIvaEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaEstatal * 0.16m)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">DESCUENTO</td>
+                            <td class="val">
+                                <input type="text" id="totDescuentoEstatal" class="form-control form-control-sm"
+                                       value="$0.00" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">SUBTOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totSubtotalEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaEstatal * 1.16m).ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">
+                                RET. 5 AL MILLAR
+                                @if (Model.AplicaRetencion)
+                                {
+                                    <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(solo rec. estatales)</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(no aplica)</span>
+                                }
+                            </td>
+                            <td class="val">
+                                <input type="text" id="totRetencionEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.AplicaRetencion ? (Model.SumaEstatal * 0.005m).ToString("C2", MX) : "$0.00")" readonly />
+                            </td>
+                        </tr>
+                        <tr class="fila-total">
+                            <td class="lbl">TOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totTotalEstatal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaEstatal * 1.16m - (Model.AplicaRetencion ? Model.SumaEstatal * 0.005m : 0m)).ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="acciones-bar">
+                    <button type="submit" class="btn boton-rosa btn-lg" style="margin-left:auto;">
+                        <i class="fa-solid fa-print"></i> Guardar e Imprimir Estatal
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Form 2: Pedido Federal -->
+        <form method="post" target="_blank" class="no-loader form-pedido-dual" action="@actionUrl">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="IdRequisicion" value="@Model.IdRequisicion" />
+            <input type="hidden" name="IdConsolidada" value="@Model.IdConsolidada" />
+            <input type="hidden" name="TipoRecurso" value="Federal" />
+            <input type="hidden" name="NumeroPedido" value="@Model.NumeroPedidoFederal" />
+            <input type="hidden" name="TiempoEntrega" value="@Model.TiempoEntrega" />
+            <input type="hidden" name="CondicionesPago" value="@Model.CondicionesPago" />
+            <input type="hidden" id="hSumaFederal" name="Suma" value="@Model.SumaFederal" />
+            <input type="hidden" id="hIvaFederal" name="Iva" value="@(Model.SumaFederal * 0.16m)" />
+            <input type="hidden" id="hDescuentoFederal" name="Descuento" value="0" />
+            <input type="hidden" id="hSubtotalFederal" name="Subtotal" value="@(Model.SumaFederal * 1.16m)" />
+            <input type="hidden" id="hRetencionFederal" name="Retencion" value="0" />
+            <input type="hidden" id="hTotalFederal" name="Total" value="@(Model.SumaFederal * 1.16m)" />
+
+            <div class="pedido-section">
+                <p class="pedido-section-title" style="color:#059669;">
+                    <i class="fa-solid fa-file-signature"></i> Pedido - Recursos Federales
+                </p>
+                <div class="container-formulario">
+                    <div class="seccion-1">
+                        <div class="formulario-input">
+                            <label>Nº de Pedido</label>
+                            <input type="text" value="@Model.NumeroPedidoFederal" class="pedido-readonly" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                @{
+                    var partidasFederal = Model.Partidas.Where(p => p.EsEstatal == false).ToList();
+                }
+                <div class="pedido-grid-wrap">
+                    <table class="pedido-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Clave</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Precio unitario</th>
+                                <th>Precio total</th>
+                                <th>IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in partidasFederal)
+                            {
+                                decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                                <tr>
+                                    <td class="num">@p.Numero</td>
+                                    <td>@p.Clave</td>
+                                    <td>@p.Descripcion</td>
+                                    <td class="num">@p.Cantidad.ToString("N0")</td>
+                                    <td class="num">@p.UnidadMedida</td>
+                                    <td class="monto">@p.PrecioUnitario.ToString("C2", MX)</td>
+                                    <td class="monto">@precioTotal.ToString("C2", MX)</td>
+                                    <td class="num">@(p.TieneIva ? "Sí" : "No")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="totales-wrap" style="margin-top:16px;">
+                    <table class="totales-table">
+                        <tr>
+                            <td class="lbl">SUMA</td>
                             <td class="val">
                                 <input type="text" id="totSumaFederal" class="form-control form-control-sm pedido-readonly"
                                        value="@Model.SumaFederal.ToString("C2", MX)" readonly />
                             </td>
                         </tr>
                         <tr>
-                            <td class="lbl" style="font-size:11px;color:#64748b;">└ Recursos Estatales</td>
+                            <td class="lbl">I.V.A. 16%</td>
                             <td class="val">
-                                <input type="text" id="totSumaEstatal" class="form-control form-control-sm pedido-readonly"
-                                       value="@Model.SumaEstatal.ToString("C2", MX)" readonly />
+                                <input type="text" id="totIvaFederal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaFederal * 0.16m)" readonly />
                             </td>
                         </tr>
-                    }
-                    <tr>
-                        <td class="lbl">SUMA</td>
-                        <td class="val">
-                            <input type="text" id="totSuma" class="form-control form-control-sm pedido-readonly"
-                                   value="@Model.Suma.ToString("C2", MX)" readonly />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="lbl">I.V.A. 16%</td>
-                        <td class="val">
-                            <input type="text" id="totIva" class="form-control form-control-sm pedido-readonly"
-                                   value="@Model.Iva.ToString("C2", MX)" readonly />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="lbl">DESCUENTO</td>
-                        <td class="val">
-                            <input type="text" id="totDescuento" class="form-control form-control-sm"
-                                   value="@Model.Descuento.ToString("C2", MX)" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="lbl">SUBTOTAL</td>
-                        <td class="val">
-                            <input type="text" id="totSubtotal" class="form-control form-control-sm pedido-readonly"
-                                   value="@Model.Subtotal.ToString("C2", MX)" readonly />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="lbl">
-                            RET. 5 AL MILLAR
-                            @if (!Model.AplicaRetencion)
-                            {
-                                <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(no aplica)</span>
-                            }
-                            else if (Model.SumaFederal > 0)
-                            {
-                                <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(solo rec. estatales)</span>
-                            }
-                        </td>
-                        <td class="val">
-                            <input type="text" id="totRetencion" class="form-control form-control-sm pedido-readonly"
-                                   value="@Model.Retencion.ToString("C2", MX)" readonly />
-                        </td>
-                    </tr>
-                    <tr class="fila-total">
-                        <td class="lbl">TOTAL</td>
-                        <td class="val">
-                            <input type="text" id="totTotal" class="form-control form-control-sm pedido-readonly"
-                                   value="@Model.Total.ToString("C2", MX)" readonly />
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+                        <tr>
+                            <td class="lbl">DESCUENTO</td>
+                            <td class="val">
+                                <input type="text" id="totDescuentoFederal" class="form-control form-control-sm"
+                                       value="$0.00" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">SUBTOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totSubtotalFederal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaFederal * 1.16m).ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">
+                                RET. 5 AL MILLAR
+                                <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(no aplica a federal)</span>
+                            </td>
+                            <td class="val">
+                                <input type="text" id="totRetencionFederal" class="form-control form-control-sm pedido-readonly"
+                                       value="$0.00" readonly />
+                            </td>
+                        </tr>
+                        <tr class="fila-total">
+                            <td class="lbl">TOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totTotalFederal" class="form-control form-control-sm pedido-readonly"
+                                       value="@(Model.SumaFederal * 1.16m).ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
 
-        <!-- Acciones -->
-        <div class="acciones-bar">
-            <button type="button" class="btn boton-gris btn-lg" onclick="history.back()">
-                <i class="fa-solid fa-arrow-left"></i> Volver
-            </button>
-            <button type="submit" class="btn boton-rosa btn-lg">
-                <i class="fa-solid fa-print"></i> Guardar e Imprimir
-            </button>
-        </div>
-    </form>
+                <div class="acciones-bar">
+                    <button type="submit" class="btn boton-rosa btn-lg" style="margin-left:auto;">
+                        <i class="fa-solid fa-print"></i> Guardar e Imprimir Federal
+                    </button>
+                </div>
+            </div>
+        </form>
+    }
+    else
+    {
+        <!-- Modo simple: un solo recurso -->
+        <form method="post" target="_blank" class="no-loader" action="@actionUrl">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdRequisicion" />
+            <input type="hidden" asp-for="IdConsolidada" />
+            <input type="hidden" asp-for="ProveedorNombre" />
+            <input type="hidden" asp-for="ProveedorDireccion" />
+            <input type="hidden" asp-for="ProveedorRfc" />
+            <input type="hidden" asp-for="Departamento" />
+            <input type="hidden" asp-for="Responsable" />
+            <input type="hidden" asp-for="LugarEntrega" />
+            <input type="hidden" asp-for="PartidaPresupuestal" />
+            <input type="hidden" asp-for="NumeroPedido" />
+            <input type="hidden" id="hSuma@(tipoUnico)" name="Suma" value="@Model.Suma" />
+            <input type="hidden" id="hIva@(tipoUnico)" name="Iva" value="@Model.Iva" />
+            <input type="hidden" id="hDescuento@(tipoUnico)" name="Descuento" value="@Model.Descuento" />
+            <input type="hidden" id="hSubtotal@(tipoUnico)" name="Subtotal" value="@Model.Subtotal" />
+            <input type="hidden" id="hRetencion@(tipoUnico)" name="Retencion" value="@Model.Retencion" />
+            <input type="hidden" id="hTotal@(tipoUnico)" name="Total" value="@Model.Total" />
+
+            <div class="pedido-section">
+                <p class="pedido-section-title"><i class="fa-solid fa-file-invoice"></i> Datos del pedido</p>
+                <div class="container-formulario">
+                    <div class="seccion-1">
+                        <div class="formulario-input">
+                            <label>Departamento solicitante</label>
+                            <input type="text" value="@Model.Departamento" class="pedido-readonly" readonly />
+                        </div>
+                        <div class="formulario-input">
+                            <label>Responsable</label>
+                            <input type="text" value="@Model.Responsable" class="pedido-readonly" readonly />
+                        </div>
+                        <div class="formulario-input">
+                            <label>Lugar de entrega</label>
+                            <input type="text" value="@Model.LugarEntrega" class="pedido-readonly" readonly />
+                        </div>
+                    </div>
+                    <div class="seccion-2">
+                        <div class="formulario-input">
+                            <label>Nº de Pedido</label>
+                            <input type="text" value="@Model.NumeroPedido" class="pedido-readonly" readonly />
+                        </div>
+                        <div class="formulario-input">
+                            <label>Tiempo de entrega</label>
+                            <input asp-for="TiempoEntrega" type="text" />
+                        </div>
+                        <div class="formulario-input">
+                            <label>Condiciones de pago</label>
+                            <input asp-for="CondicionesPago" type="text" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pedido-section">
+                <p class="pedido-section-title"><i class="fa-solid fa-box"></i> Artículos del pedido</p>
+
+                <div class="pedido-grid-wrap">
+                    <table class="pedido-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Clave</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Precio unitario</th>
+                                <th>Precio total</th>
+                                <th>IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Partidas)
+                            {
+                                decimal precioTotal = p.PrecioUnitario * p.Cantidad;
+                                <tr>
+                                    <td class="num">@p.Numero</td>
+                                    <td>@p.Clave</td>
+                                    <td>@p.Descripcion</td>
+                                    <td class="num">@p.Cantidad.ToString("N0")</td>
+                                    <td class="num">@p.UnidadMedida</td>
+                                    <td class="monto">@p.PrecioUnitario.ToString("C2", MX)</td>
+                                    <td class="monto">@precioTotal.ToString("C2", MX)</td>
+                                    <td class="num">@(p.TieneIva ? "Sí" : "No")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="totales-wrap" style="margin-top:16px;">
+                    <table class="totales-table">
+                        <tr>
+                            <td class="lbl">SUMA</td>
+                            <td class="val">
+                                <input type="text" id="totSuma@(tipoUnico)" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.Suma.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">I.V.A. 16%</td>
+                            <td class="val">
+                                <input type="text" id="totIva@(tipoUnico)" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.Iva.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">DESCUENTO</td>
+                            <td class="val">
+                                <input type="text" id="totDescuento@(tipoUnico)" class="form-control form-control-sm"
+                                       value="@Model.Descuento.ToString("C2", MX)" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">SUBTOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totSubtotal@(tipoUnico)" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.Subtotal.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">
+                                RET. 5 AL MILLAR
+                                @if (!Model.AplicaRetencion)
+                                {
+                                    <span style="font-size:10px;font-weight:400;color:#94a3b8;display:block;">(no aplica)</span>
+                                }
+                            </td>
+                            <td class="val">
+                                <input type="text" id="totRetencion@(tipoUnico)" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.Retencion.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                        <tr class="fila-total">
+                            <td class="lbl">TOTAL</td>
+                            <td class="val">
+                                <input type="text" id="totTotal@(tipoUnico)" class="form-control form-control-sm pedido-readonly"
+                                       value="@Model.Total.ToString("C2", MX)" readonly />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="acciones-bar">
+                    <button type="button" class="btn boton-gris btn-lg" onclick="history.back()">
+                        <i class="fa-solid fa-arrow-left"></i> Volver
+                    </button>
+                    <button type="submit" class="btn boton-rosa btn-lg">
+                        <i class="fa-solid fa-print"></i> Guardar e Imprimir
+                    </button>
+                </div>
+            </div>
+        </form>
+    }
 </div>

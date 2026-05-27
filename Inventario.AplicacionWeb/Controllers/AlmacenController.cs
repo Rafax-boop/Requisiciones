@@ -149,7 +149,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
-                NumPedido = dto.NumPedido,
+                NumPedidos = dto.NumPedidos,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -201,7 +201,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = null,
                 NumRequisicion = consolidada.FolioConsolidada,
-                NumPedido = consolidada.NumPedido,
+                NumPedidos = consolidada.TblPedidos.Select(p => p.NumPedido).ToList(),
                 FechaEmision = childQuery.Min(r => r.FechaEmision),
                 Departamento = depto19?.NombreDepartamento ?? "RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 NomResponsableDepartamento = depto19?.NombreJefe ?? childQuery.FirstOrDefault()?.Responsable,
@@ -246,7 +246,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
-                NumPedido = dto.NumPedido,
+                NumPedidos = dto.NumPedidos,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -517,7 +517,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = id,
                 NumRequisicion = dto.NumRequisicion,
-                NumPedido = dto.NumPedido,
+                NumPedidos = dto.NumPedidos,
                 FechaEmision = dto.FechaEmision,
                 IdDepartamento = dto.IdDepartamento,
                 Departamento = dto.Departamento,
@@ -566,7 +566,7 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 IdRequiMaestra = null,
                 NumRequisicion = consolidada.FolioConsolidada,
-                NumPedido = consolidada.NumPedido,
+                NumPedidos = consolidada.TblPedidos.Select(p => p.NumPedido).ToList(),
                 FechaEmision = childQuery.Min(r => r.FechaEmision),
                 Departamento = depto19?.NombreDepartamento ?? "RECURSOS MATERIALES Y SERVICIOS GENERALES",
                 NomResponsableDepartamento = depto19?.NombreJefe ?? childQuery.First().Responsable,

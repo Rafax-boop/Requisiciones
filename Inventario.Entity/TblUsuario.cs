@@ -33,6 +33,8 @@ public partial class TblUsuario
 
     public virtual ICollection<TblConsolidada> TblConsolidadaIdUsuarioNavigations { get; set; } = new List<TblConsolidada>();
 
+    public virtual ICollection<TblPedido> TblPedidos { get; set; } = new List<TblPedido>();
+
     public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioFinanNavigations { get; set; } = new List<TblRequisicion>();
 
     public virtual ICollection<TblRequisicion> TblRequisicionIdUsuarioMatNavigations { get; set; } = new List<TblRequisicion>();

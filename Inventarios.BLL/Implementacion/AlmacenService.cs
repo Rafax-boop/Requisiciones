@@ -1536,7 +1536,8 @@ namespace Inventario.BLL.Implementacion
 
         public async Task<TblConsolidada?> ObtenerConsolidadaAsync(int idConsolidada)
         {
-            return await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada);
+            var query = await _repoConsolidada.Consultar(c => c.ConsolidadaId == idConsolidada);
+            return await query.Include(c => c.TblPedidos).FirstOrDefaultAsync();
         }
 
         public async Task<TblDepartamento?> ObtenerDepartamentoRecursosMateriales()
