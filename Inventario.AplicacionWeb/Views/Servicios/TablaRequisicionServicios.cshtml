@@ -1,4 +1,4 @@
-@using Inventario.AplicacionWeb.Models.ViewModels
+﻿@using Inventario.AplicacionWeb.Models.ViewModels
 @using Inventario.AplicacionWeb.Utilidades
 @model VMTablaRequisiciones
 @{
@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page" data-tipo-tabla="servicios"
@@ -70,12 +69,12 @@
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
-            <p class="tabla-requi-subtitulo">Gestión y seguimiento de requisiciones de servicios</p>
+            <p class="tabla-requi-subtitulo">GestiÃ³n y seguimiento de requisiciones de servicios</p>
         </div>
         @if (User.IsInRole("1"))
         {
             <a href="@Url.Action("FormularioRequisicionServicios", "Servicios")" class="boton-rosa">
-                <i class="fa-solid fa-plus"></i> Nueva Requisición de Servicios
+                <i class="fa-solid fa-plus"></i> Nueva RequisiciÃ³n de Servicios
             </a>
         }
         @if (User.IsInRole("6"))
@@ -91,7 +90,7 @@
 
     <div class="container-formulario filtros-container">
         <div class="filtro-grupo">
-            <label>Nº Requisición</label>
+            <label>NÂº RequisiciÃ³n</label>
             <input type="text" id="filtroNumReq" placeholder="REC-000000" />
         </div>
         <div class="filtro-grupo">
@@ -152,7 +151,7 @@
         var requisicionesVerificadas = Model.Requisiciones.Where(r => (r.IdEstatus == 15 || r.IdEstatus == 18) && r.ConsolidadaId == null).ToList();
     }
 
-    <!-- Pestaña En seguimiento -->
+    <!-- PestaÃ±a En seguimiento -->
     <div id="tab-principal" class="almacen-tab-panel activo">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesPrincipal">
@@ -160,7 +159,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha de emisión</th>
+                        <th>Fecha de emisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th style="text-align:center">Partida(s)</th>
@@ -203,7 +202,7 @@
                                         var claseColorP = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorP">
                                             <i class="fa-solid fa-circle"></i>
-                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
+                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " dÃ­a" : " dÃ­as"))</span>
                                         </span>
                                     }
                                     else
@@ -232,7 +231,7 @@
                                     </button>
                                     @if (User.IsInRole("6") && (item.IdEstatus == 1 || item.IdEstatus == 11))
                                     {
-                                        <button class="btn-accion" title="Asignar Requisición" onclick="abrirModalAsignar(@item.IdRequi, @item.IdEstatus)">
+                                        <button class="btn-accion" title="Asignar RequisiciÃ³n" onclick="abrirModalAsignar(@item.IdRequi, @item.IdEstatus)">
                                             <i class="fa-solid fa-clipboard-user"></i>
                                         </button>
                                     }
@@ -285,9 +284,9 @@
                                         </li>
                                         <li class="timeline-step @(fase >= 4 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
-                                            <div class="step-label">Autorización</div>
+                                            <div class="step-label">AutorizaciÃ³n</div>
                                             <div class="step-tooltip">
-                                                <strong>Autorización Documental</strong>
+                                                <strong>AutorizaciÃ³n Documental</strong>
                                                 <span>@(fase >= 4 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
@@ -319,7 +318,7 @@
         </div>
     </div>
 
-    <!-- Pestaña Requisiciones autorizadas -->
+    <!-- PestaÃ±a Requisiciones autorizadas -->
     <div id="tab-autorizadas" class="almacen-tab-panel">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesAutorizadas">
@@ -327,7 +326,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha de emisión</th>
+                        <th>Fecha de emisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th>Partida(s)</th>
@@ -370,7 +369,7 @@
                                         var claseColorA = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorA">
                                             <i class="fa-solid fa-circle"></i>
-                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
+                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " dÃ­a" : " dÃ­as"))</span>
                                         </span>
                                     }
                                     else
@@ -423,9 +422,9 @@
                                         </li>
                                         <li class="timeline-step @(faseA >= 4 ? "completed" : "")">
                                             <div class="step-icon"><i class="fa-solid fa-user-tie"></i></div>
-                                            <div class="step-label">Autorización</div>
+                                            <div class="step-label">AutorizaciÃ³n</div>
                                             <div class="step-tooltip">
-                                                <strong>Autorización Documental</strong>
+                                                <strong>AutorizaciÃ³n Documental</strong>
                                                 <span>@(faseA >= 4 ? item.Estatus : "Pendiente")</span>
                                             </div>
                                         </li>
@@ -459,7 +458,7 @@
         </div>
     </div>
 
-    <!-- Pestaña Requisiciones rechazadas -->
+    <!-- PestaÃ±a Requisiciones rechazadas -->
     <div id="tab-rechazadas" class="almacen-tab-panel">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesRechazadas">
@@ -467,7 +466,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha de emisión</th>
+                        <th>Fecha de emisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th>Partida(s)</th>
@@ -510,7 +509,7 @@
                                         var claseColorR = item.DiasAsignado <= 3 ? "badge-semaforo-verde" : (item.DiasAsignado <= 6 ? "badge-semaforo-amarillo" : "badge-semaforo-rojo");
                                         <span class="badge-semaforo-premium @claseColorR">
                                             <i class="fa-solid fa-circle"></i>
-                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " día" : " días"))</span>
+                                            <span>@(item.DiasAsignado == 0 ? "Hoy" : item.DiasAsignado + (item.DiasAsignado == 1 ? " dÃ­a" : " dÃ­as"))</span>
                                         </span>
                                     }
                                     else
@@ -534,8 +533,8 @@
                             <td colspan="@numColsReq">
                                 <div class="timeline-container">
                                     <div class="p-3 text-center" style="border:1px solid #fecaca;border-radius:10px;background:#fef2f2;">
-                                        <p class="mb-1" style="color:#b91c1c;font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> Requisición rechazada</p>
-                                        <p class="text-muted small mb-2">El folio ya no está en seguimiento activo.</p>
+                                        <p class="mb-1" style="color:#b91c1c;font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> RequisiciÃ³n rechazada</p>
+                                        <p class="text-muted small mb-2">El folio ya no estÃ¡ en seguimiento activo.</p>
                                         <button type="button" class="btn btn-sm" style="border:1px solid #fecaca;background:white;color:#b91c1c;" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                             <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                         </button>
@@ -556,7 +555,7 @@
         </div>
     </div>
 
-    <!-- Pestaña Requisiciones verificadas -->
+    <!-- PestaÃ±a Requisiciones verificadas -->
     @if (!User.IsInRole("1"))
     {
     <div id="tab-verificadas" class="almacen-tab-panel">
@@ -566,7 +565,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha de emisión</th>
+                        <th>Fecha de emisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th>Partida(s)</th>
@@ -606,7 +605,7 @@
                         </tr>
                     }
                 </tbody>
-                <!-- Consolidadas en verificadas (cargado dinámicamente) -->
+                <!-- Consolidadas en verificadas (cargado dinÃ¡micamente) -->
                 <tbody id="tbodyVerificadasConsolidadas"></tbody>
             </table>
             <div id="paginacionVerificadas" class="almacen-paginacion"></div>
@@ -620,7 +619,7 @@
                         <tr>
                             <th>#</th>
                             <th>Folio</th>
-                            <th>Fecha de creación</th>
+                            <th>Fecha de creaciÃ³n</th>
                             <th>Departamentos</th>
                             <th>Requisiciones</th>
                             <th style="text-align:center">Partidas</th>
@@ -642,7 +641,7 @@
             </div>
         </div>
 
-    <!-- Pestaña Requisiciones con documentos -->
+    <!-- PestaÃ±a Requisiciones con documentos -->
     <div id="tab-documentos" class="almacen-tab-panel">
         <div class="container-formulario tabla-container">
             <table class="tabla-requisiciones" id="tablaRequisicionesDocumentos">
@@ -650,7 +649,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha de emisión</th>
+                        <th>Fecha de emisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th style="text-align:center">Partida(s)</th>
@@ -679,10 +678,10 @@
 <!-- Modal expediente completo (solo tab verificadas) -->
 <div class="modal" id="modalExpediente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-premium modal-premium-compacta">
+        <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">Expediente de Requisición</h5>
+                    <h5 class="modal-title modal-titulo-premium">Expediente de RequisiciÃ³n</h5>
                     <p class="modal-subtitulo-premium" id="expedienteSubtitulo">Cargando...</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
@@ -696,7 +695,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Actividad:</label>
-                            <select id="expActividad" class="form-select select2" disabled>
+                            <select id="expActividad" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 @foreach (var act in Model.ListaActividades)
                                 {
@@ -708,7 +707,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Fuente de Financiamiento:</label>
-                            <select id="expFf" class="form-select select2" disabled>
+                            <select id="expFf" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 @foreach (var ff in Model.ListaFuentesFinanciamiento)
                                 {
@@ -720,7 +719,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Tipo de Programa:</label>
-                            <select id="expTipoPrograma" class="form-select select2" disabled>
+                            <select id="expTipoPrograma" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
@@ -729,16 +728,16 @@
                     </div>
                 </div>
 
-                <!-- Tabla artículos -->
+                <!-- Tabla artÃ­culos -->
                 <div class="table-responsive-container">
                     <table class="tabla-requisiciones" id="tablaExpedienteDetalle">
                         <thead>
                             <tr>
-                                <th>Nº Partida</th>
+                                <th>NÂº Partida</th>
                                 <th>Cantidad</th>
                                 <th>Unidad Medida</th>
-                                <th>Descripción</th>
-                                <th>Descripción Detallada</th>
+                                <th>DescripciÃ³n</th>
+                                <th>DescripciÃ³n Detallada</th>
                             </tr>
                         </thead>
                         <tbody id="tablaExpedienteBody"></tbody>
@@ -766,7 +765,7 @@
                     </div>
                 </div>
 
-                <!-- Documentos financieros: SIAF, TablaApi, Nº API -->
+                <!-- Documentos financieros: SIAF, TablaApi, NÂº API -->
                 <div id="expArchivosFinancieros" style="display:none; margin-top:16px;">
                     <hr />
                     <p style="font-weight:600; margin-bottom:10px;">
@@ -776,14 +775,14 @@
                     <div id="expGrupoTablaApi" style="margin-bottom:12px;"></div>
                     <div id="expGrupoNumeroApi"></div>
                 </div>
-                <!-- Sección pedido de compra (editable o readonly según estatus) -->
+                <!-- SecciÃ³n pedido de compra (editable o readonly segÃºn estatus) -->
                 <div id="seccionPedidoCompra" style="margin-top:16px;">
                     <hr />
                     <p style="font-weight:600; margin-bottom:10px;">
                         <i class="fa-solid fa-file-invoice"></i> Pedido de Compra
                     </p>
 
-                    <!-- Modo edición (estatus 15 y 18) -->
+                    <!-- Modo ediciÃ³n (estatus 15 y 18) -->
                     <div id="pedidoModoEdicion" style="display:none; flex-direction:column; gap:10px; align-items:flex-start; width:100%;">
                         <button type="button" class="btn boton-gris" id="btnEditarPedidoCompra">
                             <i class="fa-solid fa-pen-to-square"></i> Editar Pedido de Compra
@@ -835,7 +834,7 @@
                     <div id="expChecklistDocs" style="display:flex; flex-direction:column; gap:8px;"></div>
                     <div id="expAccionesProveedor" style="margin-top:16px; text-align:right; display:none;">
                         <button type="button" class="btn boton-rosa" onclick="enviarDocumentosAFinancieros()">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar a autorización
+                            <i class="fa-solid fa-paper-plane"></i> Enviar a autorizaciÃ³n
                         </button>
                     </div>
                 </div>
@@ -846,13 +845,13 @@
 </div>
 
 
-<!-- Modal ver requisición (misma estructura que Requisición y Almacén) -->
+<!-- Modal ver requisiciÃ³n (misma estructura que RequisiciÃ³n y AlmacÃ©n) -->
 <div class="modal" id="modalDetalle" tabindex="-1" aria-labelledby="detalleLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-detalle-requisicion">
         <div class="modal-content modal-premium modal-premium-ancha">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">Artículos de la Requisición</h5>
+                    <h5 class="modal-title modal-titulo-premium" id="detalleLabel">ArtÃ­culos de la RequisiciÃ³n</h5>
                     <p class="modal-subtitulo-premium" id="modalDetalleSubtitulo">Detalle de partidas solicitadas</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
@@ -864,7 +863,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Actividad:</label>
-                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="form-select select2">
+                            <select id="actividadSeleccionada" name="ActividadSeleccionada" class="rosa-select-form">
                                 <option value="">-- Selecciona actividad --</option>
                                 @foreach (var act in Model.ListaActividades)
                                 {
@@ -876,7 +875,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Fuente de Financiamiento:</label>
-                            <select id="ffSelect" name="FFV" class="form-select select2">
+                            <select id="ffSelect" name="FFV" class="rosa-select-form">
                                 <option value="">-- Selecciona Fuente de Financiamiento --</option>
                                 @foreach (var ff in Model.ListaFuentesFinanciamiento)
                                 {
@@ -891,7 +890,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Tipo de Programa:</label>
-                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="form-select select2">
+                            <select id="tipoProgramaSelect" name="TipoProgramaV" class="rosa-select-form">
                                 <option value="">-- Selecciona el Tipo de Programa --</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
@@ -905,17 +904,17 @@
                     <table class="tabla-requisiciones" id="tablaModalDetalle">
                         <thead>
                             <tr>
-                                <th>Nº Partida</th>
+                                <th>NÂº Partida</th>
                                 <th>Cantidad</th>
                                 <th>Unidad Medida</th>
-                                <th>Descripción</th>
-                                <th>Descripción Detallada</th>
+                                <th>DescripciÃ³n</th>
+                                <th>DescripciÃ³n Detallada</th>
                                 <th>Estatus</th>
                                 <th>COG Editable</th>
                             </tr>
                         </thead>
                         <tbody id="tablaDetalle">
-                            <!-- Se carga dinámicamente -->
+                            <!-- Se carga dinÃ¡micamente -->
                         </tbody>
                     </table>
                 </div>
@@ -1017,7 +1016,7 @@
                             </select>
                         </div>
                         <div style="min-width:0;">
-                            <label>Vigencia (días)</label>
+                            <label>Vigencia (dÃ­as)</label>
                             <input id="wizardProveedorVigencia" type="text" class="form-control"
                                    inputmode="numeric" placeholder="30" autocomplete="off" />
                         </div>
@@ -1043,7 +1042,7 @@
                 <!-- Filas de proveedor + precio para la partida activa -->
                 <div id="modalProveedoresFilas" class="modal-proveedores-lista" style="display:none;"></div>
 
-                <!-- Botón agregar fila -->
+                <!-- BotÃ³n agregar fila -->
                 <div class="modal-proveedores-agregar-wrap">
                     <button type="button" id="btnModalProveedoresAgregar" class="btn modal-proveedores-btn-agregar">
                         <i class="fa-solid fa-plus" aria-hidden="true"></i>
@@ -1056,7 +1055,7 @@
                     <div class="modal-proveedores-fila">
                         <div class="formulario-input modal-proveedores-campo-select">
                             <label>Proveedor</label>
-                            <select class="form-select select2 modal-proveedores-select" title="Proveedor">
+                            <select class="rosa-select-form modal-proveedores-select" title="Proveedor">
                                 <option value="">-- Seleccione proveedor --</option>
                                 @foreach (var act in Model.ListaProveedores)
                                 {
@@ -1070,7 +1069,7 @@
                                    inputmode="decimal" placeholder="0.00" autocomplete="off" />
                         </div>
 
-                        <!-- ✅ IVA en línea, alineado al fondo igual que el botón eliminar -->
+                        <!-- âœ… IVA en lÃ­nea, alineado al fondo igual que el botÃ³n eliminar -->
                         <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:4px; gap:2px;">
                             <label style="font-size:11px; font-weight:600; color:var(--color-text-secondary); margin:0; line-height:1;">Calcula IVA</label>
                             <input type="checkbox" class="modal-proveedores-check-iva"
@@ -1085,7 +1084,7 @@
                     </div>
                 </template>
 
-                <!-- Navegación del wizard -->
+                <!-- NavegaciÃ³n del wizard -->
                 <div class="modal-proveedores-acciones" style="justify-content:space-between;">
                     <button type="button" id="btnWizardAnterior" class="btn boton-gris" style="display:none;">
                         <i class="fa-solid fa-chevron-left"></i> Anterior
@@ -1095,7 +1094,7 @@
                     </button>
                 </div>
 
-                <!-- Paso: Confirmar Ganador (se muestra solo en el último paso) -->
+                <!-- Paso: Confirmar Ganador (se muestra solo en el Ãºltimo paso) -->
                 <div id="wizardPasoGanador" style="display:none;">
                     <hr style="margin: 0 0 1rem;" />
                     <p style="font-size:13px; font-weight:600; color:var(--slate-700); margin:0 0 .75rem;">
@@ -1104,7 +1103,7 @@
                     </p>
 
                     <div id="wizardGanadorOpciones" style="display:flex; flex-direction:column; gap:8px; margin-bottom:1rem;">
-                        <!-- Se llena dinámicamente -->
+                        <!-- Se llena dinÃ¡micamente -->
                     </div>
 
                     <div id="wizardGanadorJustificacionWrap" style="display:none; margin-top:12px;">
@@ -1127,8 +1126,8 @@
         <div class="modal-content modal-premium modal-premium-compacta">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">Gestionar requisición</h5>
-                    <p class="modal-subtitulo-premium">Selecciona una acción</p>
+                    <h5 class="modal-title modal-titulo-premium">Gestionar requisiciÃ³n</h5>
+                    <p class="modal-subtitulo-premium">Selecciona una acciÃ³n</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i>
@@ -1137,10 +1136,10 @@
 
             <div class="modal-body modal-body-premium">
 
-                <!-- PASO 1: Asignar + Rechazar (sin almacén) -->
+                <!-- PASO 1: Asignar + Rechazar (sin almacÃ©n) -->
                 <div id="pasoOpciones">
                     <p style="font-size:13px; color:#888; margin:0 0 1rem;">
-                        Selecciona una acción para esta requisición:
+                        Selecciona una acciÃ³n para esta requisiciÃ³n:
                     </p>
                     <div style="display:flex; flex-direction:column; gap:10px;">
 
@@ -1167,7 +1166,7 @@
                                 <i class="fa-solid fa-circle-xmark" style="color:#E74C3C; font-size:14px;"></i>
                             </div>
                             <div>
-                                <p style="font-size:14px; font-weight:500; margin:0; color:#E74C3C;">Rechazar requisición</p>
+                                <p style="font-size:14px; font-weight:500; margin:0; color:#E74C3C;">Rechazar requisiciÃ³n</p>
                                 <p style="font-size:12px; color:#888; margin:2px 0 0;">Devolver con observaciones</p>
                             </div>
                         </button>
@@ -1181,7 +1180,7 @@
                                 <i class="fa-solid fa-rotate-left" style="color:#D97706; font-size:14px;"></i>
                             </div>
                             <div>
-                                <p style="font-size:14px; font-weight:500; margin:0; color:#D97706;">Solicitar modificación</p>
+                                <p style="font-size:14px; font-weight:500; margin:0; color:#D97706;">Solicitar modificaciÃ³n</p>
                                 <p style="font-size:12px; color:#888; margin:2px 0 0;">Regresar al usuario con observaciones</p>
                             </div>
                         </button>
@@ -1198,7 +1197,7 @@
                     </button>
                     <div class="formulario-input">
                         <label>Responsable:</label>
-                        <select id="selectUsuarioAsignar" class="form-select select2">
+                        <select id="selectUsuarioAsignar" class="rosa-select-form">
                             <option value="">-- Seleccionar responsable --</option>
                         </select>
                     </div>
@@ -1236,16 +1235,16 @@
                         <i class="fa-solid fa-arrow-left" style="font-size:11px;"></i> Volver
                     </button>
                     <div class="formulario-input">
-                        <label>Observaciones para modificación:</label>
+                        <label>Observaciones para modificaciÃ³n:</label>
                         <textarea id="txtObservacionModificacion" class="form-control" rows="3"
-                                  placeholder="Indica qué debe corregir el usuario..."></textarea>
+                                  placeholder="Indica quÃ© debe corregir el usuario..."></textarea>
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1rem;">
                         <button type="button" class="btn boton-gris" onclick="volverOpciones()">Cancelar</button>
                         <button type="button" class="btn"
                                 style="background:#D97706; color:white; border:none;"
                                 onclick="confirmarModificacion()">
-                            <i class="fa-solid fa-rotate-left"></i> Confirmar modificación
+                            <i class="fa-solid fa-rotate-left"></i> Confirmar modificaciÃ³n
                         </button>
                     </div>
                 </div>
@@ -1285,7 +1284,7 @@
                 <div>
                     <h5 class="modal-title modal-titulo-premium">
                         <i class="fa-solid fa-layer-group" style="color:#fe6291; margin-right:6px;"></i>
-                        Crear Requisición Consolidada
+                        Crear RequisiciÃ³n Consolidada
                     </h5>
                     <p class="modal-subtitulo-premium">
                         Selecciona las requisiciones que deseas agrupar en una sola
@@ -1335,7 +1334,7 @@
                     </p>
                     <p style="color:#9ca3af; font-size:12px; margin:4px 0 0;">
                         Solo se muestran en estatus <strong>En proceso</strong>
-                        y que aún no pertenezcan a una consolidada.
+                        y que aÃºn no pertenezcan a una consolidada.
                     </p>
                 </div>
 
@@ -1345,7 +1344,7 @@
                  style="justify-content:space-between; align-items:center;
                 padding:16px 24px; border-top:1px solid var(--color-border-tertiary);">
                 <span style="font-size:12px; color:#9ca3af; font-style:italic;">
-                    Mínimo 2 requisiciones para consolidar
+                    MÃ­nimo 2 requisiciones para consolidar
                 </span>
                 <div style="display:flex; gap:8px;">
                     <button type="button" class="btn boton-gris" data-bs-dismiss="modal">
@@ -1370,7 +1369,7 @@
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="consolidadaTitulo">
-                        Requisición Consolidada
+                        RequisiciÃ³n Consolidada
                     </h5>
                     <p class="modal-subtitulo-premium" id="consolidadaSubtitulo">Cargando...</p>
                 </div>
@@ -1391,22 +1390,22 @@
 
                 <hr />
 
-                <!-- Tabla de artículos -->
+                <!-- Tabla de artÃ­culos -->
                 <p style="font-size:13px;font-weight:600;color:var(--slate-700);
                     margin-bottom:10px;margin-top:4px;">
                     <i class="fa-solid fa-list" style="color:#fe6291;margin-right:6px;"></i>
-                    Artículos consolidados
+                    ArtÃ­culos consolidados
                 </p>
                 <div class="table-responsive-container">
                     <table class="tabla-requisiciones" id="tablaArticulosConsolidada">
                         <thead>
                             <tr>
-                                <th>Requisición</th>
+                                <th>RequisiciÃ³n</th>
                                 <th style="text-align:center">Partida</th>
                                 <th style="text-align:center">Cantidad</th>
                                 <th>Unidad</th>
-                                <th>Descripción</th>
-                                <th>Descripción Detallada</th>
+                                <th>DescripciÃ³n</th>
+                                <th>DescripciÃ³n Detallada</th>
                             </tr>
                         </thead>
                         <tbody id="consolidadaArticulosBody"></tbody>
@@ -1478,12 +1477,12 @@
                     <table class="tabla-requisiciones" id="tablaModalAtenderConsolidada">
                         <thead>
                             <tr>
-                                <th>Requisición</th>
+                                <th>RequisiciÃ³n</th>
                                 <th style="text-align:center">Partida</th>
                                 <th style="text-align:center">Cantidad</th>
                                 <th>Unidad</th>
-                                <th>Descripción</th>
-                                <th>Descripción Detallada</th>
+                                <th>DescripciÃ³n</th>
+                                <th>DescripciÃ³n Detallada</th>
                             </tr>
                         </thead>
                         <tbody id="atenderConsArticulosBody"></tbody>
@@ -1551,10 +1550,10 @@
     </div>
 </div>
 
-<!-- Panel descripción detallada (ver completa) -->
+<!-- Panel descripciÃ³n detallada (ver completa) -->
 <div id="desc-panel-modal" style="display:none;">
 <div class="desc-panel-modal-header">
-<span class="desc-panel-modal-titulo">Descripción detallada</span>
+<span class="desc-panel-modal-titulo">DescripciÃ³n detallada</span>
 <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
 <i class="fa-solid fa-xmark"></i>
 </button>
@@ -1583,18 +1582,18 @@
             </div>
             <div class="modal-body modal-body-premium">
                 <div class="modal-summary" id="historialSummary">
-                    <!-- Datos resumen se inyectarán por JS -->
+                    <!-- Datos resumen se inyectarÃ¡n por JS -->
                 </div>
                 <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
                 <div class="modal-tl" id="historialTl">
-                    <!-- Timeline vertical se inyectará por JS -->
+                    <!-- Timeline vertical se inyectarÃ¡ por JS -->
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lightbox para imágenes de la galería en modal de detalles -->
+<!-- Lightbox para imÃ¡genes de la galerÃ­a en modal de detalles -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
@@ -1605,8 +1604,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
@@ -1614,6 +1611,7 @@
     <script src="~/js/requisicion/tabla-requisiciones.js" asp-append-version="true"></script>
 
 }
+
 
 
 

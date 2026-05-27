@@ -1,4 +1,4 @@
-@using Inventario.AplicacionWeb.Models.ViewModels
+﻿@using Inventario.AplicacionWeb.Models.ViewModels
 @using Inventario.AplicacionWeb.Utilidades
 @model VMTablaRequisiciones
 @{
@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page"
@@ -53,7 +52,7 @@
 
     <div class="container-formulario filtros-container">
         <div class="filtro-grupo">
-            <label>Nº Requisición</label>
+            <label>No. Requisición</label>
             <input type="text" id="filtroNumReq" placeholder="REC-000000" />
         </div>
         <div class="filtro-grupo">
@@ -478,7 +477,7 @@
                                 <div class="timeline-container">
                                     <div class="p-3 text-center" style="border:1px solid #fecaca;border-radius:10px;background:#fef2f2;">
                                         <p class="mb-1" style="color:#b91c1c;font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> Requisición rechazada</p>
-                                        <p class="text-muted small mb-2">El folio ya no está en seguimiento activo.</p>
+                                        <p class="text-muted small mb-2">El folio ya no estÃ¡ en seguimiento activo.</p>
                                         <button type="button" class="btn btn-sm" style="border:1px solid #fecaca;background:white;color:#b91c1c;" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                             <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                         </button>
@@ -541,7 +540,7 @@
                         <th>Folio</th>
                         <th>Departamentos</th>
                         <th style="text-align:center"># Req</th>
-                        <th>Fecha de creación</th>
+                        <th>Fecha de creaciÃ³n</th>
                         <th>Estado</th>
                         @if (User.IsInRole("8"))
                         {
@@ -634,7 +633,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Actividad:</label>
-                            <select id="expFinActividad" class="form-select select2" disabled>
+                            <select id="expFinActividad" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 @foreach (var act in Model.ListaActividades)
                                 {
@@ -646,7 +645,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Fuente de Financiamiento:</label>
-                            <select id="expFinFf" class="form-select select2" disabled>
+                            <select id="expFinFf" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 @foreach (var ff in Model.ListaFuentesFinanciamiento)
                                 {
@@ -658,7 +657,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="formulario-input">
                             <label>Tipo de Programa:</label>
-                            <select id="expFinTipoPrograma" class="form-select select2" disabled>
+                            <select id="expFinTipoPrograma" class="rosa-select-form" disabled>
                                 <option value="">--</option>
                                 <option value="1">Prioritario</option>
                                 <option value="2">Adicional</option>
@@ -672,7 +671,7 @@
                         <thead>
                             <tr>
                                 <th class="col-requi" style="width:80px; display:none;">Requisición</th>
-                                <th>Nº Partida</th>
+                                <th>No. de partida</th>
                                 <th style="width:100px;">Cantidad</th>
                                 <th style="width:135px;">Unidad Medida</th>
                                 <th>Descripción</th>
@@ -814,7 +813,7 @@
                         <thead>
                             <tr>
                                 <th style="width:80px; display:none;" class="col-requi">Requisición</th>
-                                <th style="width:120px;">Nº Partida</th>
+                                <th style="width:120px;">No. de partida</th>
                                 <th style="width:100px;">Cantidad</th>
                                 <th style="width:135px;">Unidad Medida</th>
                                 <th style="width:150px;">Descripción</th>
@@ -1015,18 +1014,18 @@
             </div>
             <div class="modal-body modal-body-premium">
                 <div class="modal-summary" id="historialSummary">
-                    <!-- Datos resumen se inyectarán por JS -->
+                    <!-- Datos resumen se inyectarÃ¡n por JS -->
                 </div>
                 <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
                 <div class="modal-tl" id="historialTl">
-                    <!-- Timeline vertical se inyectará por JS -->
+                    <!-- Timeline vertical se inyectarÃ¡ por JS -->
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lightbox para imágenes de la galería en modal de detalles -->
+<!-- Lightbox para imÃ¡genes de la galerÃ­a en modal de detalles -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
@@ -1034,8 +1033,6 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/documentos-requisicion-modal.js" asp-append-version="true"></script>
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
@@ -1043,3 +1040,4 @@
     <script src="~/js/financieros/tabla-financieros.js" asp-append-version="true"></script>
 
 }
+

@@ -1,13 +1,12 @@
-@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
+﻿@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
 @{
-    ViewData["Title"] = ViewBag.ModoEdicion == true ? "Editar Requisición" : "Crear Requisición";
+    ViewData["Title"] = ViewBag.ModoEdicion == true ? "Editar RequisiciÃ³n" : "Crear RequisiciÃ³n";
     bool modoEdicion = ViewBag.ModoEdicion == true;
 }
 
 @section Styles {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="mt-3 container" style="width:1600px;" data-url-buscar-articulos="@Url.Action("BuscarArticulos", "Requisicion")" data-url-obtener-info-articulo="@Url.Action("ObtenerInfoArticulo", "Requisicion")" data-tipo-requisicion="@ViewBag.TipoRequisicion">
@@ -16,16 +15,16 @@
         <div class="info-requisicion">
             <div class="fantasma">
                 <div class="filtro-grupo">
-                    <label class="m-0 info-body">Fecha de emisión:</label>
+                    <label class="m-0 info-body">Fecha de emisiÃ³n:</label>
                     <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
                 </div>
             </div>
             <div class="container-info">
-                <p class="info-titulo mt-3">Requisición de materiales @(ViewBag.TipoRequisicion == "mensual" ? "MENSUAL" : "GENERAL")</p>
+                <p class="info-titulo mt-3">RequisiciÃ³n de materiales @(ViewBag.TipoRequisicion == "mensual" ? "MENSUAL" : "GENERAL")</p>
             </div>
             <div class="requisicion-info">
                 <div class="requisicion">
-                    <p class="info-body">Requisición:</p>
+                    <p class="info-body">RequisiciÃ³n:</p>
                     <label class="info-body">@Model.NumRequisicion</label>
                 </div>
             </div>
@@ -34,11 +33,11 @@
         @if (modoEdicion)
         {
             <div class="container-formulario">
-                <label class="info-body">Observaciones de Modificación:</label>
+                <label class="info-body">Observaciones de ModificaciÃ³n:</label>
                 <textarea name="ObservacionesBitacora" rows="3" readonly disabled
-                          placeholder="Observaciones previas de modificación (solo lectura)"
+                          placeholder="Observaciones previas de modificaciÃ³n (solo lectura)"
                           class=" form-control" style="font-family: var(--font-body)">@Model.ObservacionesBitacora</textarea>
-                <small class="form-text text-muted">Estas son las observaciones de la última modificación requerida</small>
+                <small class="form-text text-muted">Estas son las observaciones de la Ãºltima modificaciÃ³n requerida</small>
             </div>
         }
     
@@ -61,7 +60,7 @@
                     <input type="email" name="Correo" placeholder="correo@ejemplo.com" value="@Model.Correo" required />
                 </div>
                 <div class="formulario-input">
-                    <label>Teléfono:</label>
+                    <label>TelÃ©fono:</label>
                     <input type="tel" name="Telefono" placeholder="(222) 000-0000" value="@Model.Telefono" required />
                 </div>
             </div>
@@ -78,12 +77,12 @@
                     </select>
                 </div>
                 <div class="formulario-input">
-                    <label>Uso específico del material:</label>
+                    <label>Uso especÃ­fico del material:</label>
                     <input type="text" name="UsoEspecifico" placeholder="Describa el uso del material" value="@Model.UsoEspecifico" required />
                 </div>
                 <div class="formulario-input">
-                    <label>Justificación:</label>
-                    <textarea name="Justificacion" placeholder="Justifique la requisición" rows="3" required>@Model.Justificacion</textarea>
+                    <label>JustificaciÃ³n:</label>
+                    <textarea name="Justificacion" placeholder="Justifique la requisiciÃ³n" rows="3" required>@Model.Justificacion</textarea>
                 </div>
             </div>
         </div>
@@ -91,7 +90,7 @@
         <div class="container-formulario">
             <div class="seccion-completa text-center">
                 <div class="formulario-input">
-                    <label>¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
+                    <label>Â¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
                     <div class="formulario-opciones-presupuesto">
                         <label class="opcion">
                             <input asp-for="CuentaProgramaPresupuestario" type="radio" value="true" required />
@@ -105,7 +104,7 @@
                                 <div class="line six"></div>
                                 <div class="line seven"></div>
                             </div>
-                            <span>Sí</span>
+                            <span>SÃ­</span>
                         </label>
 
                         <label class="opcion">
@@ -129,7 +128,7 @@
 
         <div class="container-formulario">
             <div class="seccion-completa">
-                <h5 class="mb-3 text-center">Artículos solicitados</h5>
+                <h5 class="mb-3 text-center">ArtÃ­culos solicitados</h5>
                 <div class="formulario-input formulario-uso-material-inline">
                     <div class="formulario-opciones-presupuesto">
                         <label class="opcion">
@@ -165,15 +164,15 @@
                 <table class="table table-bordered" id="tablaArticulos">
                     <thead>
                         <tr>
-                            <th style="width: 30%">Descripción</th>
+                            <th style="width: 30%">DescripciÃ³n</th>
                             <th style="width: 15%">Unidad</th>
                             <th style="width: 10%">Cantidad</th>
-                            <th style="width: 10%">Descripción Detallada</th>
-                            <th style="width: 10%">Acción</th>
+                            <th style="width: 10%">DescripciÃ³n Detallada</th>
+                            <th style="width: 10%">AcciÃ³n</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Las filas se agregarán dinámicamente -->
+                        <!-- Las filas se agregarÃ¡n dinÃ¡micamente -->
                     </tbody>
                 </table>
                 <button type="button" class="btn boton-gris" onclick="agregarArticulo()">
@@ -194,7 +193,7 @@
                         Continuar <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <button type="submit" class="btn boton-rosa btn-lg" id="btnGuardarFinal" style="display:none;">
-                        Crear Requisición
+                        Crear RequisiciÃ³n
                     </button>
                 }
             </div>
@@ -208,13 +207,13 @@
               placeholder="Escribe la descripción detallada aquí..."></textarea>
 </div>
 
-<!-- Modal wizard distribución por municipio -->
+<!-- Modal wizard distribuciÃ³n por municipio -->
 <div class="modal fade" id="modalMunicipiosWizard" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">Distribución por municipio</h5>
+                    <h5 class="modal-title modal-titulo-premium">DistribuciÃ³n por municipio</h5>
                     <p class="modal-subtitulo-premium" id="wizardMuniSubtitulo">Partida 1 de 1</p>
                 </div>
             </div>
@@ -236,7 +235,7 @@
             </style>
             <div class="modal-body modal-body-premium">
                 <div class="municipios-section">
-                    <div class="municipios-section-title"><i class="fa-solid fa-map-location-dot"></i> Distribución de cantidad por municipio</div>
+                    <div class="municipios-section-title"><i class="fa-solid fa-map-location-dot"></i> DistribuciÃ³n de cantidad por municipio</div>
 
                     <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:#1a1a1a; margin:0 0 12px;"></p>
 
@@ -246,7 +245,7 @@
                         Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
                     </div>
 
-                    <!-- Tabla de distribución -->
+                    <!-- Tabla de distribuciÃ³n -->
                     <div class="municipios-grid-wrap">
                         <table class="municipios-table" id="wizardMuniTabla">
                             <thead>
@@ -277,7 +276,7 @@
     </div>
 </div>
 
-<!-- Mismo lightbox que tablas / expediente de requisición -->
+<!-- Mismo lightbox que tablas / expediente de requisiciÃ³n -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
@@ -285,8 +284,6 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script>
@@ -313,3 +310,4 @@
         </script>
     }
 }
+

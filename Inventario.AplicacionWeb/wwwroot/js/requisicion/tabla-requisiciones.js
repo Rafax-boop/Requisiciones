@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   var container = document.querySelector(".tabla-requi-page");
   var esTablaServicios =
     container?.getAttribute("data-tipo-tabla") === "servicios";
@@ -160,18 +160,18 @@
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
     { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
-    { clave: "ConstFiscal", label: "Constancia de Situación Fiscal" },
-    { clave: "OpinionSAT", label: "Opinión de Cumplimiento SAT" },
+    { clave: "ConstFiscal", label: "Constancia de SituaciÃ³n Fiscal" },
+    { clave: "OpinionSAT", label: "OpiniÃ³n de Cumplimiento SAT" },
     { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
-    { clave: "Padron", label: "Alta en Padrón de Proveedores" },
-    { clave: "CedulaRFC", label: "Cédula de Identificación Fiscal" },
-    { clave: "IdOficial", label: "Identificación Oficial (INE/Pasaporte)" },
+    { clave: "Padron", label: "Alta en PadrÃ³n de Proveedores" },
+    { clave: "CedulaRFC", label: "CÃ©dula de IdentificaciÃ³n Fiscal" },
+    { clave: "IdOficial", label: "IdentificaciÃ³n Oficial (INE/Pasaporte)" },
     { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
     { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
     { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
     { clave: "ActaConst", label: "Acta Constitutiva" },
     { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
-    { clave: "MemoPago", label: "Memorandum Instrucción de Pago" },
+    { clave: "MemoPago", label: "Memorandum InstrucciÃ³n de Pago" },
     { clave: "FormatoEntrega", label: "Formato de Entrega" },
   ];
 
@@ -249,7 +249,7 @@
   }
 
   function renderTextoTablaPrincipal(texto, icono, secundaria) {
-    var principal = escapeHtml(texto || "—");
+    var principal = escapeHtml(texto || "â€”");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -267,7 +267,7 @@
   }
 
   function renderFolioTabla(texto, secundaria) {
-    var folio = escapeHtml(texto || "—");
+    var folio = escapeHtml(texto || "â€”");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -640,7 +640,7 @@
     for (var n = 0; n < nums.length; n++) {
       var p = nums[n];
       if (prev !== 0 && p > prev + 1)
-        html += '<span class="almacen-paginacion-ellipsis">…</span>';
+        html += '<span class="almacen-paginacion-ellipsis">â€¦</span>';
       html +=
         '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' +
         (p === paginaRequisicionActual ? "activo" : "") +
@@ -740,10 +740,10 @@
 
         asegurarControlesGanador();
 
-        // ── FIX: determinar idRequisicion según modo ──
+        // â”€â”€ FIX: determinar idRequisicion segÃºn modo â”€â”€
         var idReqGanador = null;
         if (window._modoConsolidada) {
-            // Sacar la primera requisición del mapa de partidas consolidadas
+            // Sacar la primera requisiciÃ³n del mapa de partidas consolidadas
             for (var i = 0; i < CACHE_PARTIDAS.length; i++) {
                 var mapa = CACHE_PARTIDAS[i].idRequisicionPorDetalle;
                 if (mapa) {
@@ -759,7 +759,7 @@
         }
 
         if (!idReqGanador) {
-            Swal.fire({ icon: "error", title: "No se pudo determinar la requisición para el ganador." });
+            Swal.fire({ icon: "error", title: "No se pudo determinar la requisiciÃ³n para el ganador." });
             return;
         }
 
@@ -823,7 +823,7 @@
     });
   }
 
-  // Llena SOLO el select de partidas de una fila específica (sin tocar las demás)
+  // Llena SOLO el select de partidas de una fila especÃ­fica (sin tocar las demÃ¡s)
   function cargarPartidasEnFila($fila, valorSeleccionado) {
     obtenerOpcionesPartidasHtml(function (html) {
       var $sel = $fila.find(".modal-partida-select");
@@ -854,7 +854,7 @@
 
         var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
 
-        // Extraer qué docs están observados de la nota de financieros
+        // Extraer quÃ© docs estÃ¡n observados de la nota de financieros
         var clavesObservadas = [];
         if (idEstatus === 18 && notaObservacion) {
             DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
@@ -864,7 +864,7 @@
             });
         }
 
-        // Inicializar estado "No aplica" si no existe para esta requisición
+        // Inicializar estado "No aplica" si no existe para esta requisiciÃ³n
         if (!window._noAplica) window._noAplica = {};
         if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
 
@@ -874,13 +874,13 @@
             var subido = clavesSubidas.indexOf(doc.clave) !== -1;
             var observado = clavesObservadas.indexOf(doc.clave) !== -1;
 
-            // Solo precargar si el usuario no ha interactuado aún (undefined = intacto)
+            // Solo precargar si el usuario no ha interactuado aÃºn (undefined = intacto)
             if (window._noAplica[idRequi][doc.clave] === undefined) {
-                // No está subido y no está observado → asumir "No aplica"
+                // No estÃ¡ subido y no estÃ¡ observado â†’ asumir "No aplica"
                 window._noAplica[idRequi][doc.clave] = !subido && !observado;
             }
 
-            // Si financieros lo observó pero estaba marcado como "No aplica" → forzar a false
+            // Si financieros lo observÃ³ pero estaba marcado como "No aplica" â†’ forzar a false
             if (observado && window._noAplica[idRequi][doc.clave]) {
                 window._noAplica[idRequi][doc.clave] = false;
             }
@@ -924,7 +924,7 @@
                     fila.innerHTML =
                         '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
                         '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
+                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">â³ Pendiente de recepciÃ³n en almacÃ©n</span>';
                 }
 
                 checklist.appendChild(fila);
@@ -1093,7 +1093,7 @@
     var id = esConsolidada ? window._idConsolidadaExpediente : window._expedienteActualGlobal;
 
     if (!id) {
-      Swal.fire({ icon: "error", title: "No se pudo identificar la requisición." });
+      Swal.fire({ icon: "error", title: "No se pudo identificar la requisiciÃ³n." });
       return;
     }
 
@@ -1223,7 +1223,7 @@
 
 
     window.verDetalleConsolidada = function (idConsolidada) {
-        document.getElementById("consolidadaTitulo").textContent = "Requisición Consolidada";
+        document.getElementById("consolidadaTitulo").textContent = "RequisiciÃ³n Consolidada";
         document.getElementById("consolidadaSubtitulo").textContent = "Cargando...";
         document.getElementById("consolidadaHijas").innerHTML = "";
         document.getElementById("consolidadaArticulosBody").innerHTML = "";
@@ -1238,9 +1238,9 @@
             document.getElementById("consolidadaTitulo").textContent =
                 data.folioConsolidada;
             document.getElementById("consolidadaSubtitulo").textContent =
-                data.estatus + " · Creada el " + data.fechaCreacion + " por " + data.creadoPor;
+                data.estatus + " Â· Creada el " + data.fechaCreacion + " por " + data.creadoPor;
 
-            // ── Cards hijas ──────────────────────────────────────
+            // â”€â”€ Cards hijas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var hijasHtml = "";
             (data.requisiciones || []).forEach(function (r) {
                 hijasHtml +=
@@ -1261,11 +1261,11 @@
             });
             document.getElementById("consolidadaHijas").innerHTML = hijasHtml;
 
-            // ── Tabla de artículos ───────────────────────────────
+            // â”€â”€ Tabla de artÃ­culos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var articulos = data.articulos || [];
             if (!articulos.length) {
                 document.getElementById("consolidadaArticulosBody").innerHTML =
-                    '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+                    '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
                 return;
             }
 
@@ -1273,8 +1273,8 @@
             articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 28
-                    ? textoCompleto.substring(0, 28) + "…"
-                    : textoCompleto || "Sin descripción...";
+                    ? textoCompleto.substring(0, 28) + "â€¦"
+                    : textoCompleto || "Sin descripciÃ³n...";
                 var fullEscapado = textoCompleto.replace(/"/g, "&quot;");
                 var tieneTexto = textoCompleto ? "tiene-texto" : "";
 
@@ -1296,7 +1296,7 @@
             });
             document.getElementById("consolidadaArticulosBody").innerHTML = rows;
 
-            // ── Documentos adjuntos ────────────────────────────
+            // â”€â”€ Documentos adjuntos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var docsHtml = "";
             var tieneCuadro = data.cuadroComparativo && data.cuadroComparativo.length;
             var tieneAnexos = data.anexos && data.anexos.length;
@@ -1354,22 +1354,22 @@
     document.getElementById("pasoModificar").style.display = "block";
   };
 
-  // Abrir modal — siempre arranca en paso 1
+  // Abrir modal â€” siempre arranca en paso 1
   window.abrirModalAsignar = function (idRequi, idEstatus) {
     _idRequiAsignar = idRequi;
     var esDeCompra = idEstatus === 11;
 
     if (esTablaServicios) {
-      // Servicios: Asignar + Rechazar (sin Enviar a almacén)
+      // Servicios: Asignar + Rechazar (sin Enviar a almacÃ©n)
       volverOpciones();
       document.getElementById("txtMotivoRechazo").value = "";
 
-      //Ocultar el botón de enviar a almacén
+      //Ocultar el botÃ³n de enviar a almacÃ©n
       var btnAlmacen = document.getElementById("btnOpcionAlmacen");
       if (btnAlmacen) btnAlmacen.style.display = "none";
 
       var $select = $("#selectUsuarioAsignar");
-      if ($select.data("select2")) $select.select2("destroy");
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($select[0]); }
       $select.html('<option value="">-- Seleccionar responsable --</option>');
 
       $.get(urlUsuariosServicios, function (data) {
@@ -1378,20 +1378,18 @@
             '<option value="' + u.id + '">' + u.nombre + "</option>",
           );
         });
-        $select.select2({
-          language: "es",
-          placeholder: "-- Seleccionar responsable --",
-          allowClear: false,
-          minimumResultsForSearch: Infinity,
-          width: "100%",
-        });
+        if (window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.inicializar($select[0], {
+            placeholder: "-- Seleccionar responsable --"
+          });
+        }
       });
     } else {
       // Requisiciones: los 3 botones
       volverOpciones();
       document.getElementById("txtMotivoRechazo").value = "";
 
-      //Asegurar que el botón de almacén esté visible
+      //Asegurar que el botÃ³n de almacÃ©n estÃ© visible
       var btnAlmacen = document.getElementById("btnOpcionAlmacen");
       if (btnAlmacen) btnAlmacen.style.display = esDeCompra ? "none" : "";
 
@@ -1401,7 +1399,7 @@
       if (btnModificar) btnModificar.style.display = esDeCompra ? "none" : "";
 
       var $select = $("#selectUsuarioAsignar");
-      if ($select.data("select2")) $select.select2("destroy");
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($select[0]); }
       $select.html('<option value="">-- Seleccionar responsable --</option>');
 
       $.get(urlUsuariosMateriales, function (data) {
@@ -1410,13 +1408,11 @@
             '<option value="' + u.id + '">' + u.nombre + "</option>",
           );
         });
-        $select.select2({
-          language: "es",
-          placeholder: "-- Seleccionar responsable --",
-          allowClear: false,
-          minimumResultsForSearch: Infinity,
-          width: "100%",
-        });
+        if (window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.inicializar($select[0], {
+            placeholder: "-- Seleccionar responsable --"
+          });
+        }
       });
     }
 
@@ -1424,7 +1420,7 @@
     modal.show();
   };
 
-  // Confirmar envío a almacén
+  // Confirmar envÃ­o a almacÃ©n
   window.confirmarEnvioAlmacen = function () {
     $.post(urlEnviarAlmacen, { idRequi: _idRequiAsignar }, function (res) {
       if (res.success) {
@@ -1534,7 +1530,7 @@
         window._idConsolidadaAsignar = idConsolidada;
 
         var $select = $("#selectUsuarioAsignar");
-        if ($select.data("select2")) $select.select2("destroy");
+        if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($select[0]); }
         $select.html('<option value="">-- Seleccionar responsable --</option>');
 
         var urlUsuarios = urlUsuariosServicios || urlUsuariosMateriales;
@@ -1556,7 +1552,7 @@
         ocultarTodosPasos();
         document.getElementById("pasoAsignar").style.display = "block";
 
-        // Sobreescribir temporalmente el botón confirmar para usar el flujo consolidada
+        // Sobreescribir temporalmente el botÃ³n confirmar para usar el flujo consolidada
         var $btnConfirmar = document.querySelector("#pasoAsignar .btn.boton-rosa");
         if ($btnConfirmar) {
             $btnConfirmar.setAttribute("onclick", "confirmarAsignacionConsolidada()");
@@ -1788,18 +1784,18 @@
             }
         });
 
-        // Cargar detalle para mostrar artículos y obtener primera hija
+        // Cargar detalle para mostrar artÃ­culos y obtener primera hija
         $.get(urlDetalleConsolidada, { idConsolidada: idConsolidada }, function (data) {
             document.getElementById("atenderConsolidadaSubtitulo").textContent =
                 data.folioConsolidada;
 
-            // Tabla artículos
+            // Tabla artÃ­culos
             var rows = "";
             (data.articulos || []).forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 40
-                    ? textoCompleto.substring(0, 40) + "…"
-                    : textoCompleto || "Sin descripción...";
+                    ? textoCompleto.substring(0, 40) + "â€¦"
+                    : textoCompleto || "Sin descripciÃ³n...";
                 var fullEscapado = escapeHtml(textoCompleto);
                 rows += "<tr>" +
                     '<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
@@ -1819,7 +1815,7 @@
                     "</tr>";
             });
             document.getElementById("atenderConsArticulosBody").innerHTML =
-                rows || '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+                rows || '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
 
             // Verificar si ya existen cotizaciones guardadas
             var primeraRequi = data.requisiciones && data.requisiciones.length
@@ -1869,7 +1865,7 @@
 
         var el = document.getElementById("modalProveedoresRequisicion");
 
-        // ── FIX: elevar z-index para que quede sobre el modal de atender ──
+        // â”€â”€ FIX: elevar z-index para que quede sobre el modal de atender â”€â”€
         el.style.zIndex = "1060";  // Bootstrap usa 1055 para modals apilados
 
         var instancia = bootstrap.Modal.getInstance(el);
@@ -1928,7 +1924,7 @@
             return;
         }
         if (!observaciones) {
-            Swal.fire({ icon: "warning", title: "Escribe una observación." });
+            Swal.fire({ icon: "warning", title: "Escribe una observaciÃ³n." });
             return;
         }
 
@@ -1989,7 +1985,7 @@
                     error: function () {
                         Swal.fire({
                             icon: "warning",
-                            title: "Atención guardada, error al subir archivos."
+                            title: "AtenciÃ³n guardada, error al subir archivos."
                         });
                         location.reload();
                     }
@@ -2115,11 +2111,11 @@
           tr.innerHTML = `
             <td style="text-align:center">${idx + 1}</td>
             <td>${renderFolioTabla(item.numRequi)}</td>
-            <td>${escapeHtml(item.fechaEmision || "—")}</td>
-            <td>${renderTextoTablaPrincipal(item.departamento || "—", "fa-solid fa-building")}</td>
-            <td>${renderTextoTablaPrincipal(item.responsable || "—", "fa-solid fa-user")}</td>
+            <td>${escapeHtml(item.fechaEmision || "â€”")}</td>
+            <td>${renderTextoTablaPrincipal(item.departamento || "â€”", "fa-solid fa-building")}</td>
+            <td>${renderTextoTablaPrincipal(item.responsable || "â€”", "fa-solid fa-user")}</td>
             <td style="text-align:center">${item.cantidadPartidas}</td>
-            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "—")}</td>
+            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "â€”")}</td>
             <td style="text-align:center">
               <button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicion(${item.idRequi})">
                 <i class="fa-solid fa-file"></i>
@@ -2151,7 +2147,7 @@
 
         if (!data || !data.consolidadas || data.consolidadas.length === 0) return;
 
-        // Eliminar mensaje vacío si existe
+        // Eliminar mensaje vacÃ­o si existe
         var filaVacia = document.getElementById("filaVaciaDocumentos");
         if (filaVacia) filaVacia.remove();
         var tbodyIndDoc = document.getElementById("tbodyDocumentos");
@@ -2167,12 +2163,12 @@
           tr.setAttribute("data-consolidada-id", c.consolidadaId);
           tr.innerHTML =
             '<td style="text-align:center">' + (idx + 1) + "</td>" +
-            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-            "<td>" + (c.fechaCreacion || "—") + "</td>" +
-            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
+            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+            "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
+            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
             '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
             '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-            "<td>" + (c.estatus || "—") + "</td>" +
+            "<td>" + (c.estatus || "â€”") + "</td>" +
             '<td style="text-align:center">' +
             '<div class="acciones-grupo" style="justify-content:center">' +
             '<button class="btn-accion btn-ver" title="Ver archivos" ' +
@@ -2316,7 +2312,7 @@
       .then((r) => r.json())
       .then((archivos) => {
         if (!archivos || archivos.length === 0) {
-          alert("Esta requisición no tiene archivos vinculados");
+          alert("Esta requisiciÃ³n no tiene archivos vinculados");
           return;
         }
 
@@ -2335,7 +2331,7 @@
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                   <div style="font-weight: 500; color: #333;"><i class="fa-solid fa-file"></i> ${nombre}</div>
-                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} • ${arch.fechaSubida}</div>
+                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} â€¢ ${arch.fechaSubida}</div>
                 </div>
                 <a href="${arch.ruta}" download style="margin-left: 10px; white-space: nowrap; padding: 4px 8px; font-size: 11px; color: #666; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; display: inline-block; transition: all 0.2s; background: #f8f8f8;" onmouseover="this.style.background='#efefef'; this.style.color='#333';" onmouseout="this.style.background='#f8f8f8'; this.style.color='#666';">
                   <i class="fa-solid fa-download" style="font-size: 9px; margin-right: 4px;"></i>Descargar
@@ -2370,7 +2366,7 @@
             <div class="modal-content modal-premium">
               <div class="modal-header modal-header-premium">
                 <div>
-                  <h5 class="modal-title modal-titulo-premium">Archivos de la Requisición</h5>
+                  <h5 class="modal-title modal-titulo-premium">Archivos de la RequisiciÃ³n</h5>
                   <p class="modal-subtitulo-premium">Visualiza y descarga los documentos adjuntos</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
@@ -2516,7 +2512,7 @@
     });
   }
 
-  // Inicializar paginación al cargar el script
+  // Inicializar paginaciÃ³n al cargar el script
   aplicarPaginacionRequisiciones();
 
   if (container && window.TabsNotificacionesRequi && modoTabs) {
@@ -2528,7 +2524,7 @@
     });
   }
 
-  /* Expandir/colapsar fila detalle al hacer clic en la fila de requisición */
+  /* Expandir/colapsar fila detalle al hacer clic en la fila de requisiciÃ³n */
   function getTablaFromRow(tr) {
     return tr ? tr.closest("table.tabla-requisiciones") : null;
   }
@@ -2601,11 +2597,11 @@
         }
 
         if (!requisicionActual) {
-            Swal.fire({ icon: "warning", title: "Sin requisición activa." });
+            Swal.fire({ icon: "warning", title: "Sin requisiciÃ³n activa." });
             return;
         }
 
-        // Consultar qué tipo de adquisición tiene esta requisición
+        // Consultar quÃ© tipo de adquisiciÃ³n tiene esta requisiciÃ³n
         $.get(
             urlObtenerIdAdquisicion,
             { idRequisicion: requisicionActual },
@@ -2613,14 +2609,14 @@
                 var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
 
                 if (idAdquisicion === 1) {
-                    // Adjudicación directa → ReqDirecta
+                    // AdjudicaciÃ³n directa â†’ ReqDirecta
                     var url =
                         (urlDescargarReqDirecta || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
                         requisicionActual;
                     window.open(url, "_blank");
                 } else {
-                    // Cualquier otro → cuadro comparativo
+                    // Cualquier otro â†’ cuadro comparativo
                     var url =
                         (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
@@ -2644,7 +2640,7 @@
     var panel = document.getElementById("desc-panel-modal");
     var textarea = document.getElementById("desc-textarea-modal");
     if (!panel || !textarea) return;
-    textarea.value = el.dataset.full || "(Sin descripción detallada)";
+    textarea.value = el.dataset.full || "(Sin descripciÃ³n detallada)";
     var rect = el.getBoundingClientRect();
     panel.style.top = rect.bottom + 4 + "px";
     panel.style.left = rect.left + "px";
@@ -2665,7 +2661,7 @@
   });
 
   (function modalProveedoresRequisicion() {
-    // ── Catálogo de proveedores (leído del content del <template>, que es un DocumentFragment) ──
+    // â”€â”€ CatÃ¡logo de proveedores (leÃ­do del content del <template>, que es un DocumentFragment) â”€â”€
     var CATALOGO_PROVEEDORES_MODAL = [];
     var _tplEl = document.getElementById("tplModalProveedorFila");
     if (_tplEl) {
@@ -2677,11 +2673,11 @@
         });
     }
 
-    // ── Estado del wizard ──
+    // â”€â”€ Estado del wizard â”€â”€
     // wizardDatos[i] = [ { idProveedor, importe }, ... ]  (filas de la partida i)
     var wizardPartidas = []; // array de { idRequiDetalle, nombrePartida }
-    var wizardDatos = []; // datos por índice de partida
-    var wizardIdx = 0; // índice de la partida activa
+    var wizardDatos = []; // datos por Ã­ndice de partida
+    var wizardIdx = 0; // Ã­ndice de la partida activa
 
     function $modal() {
       return $("#modalProveedoresRequisicion");
@@ -2695,10 +2691,10 @@
       $divOpciones.empty();
 
       var $sel = $("#selectGanadorManual");
-      if ($sel.data("select2")) $sel.select2("destroy");
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($sel[0]); }
       $sel.html('<option value="">-- Seleccionar --</option>');
 
-      // Calcular totales por proveedor usando wizardDatos (lo que el usuario llenó)
+      // Calcular totales por proveedor usando wizardDatos (lo que el usuario llenÃ³)
       var totalesPorProveedor = {};
 
       wizardPartidas.forEach(function (partida, idxPartida) {
@@ -2710,7 +2706,7 @@
 
           var idProv = fila.idProveedor;
           if (!totalesPorProveedor[idProv]) {
-            // Buscar nombre del proveedor en el catálogo
+            // Buscar nombre del proveedor en el catÃ¡logo
             var nombreProv = "";
             CATALOGO_PROVEEDORES_MODAL.forEach(function (c) {
               if (String(c.v) === String(idProv)) nombreProv = c.t;
@@ -2745,7 +2741,7 @@
           return o.total > 0;
         });
 
-      // Ordenar por total y marcar el más barato como sugerido
+      // Ordenar por total y marcar el mÃ¡s barato como sugerido
       opciones.sort(function (a, b) {
         return a.total - b.total;
       });
@@ -2758,7 +2754,7 @@
         return;
       }
 
-      // Si el ganador actual ya no está en las opciones, resetear
+      // Si el ganador actual ya no estÃ¡ en las opciones, resetear
       var idsValidos = opciones.map(function (o) {
         return o.idProveedor;
       });
@@ -2832,7 +2828,7 @@
         $fila.on("click", function () {
           wizardIdGanador = op.idProveedor;
           wizardGanadorManual = !op.esSugerido;
-          cargarOpcionesGanador(); // re-renderizar con nueva selección
+          cargarOpcionesGanador(); // re-renderizar con nueva selecciÃ³n
         });
 
         $divOpciones.append($fila);
@@ -2845,10 +2841,10 @@
         );
       });
 
-      $sel.select2({ dropdownParent: $modal(), width: "100%", language: "es" });
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.inicializar($sel[0], { placeholder: "-- Seleccionar --" }); }
     }
 
-    // ── Helpers Select2 ──
+    // â”€â”€ Helpers Select2 â”€â”€
     function buildOpcionesHtml() {
       var html = '<option value="">-- Seleccione proveedor --</option>';
       CATALOGO_PROVEEDORES_MODAL.forEach(function (p) {
@@ -2859,12 +2855,14 @@
 
     function initSelect2($sel) {
       if (!$sel.length || typeof $.fn.select2 === "undefined") return;
-      $sel.select2({ dropdownParent: $modal(), width: "100%", language: "es" });
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.inicializar($sel[0], { placeholder: "-- Seleccionar --" }); }
     }
 
     function destruirSelect2En($root) {
       $root.find(".modal-proveedores-select").each(function () {
-        if ($(this).data("select2")) $(this).select2("destroy");
+        if (window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir(this);
+        }
       });
     }
 
@@ -2905,11 +2903,11 @@
           }
 
           // Comprobar si el innerHTML ha cambiado para evitar reinicializaciones innecesarias
-          // Validamos contando cuántos options tiene ahora vs los que tendría el nuevo HTML
+          // Validamos contando cuÃ¡ntos options tiene ahora vs los que tendrÃ­a el nuevo HTML
           var currentOptionsCount = $sel.find("option").length;
           var newOptionsCount = (newHtml.match(/<option/g) || []).length;
 
-          // También comprobamos si los values exactos cambiaron
+          // TambiÃ©n comprobamos si los values exactos cambiaron
           var currentVals = [];
           $sel.find("option").each(function () {
             currentVals.push($(this).val());
@@ -2925,8 +2923,8 @@
 
           if (changed) {
             $sel.html(newHtml);
-            if ($sel.data("select2")) {
-              $sel.select2("destroy");
+            if (window.SelectRosaBuscable) {
+              window.SelectRosaBuscable.destruir($sel[0]);
               initSelect2($sel);
             }
           }
@@ -2941,7 +2939,7 @@
       },
     );
 
-    // ── Guardar filas actuales al estado del wizard ──
+    // â”€â”€ Guardar filas actuales al estado del wizard â”€â”€
     function guardarFilasActuales() {
       var filas = [];
       $contenedor()
@@ -3026,14 +3024,14 @@
                       '</div>' +
                       '<div style="flex:1;min-width:0;">' +
                       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
-                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "—") + '</span>' +
+                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "â€”") + '</span>' +
                       '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
                       'background:#fef9c3;color:#854d0e;font-weight:600;">En proceso</span>' +
                       '</div>' +
                       '<div style="font-size:12px;color:var(--color-text-secondary);">' +
-                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "—") +
-                      ' &nbsp;·&nbsp; ' +
-                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "—") +
+                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "â€”") +
+                      ' &nbsp;Â·&nbsp; ' +
+                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "â€”") +
                       '</div>' +
                       '</div>' +
                       '<div style="text-align:right;flex-shrink:0;">' +
@@ -3062,7 +3060,7 @@
                       var ctr = document.getElementById("contadorConsolidada");
                       ctr.style.display = n > 0 ? "block" : "none";
                       document.getElementById("textoContadorConsolidada").textContent =
-                          n + (n === 1 ? " requisición seleccionada" : " requisiciones seleccionadas");
+                          n + (n === 1 ? " requisiciÃ³n seleccionada" : " requisiciones seleccionadas");
                       document.getElementById("btnConfirmarConsolidada").disabled = n < 2;
                   });
 
@@ -3086,12 +3084,12 @@
               var esServicio = document.querySelector(".tabla-requi-page")
                   ?.getAttribute("data-tipo-tabla") === "servicios";
               Swal.fire({
-                  title: "¿Crear consolidada?",
-                  html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
+                  title: "Â¿Crear consolidada?",
+                  html: "Se agruparÃ¡n <strong>" + ids.length + " requisiciones</strong> en una sola.",
                   icon: "question",
                   showCancelButton: true,
                   confirmButtonColor: "#fe6291",
-                  confirmButtonText: "Sí, crear",
+                  confirmButtonText: "SÃ­, crear",
                   cancelButtonText: "Cancelar",
               }).then(function (result) {
                   if (!result.isConfirmed) return;
@@ -3120,7 +3118,7 @@
           };
       })();
 
-    // ── Renderizar la pantalla de la partida activa ──
+    // â”€â”€ Renderizar la pantalla de la partida activa â”€â”€
     function renderizarPartida(idx) {
       var $c = $contenedor();
       var partida = wizardPartidas[idx];
@@ -3143,7 +3141,7 @@
       $c.empty();
 
       // Determinar filas a renderizar
-      // Si hay datos guardados para esta partida úsalos, si no precarga proveedores de la anterior
+      // Si hay datos guardados para esta partida Ãºsalos, si no precarga proveedores de la anterior
       var filasBase;
       if (wizardDatos[idx] && wizardDatos[idx].length) {
         filasBase = wizardDatos[idx];
@@ -3157,7 +3155,7 @@
           return { idProveedor: f.idProveedor, importe: "" };
         });
       } else {
-        // Primera partida sin datos previos: 2 filas vacías
+        // Primera partida sin datos previos: 2 filas vacÃ­as
         filasBase = [
           { idProveedor: 0, importe: "" },
           { idProveedor: 0, importe: "" },
@@ -3179,7 +3177,7 @@
         initSelect2($sel);
       });
 
-      // Botones de navegación
+      // Botones de navegaciÃ³n
       var $btnAnterior = $("#btnWizardAnterior");
       var $btnSiguiente = $("#btnWizardSiguiente");
 
@@ -3198,11 +3196,11 @@
       $("#wizardPasoGanador").hide();
     }
 
-    // ── Botón Siguiente / Guardar ──
+    // â”€â”€ BotÃ³n Siguiente / Guardar â”€â”€
     $(document).on("click", "#btnWizardSiguiente", function () {
       guardarFilasActuales();
 
-      // Validación: Prevenir proveedores duplicados en la partida actual
+      // ValidaciÃ³n: Prevenir proveedores duplicados en la partida actual
       var filasActuales = wizardDatos[wizardIdx] || [];
       var provsUnicos = [];
       var hayDuplicado = false;
@@ -3267,7 +3265,7 @@
           }),
           success: function () {
             actualizarEstadoProveedoresSeleccionados(true);
-            // Cotizaciones guardadas → ahora cargar opciones ganador desde BD
+            // Cotizaciones guardadas â†’ ahora cargar opciones ganador desde BD
             mostrarPasoGanadorDesdeBD();
           },
           error: function (xhr) {
@@ -3281,14 +3279,14 @@
       }
     });
 
-    // ── Botón Anterior ──
+    // â”€â”€ BotÃ³n Anterior â”€â”€
     $(document).on("click", "#btnWizardAnterior", function () {
       guardarFilasActuales();
       wizardIdx--;
       renderizarPartida(wizardIdx);
     });
 
-    // ── Botón Agregar fila ──
+    // â”€â”€ BotÃ³n Agregar fila â”€â”€
     $(document).on("click", "#btnModalProveedoresAgregar", function () {
       var $c = $contenedor();
       var tpl = document.getElementById("tplModalProveedorFila");
@@ -3302,13 +3300,13 @@
       actualizarOpcionesProveedores();
     });
 
-    // ── Botón eliminar fila ──
+    // â”€â”€ BotÃ³n eliminar fila â”€â”€
     $(document).on("click", ".btn-wizard-eliminar-fila", function () {
       var $fila = $(this).closest(".modal-proveedores-fila");
       var $c = $contenedor();
-      if ($c.find(".modal-proveedores-fila").length <= 1) return; // mínimo 1 fila
+      if ($c.find(".modal-proveedores-fila").length <= 1) return; // mÃ­nimo 1 fila
       var $sel = $fila.find(".modal-proveedores-select");
-      if ($sel.data("select2")) $sel.select2("destroy");
+      if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($sel[0]); }
       $fila.remove();
       actualizarOpcionesProveedores();
     });
@@ -3483,8 +3481,8 @@
           partida.descripcionDetallada || partida.nombrePartida || "";
         var descripcionDetalladaCorta =
           descripcionDetallada.length > 28
-            ? descripcionDetallada.substring(0, 28) + "…"
-            : descripcionDetallada || "Sin descripción...";
+            ? descripcionDetallada.substring(0, 28) + "â€¦"
+            : descripcionDetallada || "Sin descripciÃ³n...";
         var tieneDescripcionDetallada = descripcionDetallada
           ? "tiene-texto"
           : "";
@@ -3637,7 +3635,7 @@
       if (!vigencia || vigencia <= 0) {
         Swal.fire({
           icon: "warning",
-          title: "Captura la vigencia de cotización.",
+          title: "Captura la vigencia de cotizaciÃ³n.",
         });
         return false;
       }
@@ -3681,9 +3679,9 @@
         $("#wizardPasoGanador").append(
           '<div id="wizardGanadorJustificacionWrap" style="display:none; margin-top:12px;">' +
             '<div class="formulario-input">' +
-            "<label>Justificación de selección manual</label>" +
+            "<label>JustificaciÃ³n de selecciÃ³n manual</label>" +
             '<textarea id="wizardGanadorJustificacion" class="form-control" rows="4" ' +
-            'placeholder="Escribe por qué se eligió este proveedor y no el de menor costo..."></textarea>' +
+            'placeholder="Escribe por quÃ© se eligiÃ³ este proveedor y no el de menor costo..."></textarea>' +
             "</div>" +
             "</div>",
         );
@@ -3810,7 +3808,7 @@
           asegurarControlesGanador();
 
           if (window._modoConsolidada) {
-              // ── Recopilar todos los idRequisicion del grupo ──
+              // â”€â”€ Recopilar todos los idRequisicion del grupo â”€â”€
               var idSet = {};
               CACHE_PARTIDAS.forEach(function (p) {
                   if (!p.idRequisicionPorDetalle) return;
@@ -3825,7 +3823,7 @@
                   return;
               }
 
-              // Construir query string con múltiples ids: ?idsRequisiciones=1&idsRequisiciones=2
+              // Construir query string con mÃºltiples ids: ?idsRequisiciones=1&idsRequisiciones=2
               var params = idsRequisiciones.map(function (id) {
                   return "idsRequisiciones=" + id;
               }).join("&");
@@ -3833,7 +3831,7 @@
               $.get(urlObtenerOpcionesGanadorConsolidada + "?" + params, function (opciones) {
                   wizardOpciones = opciones || [];
 
-                  // Para obtener ganador guardado usamos la primera requisición como referencia
+                  // Para obtener ganador guardado usamos la primera requisiciÃ³n como referencia
                   $.get(urlObtenerGanador, { idRequisicion: idsRequisiciones[0] }, function (ganador) {
                       var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
                       if (ganador && ganador.idProveedor) {
@@ -3861,7 +3859,7 @@
               });
 
           } else {
-              // ── Modo normal — sin cambios ──
+              // â”€â”€ Modo normal â€” sin cambios â”€â”€
               $.get(urlObtenerOpcionesGanador, { idRequisicion: _idRequiCotizaciones }, function (opciones) {
                   wizardOpciones = opciones || [];
                   $.get(urlObtenerGanador, { idRequisicion: _idRequiCotizaciones }, function (ganador) {
@@ -3917,16 +3915,16 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi";
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
-                      var folio = escapeHtml(c.folioConsolidada || "—");
+                      var folio = escapeHtml(c.folioConsolidada || "â€”");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><span class="folio-badge">' + folio + "</span></td>" +
-                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "—", "fa-solid fa-user") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "â€”", "fa-solid fa-user") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -3972,7 +3970,7 @@
 
                   if (!data || !data.length) return;
 
-                  // Solo eliminar el mensaje vacío si realmente hay datos que insertar
+                  // Solo eliminar el mensaje vacÃ­o si realmente hay datos que insertar
                   document.getElementById("filaVaciaVerificadas")?.remove();
 
                   tbody.innerHTML = "";
@@ -3980,15 +3978,15 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi fila-consolidada";
                       tr.setAttribute("data-consolidada-id", c.consolidadaId);
-                      var folioConsolidado = escapeHtml(c.folioConsolidada || "—");
+                      var folioConsolidado = escapeHtml(c.folioConsolidada || "â€”");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><div class="tabla-meta-stack"><span class="folio-badge">' + folioConsolidado + '</span><span class="tabla-meta-secundaria"><i class="fa-solid fa-layer-group"></i>Consolidada</span></div></td>' +
-                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequisiciones || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver expediente completo" ' +
@@ -4001,7 +3999,7 @@
                       tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
                   });
 
-                  // Después de insertar filas, re-evaluar la paginación para remover/ajustar el mensaje vacío
+                  // DespuÃ©s de insertar filas, re-evaluar la paginaciÃ³n para remover/ajustar el mensaje vacÃ­o
                   aplicarPaginacionRequisiciones();
               })
               .catch(function () {
@@ -4036,12 +4034,12 @@
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-                          "<td>" + (c.fechaCreacion || "—") + "</td>" +
-                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
+                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+                          "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + (c.estatus || "—") + "</td>" +
+                          "<td>" + (c.estatus || "â€”") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -4143,14 +4141,14 @@
               return;
           }
           if (wizardGanadorManual && !justificacion) {
-              Swal.fire({ icon: "warning", title: "Escribe la justificación." });
+              Swal.fire({ icon: "warning", title: "Escribe la justificaciÃ³n." });
               return;
           }
 
-          // Determinar a qué requisiciones guardar el ganador
+          // Determinar a quÃ© requisiciones guardar el ganador
           var idsRequisiciones = [];
           if (window._modoConsolidada) {
-              // Obtener todos los idRequisicion únicos del mapa
+              // Obtener todos los idRequisicion Ãºnicos del mapa
               var idSet = {};
               CACHE_PARTIDAS.forEach(function (p) {
                   if (!p.idRequisicionPorDetalle) return;
@@ -4254,7 +4252,7 @@
           $("#btnWizardAnterior").hide();
 
           if (window._modoConsolidada && window._idConsolidadaWizard) {
-              // ── Modo consolidada ──
+              // â”€â”€ Modo consolidada â”€â”€
               $.get(urlPartidasConsolidada,
                   { idConsolidada: window._idConsolidadaWizard },
                   function (partidas) {
@@ -4299,7 +4297,7 @@
               });
 
           } else {
-              // ── Modo normal ──
+              // â”€â”€ Modo normal â”€â”€
               if (!_idRequiCotizaciones) return;
 
               obtenerPartidasCotizacion(function () {
@@ -4413,7 +4411,7 @@
               return;
           }
 
-          // ── Modo normal ──
+          // â”€â”€ Modo normal â”€â”€
           $.ajax({
               url: urlGuardarCotizaciones,
               type: "POST",
@@ -4445,8 +4443,8 @@
             this.style.zIndex = "";
             window._modoConsolidada = false;
             window._idConsolidadaWizard = null;
-        if ($selectProveedor().data("select2")) {
-          $selectProveedor().select2("destroy");
+        if (window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir($selectProveedor()[0]);
         }
 
         proveedoresWizard = [];
@@ -4514,7 +4512,7 @@
       var articulos = data.articulos || [];
       var esDonativo = data.donativo === true;
 
-      // Tabla de artículos
+      // Tabla de artÃ­culos
       var thCog = document.querySelector(
         "#tablaModalDetalle thead tr th:last-child",
       );
@@ -4525,14 +4523,14 @@
         contenido =
           '<tr><td colspan="' +
           (esDonativo ? 6 : 5) +
-          '" class="text-center">Sin artículos</td></tr>';
+          '" class="text-center">Sin artÃ­culos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "…"
-              : textoCompleto || "Sin descripción...";
+              ? textoCompleto.substring(0, 28) + "â€¦"
+              : textoCompleto || "Sin descripciÃ³n...";
           var tieneTexto = textoCompleto ? "tiene-texto" : "";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
 
@@ -4593,33 +4591,30 @@
 
       if (esDonativo) {
         $("#tablaDetalle .select-cog-editable").each(function () {
-          $(this).select2({
-            dropdownParent: $("#modalDetalle"),
-            width: "resolve",
-            placeholder: "COG...",
-            minimumInputLength: 1,
-            language: "es",
-            ajax: {
-              url: urlBuscarCogs,
-              dataType: "json",
-              delay: 250,
-              data: function (params) {
-                return { term: params.term };
-              },
-              processResults: function (data) {
-                return { results: data };
-              },
-              cache: true,
-            },
-          });
+          if (window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.inicializar(this, {
+              placeholder: "COG...",
+              ajax: {
+                url: urlBuscarCogs,
+                delay: 250,
+                minimumInputLength: 1,
+                data: function (params) {
+                  return { term: params.term };
+                },
+                processResults: function (data) {
+                  return { results: data };
+                }
+              }
+            });
+          }
         });
       }
 
-      // Fotos de diseño / Archivos adjuntos
+      // Fotos de diseÃ±o / Archivos adjuntos
       var seccionFotos = document.getElementById("seccionFotosDetalle");
       var galeriaFotos = document.getElementById("galeriaFotosDetalle");
       if (seccionFotos && galeriaFotos) {
-        // Se muestran si hay fotos, sin restringir a Servicio Impresión para que funcione igual al enviar adjuntos comunes
+        // Se muestran si hay fotos, sin restringir a Servicio ImpresiÃ³n para que funcione igual al enviar adjuntos comunes
         if (data.fotos && data.fotos.length > 0) {
           var objsFotos = data.fotos.map(function (r) {
             return { ruta: r, nombreArchivo: r.split("/").pop() || "archivo" };
@@ -4642,35 +4637,40 @@
         }
       }
 
-      // Subtítulo
+      // SubtÃ­tulo
       var subtitulo = document.querySelector(
         "#modalDetalle .modal-subtitulo-premium",
       );
       if (subtitulo)
         subtitulo.textContent =
-          "Detalle de partidas solicitadas · Total: " +
+          "Detalle de partidas solicitadas Â· Total: " +
           articulos.length +
           " partidas";
 
-      // ── Sección atender/readonly: inicializar select2 y precargar valores ──
+      // â”€â”€ SecciÃ³n atender/readonly: inicializar select2 y precargar valores â”€â”€
+      // ── Sección atender/readonly: inicializar SelectRosaBuscable y precargar valores ──
       if (isAtender || isReadonly) {
         // Destruir instancias previas si existen
-        $(
-          "#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio",
-        ).each(function () {
-          if ($(this).data("select2")) $(this).select2("destroy");
+        ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect", "municipio"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.destruir(el);
+          }
         });
 
-        // Inicializar select2
-        $(
-          "#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio",
-        ).select2({
-          dropdownParent: $("#modalDetalle"),
-          width: "100%",
-          language: "es",
+        // Inicializar SelectRosaBuscable
+        ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect", "municipio"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.inicializar(el, {
+              placeholder: id === "actividadSeleccionada" ? "Buscar actividad..." :
+                           id === "ffSelect" ? "Buscar fuente..." :
+                           id === "tipoProgramaSelect" ? "Buscar tipo de programa..." :
+                           "Buscar municipio..."
+            });
+          }
         });
-
-        // Precargar valores (ahora sí data existe)
+        // Precargar valores (ahora sÃ­ data existe)
         if (data.idPp) {
           $("#actividadSeleccionada").val(data.idPp).trigger("change");
         }
@@ -4700,7 +4700,7 @@
             true,
           );
 
-          // Ocultar botón enviar
+          // Ocultar botÃ³n enviar
           var btnEnviar = document.querySelector(
             ".seccionAtender div[style*='text-align:right']",
           );
@@ -4759,23 +4759,23 @@
     document.getElementById("expedienteSubtitulo").textContent = "Cargando...";
 
     $.get(obtenerDetallesUrl, { idMaestro: idRequi, soloCompra: true }, function (data) {
-      // Subtítulo
+      // SubtÃ­tulo
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente completo · " + articulos.length + " partidas";
+        "Expediente completo Â· " + articulos.length + " partidas";
 
-      // Tabla artículos
+      // Tabla artÃ­culos
       var contenido = "";
       if (!articulos.length) {
         contenido =
-          '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+          '<tr><td colspan="5" class="text-center">Sin artÃ­culos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "…"
-              : textoCompleto || "Sin descripción...";
+              ? textoCompleto.substring(0, 28) + "â€¦"
+              : textoCompleto || "Sin descripciÃ³n...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
             "<tr>" +
@@ -4832,17 +4832,24 @@
       // Selects PP / FF / Programa / Municipio
       ["expActividad", "expFf", "expTipoPrograma", "expMunicipio"].forEach(
         function (id) {
-          var el = $("#" + id);
-          if (el.data("select2")) el.select2("destroy");
+          var el = document.getElementById(id);
+          if (el && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.destruir(el);
+          }
         },
       );
-      $("#expActividad, #expFf, #expTipoPrograma, #expMunicipio")
-        .select2({
-          dropdownParent: $("#modalExpediente"),
-          width: "100%",
-          language: "es",
-        })
-        .prop("disabled", true);
+      ["expActividad", "expFf", "expTipoPrograma", "expMunicipio"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.inicializar(el, {
+            placeholder: id === "expActividad" ? "Buscar actividad..." :
+                         id === "expFf" ? "Buscar fuente..." :
+                         id === "expTipoPrograma" ? "Buscar tipo de programa..." :
+                         "Buscar municipio..."
+          });
+        }
+      });
+      $("#expActividad, #expFf, #expTipoPrograma, #expMunicipio").prop("disabled", true);
 
       if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
       if (data.ff) {
@@ -4862,7 +4869,7 @@
         var contenedor = document.getElementById("expArchivosBase");
         contenedor.innerHTML = "";
 
-        // Botón cotizaciones
+        // BotÃ³n cotizaciones
         var btnCot = document.createElement("div");
         btnCot.style.cssText = "margin-bottom:12px;";
         btnCot.innerHTML =
@@ -4935,7 +4942,7 @@
 
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' +
             numApi +
@@ -4967,14 +4974,14 @@
         },
       );
 
-      // ── Sección Pedido de Compra ──────────────────────────────────────────
+      // â”€â”€ SecciÃ³n Pedido de Compra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       (function () {
         var idEstatus = data.idEstatus || 0;
         var pedidoCompra = data.archivosPedidoCompra || [];
         var numPedidos = data.numPedidos || [];
         var esDual = numPedidos.length > 1;
 
-        // Estatus 15 (autorizada) o 18 (rebotada): modo edición
+        // Estatus 15 (autorizada) o 18 (rebotada): modo ediciÃ³n
         if (idEstatus === 15) {
           document.getElementById("pedidoModoEdicion").style.display = "flex";
           document.getElementById("pedidoModoReadonly").style.display = "none";
@@ -5047,24 +5054,24 @@
     $.get(urlExpedienteConsolidada, { idConsolidada: idConsolidada }, function (data) {
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente consolidado · " + articulos.length + " partidas | " + data.folioConsolidada;
+        "Expediente consolidado Â· " + articulos.length + " partidas | " + data.folioConsolidada;
 
       // Agregar columna Requi al inicio del thead
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
-        theadTr.innerHTML = '<th>Requi</th><th>Nº Partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripción</th><th>Descripción Detallada</th>';
+        theadTr.innerHTML = '<th>Requi</th><th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>DescripciÃ³n</th><th>DescripciÃ³n Detallada</th>';
       }
 
-      // Tabla artículos con columna Requi al inicio
+      // Tabla artÃ­culos con columna Requi al inicio
       var contenido = "";
       if (!articulos.length) {
-        contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+        contenido = '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto = textoCompleto.length > 28
-            ? textoCompleto.substring(0, 28) + "…"
-            : textoCompleto || "Sin descripción...";
+            ? textoCompleto.substring(0, 28) + "â€¦"
+            : textoCompleto || "Sin descripciÃ³n...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
             "<tr>" +
@@ -5088,11 +5095,21 @@
       // Selects PP / FF (readonly)
       ["expActividad", "expFf", "expTipoPrograma"].forEach(function (id) {
         var el = $("#" + id);
-        if (el.data("select2")) el.select2("destroy");
-      });
-      $("#expActividad, #expFf, #expTipoPrograma")
-        .select2({ dropdownParent: $("#modalExpediente"), width: "100%", language: "es" })
-        .prop("disabled", true);
+        if (el && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.destruir(el);
+          }
+        });
+        ["expActividad", "expFf", "expTipoPrograma"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.inicializar(el, {
+              placeholder: id === "expActividad" ? "Buscar actividad..." :
+                           id === "expFf" ? "Buscar fuente..." :
+                           "Buscar tipo de programa..."
+            });
+          }
+        });
+        $("#expActividad, #expFf, #expTipoPrograma").prop("disabled", true);
 
       if (data.idPp) $("#expActividad").val(data.idPp).trigger("change");
       if (data.ff) $("#expFf").val(data.ff).trigger("change");
@@ -5147,7 +5164,7 @@
         renderGrupoFin("expGrupoTablaApi", "Tabla de API", tablaApi);
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + "</span>";
         }
@@ -5178,15 +5195,15 @@
 
   window.aceptarExpediente = function () {
     var esConsolidada = window._modoConsolidada && window._idConsolidadaExpediente;
-    var titulo = esConsolidada ? "¿Aceptar consolidada?" : "¿Aceptar requisición?";
+    var titulo = esConsolidada ? "Â¿Aceptar consolidada?" : "Â¿Aceptar requisiciÃ³n?";
     Swal.fire({
       title: titulo,
-      text: "Se enviará a proceso de pago.",
+      text: "Se enviarÃ¡ a proceso de pago.",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#fe6291",
       cancelButtonColor: "var(--slate-500)",
-      confirmButtonText: "Sí, aceptar",
+      confirmButtonText: "SÃ­, aceptar",
       cancelButtonText: "Cancelar",
     }).then(function (result) {
       if (!result.isConfirmed) return;
@@ -5335,7 +5352,7 @@
 
   window.abrirModalProveedoresSinCerrar = function () {
     // Abre el modal de proveedores de forma manual sin que Bootstrap
-    // interfiera con el modal de detalle que ya está abierto
+    // interfiera con el modal de detalle que ya estÃ¡ abierto
     var el = document.getElementById("modalProveedoresRequisicion");
     if (!el) return;
 
@@ -5358,9 +5375,9 @@
     if (instancia) instancia.hide();
   };
 
-  /* ══════════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MODAL DE HISTORIAL COMPLETO
-  ══════════════════════════════════════════════ */
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   var urlObtenerProgreso = container
     ? container.getAttribute("data-url-obtener-progreso")
     : "";
@@ -5459,7 +5476,7 @@
           bTxt = "Pendiente";
           break;
       }
-      var tStr = s.time !== "—" ? " · " + s.time : "";
+      var tStr = s.time !== "â€”" ? " Â· " + s.time : "";
 
       var item = document.createElement("div");
       item.className = "mtl-item " + s.state;
@@ -5485,7 +5502,7 @@
             '<div class="mtl-dr"><span class="dr-lbl">Responsable</span>' +
             s.by +
             "</div>" +
-            '<div class="mtl-dr"><span class="dr-lbl">Acción</span>' +
+            '<div class="mtl-dr"><span class="dr-lbl">AcciÃ³n</span>' +
             s.action +
             "</div>" +
             '<div class="mtl-dr"><span class="dr-lbl">Nota</span>' +
@@ -5502,7 +5519,7 @@
     document.getElementById("historialSubtitle").textContent = numRequi;
     configurarDescargaHistorial(idRequi);
     document.getElementById("historialSummary").innerHTML =
-      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial…</div>';
+      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historialâ€¦</div>';
     document.getElementById("historialTl").innerHTML = "";
 
     var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
@@ -5518,10 +5535,10 @@
       var steps = (data || []).map(function (s) {
         return {
           dept: s.dept || s.Dept || "",
-          date: s.date || s.Date || "—",
+          date: s.date || s.Date || "â€”",
           state: s.state || s.State || "pending",
-          by: s.by || s.By || "—",
-          time: s.time || s.Time || "—",
+          by: s.by || s.By || "â€”",
+          time: s.time || s.Time || "â€”",
           action: s.action || s.Action || "",
           comment: s.comment || s.Comment || "",
         };
@@ -5541,7 +5558,7 @@
     });
   };
 
-  // Resetear modo consolidada, restaurar thead y botón pedido al cerrar modal
+  // Resetear modo consolidada, restaurar thead y botÃ³n pedido al cerrar modal
   var modalExp = document.getElementById("modalExpediente");
   if (modalExp) {
     modalExp.addEventListener("hidden.bs.modal", function () {
@@ -5551,7 +5568,7 @@
         if (btnEditar) btnEditar.onclick = null;
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
-        theadTr.innerHTML = '<th>N\u00ba Partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>';
+        theadTr.innerHTML = '<th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>';
       }
       var btn = document.querySelector("#pedidoModoEdicion .btn");
       if (btn && btn.getAttribute("data-consolidada-override")) {
@@ -5561,5 +5578,8 @@
     });
   }
 })();
+
+
+
 
 
