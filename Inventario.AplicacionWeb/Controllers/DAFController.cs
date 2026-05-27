@@ -43,7 +43,6 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var requisiciones = materiales
                 .Concat(servicios)
-                .Where(r => r.IdEstatus == 16)
                 .OrderBy(r => r.FechaModificacion)
                 .ThenBy(r => r.IdRequi)
                 .ToList();
@@ -53,15 +52,18 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var consolidadas = consolidadasMateriales
                 .Concat(consolidadasServicios)
-                .Where(c => c.IdEstatus == 16)
                 .OrderBy(c => c.FechaCreacion)
                 .ThenBy(c => c.ConsolidadaID)
                 .ToList();
 
             var vm = new VMTablaRequisiciones
             {
-                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones),
-                Consolidadas = consolidadas,
+                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 16).ToList()),
+                Consolidadas = consolidadas.Where(c => c.IdEstatus == 16).ToList(),
+                RequisicionesAutorizadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 17).ToList()),
+                ConsolidadasAutorizadas = consolidadas.Where(c => c.IdEstatus == 17).ToList(),
+                RequisicionesRechazadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 5).ToList()),
+                ConsolidadasRechazadas = consolidadas.Where(c => c.IdEstatus == 5).ToList(),
                 Estatus = await _almacenService.ObtenerEstatus()
             };
 

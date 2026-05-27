@@ -20,21 +20,45 @@
   var urlModificarRequi = container.getAttribute("data-url-modificar-requi") || "";
   var urlModificarConsolidada = container.getAttribute("data-url-modificar-consolidada") || "";
 
-  var tbody = document.getElementById("tbodyDaf");
-  var paginacion = document.getElementById("paginacionDaf");
   var modalEl = document.getElementById("modalDetalleDaf");
   var modal = modalEl ? new bootstrap.Modal(modalEl) : null;
   var detalleTitulo = document.getElementById("dafDetalleTitulo");
   var detalleSubtitulo = document.getElementById("dafDetalleSubtitulo");
   var detalleContenido = document.getElementById("dafDetalleContenido");
   var observacionesInput = document.getElementById("dafObservaciones");
-  var contextoActual = { id: null, esConsolidada: false };
+  var accionesFooter = document.getElementById("dafAccionesFooter");
   var fechaSeleccionada = "";
-  var paginaActual = 1;
+  var tabActiva = "principal";
   var filasPorPagina = 10;
+  var paginaPorTab = { principal: 1, autorizadas: 1, rechazadas: 1 };
+  var contextoActual = { id: null, esConsolidada: false, estatusId: null, row: null };
+
+  var tabConfig = {
+    principal: {
+      panel: document.getElementById("tab-principal"),
+      tbody: document.getElementById("tbodyDafPrincipal"),
+      paginacion: document.getElementById("paginacionDafPrincipal"),
+      count: document.getElementById("countTabPrincipal"),
+      emptyText: "No hay requisiciones pendientes en DAF"
+    },
+    autorizadas: {
+      panel: document.getElementById("tab-autorizadas"),
+      tbody: document.getElementById("tbodyDafAutorizadas"),
+      paginacion: document.getElementById("paginacionDafAutorizadas"),
+      count: document.getElementById("countTabAutorizadas"),
+      emptyText: "No hay requisiciones autorizadas en DAF"
+    },
+    rechazadas: {
+      panel: document.getElementById("tab-rechazadas"),
+      tbody: document.getElementById("tbodyDafRechazadas"),
+      paginacion: document.getElementById("paginacionDafRechazadas"),
+      count: document.getElementById("countTabRechazadas"),
+      emptyText: "No hay requisiciones rechazadas en DAF"
+    }
+  };
 
   function esc(value) {
-    return String(value ?? "")
+    return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -42,7 +66,12 @@
       .replace(/'/g, "&#39;");
   }
 
-  function getMainRows() {
+  function getConfig(tab) {
+    return tabConfig[tab] || tabConfig.principal;
+  }
+
+  function getMainRows(tbody) {
+    if (!tbody) return [];
     return Array.prototype.slice.call(tbody.querySelectorAll("tr.fila-requi"));
   }
 
@@ -69,80 +98,97 @@
   }
 
   function collapseAll() {
-    tbody.querySelectorAll(".fila-detalle.expanded").forEach(function (row) {
+    container.querySelectorAll(".fila-detalle.expanded").forEach(function (row) {
       row.classList.remove("expanded");
       row.classList.add("collapsed");
     });
   }
 
-  function showEmptyRow(show) {
-    var existing = tbody.querySelector(".fila-vacia-daf");
+  function updateCount(tab) {
+    var config = getConfig(tab);
+    if (!config.count || !config.tbody) return;
+    config.count.textContent = String(getMainRows(config.tbody).length);
+  }
+
+  function updateAllCounts() {
+    Object.keys(tabConfig).forEach(updateCount);
+  }
+
+  function showEmptyRow(tab, show, message) {
+    var config = getConfig(tab);
+    if (!config.tbody) return;
+
+    var existing = config.tbody.querySelector(".fila-vacia-daf");
     if (show) {
       if (!existing) {
         var tr = document.createElement("tr");
         tr.className = "fila-vacia fila-vacia-daf";
-        tr.innerHTML = '<td colspan="8" class="text-center">Sin resultados para los filtros aplicados</td>';
-        tbody.appendChild(tr);
+        tr.innerHTML = '<td colspan="8" class="text-center">' + esc(message || config.emptyText) + "</td>";
+        config.tbody.appendChild(tr);
+      } else if (message) {
+        existing.innerHTML = '<td colspan="8" class="text-center">' + esc(message) + "</td>";
       }
     } else if (existing) {
       existing.remove();
     }
   }
 
-  function buildPaginationButton(label, page, active) {
+  function renumberRows(tab) {
+    var rows = getMainRows(getConfig(tab).tbody);
+    rows.forEach(function (row, index) {
+      var firstCell = row.querySelector("td:first-child");
+      if (firstCell) firstCell.textContent = String(index + 1);
+    });
+  }
+
+  function buildPaginationButton(tab, label, page, active) {
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "almacen-paginacion-btn" + (active ? " activo" : "");
     btn.textContent = label;
     btn.addEventListener("click", function () {
-      paginaActual = page;
-      applyPagination();
+      paginaPorTab[tab] = page;
+      applyFilters();
     });
     return btn;
   }
 
-  function applyPagination() {
-    if (!paginacion) return;
+  function applyPagination(tab, visibleRows) {
+    var config = getConfig(tab);
+    if (!config.paginacion) return;
 
-    var rows = getMainRows().filter(function (row) {
-      return row.dataset.match !== "0" && row.style.display !== "none";
-    });
-    var totalPages = Math.max(1, Math.ceil(rows.length / filasPorPagina));
-    if (paginaActual > totalPages) paginaActual = totalPages;
+    var totalPages = Math.max(1, Math.ceil(visibleRows.length / filasPorPagina));
+    if (paginaPorTab[tab] > totalPages) paginaPorTab[tab] = totalPages;
 
-    getMainRows().forEach(function (row) {
-      var detail = getDetailRow(row);
-      row.style.display = row.dataset.match === "0" ? "none" : "";
-      if (detail) detail.style.display = row.dataset.match === "0" ? "none" : "";
-    });
-
-    rows.forEach(function (row, index) {
+    visibleRows.forEach(function (row, index) {
       var inPage =
-        index >= (paginaActual - 1) * filasPorPagina &&
-        index < paginaActual * filasPorPagina;
+        index >= (paginaPorTab[tab] - 1) * filasPorPagina &&
+        index < paginaPorTab[tab] * filasPorPagina;
       row.style.display = inPage ? "" : "none";
 
       var detail = getDetailRow(row);
-      if (detail) {
-        detail.style.display = inPage ? "" : "none";
-      }
+      if (detail) detail.style.display = inPage ? "" : "none";
     });
 
-    paginacion.innerHTML = "";
-    if (rows.length <= filasPorPagina) return;
+    config.paginacion.innerHTML = "";
+    if (visibleRows.length <= filasPorPagina) return;
 
     for (var page = 1; page <= totalPages; page++) {
-      paginacion.appendChild(buildPaginationButton(String(page), page, page === paginaActual));
+      config.paginacion.appendChild(buildPaginationButton(tab, String(page), page, page === paginaPorTab[tab]));
     }
   }
 
   function applyFilters() {
-    var folio = (document.getElementById("filtroNumReq")?.value || "").trim().toLowerCase();
-    var depto = (document.getElementById("filtroDepartamento")?.value || "").trim().toLowerCase();
-    var estado = (document.getElementById("filtroEstado")?.value || "").trim().toLowerCase();
-    var visibles = 0;
+    var config = getConfig(tabActiva);
+    if (!config.tbody) return;
 
-    getMainRows().forEach(function (row) {
+    var folio = (document.getElementById("filtroNumReq") && document.getElementById("filtroNumReq").value || "").trim().toLowerCase();
+    var depto = (document.getElementById("filtroDepartamento") && document.getElementById("filtroDepartamento").value || "").trim().toLowerCase();
+    var estado = (document.getElementById("filtroEstado") && document.getElementById("filtroEstado").value || "").trim().toLowerCase();
+    var rows = getMainRows(config.tbody);
+    var visibles = [];
+
+    rows.forEach(function (row) {
       var detail = getDetailRow(row);
       var rowFolio = getRowField(row, "td:nth-child(2)");
       var rowDepto = getRowField(row, "td:nth-child(4)");
@@ -158,12 +204,89 @@
       row.dataset.match = ok ? "1" : "0";
       row.style.display = ok ? "" : "none";
       if (detail) detail.style.display = ok ? "" : "none";
-      if (ok) visibles++;
+      if (ok) visibles.push(row);
     });
 
-    showEmptyRow(visibles === 0);
-    paginaActual = 1;
-    applyPagination();
+    showEmptyRow(tabActiva, visibles.length === 0, "Sin resultados para los filtros aplicados");
+    applyPagination(tabActiva, visibles);
+  }
+
+  function activateTab(tab) {
+    tabActiva = tab;
+    collapseAll();
+
+    container.querySelectorAll(".almacen-tabs-btn").forEach(function (btn) {
+      btn.classList.toggle("activo", btn.getAttribute("data-tab") === tab);
+    });
+
+    container.querySelectorAll(".almacen-tab-panel").forEach(function (panel) {
+      panel.classList.toggle("activo", panel.id === "tab-" + tab);
+    });
+
+    applyFilters();
+  }
+
+  function buildEstadoBadge(idEstatus, nombreEstatus) {
+    var colorClass = "badge-estado-info";
+    var iconClass = idEstatus === 1 ? "fa-solid fa-file-signature" : "fa-solid fa-spinner fa-spin-pulse";
+
+    if (idEstatus === 7 || idEstatus === 12 || idEstatus === 17) {
+      colorClass = "badge-estado-success";
+      iconClass = "fa-solid fa-check-double";
+    } else if (idEstatus === 4 || idEstatus === 10 || idEstatus === 15 || idEstatus === 16) {
+      colorClass = "badge-estado-purple";
+      iconClass = "fa-solid fa-user-check";
+    } else if (idEstatus === 5 || idEstatus === 6) {
+      colorClass = "badge-estado-danger";
+      iconClass = "fa-solid fa-ban";
+    } else if (idEstatus === 3 || idEstatus === 18) {
+      colorClass = "badge-estado-warning";
+      iconClass = "fa-solid fa-triangle-exclamation";
+    }
+
+    return '<div class="badge-estado-premium ' + colorClass + '" title="' + esc(nombreEstatus) + '">' +
+      '<i class="' + iconClass + '"></i><span class="badge-text">' + esc(nombreEstatus) + "</span></div>";
+  }
+
+  function findRowByContext(id, esConsolidada) {
+    var selector = esConsolidada
+      ? 'tr.fila-requi[data-consolidada-id="' + id + '"]'
+      : 'tr.fila-requi[data-requi-id="' + id + '"]';
+    return container.querySelector(selector);
+  }
+
+  function updateModalActions() {
+    var pendiente = Number(contextoActual.estatusId) === 16;
+    if (accionesFooter) accionesFooter.style.display = pendiente ? "flex" : "none";
+    if (observacionesInput) observacionesInput.disabled = !pendiente;
+  }
+
+  function moveRowToTab(row, destinationTab, idEstatus, nombreEstatus) {
+    var detail = getDetailRow(row);
+    var targetConfig = getConfig(destinationTab);
+    if (!targetConfig.tbody) return;
+
+    var estadoCell = row.querySelector(".celda-estado");
+    if (estadoCell) estadoCell.innerHTML = buildEstadoBadge(idEstatus, nombreEstatus);
+    row.setAttribute("data-estatus-id", String(idEstatus));
+    row.dataset.match = "1";
+
+    if (detail) {
+      detail.classList.remove("expanded");
+      detail.classList.add("collapsed");
+      detail.style.display = "none";
+    }
+
+    targetConfig.tbody.appendChild(row);
+    if (detail) targetConfig.tbody.appendChild(detail);
+
+    ["principal", "autorizadas", "rechazadas"].forEach(function (tab) {
+      renumberRows(tab);
+      updateCount(tab);
+      showEmptyRow(tab, getMainRows(getConfig(tab).tbody).length === 0, getConfig(tab).emptyText);
+    });
+
+    applyFilters();
   }
 
   function renderArticuloRow(item, includeRequi) {
@@ -210,14 +333,14 @@
     var articulos = data.articulos || [];
     var cards = hijas.length
       ? hijas.map(function (item) {
-          return (
-            '<div style="padding:14px 16px;border:1px solid var(--color-border-tertiary);border-radius:12px;background:var(--color-background-secondary);min-width:220px;flex:1 1 240px;">' +
-            '<div style="font-weight:700;color:var(--slate-700);margin-bottom:6px;">' + esc(item.numRequi || "") + "</div>" +
-            '<div style="font-size:13px;color:var(--color-text-primary);margin-bottom:4px;"><i class="fa-solid fa-building"></i> ' + esc(item.departamento || "") + "</div>" +
-            '<div style="font-size:13px;color:var(--color-text-primary);"><i class="fa-solid fa-boxes-stacked"></i> ' + esc(item.cantidadPartidas || 0) + " partidas</div>" +
-            "</div>"
-          );
-        }).join("")
+        return (
+          '<div style="padding:14px 16px;border:1px solid var(--color-border-tertiary);border-radius:12px;background:var(--color-background-secondary);min-width:220px;flex:1 1 240px;">' +
+          '<div style="font-weight:700;color:var(--slate-700);margin-bottom:6px;">' + esc(item.numRequi || "") + "</div>" +
+          '<div style="font-size:13px;color:var(--color-text-primary);margin-bottom:4px;"><i class="fa-solid fa-building"></i> ' + esc(item.departamento || "") + "</div>" +
+          '<div style="font-size:13px;color:var(--color-text-primary);"><i class="fa-solid fa-boxes-stacked"></i> ' + esc(item.cantidadPartidas || 0) + " partidas</div>" +
+          "</div>"
+        );
+      }).join("")
       : '<p style="color:#888;font-style:italic;">Sin requisiciones hijas</p>';
 
     var rows = articulos.length
@@ -242,6 +365,9 @@
   function openDetalle(id, esConsolidada) {
     contextoActual.id = id;
     contextoActual.esConsolidada = esConsolidada;
+    contextoActual.row = findRowByContext(id, esConsolidada);
+    contextoActual.estatusId = contextoActual.row ? Number(contextoActual.row.getAttribute("data-estatus-id") || "0") : null;
+    updateModalActions();
     if (observacionesInput) observacionesInput.value = "";
     if (!modal || !detalleContenido) return;
 
@@ -251,7 +377,7 @@
 
     var url = esConsolidada
       ? urlDetalleConsolidada + "?idConsolidada=" + encodeURIComponent(id)
-      : urlObtenerDetalles + "?idMaestro=" + encodeURIComponent(id) + "&soloCompra=true";
+      : urlObtenerDetalles + "?idMaestro=" + encodeURIComponent(id);
 
     fetch(url, { credentials: "same-origin" })
       .then(function (r) {
@@ -285,7 +411,7 @@
   }
 
   function requireText(message) {
-    var value = (observacionesInput?.value || "").trim();
+    var value = (observacionesInput && observacionesInput.value || "").trim();
     if (!value) {
       Swal.fire({
         icon: "warning",
@@ -374,7 +500,7 @@
           break;
       }
 
-      var tStr = s.time !== "—" ? " · " + s.time : "";
+      var tStr = s.time !== "â€”" ? " Â· " + s.time : "";
       var item = document.createElement("div");
       item.className = "mtl-item " + s.state;
       item.innerHTML =
@@ -387,17 +513,17 @@
         "</div>" +
         (s.comment
           ? '<div class="mtl-detail">' +
-            '<div class="mtl-dr"><span class="dr-lbl">Responsable</span>' + esc(s.by) + "</div>" +
-            '<div class="mtl-dr"><span class="dr-lbl">Accion</span>' + esc(s.action) + "</div>" +
-            '<div class="mtl-dr"><span class="dr-lbl">Nota</span>' + esc(s.comment) + "</div>" +
-            "</div>"
+          '<div class="mtl-dr"><span class="dr-lbl">Responsable</span>' + esc(s.by) + "</div>" +
+          '<div class="mtl-dr"><span class="dr-lbl">Accion</span>' + esc(s.action) + "</div>" +
+          '<div class="mtl-dr"><span class="dr-lbl">Nota</span>' + esc(s.comment) + "</div>" +
+          "</div>"
           : "") +
         "</div>";
       mtl.appendChild(item);
     });
   }
 
-  var _modalHistorialInstance = null;
+  var modalHistorial = null;
 
   function abrirModalHistorial(id, titulo, urlProgreso, urlPdf, queryParam, downloadParam) {
     try {
@@ -406,10 +532,7 @@
       var timeline = document.getElementById("historialTl");
       var historialModalEl = document.getElementById("modalHistorial");
 
-      if (!subtitle || !summary || !timeline || !historialModalEl) {
-        console.error("abrirModalHistorial: elementos del modal no encontrados", { subtitle: !!subtitle, summary: !!summary, timeline: !!timeline, modal: !!historialModalEl });
-        return;
-      }
+      if (!subtitle || !summary || !timeline || !historialModalEl) return;
 
       subtitle.textContent = titulo || "Historial";
       configurarDescargaHistorial(id, urlPdf, downloadParam);
@@ -417,17 +540,8 @@
         '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial...</div>';
       timeline.innerHTML = "";
 
-      if (!urlProgreso) {
-        summary.innerHTML =
-          '<div style="color:#b91c1c;text-align:center;padding:1rem;">URL de progreso no configurada</div>';
-        console.error("abrirModalHistorial: urlProgreso vacio o nulo");
-        return;
-      }
-
-      if (!_modalHistorialInstance) {
-        _modalHistorialInstance = new bootstrap.Modal(historialModalEl);
-      }
-      _modalHistorialInstance.show();
+      if (!modalHistorial) modalHistorial = new bootstrap.Modal(historialModalEl);
+      modalHistorial.show();
 
       var payload = {};
       payload[queryParam] = id;
@@ -439,35 +553,28 @@
         dataType: "json",
         timeout: 30000,
         success: function (data) {
-          try {
-            var steps = (data || []).map(function (s) {
-              return {
-                dept: s.dept || s.Dept || "",
-                date: s.date || s.Date || "—",
-                state: s.state || s.State || "pending",
-                by: s.by || s.By || "—",
-                time: s.time || s.Time || "—",
-                action: s.action || s.Action || "",
-                comment: s.comment || s.Comment || "",
-              };
-            });
-            if (steps.length === 0) {
-              summary.innerHTML =
-                '<div style="color:#b45309;text-align:center;padding:1rem;"><i class="fa-solid fa-info-circle"></i> No hay registros historicos para esta consolidada</div>';
-              timeline.innerHTML = "";
-              return;
-            }
-            renderHistorialSteps(steps);
-          } catch (e) {
-            console.error("abrirModalHistorial: error al procesar datos", e);
+          var steps = (data || []).map(function (s) {
+            return {
+              dept: s.dept || s.Dept || "",
+              date: s.date || s.Date || "â€”",
+              state: s.state || s.State || "pending",
+              by: s.by || s.By || "â€”",
+              time: s.time || s.Time || "â€”",
+              action: s.action || s.Action || "",
+              comment: s.comment || s.Comment || "",
+            };
+          });
+
+          if (steps.length === 0) {
             summary.innerHTML =
-              '<div style="color:#b91c1c;text-align:center;padding:1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Error al procesar el historial: ' +
-              esc(e.message) +
-              "</div>";
+              '<div style="color:#b45309;text-align:center;padding:1rem;"><i class="fa-solid fa-info-circle"></i> No hay registros historicos para este elemento</div>';
+            timeline.innerHTML = "";
+            return;
           }
+
+          renderHistorialSteps(steps);
         },
-        error: function (xhr, textStatus, errorThrown) {
-          console.error("abrirModalHistorial: fallo la peticion", { status: xhr.status, statusText: textStatus, error: errorThrown, responseText: xhr.responseText });
+        error: function (xhr, textStatus) {
           var detalle =
             (xhr.responseJSON && xhr.responseJSON.message) ||
             (xhr.status ? "Error " + xhr.status + " (" + textStatus + ")" : "Error al cargar el historial");
@@ -478,7 +585,7 @@
         }
       });
     } catch (e) {
-      console.error("abrirModalHistorial: error inesperado", e);
+      console.error("abrirModalHistorial", e);
     }
   }
 
@@ -492,15 +599,15 @@
     window.DocumentosRequisicionModal.open(
       esConsolidada
         ? {
-            idConsolidada: id,
-            fetchUrl: urlObtenerArchivosConsolidada,
-            downloadZipUrl: urlDescargarArchivosConsolidadaZip,
-          }
+          idConsolidada: id,
+          fetchUrl: urlObtenerArchivosConsolidada,
+          downloadZipUrl: urlDescargarArchivosConsolidadaZip,
+        }
         : {
-            idRequisicion: id,
-            fetchUrl: urlObtenerTodosArchivos,
-            downloadZipUrl: urlDescargarTodosArchivosZip,
-          }
+          idRequisicion: id,
+          fetchUrl: urlObtenerTodosArchivos,
+          downloadZipUrl: urlDescargarTodosArchivosZip,
+        }
     );
   };
 
@@ -527,23 +634,25 @@
   };
 
   window.autorizarDaf = function () {
-    if (!contextoActual.id) return;
+    if (!contextoActual.id || Number(contextoActual.estatusId) !== 16) return;
 
     var payload = contextoActual.esConsolidada
-      ? { idConsolidada: contextoActual.id, observaciones: (observacionesInput?.value || "").trim() }
-      : { idRequi: contextoActual.id, observaciones: (observacionesInput?.value || "").trim() };
+      ? { idConsolidada: contextoActual.id, observaciones: (observacionesInput && observacionesInput.value || "").trim() }
+      : { idRequi: contextoActual.id, observaciones: (observacionesInput && observacionesInput.value || "").trim() };
     var url = contextoActual.esConsolidada ? urlAutorizarConsolidada : urlAutorizarRequi;
 
     postForm(url, payload)
       .then(function (res) {
         if (!res.success) throw new Error("No se pudo autorizar.");
         if (modal) modal.hide();
+        if (contextoActual.row) moveRowToTab(contextoActual.row, "autorizadas", 17, "ENVIADA A PAGO");
+        contextoActual.estatusId = 17;
+        updateModalActions();
         Swal.fire({
           icon: "success",
-          title: "Aprobada",
+          title: "Requisicion autorizada",
+          text: "Se movio a la pestaña de autorizadas.",
           confirmButtonText: "Aceptar",
-        }).then(function () {
-          location.reload();
         });
       })
       .catch(function (err) {
@@ -552,7 +661,7 @@
   };
 
   window.rechazarDaf = function () {
-    if (!contextoActual.id) return;
+    if (!contextoActual.id || Number(contextoActual.estatusId) !== 16) return;
     var texto = requireText("Escribe el motivo del rechazo");
     if (!texto) return;
 
@@ -565,12 +674,14 @@
       .then(function (res) {
         if (!res.success) throw new Error("No se pudo rechazar.");
         if (modal) modal.hide();
+        if (contextoActual.row) moveRowToTab(contextoActual.row, "rechazadas", 5, "REQUISICION RECHAZADA");
+        contextoActual.estatusId = 5;
+        updateModalActions();
         Swal.fire({
           icon: "success",
-          title: contextoActual.esConsolidada ? "Consolidada rechazada" : "Requisicion rechazada",
+          title: "Requisicion rechazada",
+          text: "Se movio a la pestaña de rechazadas.",
           confirmButtonText: "Aceptar",
-        }).then(function () {
-          location.reload();
         });
       })
       .catch(function (err) {
@@ -579,7 +690,7 @@
   };
 
   window.solicitarModificacionDaf = function () {
-    if (!contextoActual.id) return;
+    if (!contextoActual.id || Number(contextoActual.estatusId) !== 16) return;
     var texto = requireText("Escribe la observacion para la modificacion");
     if (!texto) return;
 
@@ -592,13 +703,20 @@
       .then(function (res) {
         if (!res.success) throw new Error("No se pudo solicitar la modificacion.");
         if (modal) modal.hide();
+        if (contextoActual.row) {
+          var detail = getDetailRow(contextoActual.row);
+          contextoActual.row.remove();
+          if (detail) detail.remove();
+          renumberRows("principal");
+          updateCount("principal");
+          showEmptyRow("principal", getMainRows(getConfig("principal").tbody).length === 0, getConfig("principal").emptyText);
+          applyFilters();
+        }
         Swal.fire({
           icon: "success",
           title: "Solicitud de modificacion enviada",
-          text: "La requisicion regreso a estatus 18.",
+          text: "La requisicion salio de la bandeja principal de DAF.",
           confirmButtonText: "Aceptar",
-        }).then(function () {
-          location.reload();
         });
       })
       .catch(function (err) {
@@ -607,6 +725,12 @@
   };
 
   container.addEventListener("click", function (event) {
+    var tabBtn = event.target.closest(".almacen-tabs-btn");
+    if (tabBtn) {
+      activateTab(tabBtn.getAttribute("data-tab"));
+      return;
+    }
+
     var row = event.target.closest("tr.fila-requi");
     if (!row || event.target.closest(".acciones-grupo, button, a")) return;
 
@@ -621,13 +745,10 @@
       detail.classList.add("expanded");
       if (row.style.display !== "none") detail.style.display = "";
     }
-
   });
 
   document.addEventListener("click", function (event) {
-    if (!event.target.closest("table.tabla-requisiciones")) {
-      collapseAll();
-    }
+    if (!event.target.closest("table.tabla-requisiciones")) collapseAll();
   });
 
   if (window.flatpickr) {
@@ -639,25 +760,38 @@
         fechaSeleccionada = dateStr || "";
         var btn = document.getElementById("btnLimpiarFecha");
         if (btn) btn.style.display = fechaSeleccionada ? "inline-flex" : "none";
+        paginaPorTab[tabActiva] = 1;
         applyFilters();
       },
     });
   }
 
-  document.getElementById("btnLimpiarFecha")?.addEventListener("click", function () {
+  document.getElementById("btnLimpiarFecha") && document.getElementById("btnLimpiarFecha").addEventListener("click", function () {
     var input = document.getElementById("filtroFecha");
     if (input) input.value = "";
     fechaSeleccionada = "";
     this.style.display = "none";
+    paginaPorTab[tabActiva] = 1;
     applyFilters();
   });
 
   ["filtroNumReq", "filtroDepartamento"].forEach(function (id) {
-    document.getElementById(id)?.addEventListener("input", applyFilters);
+    var input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener("input", function () {
+      paginaPorTab[tabActiva] = 1;
+      applyFilters();
+    });
   });
-  document.getElementById("filtroEstado")?.addEventListener("change", applyFilters);
 
   var filtroEstado = document.getElementById("filtroEstado");
+  if (filtroEstado) {
+    filtroEstado.addEventListener("change", function () {
+      paginaPorTab[tabActiva] = 1;
+      applyFilters();
+    });
+  }
+
   if (filtroEstado && window.SelectRosaBuscable) {
     window.SelectRosaBuscable.destruir(filtroEstado);
     window.SelectRosaBuscable.inicializar(filtroEstado, {
@@ -666,8 +800,13 @@
     });
   }
 
-  getMainRows().forEach(function (row) {
-    row.dataset.match = "1";
+  Object.keys(tabConfig).forEach(function (tab) {
+    getMainRows(getConfig(tab).tbody).forEach(function (row) {
+      row.dataset.match = "1";
+    });
+    showEmptyRow(tab, getMainRows(getConfig(tab).tbody).length === 0, getConfig(tab).emptyText);
   });
-  applyFilters();
+
+  updateAllCounts();
+  activateTab("principal");
 })();
