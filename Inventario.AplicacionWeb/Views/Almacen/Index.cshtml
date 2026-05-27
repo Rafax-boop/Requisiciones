@@ -1,4 +1,4 @@
-@using Inventario.AplicacionWeb.Models.ViewModels
+﻿@using Inventario.AplicacionWeb.Models.ViewModels
 @using Inventario.AplicacionWeb.Utilidades
 @model VMAlmacenIndex
 @{
@@ -8,7 +8,6 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }
 
 <div class="tabla-requi-page"
@@ -29,8 +28,8 @@
 
     <div class="tabla-requi-header">
         <div>
-            <h1 class="info-titulo">Departamento de Almacén</h1>
-            <p class="tabla-requi-subtitulo">DIF Puebla · Sistema de Requisiciones</p>
+            <h1 class="info-titulo">Departamento de AlmacÃ©n</h1>
+            <p class="tabla-requi-subtitulo">DIF Puebla Â· Sistema de Requisiciones</p>
         </div>
     </div>
 
@@ -42,9 +41,9 @@
         <button type="button" class="almacen-tabs-btn" data-tab="inventario">Inventario</button>
     </nav>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Requisiciones Recibidas                            -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- PestaÃ±a: Requisiciones Recibidas                            -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="tab-requisiciones" class="almacen-tab-panel activo">
         @{
             var enBandejaAlmacen = Model.Requisiciones.Count(r => r.IdEstatus == 9);
@@ -54,7 +53,7 @@
         <div class="almacen-stats">
             <div class="stat-card">
                 <div class="stat-numero">@enBandejaAlmacen</div>
-                <div class="stat-label">En almacén (por analizar)</div>
+                <div class="stat-label">En almacÃ©n (por analizar)</div>
             </div>
             <div class="stat-card">
                 <div class="stat-numero">@Model.EntregasPendientes.Count</div>
@@ -93,7 +92,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha Emisión</th>
+                        <th>Fecha EmisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th>Partida(s)</th>
@@ -146,9 +145,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: A Entregar                                         -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- PestaÃ±a: A Entregar                                         -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="tab-entregas" class="almacen-tab-panel">
 
         <div class="container-formulario filtros-container">
@@ -164,10 +163,10 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha Emisión</th>
+                        <th>Fecha EmisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
-                        <th style="text-align:center">Artículos</th>
+                        <th style="text-align:center">ArtÃ­culos</th>
                         <th style="text-align:center">Acciones</th>
                     </tr>
                 </thead>
@@ -206,7 +205,7 @@
                                             @if (esConsE) { <text>data-es-consolidada="true"</text> }>
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
-                                    <button type="button" class="btn-accion btn-ver" title="Ver artículos a entregar"
+                                    <button type="button" class="btn-accion btn-ver" title="Ver artÃ­culos a entregar"
                                             data-entrega-id="@(esConsE ? e.ConsolidadaId?.ToString() : e.IdRequisicion.ToString())"
                                             data-entrega-folio="@e.NumRequi"
                                             data-entrega-depto="@e.Departamento"
@@ -221,7 +220,7 @@
                     @if (!Model.EntregasPendientes.Any())
                     {
                         <tr class="fila-vacia">
-                            <td colspan="7" class="text-center">No hay artículos pendientes de entrega</td>
+                            <td colspan="7" class="text-center">No hay artÃ­culos pendientes de entrega</td>
                         </tr>
                     }
                 </tbody>
@@ -230,9 +229,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Pedidos (Estatus 7 — Finalizado / En trámite)     -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- PestaÃ±a: Pedidos (Estatus 7 â€” Finalizado / En trÃ¡mite)     -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="tab-pedidos" class="almacen-tab-panel">
         @{
             var totalPedidos = Model.Pedidos.Count;
@@ -257,7 +256,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha Emisión</th>
+                        <th>Fecha EmisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th style="text-align:center">Partida(s)</th>
@@ -310,7 +309,7 @@
                     @if (!Model.Pedidos.Any())
                     {
                         <tr class="fila-vacia">
-                            <td colspan="7" class="text-center">No hay pedidos en trámite de pago</td>
+                            <td colspan="7" class="text-center">No hay pedidos en trÃ¡mite de pago</td>
                         </tr>
                     }
                 </tbody>
@@ -319,14 +318,14 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Expedientes                                        -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- PestaÃ±a: Expedientes                                        -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="tab-expedientes" class="almacen-tab-panel">
         <div class="almacen-stats">
             <div class="stat-card">
                 <div class="stat-numero">@Model.RequisicionesConDocumentos.Count</div>
-                <div class="stat-label">Requisiciones con documentación</div>
+                <div class="stat-label">Requisiciones con documentaciÃ³n</div>
             </div>
         </div>
 
@@ -343,7 +342,7 @@
                     <tr>
                         <th>#</th>
                         <th>Folio</th>
-                        <th>Fecha Emisión</th>
+                        <th>Fecha EmisiÃ³n</th>
                         <th>Departamento</th>
                         <th>Responsable</th>
                         <th style="text-align:center">Partidas</th>
@@ -366,7 +365,7 @@
                                 <div class="acciones-grupo" style="justify-content:center">
                                     <button type="button"
                                             class="btn-accion btn-ver btn-ver-expediente"
-                                            title="Ver Documentación"
+                                            title="Ver DocumentaciÃ³n"
                                             data-id="@e.IdRequi"
                                             data-folio="@(e.NumRequi ?? "")">
                                         <i class="fa-solid fa-folder-open"></i>
@@ -378,7 +377,7 @@
                     @if (!Model.RequisicionesConDocumentos.Any())
                     {
                         <tr class="fila-vacia">
-                            <td colspan="7" class="text-center">No hay requisiciones con documentación registrada</td>
+                            <td colspan="7" class="text-center">No hay requisiciones con documentaciÃ³n registrada</td>
                         </tr>
                     }
                 </tbody>
@@ -387,15 +386,15 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- Pestaña: Inventario                                         -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- PestaÃ±a: Inventario                                         -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="tab-inventario" class="almacen-tab-panel">
 
         <div class="container-formulario filtros-container">
             <div class="filtro-grupo" style="flex:2;">
-                <label>Buscar artículo</label>
-                <input type="text" id="filtroBuscarInventario" placeholder="Buscar por descripción de material..." />
+                <label>Buscar artÃ­culo</label>
+                <input type="text" id="filtroBuscarInventario" placeholder="Buscar por descripciÃ³n de material..." />
             </div>
             <div class="filtro-grupo filtro-grupo-unidad">
                 <label>Unidad de medida</label>
@@ -416,8 +415,8 @@
                         <th>Material</th>
                         <th>Unidad</th>
                         <th>Stock Actual</th>
-                        <th>Stock Mínimo</th>
-                        <th>Situación</th>
+                        <th>Stock MÃ­nimo</th>
+                        <th>SituaciÃ³n</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -456,16 +455,16 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- Modal análisis (Requisiciones Recibidas)                        -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- Modal anÃ¡lisis (Requisiciones Recibidas)                        -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal" id="modalAlmacen" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium" id="modalAlmacenTitulo">—</h5>
-                    <p class="modal-subtitulo-premium" id="modalAlmacenSubtitulo">Estado: —</p>
+                    <h5 class="modal-title modal-titulo-premium" id="modalAlmacenTitulo">â€”</h5>
+                    <p class="modal-subtitulo-premium" id="modalAlmacenSubtitulo">Estado: â€”</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
@@ -473,7 +472,7 @@
             </div>
 
             <div class="almacen-modal-tabs">
-                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">Verificación de Inventario</button>
+                <button type="button" class="almacen-modal-tabs-btn activo" data-modal-tab="0">VerificaciÃ³n de Inventario</button>
                 <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="1">Detalles</button>
                 <button type="button" class="almacen-modal-tabs-btn" data-modal-tab="2">Observaciones</button>
             </div>
@@ -497,16 +496,16 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- Modal entrega física                                            -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- Modal entrega fÃ­sica                                            -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal" id="modalEntrega" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="modalEntregaTitulo">Entrega de Materiales</h5>
-                    <p class="modal-subtitulo-premium" id="modalEntregaSubtitulo">Confirma los artículos entregados</p>
+                    <p class="modal-subtitulo-premium" id="modalEntregaSubtitulo">Confirma los artÃ­culos entregados</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
@@ -515,7 +514,7 @@
 
             <div class="modal-body modal-body-premium">
                 <p style="font-size:13px; color:var(--color-text-secondary,#888); margin-bottom:12px;">
-                    Marca los artículos que estás entregando físicamente al departamento solicitante.
+                    Marca los artÃ­culos que estÃ¡s entregando fÃ­sicamente al departamento solicitante.
                 </p>
                 <div class="formulario-input" style="margin-bottom:12px;">
                     <label for="inputFormatoSalidaFirmado">Subir formato de salida firmado (PDF)</label>
@@ -524,7 +523,7 @@
                            accept=".pdf,application/pdf"
                            class="input-file-rosa" />
                     <small id="formatoSalidaFirmadoEstado" class="text-muted" style="font-size:11px;">
-                        Sube el formato firmado para habilitar la confirmación de entrega.
+                        Sube el formato firmado para habilitar la confirmaciÃ³n de entrega.
                     </small>
                 </div>
                 <div class="table-responsive-container">
@@ -563,9 +562,9 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- Modal: Registrar Ingreso de Pedido                              -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal" id="modalIngresoPedido" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
@@ -601,7 +600,7 @@
                 <div style="margin-bottom:12px;padding:8px 0;border-top:1px solid #eee;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
                         <input type="checkbox" id="chkEnviarCorreoIngreso" checked style="accent-color:#d63384;width:16px;height:16px;">
-                        Enviar notificación por correo al solicitante
+                        Enviar notificaciÃ³n por correo al solicitante
                     </label>
                 </div>
 
@@ -635,10 +634,10 @@
     </div>
 </div>
 
-<!-- Panel descripción detallada -->
+<!-- Panel descripciÃ³n detallada -->
 <div id="desc-panel-modal" style="display:none;">
     <div class="desc-panel-modal-header">
-        <span class="desc-panel-modal-titulo">Descripción detallada</span>
+        <span class="desc-panel-modal-titulo">DescripciÃ³n detallada</span>
         <button type="button" class="desc-panel-modal-cerrar" onclick="cerrarDescPanelModal()">
             <i class="fa-solid fa-xmark"></i>
         </button>
@@ -646,16 +645,16 @@
     <textarea id="desc-textarea-modal" class="desc-textarea" readonly rows="5"></textarea>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- Modal: Expediente de Documentación                              -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- Modal: Expediente de DocumentaciÃ³n                              -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal" id="modalExpediente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
                     <h5 class="modal-title modal-titulo-premium" id="modalExpedienteTitulo">Expediente Digital</h5>
-                    <p class="modal-subtitulo-premium" id="modalExpedienteSubtitulo">Documentos vinculados a la requisición</p>
+                    <p class="modal-subtitulo-premium" id="modalExpedienteSubtitulo">Documentos vinculados a la requisiciÃ³n</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i>
@@ -690,9 +689,9 @@
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- Modal: Visor de Documentos (Preview)                            -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal fade" id="modalVisor" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content modal-premium" style="height: 90vh; border-radius: 12px; overflow: hidden;">
@@ -726,8 +725,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/tabs-notificaciones-requi.js" asp-append-version="true"></script>
     <script src="~/js/almacen/almacen.js" asp-append-version="true"></script>
 }
+

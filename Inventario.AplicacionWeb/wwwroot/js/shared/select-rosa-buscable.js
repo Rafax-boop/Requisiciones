@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   function obtenerOpciones(select) {
     return Array.from(select.options || []).map(function (option) {
       return {
@@ -48,7 +48,7 @@
     if (!opciones.length) {
       var vacio = document.createElement("div");
       vacio.className = "rosa-select__vacio";
-      vacio.textContent = "Sin resultados";
+      vacio.textContent = instance.ajax && textoFiltro ? "Buscando..." : "Sin resultados";
       instance.dropdownHost.appendChild(vacio);
       return;
     }
@@ -160,6 +160,43 @@
     sincronizarEstado(instance);
   }
 
+  function cargarOpcionesAjax(instance, termino) {
+    var ajax = instance.ajax;
+    if (!ajax || !ajax.url) return;
+
+    if (ajax.before) {
+      ajax.before(instance);
+    }
+
+    var params = ajax.data ? ajax.data({ term: termino }) : { term: termino };
+    var separador = ajax.url.indexOf("?") === -1 ? "?" : "&";
+    var queryString = Object.keys(params)
+      .map(function (k) { return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]); })
+      .join("&");
+
+    fetch(ajax.url + separador + queryString, {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var results = ajax.processResults ? ajax.processResults(data).results : data;
+        var select = instance.select;
+        select.innerHTML = '<option value=""></option>';
+        (results || []).forEach(function (item) {
+          var opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.text;
+          select.appendChild(opt);
+        });
+        renderizarOpciones(instance, "");
+        posicionarDropdown(instance);
+      })
+      .catch(function () {
+        instance.dropdownHost.innerHTML = '<div class="rosa-select__vacio">Error al cargar</div>';
+      });
+  }
+
   function inicializar(select, opts) {
     if (!select) return null;
     destruir(select);
@@ -207,6 +244,8 @@
 
     select.parentNode.insertBefore(wrapper, select.nextSibling);
 
+    var ajax = opciones.ajax || null;
+
     var instance = {
       select: select,
       wrapper: wrapper,
@@ -216,28 +255,54 @@
       dropdownHost: dropdownHost,
       labelSeleccionada: "",
       activeIndex: -1,
+      ajax: ajax,
+      _ajaxTimer: null,
     };
+
+    function manejarInput() {
+      if (input.disabled) return;
+      wrapper.classList.add("abierto");
+      instance.activeIndex = 0;
+
+      if (ajax) {
+        clearTimeout(instance._ajaxTimer);
+        var termino = input.value;
+        if (termino.length < (ajax.minimumInputLength || 1)) {
+          instance.dropdownHost.innerHTML = '<div class="rosa-select__vacio">' +
+            (ajax.minimumInputLength ? "Escribe al menos " + ajax.minimumInputLength + " caracteres..." : "Sin resultados") +
+            '</div>';
+          posicionarDropdown(instance);
+          return;
+        }
+        instance._ajaxTimer = setTimeout(function () {
+          cargarOpcionesAjax(instance, termino);
+        }, ajax.delay || 250);
+      } else {
+        renderizarOpciones(instance, input.value);
+        posicionarDropdown(instance);
+      }
+    }
 
     input.addEventListener("focus", function () {
       if (input.disabled) return;
       wrapper.classList.add("abierto");
       input.value = "";
-      renderizarOpciones(instance, "");
+      if (ajax) {
+        cargarOpcionesAjax(instance, "");
+      } else {
+        renderizarOpciones(instance, "");
+      }
       posicionarDropdown(instance);
     });
 
-    input.addEventListener("input", function () {
-      if (input.disabled) return;
-      wrapper.classList.add("abierto");
-      instance.activeIndex = 0;
-      renderizarOpciones(instance, input.value);
-      posicionarDropdown(instance);
-    });
+    input.addEventListener("input", manejarInput);
 
     input.addEventListener("click", function () {
       if (input.disabled) return;
       wrapper.classList.add("abierto");
-      renderizarOpciones(instance, input.value);
+      if (!ajax) {
+        renderizarOpciones(instance, input.value);
+      }
       posicionarDropdown(instance);
     });
 
@@ -303,6 +368,7 @@
   function destruir(select) {
     var instance = select && select._rosaSelectBuscable;
     if (!instance) return;
+    clearTimeout(instance._ajaxTimer);
     document.removeEventListener("mousedown", instance._documentHandler);
     window.removeEventListener("resize", instance._repositionHandler);
     window.removeEventListener("scroll", instance._repositionHandler, true);

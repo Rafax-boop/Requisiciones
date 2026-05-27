@@ -472,6 +472,50 @@
         verDetalle(idMaestro, "atender");
     };
 
+    function inicializarControlesAtencionFinancieros(data) {
+        ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.destruir(el);
+            }
+        });
+
+        ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.inicializar(el, {
+                    placeholder: id === "actividadSeleccionada"
+                        ? "Buscar actividad..."
+                        : id === "ffSelect"
+                            ? "Buscar fuente..."
+                            : "Buscar tipo de programa...",
+                    defaultText: false
+                });
+            }
+        });
+
+        if (data.idPp) {
+            $("#actividadSeleccionada").val(data.idPp).trigger("change");
+        }
+        if (data.ff) {
+            $("#ffSelect").val(data.ff).trigger("change");
+        }
+        if (data.tipoPrograma) {
+            $("#tipoProgramaSelect option").filter(function () {
+                return $(this).text().trim() === data.tipoPrograma;
+            }).prop("selected", true);
+            $("#tipoProgramaSelect").trigger("change");
+        }
+
+        $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect").prop("disabled", true);
+        ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && window.SelectRosaBuscable && typeof window.SelectRosaBuscable.actualizar === "function") {
+                window.SelectRosaBuscable.actualizar(el);
+            }
+        });
+    }
+
     window.verDetalle = function (idMaestro, modo) {
         modo = modo || "ver";
 
@@ -581,47 +625,7 @@
                         window.SelectRosaBuscable.destruir(el);
                     }
                 });
-                var $mun = $("#municipio");
-                if ($mun.data("select2")) $mun.select2("destroy");
-
-                ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
-                    var el = document.getElementById(id);
-                    if (el && window.SelectRosaBuscable) {
-                        window.SelectRosaBuscable.inicializar(el, {
-                            placeholder: id === "actividadSeleccionada" ? "Buscar actividad..." :
-                                         id === "ffSelect" ? "Buscar fuente..." :
-                                         "Buscar tipo de programa...",
-                            defaultText: false
-                        });
-                    }
-                });
-                $mun.select2({
-                    dropdownParent: $("#modalDetalle"),
-                    width: "100%",
-                    language: "es"
-                });
-
-                // Precargar valores desde la data (PP, FF, Programa, Municipio)
-                if (data.idPp) {
-                    $("#actividadSeleccionada").val(data.idPp).trigger("change");
-                }
-                if (data.ff) {
-                    $("#ffSelect").val(data.ff).trigger("change");
-                }
-                if (data.tipoPrograma) {
-                    $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
-                    $("#tipoProgramaSelect").trigger("change");
-                }
-
-                // --- CAMBIO AQUÍ: Deshabilitar campos y cargar archivos para AMBOS modos ---
-                $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
-                    .prop("disabled", true);
-                ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
-                    var el = document.getElementById(id);
-                    if (el && window.SelectRosaBuscable) {
-                        window.SelectRosaBuscable.actualizar(el);
-                    }
-                });
+                inicializarControlesAtencionFinancieros(data);
 
                 (function () {
                     var c = document.getElementById("contenedorArchivosReadonly");
@@ -669,7 +673,12 @@
                 }
             }
 
-            new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalle")).show();
+        }).fail(function () {
+            Swal.fire({
+                icon: "error",
+                title: "No se pudo cargar el detalle de la requisición."
+            });
         });
     };
 
@@ -733,6 +742,9 @@
                         var importe = parseFloat(c.importe || 0).toLocaleString("es-MX", {
                             style: "currency", currency: "MXN"
                         });
+                        var vigencia = c.vigencia != null && String(c.vigencia).trim() !== ""
+                            ? String(c.vigencia).trim()
+                            : "Sin vigencia";
                         var descripcionDetallada = c.descripcionDetallada || c.nombrePartida || "";
                         var descripcionDetalladaCorta = descripcionDetallada.length > 28
                             ? descripcionDetallada.substring(0, 28) + "…"
@@ -750,6 +762,7 @@
                             esc(descripcionDetalladaCorta) +
                             '</span><i class="fa-solid fa-eye desc-icon"></i></div></td>' +
                             '<td style="text-align:right; color:var(--color-text-success); font-weight:600;">' + importe + "</td>" +
+                            '<td style="text-align:center;">' + esc(vigencia) + "</td>" +
                             '<td style="text-align:center;">' + (c.iva ? "Sí" : "No") + "</td>" +
                             "</tr>";
                     });
@@ -762,6 +775,7 @@
                         "<th>Descripción</th>" +
                         "<th>Descripción detallada</th>" +
                         '<th style="width:160px; text-align:right;">Precio</th>' +
+                        '<th style="width:140px; text-align:center;">Vigencia día(s)</th>' +
                         '<th style="width:100px; text-align:center;">IVA</th>' +
                         "</tr>" +
                         "</thead>" +
@@ -2187,7 +2201,7 @@
             // Hide upload/observations section.
             document.querySelectorAll(".modal-body .seccionAtender").forEach(function (s) { s.style.display = "none"; });
 
-            new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalle")).show();
         }).fail(function () {
             Swal.fire({ icon: "error", title: "No se pudo cargar el detalle de la consolidada." });
         });
@@ -2300,53 +2314,8 @@
                 modalSubtitle.textContent = "Detalle de la consolidada \u00B7 Total: " + data.articulos.length + " partidas";
             }
 
-            // Init SelectRosaBuscable for PP, FF, TipoPrograma + Select2 for municipio
-            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el && window.SelectRosaBuscable) {
-                    window.SelectRosaBuscable.destruir(el);
-                }
-            });
-            var $mun = $("#municipio");
-            if ($mun.data("select2")) $mun.select2("destroy");
-
-            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el && window.SelectRosaBuscable) {
-                    window.SelectRosaBuscable.inicializar(el, {
-                        placeholder: id === "actividadSeleccionada" ? "Buscar actividad..." :
-                                     id === "ffSelect" ? "Buscar fuente..." :
-                                     "Buscar tipo de programa...",
-                        defaultText: false
-                    });
-                }
-            });
-            $mun.select2({
-                dropdownParent: $("#modalDetalle"),
-                width: "100%",
-                language: "es"
-            });
-
-            if (data.idPp) {
-                $("#actividadSeleccionada").val(data.idPp).trigger("change");
-            }
-            if (data.ff) {
-                $("#ffSelect").val(data.ff).trigger("change");
-            }
-            if (data.tipoPrograma) {
-                $("#tipoProgramaSelect option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
-                $("#tipoProgramaSelect").trigger("change");
-            }
-
-            // Disable selects (readonly) — only the "Autorizar" action will process them
-            $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect, #municipio")
-                .prop("disabled", true);
-            ["actividadSeleccionada", "ffSelect", "tipoProgramaSelect"].forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el && window.SelectRosaBuscable) {
-                    window.SelectRosaBuscable.actualizar(el);
-                }
-            });
+            // Init controls for the attention block
+            inicializarControlesAtencionFinancieros(data);
 
             // Clear and enable observations
             $("#txtObservaciones")
