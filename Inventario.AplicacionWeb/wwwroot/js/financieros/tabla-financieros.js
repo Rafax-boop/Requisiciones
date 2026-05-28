@@ -317,20 +317,14 @@
         }
 
         var $select = $("#selectUsuarioAsignar");
-        if ($select.data("select2")) $select.select2("destroy");
+        if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($select[0]); }
         $select.html('<option value="">-- Seleccionar responsable --</option>');
 
         $.get(urlUsuariosFinancieros, function (data) {
             data.forEach(function (u) {
                 $select.append('<option value="' + u.id + '">' + u.nombre + '</option>');
             });
-            $select.select2({
-                language: "es",
-                placeholder: "-- Seleccionar responsable --",
-                allowClear: false,
-                minimumResultsForSearch: Infinity,
-                width: "100%"
-            });
+            window.SelectRosaBuscable.inicializar($select[0], { placeholder: "-- Seleccionar responsable --" });
         });
 
         new bootstrap.Modal(document.getElementById("modalAsignar")).show();
@@ -846,13 +840,15 @@
                 // Selects
                 ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
                     var el = $("#" + selId);
-                    if (el.data("select2")) el.select2("destroy");
+                    if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
                 });
-                $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").select2({
-                    dropdownParent: $("#modalExpedienteFinancieros"),
-                    width: "100%",
-                    language: "es"
-                }).prop("disabled", true);
+                ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
+                    var domEl = document.getElementById(selId);
+                    if (domEl && window.SelectRosaBuscable) {
+                        window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                    }
+                });
+                $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
                 if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
                 if (data.ff) $("#expFinFf").val(data.ff).trigger("change");
                 if (data.tipoPrograma) {
@@ -1022,13 +1018,15 @@
             // Selects
             ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
                 var el = $("#" + id);
-                if (el.data("select2")) el.select2("destroy");
+                if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
             });
-            $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").select2({
-                dropdownParent: $("#modalExpedienteFinancieros"),
-                width: "100%",
-                language: "es"
-            }).prop("disabled", true);
+            ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
+                var domEl = document.getElementById(selId);
+                if (domEl && window.SelectRosaBuscable) {
+                    window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                }
+            });
+            $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
 
             if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
             if (data.ff) {

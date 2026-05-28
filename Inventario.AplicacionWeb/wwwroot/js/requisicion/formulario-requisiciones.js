@@ -101,23 +101,7 @@
     var select = document.querySelector(selector);
     if (!select) return;
 
-    if (selectorRosaDisponible) {
-      window.SelectRosaBuscable.reinicializar(select, opciones || {});
-      return;
-    }
-
-    var $select = $(select);
-    if (typeof $.fn.select2 === "undefined") return;
-    if ($select.data("select2")) {
-      $select.select2("destroy");
-    }
-
-    $select.select2({
-      placeholder: (opciones && opciones.placeholder) || "-- Seleccionar --",
-      allowClear: true,
-      width: "100%",
-      language: "es",
-    });
+    window.SelectRosaBuscable.reinicializar(select, opciones || {});
   }
 
   var inputFotos = document.getElementById("inputFotos");
@@ -280,7 +264,7 @@
 
       // Trigger SOLO para que Select2 muestre la opción seleccionada visualmente
       // pero necesitamos evitar que el evento change dispare el AJAX
-      $select.trigger("change.select2"); // ← change.select2 en lugar de change
+      $select.trigger("change");
     }
   }
 
@@ -390,17 +374,11 @@
   }
 
   function inicializarSelectUnidad($elemento) {
-    if (!$elemento.length || typeof $.fn.select2 === "undefined") return;
+    if (!$elemento.length) return;
 
-    if ($elemento.data("select2")) {
-      $elemento.select2("destroy");
-    }
-
-    $elemento.select2({
-      width: "100%",
+    SelectRosaBuscable.reinicializar($elemento[0], {
       placeholder: "Selecciona unidad...",
-      allowClear: false,
-      language: "es",
+      defaultText: false,
     });
   }
 
@@ -415,14 +393,14 @@
         ? unidadNormalizada
         : "",
     );
-    $selectUnidad.trigger("change.select2");
+    $selectUnidad.trigger("change");
   }
 
   function limpiarUnidadFila(index) {
     var $selectUnidad = $('.select-unidad[data-index="' + index + '"]');
     if (!$selectUnidad.length) return;
 
-    $selectUnidad.val("").trigger("change.select2");
+    $selectUnidad.val("").trigger("change");
     $selectUnidad.prop("disabled", true);
   }
 
@@ -1099,14 +1077,7 @@
     var $sel = $("#wizardMesSelect");
     if (!$sel.length) return;
 
-    if (selectorRosaDisponible) {
-      window.SelectRosaBuscable.destruir($sel[0]);
-      return;
-    }
-
-    if ($sel.data("select2")) {
-      $sel.select2("destroy");
-    }
+    window.SelectRosaBuscable.destruir($sel[0]);
   }
 
   function inicializarWizardMesSelect2() {
@@ -1115,28 +1086,9 @@
 
     destruirWizardMesSelect2();
 
-    if (selectorRosaDisponible) {
-      window.SelectRosaBuscable.inicializar($sel[0], {
-        placeholder: "Buscar mes...",
-        defaultText: false,
-      });
-      return;
-    }
-
-    if (typeof $.fn.select2 === "undefined") return;
-
-    var $parent = $(".swal2-container").last();
-    if (!$parent.length) {
-      $parent = $(document.body);
-    }
-
-    $sel.select2({
-      width: "100%",
-      placeholder: "— Seleccione —",
-      allowClear: true,
-      language: "es",
-      minimumResultsForSearch: Infinity,
-      dropdownParent: $parent,
+    window.SelectRosaBuscable.inicializar($sel[0], {
+      placeholder: "Buscar mes...",
+      defaultText: false,
     });
   }
 
@@ -1310,10 +1262,10 @@
 
     $("#tablaArticulos .select-articulo")
       .prop("disabled", true)
-      .trigger("change.select2");
+      .trigger("change");
     $("#tablaArticulos .select-unidad")
       .prop("disabled", true)
-      .trigger("change.select2");
+      .trigger("change");
     $("#tablaArticulos .cantidad-input").prop("readonly", true);
     $('#tablaArticulos button[onclick^="eliminarArticulo"]')
       .prop("disabled", true)
@@ -1602,47 +1554,17 @@
 
   function inicializarSelectorMunicipio(select) {
     if (!select) return;
-    if (
-      window.SelectRosaBuscable &&
-      typeof window.SelectRosaBuscable.inicializar === "function"
-    ) {
-      window.SelectRosaBuscable.inicializar(select, {
-        placeholder: "Buscar municipio...",
-        defaultText: "Puebla",
-      });
-      return;
-    }
 
-    var $elemento = $(select);
-    if (!$elemento.length || typeof $.fn.select2 === "undefined") return;
-
-    if ($elemento.data("select2")) {
-      $elemento.select2("destroy");
-    }
-
-    var $modal = $("#modalMunicipiosWizard");
-    $elemento.select2({
-      width: "100%",
-      placeholder: "Seleccione municipio...",
-      language: "es",
-      dropdownParent: $modal,
+    window.SelectRosaBuscable.inicializar(select, {
+      placeholder: "Buscar municipio...",
+      defaultText: "Puebla",
     });
   }
 
   function destruirSelectorMunicipio(select) {
     if (!select) return;
-    if (
-      window.SelectRosaBuscable &&
-      typeof window.SelectRosaBuscable.destruir === "function"
-    ) {
-      window.SelectRosaBuscable.destruir(select);
-      return;
-    }
 
-    var $elemento = $(select);
-    if ($elemento.data("select2")) {
-      $elemento.select2("destroy");
-    }
+    window.SelectRosaBuscable.destruir(select);
   }
 
   function actualizarTotalMunicipio(cantidadRequerida) {

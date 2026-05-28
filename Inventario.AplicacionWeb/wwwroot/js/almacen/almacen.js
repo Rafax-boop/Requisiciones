@@ -1486,6 +1486,20 @@
           ? document.getElementById("ingresoMotivo").value
           : ""
       ).trim();
+      var esProductoNuevo = !!(
+        document.getElementById("prodNuevoSi") &&
+        document.getElementById("prodNuevoSi").checked
+      );
+      var productoExistente = document.getElementById(
+        "selectProductoExistente",
+      );
+
+      if (!esProductoNuevo && (!productoExistente || !productoExistente.value)) {
+        swalWarning(
+          "Selecciona un artículo existente para registrar el ingreso.",
+        );
+        return;
+      }
 
       if (!descripcion) {
         swalWarning("La descripción es obligatoria.");
@@ -1551,6 +1565,125 @@
       });
     });
   }
+
+  /* ========== MODAL INGRESO INVENTARIO: LIFECYCLE ========== */
+
+  (function () {
+    var radNo = document.getElementById("prodNuevoNo");
+    var radSi = document.getElementById("prodNuevoSi");
+    var seccionNuevo = document.getElementById("seccionProductoNuevo");
+    var seccionExistente = document.getElementById("seccionProductoExistente");
+    var selectExistente = document.getElementById("selectProductoExistente");
+    var selectUnidad = document.getElementById("ingresoUnidad");
+    var modalRegIngreso = document.getElementById("modalRegistrarIngreso");
+    var resumenExistente = document.getElementById("resumenProductoExistente");
+    var resumenTexto = document.getElementById("resumenProductoTexto");
+    var detalleExistente = document.getElementById("detalleProductoExistente");
+    var detalleClave = document.getElementById("detalleProductoClave");
+    var detalleUnidad = document.getElementById("detalleProductoUnidad");
+    var detalleDescripcion = document.getElementById("detalleProductoDescripcion");
+
+    function actualizarDetalleExistente(opt) {
+      if (!detalleExistente) return;
+      if (opt && opt.value) {
+        detalleExistente.hidden = false;
+        if (detalleClave)
+          detalleClave.textContent = opt.getAttribute("data-clave") || "-";
+        if (detalleUnidad)
+          detalleUnidad.textContent = opt.getAttribute("data-unidad") || "-";
+        if (detalleDescripcion)
+          detalleDescripcion.textContent =
+            opt.getAttribute("data-descripcion") || "-";
+        return;
+      }
+      detalleExistente.hidden = true;
+      if (detalleClave) detalleClave.textContent = "-";
+      if (detalleUnidad) detalleUnidad.textContent = "-";
+      if (detalleDescripcion) detalleDescripcion.textContent = "-";
+    }
+
+    function toggleModoProducto() {
+      var esNuevo = radSi && radSi.checked;
+      if (seccionNuevo) {
+        seccionNuevo.style.display = esNuevo ? "block" : "none";
+      }
+      if (seccionExistente) {
+        seccionExistente.hidden = esNuevo;
+      }
+    }
+
+    function limpiarFormularioIngreso() {
+      var ids = ["ingresoClave", "ingresoDescripcion", "ingresoUnidad", "ingresoMotivo"];
+      ids.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      var cant = document.getElementById("ingresoCantidad");
+      if (cant) cant.value = "1";
+      if (selectExistente) selectExistente.value = "";
+      if (selectUnidad) selectUnidad.value = "";
+      if (resumenExistente) { resumenExistente.hidden = true; }
+      if (resumenTexto) resumenTexto.textContent = "";
+      actualizarDetalleExistente(null);
+      if (selectUnidad && window.SelectRosaBuscable) {
+        window.SelectRosaBuscable.actualizar(selectUnidad);
+      }
+      if (radNo) radNo.checked = true;
+      toggleModoProducto();
+    }
+
+    if (radSi) radSi.addEventListener("change", toggleModoProducto);
+    if (radNo) radNo.addEventListener("change", toggleModoProducto);
+
+    if (selectExistente) {
+      selectExistente.addEventListener("change", function () {
+        var opt = this.options[this.selectedIndex];
+        if (opt && opt.value) {
+          var claveEl = document.getElementById("ingresoClave");
+          var descEl = document.getElementById("ingresoDescripcion");
+          var unidEl = document.getElementById("ingresoUnidad");
+          if (claveEl) claveEl.value = opt.getAttribute("data-clave") || "";
+          if (descEl) descEl.value = opt.getAttribute("data-descripcion") || "";
+          if (unidEl) unidEl.value = opt.getAttribute("data-unidad") || "";
+          if (selectUnidad && window.SelectRosaBuscable) {
+            window.SelectRosaBuscable.actualizar(selectUnidad);
+          }
+          if (resumenExistente) resumenExistente.hidden = false;
+          if (resumenTexto) resumenTexto.textContent = opt.text;
+          actualizarDetalleExistente(opt);
+        } else {
+          if (resumenExistente) resumenExistente.hidden = true;
+          if (resumenTexto) resumenTexto.textContent = "";
+          actualizarDetalleExistente(null);
+        }
+      });
+    }
+
+    if (modalRegIngreso) {
+      modalRegIngreso.addEventListener("show.bs.modal", function () {
+        limpiarFormularioIngreso();
+        if (selectExistente && window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir(selectExistente);
+          window.SelectRosaBuscable.inicializar(selectExistente, { placeholder: "-- Buscar artículo existente --" });
+        }
+        if (selectUnidad && window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir(selectUnidad);
+          window.SelectRosaBuscable.inicializar(selectUnidad, {
+            placeholder: "-- Seleccionar unidad --",
+            defaultText: false,
+          });
+        }
+      });
+      modalRegIngreso.addEventListener("hidden.bs.modal", function () {
+        if (selectExistente && window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir(selectExistente);
+        }
+        if (selectUnidad && window.SelectRosaBuscable) {
+          window.SelectRosaBuscable.destruir(selectUnidad);
+        }
+      });
+    }
+  })();
 
   /* ========== SELECT2 ========== */
 

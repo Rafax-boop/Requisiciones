@@ -8,6 +8,7 @@ namespace Inventario.BLL.DTO
 {
     public class InventarioItemDTO
     {
+        public string? Clave { get; set; }
         public string Descripcion { get; set; } = "";
         public string UnidadMedida { get; set; } = "";
         public int Existencia { get; set; }

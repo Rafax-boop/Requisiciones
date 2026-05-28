@@ -537,9 +537,181 @@
     gap: 20px;
 }
 
+.almacen-grid2--ingreso {
+    gap: 18px;
+}
+
+.almacen-ingreso-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.almacen-ingreso-bloque {
+    padding: 20px 22px;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, #fff 0%, #fffafc 100%);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.almacen-ingreso-bloque--intro {
+    border-color: var(--rosa-100);
+    background: linear-gradient(135deg, #fff4f8 0%, #ffffff 100%);
+}
+
+.almacen-ingreso-bloque--nuevo {
+    display: none;
+    border-left: 4px solid var(--rosa-200);
+}
+
+.almacen-ingreso-bloque--nuevo.activo {
+    display: block;
+}
+
+.almacen-ingreso-bloque--comun {
+    border-top: 3px solid var(--rosa-100);
+}
+
+.almacen-ingreso-encabezado {
+    margin-bottom: 16px;
+}
+
+.almacen-ingreso-kicker {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--rosa-500);
+}
+
+.almacen-ingreso-titulo {
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--slate-800);
+}
+
+.almacen-ingreso-texto {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--slate-500);
+}
+
+.almacen-ingreso-switches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.almacen-ingreso-resumen {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--rosa-200);
+    border-radius: var(--radius-sm);
+    background: var(--rosa-50);
+}
+
+.almacen-ingreso-resumen-etiqueta {
+    display: block;
+    margin-bottom: 4px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rosa-600);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.almacen-ingreso-resumen-texto {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-700);
+}
+
+.almacen-ingreso-detalle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.almacen-ingreso-detalle-item {
+    padding: 12px 14px;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    background: #fff;
+}
+
+.almacen-ingreso-detalle-item--descripcion {
+    grid-column: 1 / -1;
+}
+
+.almacen-ingreso-detalle-label {
+    display: block;
+    margin-bottom: 4px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.almacen-ingreso-detalle-item strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--slate-800);
+    line-height: 1.5;
+}
+
+.almacen-ingreso-obligatorio {
+    color: var(--rosa-500);
+}
+
+#modalRegistrarIngreso .formulario-input input:hover,
+#modalRegistrarIngreso .formulario-input textarea:hover,
+#modalRegistrarIngreso .rosa-select__input:hover {
+    border-color: var(--slate-200);
+    background: var(--slate-50);
+}
+
+#modalRegistrarIngreso .formulario-input input:focus,
+#modalRegistrarIngreso .formulario-input textarea:focus {
+    border-color: var(--rosa-400);
+    background: #fff;
+}
+
+/* Quitar hover a inputs específicos del formulario de ingreso */
+#modalRegistrarIngreso #ingresoClave:hover,
+#modalRegistrarIngreso #ingresoDescripcion:hover,
+#modalRegistrarIngreso #ingresoCantidad:hover,
+#modalRegistrarIngreso #ingresoMotivo:hover {
+    box-shadow: var(--shadow-rosa);
+    transform: none;
+    border-color: transparent;
+    background: white;
+}
+
 @media (max-width: 768px) {
     .almacen-grid2 {
         grid-template-columns: 1fr;
+    }
+
+    .almacen-ingreso-bloque {
+        padding: 16px;
+    }
+
+    .almacen-ingreso-switches,
+    .almacen-ingreso-detalle {
+        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 }
 
