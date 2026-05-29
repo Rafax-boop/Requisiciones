@@ -20,7 +20,8 @@
      data-url-rechazar="@Url.Action("RechazarRequisicion", "Requisicion")"
      data-url-obtener-progreso="@Url.Action("ObtenerProgresoRequisicion", "Requisicion")"
      data-url-finalizar-expediente="@Url.Action("FinalizarRequisicion", "Financieros")"
-     data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
+      data-url-obtener-docs-proveedor="@Url.Action("ObtenerDocumentosProveedor", "Requisicion")"
+     data-url-obtener-id-adquisicion="@Url.Action("ObtenerIdAdquisicion", "Requisicion")"
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Financieros")"
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
@@ -827,7 +828,7 @@
                         @if (User.IsInRole("9"))
                         {
                             <!-- Solo el analista (rol 9) puede subir archivos -->
-                            <div class="row mb-3">
+                            <div class="row mb-3 seccionSubidaFinancieros">
                                 <div class="col-md-5">
                                     <div class="formulario-input">
                                         <label>Subir Documento SIAF</label>

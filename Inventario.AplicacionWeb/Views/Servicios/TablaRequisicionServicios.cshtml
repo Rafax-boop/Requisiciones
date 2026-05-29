@@ -65,7 +65,9 @@
      data-url-descargar-req-directa-consolidada="@Url.Action("DescargarReqDirectaConsolidada", "Requisicion")"
 
      data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")"
-     data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")">
+     data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")"
+     data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Servicios")"
+     data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Servicios")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -1596,6 +1598,46 @@
 <!-- Lightbox para imágenes de la galería en modal de detalles -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
+</div>
+
+<!-- Modal PDF Firmado -->
+<div class="modal" id="modalPdfFirmado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Documento PDF</h5>
+                    <p class="modal-subtitulo-premium" id="pdfFirmadoSubtitulo">Requisición</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="text-center" style="margin-bottom:16px;">
+                    <button type="button" class="btn boton-rosa w-100" id="btnDescargarPdfFirmado" onclick="descargarPdfFirmado()">
+                        <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                    </button>
+                </div>
+                @if (User.IsInRole("1"))
+                {
+                    <hr style="margin:12px 0;border-color:var(--slate-200);" />
+                    <div id="seccionSubirPdfFirmado">
+                        <label style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:6px;display:block;">Subir PDF firmado</label>
+                        <input type="file" id="inputPdfFirmado" accept=".pdf" class="input-file-rosa" />
+                        <button type="button" class="btn boton-rosa w-100" style="margin-top:10px;" id="btnSubirPdfFirmado" onclick="subirPdfFirmado()">
+                            <i class="fa-solid fa-upload"></i> Subir PDF firmado
+                        </button>
+                    </div>
+                }
+                <div id="seccionVerPdfFirmado" style="display:none;margin-top:12px;">
+                    <a id="linkVerPdfFirmado" href="#" target="_blank" class="btn boton-rosa w-100" style="text-decoration:none;">
+                        <i class="fa-solid fa-eye"></i> Ver PDF firmado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

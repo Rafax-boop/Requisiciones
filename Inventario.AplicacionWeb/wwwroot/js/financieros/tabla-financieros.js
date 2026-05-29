@@ -26,6 +26,8 @@
     // Variables al inicio del módulo
     var urlObtenerDocsProveedor = container
         ? container.getAttribute("data-url-obtener-docs-proveedor") : "";
+    var urlObtenerIdAdquisicion = container
+        ? container.getAttribute("data-url-obtener-id-adquisicion") : "";
     var urlRebotarDocumentos = container
         ? container.getAttribute("data-url-rebotar-documentos") : "";
     var urlObtenerArchivos = container
@@ -61,23 +63,103 @@
     var urlDescargarArchivosConsolidadaZip = container
         ? container.getAttribute("data-url-descargar-archivos-consolidada-zip") : "";
 
-    var DOCUMENTOS_PROVEEDOR = [
-        { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
-        { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
-        { clave: "ConstFiscal", label: "Constancia de Situación Fiscal" },
-        { clave: "OpinionSAT", label: "Opinión de Cumplimiento SAT" },
-        { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
-        { clave: "Padron", label: "Alta en Padrón de Proveedores" },
-        { clave: "CedulaRFC", label: "Cédula de Identificación Fiscal" },
-        { clave: "IdOficial", label: "Identificación Oficial (INE/Pasaporte)" },
-        { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
-        { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
-        { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
-        { clave: "ActaConst", label: "Acta Constitutiva" },
-        { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
-        { clave: "MemoPago", label: "Memorandum Instrucción de Pago" },
-        { clave: "FormatoEntrega", label: "Formato de Entrega" }
-    ];
+function obtenerDocumentosProveedor(idAdjudicacion) {
+        var docs = [
+            { clave: "GastosPagar", label: "Formato Gastos por pagar" },
+            { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
+            { clave: "FormatoEntrega", label: "Formato de Entrega" },
+            { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
+            { clave: "INERepresentante", label: "INE Representante legal" },
+            { clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" }
+        ];
+        if (idAdjudicacion != 1) {
+            docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
+        }
+        return docs;
+    }
+        return docs;
+    }
+
+    function renderDocumentosProveedorFinancieros(docsSubidos, idAdjudicacion) {
+        var seccion = document.getElementById("expFinDocumentosProveedor");
+        var checklist = document.getElementById("expFinChecklistDocs");
+        checklist.innerHTML = "";
+        if (!docsSubidos.length) { seccion.style.display = "none"; return; }
+        seccion.style.display = "block";
+        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion);
+        var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
+
+        listaDocs.forEach(function (doc) {
+            if (doc.clave === "FormatoEntrega") {
+                var formatos = docsSubidos.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
+                var hayFormatos = formatos.length > 0;
+                var desdeAlmacen = formatos.some(function (f) { return f.label && f.label.indexOf("Formato de Entrada #") === 0; });
+                var fila = document.createElement("div");
+
+                if (desdeAlmacen) {
+                    fila.style.cssText = "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
+                        "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                        "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                    if (hayFormatos) {
+                        var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
+                        formatos.forEach(function (f) {
+                            var lbl = f.label || "Formato de Entrega";
+                            linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
+                                '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
+                                ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
+                        });
+                        linksHtml += '</div>';
+                        fila.innerHTML =
+                            '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
+                            '<div style="flex:1;"><span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' + linksHtml + '</div>';
+                    } else {
+                        fila.innerHTML =
+                            '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
+                            '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                            '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
+                    }
+                } else {
+                    var subido = formatos.length > 0;
+                    fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                        "border-radius:8px; border:1px solid " + (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
+                        "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
+                    fila.innerHTML =
+                        (subido
+                            ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                            : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>') +
+                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
+                        (subido
+                            ? '<a href="' + formatos[0].ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
+                            : '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de carga</span>');
+                }
+                checklist.appendChild(fila);
+                return;
+            }
+
+            var subido = clavesSubidas.indexOf(doc.clave) !== -1;
+            var archivo = docsSubidos.find(function (d) { return d.nombreArchivo === doc.clave; });
+
+            var noAplica = !subido;
+            var fila = document.createElement("div");
+            var borderColor = noAplica ? "var(--color-border-tertiary)" : "#bbf7d0";
+            var bgColor = noAplica ? "var(--color-background-secondary)" : "#f0fdf4";
+
+            fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
+                "border-radius:8px; border:1px solid " + borderColor + ";" +
+                "background:" + bgColor + ";";
+
+            var icono = subido
+                ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
+                : '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
+
+            var linkVer = subido && archivo
+                ? '<a href="' + archivo.ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
+                : '<span style="font-size:11px;color:#94a3b8;margin-left:auto;padding:3px 8px;border:1px solid var(--color-border-tertiary);border-radius:6px;white-space:nowrap;font-style:italic;">No aplica</span>';
+
+            fila.innerHTML = icono + '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' + linkVer;
+            checklist.appendChild(fila);
+        });
+    }
     function obtenerBadgeEstatusHtml(idEstatus, nombreEstatus) {
         var nombreSafe = (nombreEstatus || "Desconocido").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         var colorClass = "badge-estado-info";
@@ -528,16 +610,21 @@
         });
 
         if (data.idPp) {
-            $("#actividadSeleccionada").val(data.idPp).trigger("change");
+            var elAct = document.getElementById("actividadSeleccionada");
+            elAct.value = String(data.idPp);
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elAct);
         }
         if (data.ff) {
-            $("#ffSelect").val(data.ff).trigger("change");
+            var elFf = document.getElementById("ffSelect");
+            elFf.value = String(data.ff);
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFf);
         }
         if (data.tipoPrograma) {
+            var elTp = document.getElementById("tipoProgramaSelect");
             $("#tipoProgramaSelect option").filter(function () {
                 return $(this).text().trim() === data.tipoPrograma;
             }).prop("selected", true);
-            $("#tipoProgramaSelect").trigger("change");
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTp);
         }
 
         $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect").prop("disabled", true);
@@ -591,9 +678,14 @@
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
 
-        // Mostrar sección selects en ambos casos
+        // Mostrar sección selects en ambos casos (atender y readonly)
         document.querySelectorAll(".seccionAtender").forEach(function (sec) {
             sec.style.display = (isAtender || isReadonly) ? "block" : "none";
+        });
+
+        // Inputs de subida (SIAF, Tabla API, botones) solo en modo atender
+        document.querySelectorAll(".seccionSubidaFinancieros").forEach(function (sec) {
+            sec.style.display = isAtender ? "block" : "none";
         });
 
         // Botones solo visibles en modo atender
@@ -666,39 +758,6 @@
                 });
                 inicializarControlesAtencionFinancieros(data);
 
-                (function () {
-                    var c = document.getElementById("contenedorArchivosReadonly");
-                    if (!c) return;
-                    c.innerHTML = "";
-
-                    // Botón cotizaciones
-                    var btnCot = document.createElement("div");
-                    btnCot.style.cssText = "margin-bottom:12px;";
-                    btnCot.innerHTML =
-                        '<button type="button" class="btn boton-rosa" ' +
-                        'onclick="verCotizaciones(' + idMaestro + ')">' +
-                        '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
-                        '</button>';
-                    c.appendChild(btnCot);
-
-                    // Cuadro comparativo (se mantiene)
-                    if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
-                        var divCuadro = document.createElement("div");
-                        divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
-                        window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
-                        c.appendChild(divCuadro);
-                    }
-
-                    // Anexos
-                    if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
-                        var divAnexos = document.createElement("div");
-                        divAnexos.id = "seccionAnexosDetalle";
-                        divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
-                        window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
-                        c.appendChild(divAnexos);
-                    }
-                })();
-
                 // Diferenciar solo la parte de observaciones y botones
                 if (isReadonly) {
                     $("#txtObservaciones")
@@ -711,6 +770,77 @@
                         .val("");
                 }
             }
+
+            // Archivos ya subidos (siempre visibles)
+            (function () {
+                var c = document.getElementById("contenedorArchivosReadonly");
+                if (!c) return;
+                c.innerHTML = "";
+
+                // Botón cotizaciones
+                var btnCot = document.createElement("div");
+                btnCot.style.cssText = "margin-bottom:12px;";
+                btnCot.innerHTML =
+                    '<button type="button" class="btn boton-rosa" ' +
+                    'onclick="verCotizaciones(' + idMaestro + ')">' +
+                    '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
+                    '</button>';
+                c.appendChild(btnCot);
+
+                // Cuadro comparativo
+                if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
+                    var divCuadro = document.createElement("div");
+                    divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
+                    c.appendChild(divCuadro);
+                }
+
+                // Anexos
+                if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
+                    var divAnexos = document.createElement("div");
+                    divAnexos.id = "seccionAnexosDetalle";
+                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                    c.appendChild(divAnexos);
+                }
+
+                // Documentos financieros ya subidos (solo en modo readonly/ver, no en atender)
+                if (!isAtender) {
+                    var siaf = data.archivosSiaf || [];
+                    var tablaApi = data.archivosTablaApi || [];
+                    var pedidoCompra = data.archivosPedidoCompra || [];
+                    if (siaf.length || tablaApi.length || pedidoCompra.length) {
+                        if (window.ModalAdjuntos) {
+                            if (siaf.length) {
+                                var divSiaf = document.createElement("div");
+                                divSiaf.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documento SIAF", siaf);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divSiaf);
+                                c.appendChild(divSiaf);
+                            }
+                            if (tablaApi.length) {
+                                var divTablaApi = document.createElement("div");
+                                divTablaApi.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Tabla de API", tablaApi);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divTablaApi);
+                                c.appendChild(divTablaApi);
+                            }
+                            if (pedidoCompra.length) {
+                                var divPedido = document.createElement("div");
+                                divPedido.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Pedido de Compra", pedidoCompra);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divPedido);
+                                c.appendChild(divPedido);
+                            }
+                        }
+                    }
+                    if (data.numeroApi) {
+                        var divNumApi = document.createElement("div");
+                        divNumApi.innerHTML =
+                            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
+                            '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
+                            '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + data.numeroApi + '</span>';
+                        c.appendChild(divNumApi);
+                    }
+                }
+            })();
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalle")).show();
         }).fail(function () {
@@ -884,21 +1014,34 @@
 
                 // Selects
                 ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
-                    var el = $("#" + selId);
-                    if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
+                    var el = document.getElementById(selId);
+                    if (el && window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el); }
                 });
                 ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
                     var domEl = document.getElementById(selId);
                     if (domEl && window.SelectRosaBuscable) {
-                        window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                        window.SelectRosaBuscable.inicializar(domEl, { placeholder: "", defaultText: false });
                     }
                 });
                 $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
-                if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
-                if (data.ff) $("#expFinFf").val(data.ff).trigger("change");
+                ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(el);
+                });
+                if (data.idPp) {
+                    var elActCons = document.getElementById("expFinActividad");
+                    elActCons.value = String(data.idPp);
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elActCons);
+                }
+                if (data.ff) {
+                    var elFfCons = document.getElementById("expFinFf");
+                    elFfCons.value = String(data.ff);
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFfCons);
+                }
                 if (data.tipoPrograma) {
+                    var elTpCons = document.getElementById("expFinTipoPrograma");
                     $("#expFinTipoPrograma option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
-                    $("#expFinTipoPrograma").trigger("change");
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTpCons);
                 }
 
                 // Observaciones
@@ -933,79 +1076,11 @@
                     rgf("expFinGrupoPedidoCompra", "Pedido de Compra", pedidoCompra);
                 })();
 
-                // Documentos del proveedor
-                (function () {
-                    var docs = data.documentosProveedor || [];
-                    var seccion = document.getElementById("expFinDocumentosProveedor");
-                    var checklist = document.getElementById("expFinChecklistDocs");
-                    checklist.innerHTML = "";
-                    if (!docs.length) { seccion.style.display = "none"; return; }
-                    seccion.style.display = "block";
-                    var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
-                    DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
-                        if (doc.clave === "FormatoEntrega") {
-                            var formatos = docs.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
-                            var hayFormatos = formatos.length > 0;
-                            var desdeAlmacen = formatos.some(function (f) { return f.label && f.label.indexOf("Formato de Entrada #") === 0; });
-                            var fila = document.createElement("div");
-
-                            if (desdeAlmacen) {
-                                fila.style.cssText = "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
-                                    "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
-                                    "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
-                                if (hayFormatos) {
-                                    var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
-                                    formatos.forEach(function (f) {
-                                        var lbl = f.label || "Formato de Entrega";
-                                        linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
-                                            '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
-                                            ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
-                                    });
-                                    linksHtml += '</div>';
-                                    fila.innerHTML =
-                                        '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
-                                        '<div style="flex:1;"><span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' + linksHtml + '</div>';
-                                } else {
-                                    fila.innerHTML =
-                                        '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
-                                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
-                                }
-                            } else {
-                                var subido = formatos.length > 0;
-                                fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-                                    "border-radius:8px; border:1px solid " + (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
-                                    "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
-                                fila.innerHTML =
-                                    (subido
-                                        ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-                                        : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>') +
-                                    '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                                    (subido
-                                        ? '<a href="' + formatos[0].ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
-                                        : '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de carga</span>');
-                            }
-                            checklist.appendChild(fila);
-                            return;
-                        }
-                        var subido = clavesSubidas.indexOf(doc.clave) !== -1;
-                        var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
-                        var noAplica = !subido;
-                        var fila = document.createElement("div");
-                        var borderColor = noAplica ? "var(--color-border-tertiary)" : "#bbf7d0";
-                        var bgColor = noAplica ? "var(--color-background-secondary)" : "#f0fdf4";
-                        fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-                            "border-radius:8px; border:1px solid " + borderColor + ";" + "background:" + bgColor + ";";
-                        var icono = subido
-                            ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-                            : '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
-                        var linkVer = subido && archivo
-                            ? '<a href="' + archivo.ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
-                            : '<span style="font-size:11px;color:#94a3b8;margin-left:auto;padding:3px 8px;border:1px solid var(--color-border-tertiary);border-radius:6px;white-space:nowrap;font-style:italic;">No aplica</span>';
-                        fila.innerHTML = icono + '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' + linkVer;
-                        checklist.appendChild(fila);
-                    });
-                })();
+                $.get(urlObtenerIdAdquisicion, { idConsolidada: id }, function (adqData) {
+                    var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
+                    window._idAdjudicacionFinancieros = idAdq;
+                    renderDocumentosProveedorFinancieros(data.documentosProveedor || [], idAdq);
+                });
 
                 new bootstrap.Modal(document.getElementById("modalExpedienteFinancieros")).show();
             });
@@ -1062,26 +1137,37 @@
 
             // Selects
             ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
-                var el = $("#" + id);
-                if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el); }
             });
             ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
                 var domEl = document.getElementById(selId);
                 if (domEl && window.SelectRosaBuscable) {
-                    window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                    window.SelectRosaBuscable.inicializar(domEl, { placeholder: "", defaultText: false });
                 }
             });
             $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
+            ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(el);
+            });
 
-            if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
+            if (data.idPp) {
+                var elActExp = document.getElementById("expFinActividad");
+                elActExp.value = String(data.idPp);
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elActExp);
+            }
             if (data.ff) {
-                $("#expFinFf").val(data.ff).trigger("change");
+                var elFfExp = document.getElementById("expFinFf");
+                elFfExp.value = String(data.ff);
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFfExp);
             }
             if (data.tipoPrograma) {
+                var elTpExp = document.getElementById("expFinTipoPrograma");
                 $("#expFinTipoPrograma option").filter(function () {
                     return $(this).text().trim() === data.tipoPrograma;
                 }).prop("selected", true);
-                $("#expFinTipoPrograma").trigger("change");
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTpExp);
             }
 
             // Cotizaciones / cuadro
@@ -1154,105 +1240,11 @@
                 rgf("expFinGrupoPedidoCompra", "Pedido de Compra", pedidoCompra);
             })();
 
-            $.get(urlObtenerDocsProveedor, { idRequisicion: id }, function (docs) {
-                var seccion = document.getElementById("expFinDocumentosProveedor");
-                var checklist = document.getElementById("expFinChecklistDocs");
-                checklist.innerHTML = "";
-
-                if (!docs.length) {
-                    seccion.style.display = "none";
-                    return;
-                }
-
-                seccion.style.display = "block";
-                var clavesSubidas = docs.map(function (d) { return d.nombreArchivo; });
-
-                DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
-                    if (doc.clave === "FormatoEntrega") {
-                        var formatos = docs.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
-                        var hayFormatos = formatos.length > 0;
-                        var desdeAlmacen = formatos.some(function (f) { return f.label && f.label.indexOf("Formato de Entrada #") === 0; });
-                        var fila = document.createElement("div");
-
-                        if (desdeAlmacen) {
-                            fila.style.cssText = "display:flex; align-items:flex-start; gap:10px; padding:8px 12px;" +
-                                "border-radius:8px; border:1px solid " + (hayFormatos ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
-                                "background:" + (hayFormatos ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
-                            if (hayFormatos) {
-                                var linksHtml = '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px;">';
-                                formatos.forEach(function (f) {
-                                    var lbl = f.label || "Formato de Entrega";
-                                    linksHtml += '<a href="' + f.ruta + '" target="_blank" style="font-size:12px;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;">' +
-                                        '<i class="fa-solid fa-circle-check" style="font-size:12px;color:#16a34a;"></i> ' + lbl +
-                                        ' <i class="fa-solid fa-eye" style="font-size:11px;color:#64748b;margin-left:auto;"></i></a>';
-                                });
-                                linksHtml += '</div>';
-                                fila.innerHTML =
-                                    '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>' +
-                                    '<div style="flex:1;"><span style="font-size:13px;font-weight:500;">' + doc.label + '</span>' + linksHtml + '</div>';
-                            } else {
-                                fila.innerHTML =
-                                    '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
-                                    '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                                    '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de recepción en almacén</span>';
-                            }
-                        } else {
-                            var subido = formatos.length > 0;
-                            fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-                                "border-radius:8px; border:1px solid " + (subido ? "#bbf7d0" : "var(--color-border-tertiary)") + ";" +
-                                "background:" + (subido ? "#f0fdf4" : "var(--color-background-secondary)") + ";";
-                            fila.innerHTML =
-                                (subido
-                                    ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-                                    : '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>') +
-                                '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                                (subido
-                                    ? '<a href="' + formatos[0].ruta + '" target="_blank" style="font-size:11px;color:var(--color-text-secondary);text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;white-space:nowrap;"><i class="fa-solid fa-eye"></i> Ver</a>'
-                                    : '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">⏳ Pendiente de carga</span>');
-                        }
-                        checklist.appendChild(fila);
-                        return;
-                    }
-
-                    var subido = clavesSubidas.indexOf(doc.clave) !== -1;
-                    var archivo = docs.find(function (d) { return d.nombreArchivo === doc.clave; });
-
-                    // Si está en BD → subido. Si no → el analista lo marcó "No aplica"
-                    var noAplica = !subido;
-
-                    var fila = document.createElement("div");
-
-                    var borderColor = noAplica
-                        ? "var(--color-border-tertiary)"
-                        : "#bbf7d0";
-                    var bgColor = noAplica
-                        ? "var(--color-background-secondary)"
-                        : "#f0fdf4";
-
-                    fila.style.cssText =
-                        "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
-                        "border-radius:8px; border:1px solid " + borderColor + ";" +
-                        "background:" + bgColor + ";";
-
-                    var icono = subido
-                        ? '<i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px;flex-shrink:0;"></i>'
-                        : '<i class="fa-solid fa-minus-circle" style="color:#94a3b8;font-size:16px;flex-shrink:0;"></i>';
-
-                    var linkVer = subido && archivo
-                        ? '<a href="' + archivo.ruta + '" target="_blank" ' +
-                        'style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;' +
-                        'text-decoration:none;padding:3px 8px;border:1px solid var(--color-border-secondary);' +
-                        'border-radius:6px;white-space:nowrap;">' +
-                        '<i class="fa-solid fa-eye"></i> Ver</a>'
-                        : '<span style="font-size:11px;color:#94a3b8;margin-left:auto;' +
-                        'padding:3px 8px;border:1px solid var(--color-border-tertiary);' +
-                        'border-radius:6px;white-space:nowrap;font-style:italic;">No aplica</span>';
-
-                    fila.innerHTML = icono +
-                        '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                        linkVer;
-
-                    checklist.appendChild(fila);
+            $.get(urlObtenerIdAdquisicion, { idRequisicion: id }, function (adqData) {
+                var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
+                window._idAdjudicacionFinancieros = idAdq;
+                $.get(urlObtenerDocsProveedor, { idRequisicion: id }, function (docs) {
+                    renderDocumentosProveedorFinancieros(docs, idAdq);
                 });
             });
 
@@ -1313,7 +1305,8 @@
         checklist.innerHTML = "";
         document.getElementById("txtNotaRebotar").value = "";
 
-        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+        var listaDocs = obtenerDocumentosProveedor(window._idAdjudicacionFinancieros || null);
+        listaDocs.forEach(function (doc) {
             var fila = document.createElement("label");
             fila.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 12px;" +
                 "border-radius:8px; border:1px solid var(--color-border-tertiary);" +

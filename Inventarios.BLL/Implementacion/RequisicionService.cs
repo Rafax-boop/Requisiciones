@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Inventario.BLL.DTO;
@@ -400,6 +401,8 @@ namespace Inventario.BLL.Implementacion
                 .Distinct()
                 .ToListAsync();
 
+            var docFirmado = await ObtenerDocumentoFirmado(idMaestro);
+
             return new DetallesRequiDTO
             {
                 Donativo = maestra?.Donativo ?? false,
@@ -418,7 +421,8 @@ namespace Inventario.BLL.Implementacion
                 ArchivosPedidoCompra = archivosPedidos,
                 NumPedidos = numPedidos,
                 IdEstatus = maestra?.IdEstatus ?? 0,
-                NumeroApi = maestra?.NumApi
+                NumeroApi = maestra?.NumApi,
+                DocumentoFirmado = docFirmado
             };
         }
 
@@ -1191,6 +1195,56 @@ namespace Inventario.BLL.Implementacion
             });
 
             return true;
+        }
+
+        public async Task<bool> SubirDocumentoFirmado(int idRequisicion, IFormFile archivo, string webRootPath)
+        {
+            if (archivo == null || archivo.Length == 0) return false;
+
+            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            var rutaBase = Path.Combine(webRootPath, "uploads", "ReqFirmada", carpeta);
+            Directory.CreateDirectory(rutaBase);
+
+            var nombre = $"{Guid.NewGuid():N}".Substring(0, 8) + $"_{Path.GetFileName(archivo.FileName)}";
+            using (var stream = new FileStream(Path.Combine(rutaBase, nombre), FileMode.Create))
+                await archivo.CopyToAsync(stream);
+
+            Expression<Func<TblRegistroDiseno, bool>> filtroPrev;
+            if (idConsolDest.HasValue)
+                filtroPrev = f => f.IdConsolidada == idConsolDest && f.Tipo == "requisicion_firmada";
+            else
+                filtroPrev = f => f.IdRequisicion == idRequisicion && f.Tipo == "requisicion_firmada";
+            var queryPrev = await _repositoryDisenos.Consultar(filtroPrev);
+            var previos = await queryPrev.ToListAsync();
+            foreach (var p in previos)
+                await _repositoryDisenos.Eliminar(p);
+
+            await _repositoryDisenos.Crear(new TblRegistroDiseno
+            {
+                IdRequisicion = idRequiDest,
+                IdConsolidada = idConsolDest,
+                Ruta = $"/uploads/ReqFirmada/{carpeta}/{nombre}",
+                FechaSubida = DateTime.Now,
+                Tipo = "requisicion_firmada"
+            });
+
+            return true;
+        }
+
+        public async Task<string?> ObtenerDocumentoFirmado(int idRequisicion)
+        {
+            var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
+            if (req == null) return null;
+
+            Expression<Func<TblRegistroDiseno, bool>> filtro;
+            if (req.ConsolidadaId.HasValue)
+                filtro = f => f.IdConsolidada == req.ConsolidadaId && f.Tipo == "requisicion_firmada";
+            else
+                filtro = f => f.IdRequisicion == idRequisicion && f.Tipo == "requisicion_firmada";
+
+            var query = await _repositoryDisenos.Consultar(filtro);
+            var doc = await query.OrderByDescending(d => d.FechaSubida).FirstOrDefaultAsync();
+            return doc?.Ruta;
         }
 
         public async Task<Dictionary<int, List<MunicipioItemDTO>>> ObtenerDistribucionMunicipiosPorRequisicion(int idRequisicion)
