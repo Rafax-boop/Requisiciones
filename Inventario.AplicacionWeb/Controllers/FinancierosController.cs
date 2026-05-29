@@ -396,6 +396,67 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
+        // ───────────────────────────── ORDEN DE PAGO (Gastos por pagar) ─────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> EditarOrdenPago(int idRequisicion)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerOrdenPagoEditableAsync(idRequisicion);
+                return View("EditarOrdenPago", modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error preparando edición de Orden de Pago para requisición {Id}", idRequisicion);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditarOrdenPagoConsolidada(int idConsolidada)
+        {
+            try
+            {
+                var modelo = await _financierosService.ObtenerOrdenPagoEditableConsolidadaAsync(idConsolidada);
+                return View("EditarOrdenPago", modelo);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error preparando edición de Orden de Pago para consolidada {Id}", idConsolidada);
+                return RedirectToAction(nameof(TablaFinancieros));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarOrdenPago([FromForm] OrdenPagoEditableDTO modelo)
+        {
+            try
+            {
+                if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))
+                    return BadRequest("La requisición o consolidada es requerida.");
+
+                if (modelo.IdConsolidada > 0)
+                    await _financierosService.AsegurarNumeroApiConsolidadaAsync(modelo.IdConsolidada.Value);
+                else
+                    await _financierosService.AsegurarNumeroApiAsync(modelo.IdRequisicion);
+
+                var bytes = await _financierosService.GenerarOrdenPagoAsync(modelo);
+
+                var sufijo = modelo.IdConsolidada > 0
+                    ? $"Consolidada_{modelo.IdConsolidada}"
+                    : $"{modelo.IdRequisicion}";
+                var nombreArchivo = $"OrdenPago_{sufijo}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(bytes, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                var inner = ex.InnerException?.Message ?? "sin inner";
+                return StatusCode(500, $"Error: {ex.Message} | Inner: {inner}");
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> HistorialTablaApi(int idRequisicion = 0, int idConsolidada = 0)
         {

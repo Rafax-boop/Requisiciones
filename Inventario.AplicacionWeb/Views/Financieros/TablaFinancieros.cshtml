@@ -25,6 +25,7 @@
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Financieros")"
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
+     data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
       data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
       data-url-consolidadas-documentos="@Url.Action("ObtenerConsolidadasConArchivos", "Financieros")"
@@ -35,6 +36,7 @@
      data-url-asignar-consolidada="@Url.Action("AsignarConsolidada", "Financieros")"
      data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidadaFinancieros", "Financieros")"
      data-url-editar-tabla-api-consolidada="@Url.Action("EditarTablaApiConsolidada", "Financieros")"
+     data-url-editar-orden-pago-consolidada="@Url.Action("EditarOrdenPagoConsolidada", "Financieros")"
      data-url-descargar-tabla-api-consolidada="@Url.Action("DescargarTablaApiConsolidada", "Financieros")"
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Financieros")"
      data-url-proceso-pago="@Url.Action("ObtenerProcesoPago", "Financieros")"
@@ -598,16 +600,6 @@
         </div>
     }
 </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div id="paginacionDocumentos" class="almacen-paginacion"></div>
-            </div>
-        </div>
-    }
-
-</div>
 
 <!-- Modal expediente financieros -->
 <div class="modal" id="modalExpedienteFinancieros" tabindex="-1" aria-hidden="true">
@@ -863,6 +855,24 @@
                                                 title="Abre el editor visual de la Tabla API para la consolidada">
                                             <i class="fa-solid fa-layer-group"></i>
                                             Editar Tabla API (Consolidada)
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn boton-gris mb-2 w-100"
+                                                onclick="editarOrdenPago()"
+                                                title="Abre la orden de pago (Gastos por pagar)">
+                                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                                            Orden de Pago
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn boton-rosa mb-2 w-100"
+                                                id="btnOrdenPagoConsolidada"
+                                                style="display:none;"
+                                                onclick="editarOrdenPagoConsolidada()"
+                                                title="Abre la orden de pago para la consolidada">
+                                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                                            Orden de Pago (Consolidada)
                                         </button>
 
                                         <!-- Input para subir la Tabla API ya firmada (flujo original) -->
