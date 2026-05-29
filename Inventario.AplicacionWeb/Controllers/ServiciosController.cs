@@ -217,7 +217,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 if (modelo.TipoServicio == "Servicio Impresion" && Fotos != null && Fotos.Any())
                     await _requisicionesService.GuardarFotosRequisicion(modelo.IdRequiMaestra!.Value, Fotos, _env.WebRootPath);
 
-                TempData["MensajeExito"] = "RequisiciÃ³n editada correctamente.";
+                TempData["MensajeExito"] = "Requisición editada correctamente.";
                 return RedirectToAction("TablaRequisicionServicios", "Servicios");
             }
 

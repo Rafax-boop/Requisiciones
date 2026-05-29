@@ -160,18 +160,18 @@
   var DOCUMENTOS_PROVEEDOR = [
     { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
     { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
-    { clave: "ConstFiscal", label: "Constancia de SituaciÃ³n Fiscal" },
-    { clave: "OpinionSAT", label: "OpiniÃ³n de Cumplimiento SAT" },
+    { clave: "ConstFiscal", label: "Constancia de Situación Fiscal" },
+    { clave: "OpinionSAT", label: "Opinión de Cumplimiento SAT" },
     { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
-    { clave: "Padron", label: "Alta en PadrÃ³n de Proveedores" },
-    { clave: "CedulaRFC", label: "CÃ©dula de IdentificaciÃ³n Fiscal" },
-    { clave: "IdOficial", label: "IdentificaciÃ³n Oficial (INE/Pasaporte)" },
+    { clave: "Padron", label: "Alta en Padrón de Proveedores" },
+    { clave: "CedulaRFC", label: "Cédula de Identificación Fiscal" },
+    { clave: "IdOficial", label: "Identificación Oficial (INE/Pasaporte)" },
     { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
     { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
     { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
     { clave: "ActaConst", label: "Acta Constitutiva" },
     { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
-    { clave: "MemoPago", label: "Memorandum InstrucciÃ³n de Pago" },
+    { clave: "MemoPago", label: "Memorandum Instrucción de Pago" },
     { clave: "FormatoEntrega", label: "Formato de Entrega" },
   ];
 
@@ -740,10 +740,10 @@
 
         asegurarControlesGanador();
 
-        // â”€â”€ FIX: determinar idRequisicion segÃºn modo â”€â”€
+        // â”€â”€ FIX: determinar idRequisicion según modo â”€â”€
         var idReqGanador = null;
         if (window._modoConsolidada) {
-            // Sacar la primera requisiciÃ³n del mapa de partidas consolidadas
+            // Sacar la primera requisición del mapa de partidas consolidadas
             for (var i = 0; i < CACHE_PARTIDAS.length; i++) {
                 var mapa = CACHE_PARTIDAS[i].idRequisicionPorDetalle;
                 if (mapa) {
@@ -759,7 +759,7 @@
         }
 
         if (!idReqGanador) {
-            Swal.fire({ icon: "error", title: "No se pudo determinar la requisiciÃ³n para el ganador." });
+            Swal.fire({ icon: "error", title: "No se pudo determinar la requisición para el ganador." });
             return;
         }
 
@@ -823,7 +823,7 @@
     });
   }
 
-  // Llena SOLO el select de partidas de una fila especÃ­fica (sin tocar las demÃ¡s)
+  // Llena SOLO el select de partidas de una fila específica (sin tocar las demás)
   function cargarPartidasEnFila($fila, valorSeleccionado) {
     obtenerOpcionesPartidasHtml(function (html) {
       var $sel = $fila.find(".modal-partida-select");
@@ -854,7 +854,7 @@
 
         var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
 
-        // Extraer quÃ© docs estÃ¡n observados de la nota de financieros
+        // Extraer qué docs están observados de la nota de financieros
         var clavesObservadas = [];
         if (idEstatus === 18 && notaObservacion) {
             DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
@@ -864,7 +864,7 @@
             });
         }
 
-        // Inicializar estado "No aplica" si no existe para esta requisiciÃ³n
+        // Inicializar estado "No aplica" si no existe para esta requisición
         if (!window._noAplica) window._noAplica = {};
         if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
 
@@ -874,13 +874,13 @@
             var subido = clavesSubidas.indexOf(doc.clave) !== -1;
             var observado = clavesObservadas.indexOf(doc.clave) !== -1;
 
-            // Solo precargar si el usuario no ha interactuado aÃºn (undefined = intacto)
+            // Solo precargar si el usuario no ha interactuado aún (undefined = intacto)
             if (window._noAplica[idRequi][doc.clave] === undefined) {
-                // No estÃ¡ subido y no estÃ¡ observado â†’ asumir "No aplica"
+                // No está subido y no está observado â†’ asumir "No aplica"
                 window._noAplica[idRequi][doc.clave] = !subido && !observado;
             }
 
-            // Si financieros lo observÃ³ pero estaba marcado como "No aplica" â†’ forzar a false
+            // Si financieros lo observó pero estaba marcado como "No aplica" â†’ forzar a false
             if (observado && window._noAplica[idRequi][doc.clave]) {
                 window._noAplica[idRequi][doc.clave] = false;
             }
@@ -924,7 +924,7 @@
                     fila.innerHTML =
                         '<i class="fa-regular fa-circle" style="color:#9ca3af;font-size:16px;flex-shrink:0;"></i>' +
                         '<span style="font-size:13px;flex:1;">' + doc.label + '</span>' +
-                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">â³ Pendiente de recepciÃ³n en almacÃ©n</span>';
+                        '<span style="font-size:11px;color:#94a3b8;white-space:nowrap;">â³ Pendiente de recepción en almacén</span>';
                 }
 
                 checklist.appendChild(fila);
@@ -1093,7 +1093,7 @@
     var id = esConsolidada ? window._idConsolidadaExpediente : window._expedienteActualGlobal;
 
     if (!id) {
-      Swal.fire({ icon: "error", title: "No se pudo identificar la requisiciÃ³n." });
+      Swal.fire({ icon: "error", title: "No se pudo identificar la requisición." });
       return;
     }
 
@@ -1223,7 +1223,7 @@
 
 
     window.verDetalleConsolidada = function (idConsolidada) {
-        document.getElementById("consolidadaTitulo").textContent = "RequisiciÃ³n Consolidada";
+        document.getElementById("consolidadaTitulo").textContent = "Requisición Consolidada";
         document.getElementById("consolidadaSubtitulo").textContent = "Cargando...";
         document.getElementById("consolidadaHijas").innerHTML = "";
         document.getElementById("consolidadaArticulosBody").innerHTML = "";
@@ -1261,11 +1261,11 @@
             });
             document.getElementById("consolidadaHijas").innerHTML = hijasHtml;
 
-            // â”€â”€ Tabla de artÃ­culos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // â”€â”€ Tabla de artículos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var articulos = data.articulos || [];
             if (!articulos.length) {
                 document.getElementById("consolidadaArticulosBody").innerHTML =
-                    '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
+                    '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
                 return;
             }
 
@@ -1274,7 +1274,7 @@
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 28
                     ? textoCompleto.substring(0, 28) + "â€¦"
-                    : textoCompleto || "Sin descripciÃ³n...";
+                    : textoCompleto || "Sin descripción...";
                 var fullEscapado = textoCompleto.replace(/"/g, "&quot;");
                 var tieneTexto = textoCompleto ? "tiene-texto" : "";
 
@@ -1360,11 +1360,11 @@
     var esDeCompra = idEstatus === 11;
 
     if (esTablaServicios) {
-      // Servicios: Asignar + Rechazar (sin Enviar a almacÃ©n)
+      // Servicios: Asignar + Rechazar (sin Enviar a almacén)
       volverOpciones();
       document.getElementById("txtMotivoRechazo").value = "";
 
-      //Ocultar el botÃ³n de enviar a almacÃ©n
+      //Ocultar el botón de enviar a almacén
       var btnAlmacen = document.getElementById("btnOpcionAlmacen");
       if (btnAlmacen) btnAlmacen.style.display = "none";
 
@@ -1389,7 +1389,7 @@
       volverOpciones();
       document.getElementById("txtMotivoRechazo").value = "";
 
-      //Asegurar que el botÃ³n de almacÃ©n estÃ© visible
+      //Asegurar que el botón de almacén esté visible
       var btnAlmacen = document.getElementById("btnOpcionAlmacen");
       if (btnAlmacen) btnAlmacen.style.display = esDeCompra ? "none" : "";
 
@@ -1420,7 +1420,7 @@
     modal.show();
   };
 
-  // Confirmar envÃ­o a almacÃ©n
+  // Confirmar envío a almacén
   window.confirmarEnvioAlmacen = function () {
     $.post(urlEnviarAlmacen, { idRequi: _idRequiAsignar }, function (res) {
       if (res.success) {
@@ -1552,7 +1552,7 @@
         ocultarTodosPasos();
         document.getElementById("pasoAsignar").style.display = "block";
 
-        // Sobreescribir temporalmente el botÃ³n confirmar para usar el flujo consolidada
+        // Sobreescribir temporalmente el botón confirmar para usar el flujo consolidada
         var $btnConfirmar = document.querySelector("#pasoAsignar .btn.boton-rosa");
         if ($btnConfirmar) {
             $btnConfirmar.setAttribute("onclick", "confirmarAsignacionConsolidada()");
@@ -1784,18 +1784,18 @@
             }
         });
 
-        // Cargar detalle para mostrar artÃ­culos y obtener primera hija
+        // Cargar detalle para mostrar artículos y obtener primera hija
         $.get(urlDetalleConsolidada, { idConsolidada: idConsolidada }, function (data) {
             document.getElementById("atenderConsolidadaSubtitulo").textContent =
                 data.folioConsolidada;
 
-            // Tabla artÃ­culos
+            // Tabla artículos
             var rows = "";
             (data.articulos || []).forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 40
                     ? textoCompleto.substring(0, 40) + "â€¦"
-                    : textoCompleto || "Sin descripciÃ³n...";
+                    : textoCompleto || "Sin descripción...";
                 var fullEscapado = escapeHtml(textoCompleto);
                 rows += "<tr>" +
                     '<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
@@ -1815,7 +1815,7 @@
                     "</tr>";
             });
             document.getElementById("atenderConsArticulosBody").innerHTML =
-                rows || '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
+                rows || '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
 
             // Verificar si ya existen cotizaciones guardadas
             var primeraRequi = data.requisiciones && data.requisiciones.length
@@ -1924,7 +1924,7 @@
             return;
         }
         if (!observaciones) {
-            Swal.fire({ icon: "warning", title: "Escribe una observaciÃ³n." });
+            Swal.fire({ icon: "warning", title: "Escribe una observación." });
             return;
         }
 
@@ -1985,7 +1985,7 @@
                     error: function () {
                         Swal.fire({
                             icon: "warning",
-                            title: "AtenciÃ³n guardada, error al subir archivos."
+                            title: "Atención guardada, error al subir archivos."
                         });
                         location.reload();
                     }
@@ -2147,7 +2147,7 @@
 
         if (!data || !data.consolidadas || data.consolidadas.length === 0) return;
 
-        // Eliminar mensaje vacÃ­o si existe
+        // Eliminar mensaje vacío si existe
         var filaVacia = document.getElementById("filaVaciaDocumentos");
         if (filaVacia) filaVacia.remove();
         var tbodyIndDoc = document.getElementById("tbodyDocumentos");
@@ -2312,7 +2312,7 @@
       .then((r) => r.json())
       .then((archivos) => {
         if (!archivos || archivos.length === 0) {
-          alert("Esta requisiciÃ³n no tiene archivos vinculados");
+          alert("Esta requisición no tiene archivos vinculados");
           return;
         }
 
@@ -2366,7 +2366,7 @@
             <div class="modal-content modal-premium">
               <div class="modal-header modal-header-premium">
                 <div>
-                  <h5 class="modal-title modal-titulo-premium">Archivos de la RequisiciÃ³n</h5>
+                  <h5 class="modal-title modal-titulo-premium">Archivos de la Requisición</h5>
                   <p class="modal-subtitulo-premium">Visualiza y descarga los documentos adjuntos</p>
                 </div>
                 <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
@@ -2512,7 +2512,7 @@
     });
   }
 
-  // Inicializar paginaciÃ³n al cargar el script
+  // Inicializar paginación al cargar el script
   aplicarPaginacionRequisiciones();
 
   if (container && window.TabsNotificacionesRequi && modoTabs) {
@@ -2524,7 +2524,7 @@
     });
   }
 
-  /* Expandir/colapsar fila detalle al hacer clic en la fila de requisiciÃ³n */
+  /* Expandir/colapsar fila detalle al hacer clic en la fila de requisición */
   function getTablaFromRow(tr) {
     return tr ? tr.closest("table.tabla-requisiciones") : null;
   }
@@ -2597,11 +2597,11 @@
         }
 
         if (!requisicionActual) {
-            Swal.fire({ icon: "warning", title: "Sin requisiciÃ³n activa." });
+            Swal.fire({ icon: "warning", title: "Sin requisición activa." });
             return;
         }
 
-        // Consultar quÃ© tipo de adquisiciÃ³n tiene esta requisiciÃ³n
+        // Consultar qué tipo de adquisición tiene esta requisición
         $.get(
             urlObtenerIdAdquisicion,
             { idRequisicion: requisicionActual },
@@ -2609,7 +2609,7 @@
                 var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
 
                 if (idAdquisicion === 1) {
-                    // AdjudicaciÃ³n directa â†’ ReqDirecta
+                    // Adjudicación directa â†’ ReqDirecta
                     var url =
                         (urlDescargarReqDirecta || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
@@ -2640,7 +2640,7 @@
     var panel = document.getElementById("desc-panel-modal");
     var textarea = document.getElementById("desc-textarea-modal");
     if (!panel || !textarea) return;
-    textarea.value = el.dataset.full || "(Sin descripciÃ³n detallada)";
+    textarea.value = el.dataset.full || "(Sin descripción detallada)";
     var rect = el.getBoundingClientRect();
     panel.style.top = rect.bottom + 4 + "px";
     panel.style.left = rect.left + "px";
@@ -2661,7 +2661,7 @@
   });
 
   (function modalProveedoresRequisicion() {
-    // â”€â”€ CatÃ¡logo de proveedores (leÃ­do del content del <template>, que es un DocumentFragment) â”€â”€
+    // â”€â”€ Catálogo de proveedores (leído del content del <template>, que es un DocumentFragment) â”€â”€
     var CATALOGO_PROVEEDORES_MODAL = [];
     var _tplEl = document.getElementById("tplModalProveedorFila");
     if (_tplEl) {
@@ -2676,8 +2676,8 @@
     // â”€â”€ Estado del wizard â”€â”€
     // wizardDatos[i] = [ { idProveedor, importe }, ... ]  (filas de la partida i)
     var wizardPartidas = []; // array de { idRequiDetalle, nombrePartida }
-    var wizardDatos = []; // datos por Ã­ndice de partida
-    var wizardIdx = 0; // Ã­ndice de la partida activa
+    var wizardDatos = []; // datos por índice de partida
+    var wizardIdx = 0; // índice de la partida activa
 
     function $modal() {
       return $("#modalProveedoresRequisicion");
@@ -2694,7 +2694,7 @@
       if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($sel[0]); }
       $sel.html('<option value="">-- Seleccionar --</option>');
 
-      // Calcular totales por proveedor usando wizardDatos (lo que el usuario llenÃ³)
+      // Calcular totales por proveedor usando wizardDatos (lo que el usuario llenó)
       var totalesPorProveedor = {};
 
       wizardPartidas.forEach(function (partida, idxPartida) {
@@ -2706,7 +2706,7 @@
 
           var idProv = fila.idProveedor;
           if (!totalesPorProveedor[idProv]) {
-            // Buscar nombre del proveedor en el catÃ¡logo
+            // Buscar nombre del proveedor en el catálogo
             var nombreProv = "";
             CATALOGO_PROVEEDORES_MODAL.forEach(function (c) {
               if (String(c.v) === String(idProv)) nombreProv = c.t;
@@ -2741,7 +2741,7 @@
           return o.total > 0;
         });
 
-      // Ordenar por total y marcar el mÃ¡s barato como sugerido
+      // Ordenar por total y marcar el más barato como sugerido
       opciones.sort(function (a, b) {
         return a.total - b.total;
       });
@@ -2754,7 +2754,7 @@
         return;
       }
 
-      // Si el ganador actual ya no estÃ¡ en las opciones, resetear
+      // Si el ganador actual ya no está en las opciones, resetear
       var idsValidos = opciones.map(function (o) {
         return o.idProveedor;
       });
@@ -2828,7 +2828,7 @@
         $fila.on("click", function () {
           wizardIdGanador = op.idProveedor;
           wizardGanadorManual = !op.esSugerido;
-          cargarOpcionesGanador(); // re-renderizar con nueva selecciÃ³n
+          cargarOpcionesGanador(); // re-renderizar con nueva selección
         });
 
         $divOpciones.append($fila);
@@ -2903,11 +2903,11 @@
           }
 
           // Comprobar si el innerHTML ha cambiado para evitar reinicializaciones innecesarias
-          // Validamos contando cuÃ¡ntos options tiene ahora vs los que tendrÃ­a el nuevo HTML
+          // Validamos contando cuántos options tiene ahora vs los que tendría el nuevo HTML
           var currentOptionsCount = $sel.find("option").length;
           var newOptionsCount = (newHtml.match(/<option/g) || []).length;
 
-          // TambiÃ©n comprobamos si los values exactos cambiaron
+          // También comprobamos si los values exactos cambiaron
           var currentVals = [];
           $sel.find("option").each(function () {
             currentVals.push($(this).val());
@@ -3060,7 +3060,7 @@
                       var ctr = document.getElementById("contadorConsolidada");
                       ctr.style.display = n > 0 ? "block" : "none";
                       document.getElementById("textoContadorConsolidada").textContent =
-                          n + (n === 1 ? " requisiciÃ³n seleccionada" : " requisiciones seleccionadas");
+                          n + (n === 1 ? " requisición seleccionada" : " requisiciones seleccionadas");
                       document.getElementById("btnConfirmarConsolidada").disabled = n < 2;
                   });
 
@@ -3085,11 +3085,11 @@
                   ?.getAttribute("data-tipo-tabla") === "servicios";
               Swal.fire({
                   title: "Â¿Crear consolidada?",
-                  html: "Se agruparÃ¡n <strong>" + ids.length + " requisiciones</strong> en una sola.",
+                  html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
                   icon: "question",
                   showCancelButton: true,
                   confirmButtonColor: "#fe6291",
-                  confirmButtonText: "SÃ­, crear",
+                  confirmButtonText: "Sí, crear",
                   cancelButtonText: "Cancelar",
               }).then(function (result) {
                   if (!result.isConfirmed) return;
@@ -3141,7 +3141,7 @@
       $c.empty();
 
       // Determinar filas a renderizar
-      // Si hay datos guardados para esta partida Ãºsalos, si no precarga proveedores de la anterior
+      // Si hay datos guardados para esta partida úsalos, si no precarga proveedores de la anterior
       var filasBase;
       if (wizardDatos[idx] && wizardDatos[idx].length) {
         filasBase = wizardDatos[idx];
@@ -3155,7 +3155,7 @@
           return { idProveedor: f.idProveedor, importe: "" };
         });
       } else {
-        // Primera partida sin datos previos: 2 filas vacÃ­as
+        // Primera partida sin datos previos: 2 filas vacías
         filasBase = [
           { idProveedor: 0, importe: "" },
           { idProveedor: 0, importe: "" },
@@ -3177,7 +3177,7 @@
         initSelect2($sel);
       });
 
-      // Botones de navegaciÃ³n
+      // Botones de navegación
       var $btnAnterior = $("#btnWizardAnterior");
       var $btnSiguiente = $("#btnWizardSiguiente");
 
@@ -3196,11 +3196,11 @@
       $("#wizardPasoGanador").hide();
     }
 
-    // â”€â”€ BotÃ³n Siguiente / Guardar â”€â”€
+    // â”€â”€ Botón Siguiente / Guardar â”€â”€
     $(document).on("click", "#btnWizardSiguiente", function () {
       guardarFilasActuales();
 
-      // ValidaciÃ³n: Prevenir proveedores duplicados en la partida actual
+      // Validación: Prevenir proveedores duplicados en la partida actual
       var filasActuales = wizardDatos[wizardIdx] || [];
       var provsUnicos = [];
       var hayDuplicado = false;
@@ -3279,14 +3279,14 @@
       }
     });
 
-    // â”€â”€ BotÃ³n Anterior â”€â”€
+    // â”€â”€ Botón Anterior â”€â”€
     $(document).on("click", "#btnWizardAnterior", function () {
       guardarFilasActuales();
       wizardIdx--;
       renderizarPartida(wizardIdx);
     });
 
-    // â”€â”€ BotÃ³n Agregar fila â”€â”€
+    // â”€â”€ Botón Agregar fila â”€â”€
     $(document).on("click", "#btnModalProveedoresAgregar", function () {
       var $c = $contenedor();
       var tpl = document.getElementById("tplModalProveedorFila");
@@ -3300,11 +3300,11 @@
       actualizarOpcionesProveedores();
     });
 
-    // â”€â”€ BotÃ³n eliminar fila â”€â”€
+    // â”€â”€ Botón eliminar fila â”€â”€
     $(document).on("click", ".btn-wizard-eliminar-fila", function () {
       var $fila = $(this).closest(".modal-proveedores-fila");
       var $c = $contenedor();
-      if ($c.find(".modal-proveedores-fila").length <= 1) return; // mÃ­nimo 1 fila
+      if ($c.find(".modal-proveedores-fila").length <= 1) return; // mínimo 1 fila
       var $sel = $fila.find(".modal-proveedores-select");
       if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir($sel[0]); }
       $fila.remove();
@@ -3482,7 +3482,7 @@
         var descripcionDetalladaCorta =
           descripcionDetallada.length > 28
             ? descripcionDetallada.substring(0, 28) + "â€¦"
-            : descripcionDetallada || "Sin descripciÃ³n...";
+            : descripcionDetallada || "Sin descripción...";
         var tieneDescripcionDetallada = descripcionDetallada
           ? "tiene-texto"
           : "";
@@ -3635,7 +3635,7 @@
       if (!vigencia || vigencia <= 0) {
         Swal.fire({
           icon: "warning",
-          title: "Captura la vigencia de cotizaciÃ³n.",
+          title: "Captura la vigencia de cotización.",
         });
         return false;
       }
@@ -3679,9 +3679,9 @@
         $("#wizardPasoGanador").append(
           '<div id="wizardGanadorJustificacionWrap" style="display:none; margin-top:12px;">' +
             '<div class="formulario-input">' +
-            "<label>JustificaciÃ³n de selecciÃ³n manual</label>" +
+            "<label>Justificación de selección manual</label>" +
             '<textarea id="wizardGanadorJustificacion" class="form-control" rows="4" ' +
-            'placeholder="Escribe por quÃ© se eligiÃ³ este proveedor y no el de menor costo..."></textarea>' +
+            'placeholder="Escribe por qué se eligió este proveedor y no el de menor costo..."></textarea>' +
             "</div>" +
             "</div>",
         );
@@ -3823,7 +3823,7 @@
                   return;
               }
 
-              // Construir query string con mÃºltiples ids: ?idsRequisiciones=1&idsRequisiciones=2
+              // Construir query string con múltiples ids: ?idsRequisiciones=1&idsRequisiciones=2
               var params = idsRequisiciones.map(function (id) {
                   return "idsRequisiciones=" + id;
               }).join("&");
@@ -3831,7 +3831,7 @@
               $.get(urlObtenerOpcionesGanadorConsolidada + "?" + params, function (opciones) {
                   wizardOpciones = opciones || [];
 
-                  // Para obtener ganador guardado usamos la primera requisiciÃ³n como referencia
+                  // Para obtener ganador guardado usamos la primera requisición como referencia
                   $.get(urlObtenerGanador, { idRequisicion: idsRequisiciones[0] }, function (ganador) {
                       var sugerido = wizardOpciones.find(function (op) { return op.esSugerido; });
                       if (ganador && ganador.idProveedor) {
@@ -3970,7 +3970,7 @@
 
                   if (!data || !data.length) return;
 
-                  // Solo eliminar el mensaje vacÃ­o si realmente hay datos que insertar
+                  // Solo eliminar el mensaje vacío si realmente hay datos que insertar
                   document.getElementById("filaVaciaVerificadas")?.remove();
 
                   tbody.innerHTML = "";
@@ -3999,7 +3999,7 @@
                       tbody.appendChild(crearFilaDetalleConsolidada(c, tabla));
                   });
 
-                  // DespuÃ©s de insertar filas, re-evaluar la paginaciÃ³n para remover/ajustar el mensaje vacÃ­o
+                  // Después de insertar filas, re-evaluar la paginación para remover/ajustar el mensaje vacío
                   aplicarPaginacionRequisiciones();
               })
               .catch(function () {
@@ -4141,14 +4141,14 @@
               return;
           }
           if (wizardGanadorManual && !justificacion) {
-              Swal.fire({ icon: "warning", title: "Escribe la justificaciÃ³n." });
+              Swal.fire({ icon: "warning", title: "Escribe la justificación." });
               return;
           }
 
-          // Determinar a quÃ© requisiciones guardar el ganador
+          // Determinar a qué requisiciones guardar el ganador
           var idsRequisiciones = [];
           if (window._modoConsolidada) {
-              // Obtener todos los idRequisicion Ãºnicos del mapa
+              // Obtener todos los idRequisicion únicos del mapa
               var idSet = {};
               CACHE_PARTIDAS.forEach(function (p) {
                   if (!p.idRequisicionPorDetalle) return;
@@ -4512,7 +4512,7 @@
       var articulos = data.articulos || [];
       var esDonativo = data.donativo === true;
 
-      // Tabla de artÃ­culos
+      // Tabla de artículos
       var thCog = document.querySelector(
         "#tablaModalDetalle thead tr th:last-child",
       );
@@ -4523,14 +4523,14 @@
         contenido =
           '<tr><td colspan="' +
           (esDonativo ? 6 : 5) +
-          '" class="text-center">Sin artÃ­culos</td></tr>';
+          '" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
               ? textoCompleto.substring(0, 28) + "â€¦"
-              : textoCompleto || "Sin descripciÃ³n...";
+              : textoCompleto || "Sin descripción...";
           var tieneTexto = textoCompleto ? "tiene-texto" : "";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
 
@@ -4610,11 +4610,11 @@
         });
       }
 
-      // Fotos de diseÃ±o / Archivos adjuntos
+      // Fotos de diseño / Archivos adjuntos
       var seccionFotos = document.getElementById("seccionFotosDetalle");
       var galeriaFotos = document.getElementById("galeriaFotosDetalle");
       if (seccionFotos && galeriaFotos) {
-        // Se muestran si hay fotos, sin restringir a Servicio ImpresiÃ³n para que funcione igual al enviar adjuntos comunes
+        // Se muestran si hay fotos, sin restringir a Servicio Impresión para que funcione igual al enviar adjuntos comunes
         if (data.fotos && data.fotos.length > 0) {
           var objsFotos = data.fotos.map(function (r) {
             return { ruta: r, nombreArchivo: r.split("/").pop() || "archivo" };
@@ -4637,7 +4637,7 @@
         }
       }
 
-      // SubtÃ­tulo
+      // Subtítulo
       var subtitulo = document.querySelector(
         "#modalDetalle .modal-subtitulo-premium",
       );
@@ -4647,7 +4647,7 @@
           articulos.length +
           " partidas";
 
-      // â”€â”€ SecciÃ³n atender/readonly: inicializar select2 y precargar valores â”€â”€
+      // â”€â”€ Sección atender/readonly: inicializar select2 y precargar valores â”€â”€
       // ── Sección atender/readonly: inicializar SelectRosaBuscable y precargar valores ──
       if (isAtender || isReadonly) {
         // Destruir instancias previas si existen
@@ -4670,7 +4670,7 @@
             });
           }
         });
-        // Precargar valores (ahora sÃ­ data existe)
+        // Precargar valores (ahora sí data existe)
         if (data.idPp) {
           $("#actividadSeleccionada").val(data.idPp).trigger("change");
         }
@@ -4700,7 +4700,7 @@
             true,
           );
 
-          // Ocultar botÃ³n enviar
+          // Ocultar botón enviar
           var btnEnviar = document.querySelector(
             ".seccionAtender div[style*='text-align:right']",
           );
@@ -4759,23 +4759,23 @@
     document.getElementById("expedienteSubtitulo").textContent = "Cargando...";
 
     $.get(obtenerDetallesUrl, { idMaestro: idRequi, soloCompra: true }, function (data) {
-      // SubtÃ­tulo
+      // Subtítulo
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
         "Expediente completo Â· " + articulos.length + " partidas";
 
-      // Tabla artÃ­culos
+      // Tabla artículos
       var contenido = "";
       if (!articulos.length) {
         contenido =
-          '<tr><td colspan="5" class="text-center">Sin artÃ­culos</td></tr>';
+          '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
               ? textoCompleto.substring(0, 28) + "â€¦"
-              : textoCompleto || "Sin descripciÃ³n...";
+              : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
             "<tr>" +
@@ -4869,7 +4869,7 @@
         var contenedor = document.getElementById("expArchivosBase");
         contenedor.innerHTML = "";
 
-        // BotÃ³n cotizaciones
+        // Botón cotizaciones
         var btnCot = document.createElement("div");
         btnCot.style.cssText = "margin-bottom:12px;";
         btnCot.innerHTML =
@@ -4974,14 +4974,14 @@
         },
       );
 
-      // â”€â”€ SecciÃ³n Pedido de Compra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // â”€â”€ Sección Pedido de Compra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       (function () {
         var idEstatus = data.idEstatus || 0;
         var pedidoCompra = data.archivosPedidoCompra || [];
         var numPedidos = data.numPedidos || [];
         var esDual = numPedidos.length > 1;
 
-        // Estatus 15 (autorizada) o 18 (rebotada): modo ediciÃ³n
+        // Estatus 15 (autorizada) o 18 (rebotada): modo edición
         if (idEstatus === 15) {
           document.getElementById("pedidoModoEdicion").style.display = "flex";
           document.getElementById("pedidoModoReadonly").style.display = "none";
@@ -5059,19 +5059,19 @@
       // Agregar columna Requi al inicio del thead
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
-        theadTr.innerHTML = '<th>Requi</th><th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>DescripciÃ³n</th><th>DescripciÃ³n Detallada</th>';
+        theadTr.innerHTML = '<th>Requi</th><th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripción</th><th>Descripción Detallada</th>';
       }
 
-      // Tabla artÃ­culos con columna Requi al inicio
+      // Tabla artículos con columna Requi al inicio
       var contenido = "";
       if (!articulos.length) {
-        contenido = '<tr><td colspan="6" class="text-center">Sin artÃ­culos</td></tr>';
+        contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto = textoCompleto.length > 28
             ? textoCompleto.substring(0, 28) + "â€¦"
-            : textoCompleto || "Sin descripciÃ³n...";
+            : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
             "<tr>" +
@@ -5195,15 +5195,15 @@
 
   window.aceptarExpediente = function () {
     var esConsolidada = window._modoConsolidada && window._idConsolidadaExpediente;
-    var titulo = esConsolidada ? "Â¿Aceptar consolidada?" : "Â¿Aceptar requisiciÃ³n?";
+    var titulo = esConsolidada ? "Â¿Aceptar consolidada?" : "Â¿Aceptar requisición?";
     Swal.fire({
       title: titulo,
-      text: "Se enviarÃ¡ a proceso de pago.",
+      text: "Se enviará a proceso de pago.",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#fe6291",
       cancelButtonColor: "var(--slate-500)",
-      confirmButtonText: "SÃ­, aceptar",
+      confirmButtonText: "Sí, aceptar",
       cancelButtonText: "Cancelar",
     }).then(function (result) {
       if (!result.isConfirmed) return;
@@ -5352,7 +5352,7 @@
 
   window.abrirModalProveedoresSinCerrar = function () {
     // Abre el modal de proveedores de forma manual sin que Bootstrap
-    // interfiera con el modal de detalle que ya estÃ¡ abierto
+    // interfiera con el modal de detalle que ya está abierto
     var el = document.getElementById("modalProveedoresRequisicion");
     if (!el) return;
 
@@ -5502,7 +5502,7 @@
             '<div class="mtl-dr"><span class="dr-lbl">Responsable</span>' +
             s.by +
             "</div>" +
-            '<div class="mtl-dr"><span class="dr-lbl">AcciÃ³n</span>' +
+            '<div class="mtl-dr"><span class="dr-lbl">Acción</span>' +
             s.action +
             "</div>" +
             '<div class="mtl-dr"><span class="dr-lbl">Nota</span>' +
@@ -5558,7 +5558,7 @@
     });
   };
 
-  // Resetear modo consolidada, restaurar thead y botÃ³n pedido al cerrar modal
+  // Resetear modo consolidada, restaurar thead y botón pedido al cerrar modal
   var modalExp = document.getElementById("modalExpediente");
   if (modalExp) {
     modalExp.addEventListener("hidden.bs.modal", function () {

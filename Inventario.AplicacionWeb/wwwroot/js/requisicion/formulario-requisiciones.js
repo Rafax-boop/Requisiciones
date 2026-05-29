@@ -89,19 +89,16 @@
   });
 
   function inicializarSelectsFormulario() {
-    inicializarSelectRosaEstatico("#tipoServicio", {
-      placeholder: esServicio
-        ? "Buscar tipo de servicio..."
-        : "Buscar lugar de entrega...",
-      defaultText: false,
-    });
-  }
-
-  function inicializarSelectRosaEstatico(selector, opciones) {
-    var select = document.querySelector(selector);
-    if (!select) return;
-
-    window.SelectRosaBuscable.reinicializar(select, opciones || {});
+    var $tipoServicio = $("#tipoServicio");
+    if ($tipoServicio.length) {
+      $tipoServicio.select2({
+        width: "100%",
+        placeholder: esServicio
+          ? "Buscar tipo de servicio..."
+          : "Buscar lugar de entrega...",
+        allowClear: true,
+      });
+    }
   }
 
   var inputFotos = document.getElementById("inputFotos");
@@ -376,9 +373,10 @@
   function inicializarSelectUnidad($elemento) {
     if (!$elemento.length) return;
 
-    SelectRosaBuscable.reinicializar($elemento[0], {
+    $elemento.select2({
+      width: "100%",
       placeholder: "Selecciona unidad...",
-      defaultText: false,
+      allowClear: true,
     });
   }
 
