@@ -157,23 +157,21 @@
     var urlEnviarFinancierosDocsConsolidada = container
         ? container.getAttribute("data-url-enviar-financieros-docs-consolidada")
         : "";
-  var DOCUMENTOS_PROVEEDOR = [
-    { clave: "CFDI_PDF", label: "Factura CFDI (PDF)" },
-    { clave: "CFDI_XML", label: "Factura CFDI (XML)" },
-    { clave: "ConstFiscal", label: "Constancia de SituaciÃ³n Fiscal" },
-    { clave: "OpinionSAT", label: "OpiniÃ³n de Cumplimiento SAT" },
-    { clave: "INFONAVIT", label: "Constancia de No Adeudo INFONAVIT" },
-    { clave: "Padron", label: "Alta en PadrÃ³n de Proveedores" },
-    { clave: "CedulaRFC", label: "CÃ©dula de IdentificaciÃ³n Fiscal" },
-    { clave: "IdOficial", label: "IdentificaciÃ³n Oficial (INE/Pasaporte)" },
-    { clave: "OrdenCompra", label: "Orden de Compra o Servicio" },
-    { clave: "Evidencia", label: "Evidencia de Entrega (Visto Bueno)" },
-    { clave: "EstadoCuenta", label: "Estado de Cuenta Bancario (CLABE)" },
-    { clave: "ActaConst", label: "Acta Constitutiva" },
-    { clave: "CompDomicilio", label: "Comprobante de Domicilio" },
-    { clave: "MemoPago", label: "Memorandum InstrucciÃ³n de Pago" },
-    { clave: "FormatoEntrega", label: "Formato de Entrega" },
-  ];
+  function obtenerDocumentosProveedor(idAdjudicacion) {
+    var docs = [
+      { clave: "GastosPagar", label: "Formato Gastos por pagar" },
+      { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
+      { clave: "FormatoEntrega", label: "Formato de Entrega" },
+      { clave: "Requisicion", label: "Requisici\u00f3n" },
+      { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
+      { clave: "INERepresentante", label: "INE Representante legal" },
+      { clave: "ConstFiscalActualizada", label: "Constancia de situaci\u00f3n fiscal actualizada" }
+    ];
+    if (idAdjudicacion != 1) {
+      docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
+    }
+    return docs;
+  }
 
   var CACHE_PARTIDAS = [];
   var CACHE_PARTIDAS_REQUI = null;
@@ -840,7 +838,8 @@
     });
   }
 
-    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada) {
+    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada, idAdjudicacion) {
+        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion);
         esConsolidada = esConsolidada || false;
         var idReal = esConsolidada ? idRequi.replace("cons_", "") : idRequi;
         var idHtml = esConsolidada ? "'" + idRequi + "'" : idRequi;
@@ -857,7 +856,7 @@
         // Extraer quÃ© docs estÃ¡n observados de la nota de financieros
         var clavesObservadas = [];
         if (idEstatus === 18 && notaObservacion) {
-            DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+            listaDocs.forEach(function (doc) {
                 if (notaObservacion.indexOf(doc.label) !== -1) {
                     clavesObservadas.push(doc.clave);
                 }
@@ -868,7 +867,7 @@
         if (!window._noAplica) window._noAplica = {};
         if (!window._noAplica[idRequi]) window._noAplica[idRequi] = {};
 
-        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+        listaDocs.forEach(function (doc) {
             if (doc.clave === "FormatoEntrega") return;
 
             var subido = clavesSubidas.indexOf(doc.clave) !== -1;
@@ -891,7 +890,7 @@
 
         var todosResueltos = true;
 
-        DOCUMENTOS_PROVEEDOR.forEach(function (doc) {
+        listaDocs.forEach(function (doc) {
             if (doc.clave === "FormatoEntrega" && !esTablaServicios) {
                 var formatos = docsSubidos.filter(function (d) { return d.nombreArchivo === "FormatoEntrega" && d.ruta; });
                 var hayFormatos = formatos.length > 0;
@@ -1025,14 +1024,15 @@
 
         var esCons = typeof idRequi === "string" && idRequi.startsWith("cons_");
         var idReal = esCons ? idRequi.replace("cons_", "") : idRequi;
+        var idAdq = window._idAdjudicacionExpediente || null;
 
         if (esCons) {
             $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true, idAdq);
             });
         } else {
             $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, false, idAdq);
             });
         }
     };
@@ -1057,8 +1057,9 @@
         processData: false,
         contentType: false,
         success: function () {
+          var idAdq = window._idAdjudicacionExpediente || null;
           $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
           });
         },
         error: function () {
@@ -1077,8 +1078,9 @@
         processData: false,
         contentType: false,
         success: function () {
+          var idAdq = window._idAdjudicacionExpediente || null;
           $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
           });
         },
         error: function () {
@@ -4961,18 +4963,14 @@
       expedienteNotaActual =
         data.idEstatus === 18 && data.observaciones ? data.observaciones : "";
 
-      $.get(
-        urlObtenerDocsProveedor,
-        { idRequisicion: idRequi },
-        function (docs) {
-          renderChecklist(
-            docs,
-            idRequi,
-            expedienteEstatusActual,
-            expedienteNotaActual,
-          );
-        },
-      );
+      $.get(urlObtenerIdAdquisicion, { idRequisicion: idRequi }, function (adqData) {
+        var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
+        window._idAdjudicacionExpediente = idAdq;
+
+        $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+          renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
+        });
+      });
 
       // â”€â”€ SecciÃ³n Pedido de Compra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       (function () {
@@ -5175,8 +5173,13 @@
       expedienteNotaActual = data.idEstatus === 18 && data.observaciones ? data.observaciones : "";
 
       // Documentos del proveedor para consolidada
-      $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
-        renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true);
+      $.get(urlObtenerIdAdquisicion, { idConsolidada: idConsolidada }, function (adqData) {
+        var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
+        window._idAdjudicacionExpediente = idAdq;
+
+        $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
+          renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
+        });
       });
 
       // Pedido de compra consolidado
