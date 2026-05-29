@@ -46,7 +46,7 @@ namespace Inventario.BLL.Implementacion
             }
 
             if (!string.IsNullOrWhiteSpace(termino))
-                query = query.Where(a => a.Descripcion.Contains(termino));
+                query = query.Where(a => EF.Functions.Collate(a.Descripcion, "Latin1_General_CI_AI").Contains(termino));
 
             return await query.Take(10).ToListAsync();
         }

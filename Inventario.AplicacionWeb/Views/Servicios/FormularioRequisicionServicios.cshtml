@@ -1,12 +1,13 @@
 ﻿@model Inventario.AplicacionWeb.Models.ViewModels.VMRequiForm
 @{
-    ViewData["Title"] = "Formulario RequisiciÃ³n de Servicios";
+    ViewData["Title"] = "Formulario Requisición de Servicios";
     bool modoEdicion = ViewBag.ModoEdicion == true;
     var tipoServicio = Model.TipoServicio ?? "no hay";
 }
 
 @section Styles {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
     <link rel="stylesheet" href="~/css/componentes/calendario.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
 }
@@ -17,16 +18,16 @@
         <div class="info-requisicion">
             <div class="fantasma">
                 <div class="filtro-grupo">
-                    <label class="m-0 info-body">Fecha de emisiÃ³n:</label>
+                    <label class="m-0 info-body">Fecha de emisión:</label>
                     <label class="info-body">@DateTime.Now.ToString("dd-MM-yyyy")</label>
                 </div>
             </div>
             <div class="container-info">
-                <p class="info-titulo mt-3">RequisiciÃ³n de servicios</p>
+                <p class="info-titulo mt-3">Requisición de servicios</p>
             </div>
             <div class="requisicion-info">
                 <div class="requisicion">
-                    <p class="info-body">RequisiciÃ³n:</p>
+                    <p class="info-body">Requisición:</p>
                     <label class="info-body">@Model.NumRequisicion</label>
                 </div>
             </div>
@@ -35,11 +36,11 @@
         @if (modoEdicion)
         {
             <div class="container-formulario">
-                <label class="info-body">Observaciones de ModificaciÃ³n:</label>
+                <label class="info-body">Observaciones de Modificación:</label>
                 <textarea name="ObservacionesBitacora" rows="3" readonly disabled
-                      placeholder="Observaciones previas de modificaciÃ³n (solo lectura)"
+                      placeholder="Observaciones previas de modificación (solo lectura)"
                       class=" form-control" style="font-family: var(--font-body)">@Model.ObservacionesBitacora</textarea>
-                <small class="form-text text-muted">Estas son las observaciones de la Ãºltima modificaciÃ³n requerida</small>
+                <small class="form-text text-muted">Estas son las observaciones de la última modificación requerida</small>
             </div>
         }
 
@@ -63,7 +64,7 @@
                     <input type="email" name="Correo" placeholder="correo@ejemplo.com" value="@Model.Correo" required />
                 </div>
                 <div class="formulario-input">
-                    <label>TelÃ©fono:</label>
+                    <label>Teléfono:</label>
                     <input type="tel" name="Telefono" placeholder="(222) 000-0000" value="@Model.Telefono" required />
                 </div>
             </div>
@@ -78,23 +79,23 @@
                         <option value="">-- Seleccionar tipo --</option>
                         <option value="Mantenimiento" selected="@(tipoServicio == "Mantenimiento")">Mantenimiento</option>
                         <option value="Servicio Proveedor" selected="@(tipoServicio == "Servicio Proveedor")">Servicio Proveedor</option>
-                        <option value="Servicio Impresion" selected="@(tipoServicio == "Servicio Impresion")">Servicio ImpresiÃ³n</option>
+                        <option value="Servicio Impresion" selected="@(tipoServicio == "Servicio Impresion")">Servicio Impresión</option>
                         <option value="Mobiliario" selected="@(tipoServicio == "Mobiliario")">Mobiliario para Eventos</option>
                     </select>
                 </div>
                 <div class="formulario-input">
-                    <label>JustificaciÃ³n del servicio solicitado:</label>
+                    <label>Justificación del servicio solicitado:</label>
                     <textarea type="text" name="Justificacion" placeholder="Justifique el servicio solicitado" value=""
                               required>@Model.Justificacion</textarea>
                 </div>
                 <div class="formulario-input">
-                    <label>Fecha de prestaciÃ³n del servicio:</label>
+                    <label>Fecha de prestación del servicio:</label>
                     <input type="text" id="fechaServicio" name="FechaServicio" placeholder="Seleccionar fecha"
                            readonly required value="@Model.FechaServicio?.ToString("yyyy-MM-dd")"/>
                 </div>
                 <div class="formulario-input">
-                    <label>Lugar de prestaciÃ³n del servicio:</label>
-                    <input type="text" name="LugarEntrega" placeholder="Lugar de prestaciÃ³n del servicio" value="@Model.LugarEntrega"
+                    <label>Lugar de prestación del servicio:</label>
+                    <input type="text" name="LugarEntrega" placeholder="Lugar de prestación del servicio" value="@Model.LugarEntrega"
                            required />
                 </div>
                 @*<div class="formulario-input">
@@ -102,7 +103,7 @@
                     <textarea type="text" name="NombrePuesto" placeholder="Nombre y puesto" value="" required></textarea>
                 </div>
                 <div class="formulario-input">
-                    <label>NÃºmero celular del enlace adaministrativo del area solicitante:</label>
+                    <label>Número celular del enlace adaministrativo del area solicitante:</label>
                     <input type="tel" min="7" max="12" name="NumeroCelular" placeholder="(222) 000-0000" value=""
                            required />
                 </div> *@
@@ -146,19 +147,19 @@
 
         <div class="container-formulario">
             <div class="seccion-completa">
-                <h5 class="mb-3 text-center">ArtÃ­culos solicitados</h5>
+                <h5 class="mb-3 text-center">Artículos solicitados</h5>
                 <table class="table table-bordered" id="tablaArticulos">
                     <thead>
                         <tr>
-                            <th style="width: 30%">DescripciÃ³n</th>
+                            <th style="width: 30%">Descripción</th>
                             <th style="width: 15%">Unidad</th>
                             <th style="width: 10%">Cantidad</th>
-                            <th style="width: 10%">DescripciÃ³n Detallada</th>
-                            <th style="width: 10%">AcciÃ³n</th>
+                            <th style="width: 10%">Descripción Detallada</th>
+                            <th style="width: 10%">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Las filas se agregarÃ¡n dinÃ¡micamente -->
+                        <!-- Las filas se agregarán dinámicamente -->
                     </tbody>
                 </table>
                 <button type="button" class="btn boton-gris" onclick="agregarArticulo()">
@@ -179,7 +180,7 @@
                         Continuar <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <button type="submit" class="btn boton-rosa btn-lg" id="btnGuardarFinal" style="display:none;">
-                        Crear RequisiciÃ³n
+                        Crear Requisición
                     </button>
                 }
             </div>
@@ -193,13 +194,13 @@
               placeholder="Escribe la descripción detallada aquí..."></textarea>
 </div>
 
-<!-- Modal wizard distribuciÃ³n por municipio -->
+<!-- Modal wizard distribución por municipio -->
 <div class="modal fade" id="modalMunicipiosWizard" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content modal-premium">
             <div class="modal-header modal-header-premium">
                 <div>
-                    <h5 class="modal-title modal-titulo-premium">DistribuciÃ³n por municipio</h5>
+                    <h5 class="modal-title modal-titulo-premium">Distribución por municipio</h5>
                     <p class="modal-subtitulo-premium" id="wizardMuniSubtitulo">Partida 1 de 1</p>
                 </div>
             </div>
@@ -221,7 +222,7 @@
             </style>
             <div class="modal-body modal-body-premium">
                 <div class="municipios-section">
-                    <div class="municipios-section-title"><i class="fa-solid fa-map-location-dot"></i> DistribuciÃ³n de cantidad por municipio</div>
+                    <div class="municipios-section-title"><i class="fa-solid fa-map-location-dot"></i> Distribución de cantidad por municipio</div>
 
                     <p id="wizardMuniNombrePartida" style="font-size:13px; font-weight:600; color:#1a1a1a; margin:0 0 12px;"></p>
 
@@ -231,7 +232,7 @@
                         Asignada: <strong id="wizardMuniCantidadAsig" style="color:#ef4444">0</strong>
                     </div>
 
-                    <!-- Tabla de distribuciÃ³n -->
+                    <!-- Tabla de distribución -->
                     <div class="municipios-grid-wrap">
                         <table class="municipios-table" id="wizardMuniTabla">
                             <thead>
@@ -270,6 +271,8 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
     <script src="~/js/shared/modal-adjuntos.js" asp-append-version="true"></script>
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script>

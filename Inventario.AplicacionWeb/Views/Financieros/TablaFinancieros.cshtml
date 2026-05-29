@@ -472,7 +472,7 @@
                                 <div class="timeline-container">
                                     <div class="p-3 text-center" style="border:1px solid #fecaca;border-radius:10px;background:#fef2f2;">
                                         <p class="mb-1" style="color:#b91c1c;font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> Requisición rechazada</p>
-                                        <p class="text-muted small mb-2">El folio ya no estÃ¡ en seguimiento activo.</p>
+                                        <p class="text-muted small mb-2">El folio ya no está en seguimiento activo.</p>
                                         <button type="button" class="btn btn-sm" style="border:1px solid #fecaca;background:white;color:#b91c1c;" onclick="event.stopPropagation(); verHistorialTimeline(@item.IdRequi, '@item.NumRequi')">
                                             <i class="fa-solid fa-clock-rotate-left"></i> Ver historial
                                         </button>
@@ -535,7 +535,7 @@
                         <th>Folio</th>
                         <th>Departamentos</th>
                         <th style="text-align:center"># Req</th>
-                        <th>Fecha de creaciÃ³n</th>
+                        <th>Fecha de creación</th>
                         <th>Estado</th>
                         @if (User.IsInRole("8"))
                         {
@@ -1009,18 +1009,18 @@
             </div>
             <div class="modal-body modal-body-premium">
                 <div class="modal-summary" id="historialSummary">
-                    <!-- Datos resumen se inyectarÃ¡n por JS -->
+                    <!-- Datos resumen se inyectarán por JS -->
                 </div>
                 <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
                 <div class="modal-tl" id="historialTl">
-                    <!-- Timeline vertical se inyectarÃ¡ por JS -->
+                    <!-- Timeline vertical se inyectará por JS -->
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lightbox para imÃ¡genes de la galerÃ­a en modal de detalles -->
+<!-- Lightbox para imágenes de la galería en modal de detalles -->
 <div id="visor-imagenes-tabla" class="visor-imagenes-overlay">
     <img id="visor-imagenes-tabla-img" class="visor-imagenes-img" src="" alt="Vista previa" />
 </div>
