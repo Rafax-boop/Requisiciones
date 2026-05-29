@@ -66,7 +66,9 @@
      data-url-editar-pedido-consolidada="@Url.Action("EditarPedidoCompraConsolidada", "Financieros")"
      data-url-generar-pedido-pdf-consolidada="@Url.Action("GenerarPedidoPdfConsolidada", "Financieros")"
      data-url-enviar-financieros-docs-consolidada="@Url.Action("EnviarFinancierosConsolidada", "Financieros")"
-     data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")">
+     data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")"
+     data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Requisicion")"
+     data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Requisicion")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones</h1>
@@ -1668,6 +1670,46 @@
                 <hr class="modal-sep" style="border:none; border-top:1px solid var(--slate-200); margin: 0 0 1.4rem;">
                 <div class="modal-tl" id="historialTl">
                     <!-- Timeline vertical se inyectará por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal PDF Firmado -->
+<div class="modal" id="modalPdfFirmado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Documento PDF</h5>
+                    <p class="modal-subtitulo-premium" id="pdfFirmadoSubtitulo">Requisición</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="text-center" style="margin-bottom:16px;">
+                    <button type="button" class="btn boton-rosa w-100" id="btnDescargarPdfFirmado" onclick="descargarPdfFirmado()">
+                        <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                    </button>
+                </div>
+                @if (User.IsInRole("1"))
+                {
+                    <hr style="margin:12px 0;border-color:var(--slate-200);" />
+                    <div id="seccionSubirPdfFirmado">
+                        <label style="font-size:13px;font-weight:600;color:var(--slate-700);margin-bottom:6px;display:block;">Subir PDF firmado</label>
+                        <input type="file" id="inputPdfFirmado" accept=".pdf" class="input-file-rosa" />
+                        <button type="button" class="btn boton-rosa w-100" style="margin-top:10px;" id="btnSubirPdfFirmado" onclick="subirPdfFirmado()">
+                            <i class="fa-solid fa-upload"></i> Subir PDF firmado
+                        </button>
+                    </div>
+                }
+                <div id="seccionVerPdfFirmado" style="display:none;margin-top:12px;">
+                    <a id="linkVerPdfFirmado" href="#" target="_blank" class="btn boton-rosa w-100" style="text-decoration:none;">
+                        <i class="fa-solid fa-eye"></i> Ver PDF firmado
+                    </a>
                 </div>
             </div>
         </div>

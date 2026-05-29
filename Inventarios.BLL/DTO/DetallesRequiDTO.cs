@@ -25,6 +25,7 @@ namespace Inventario.BLL.DTO
         public List<ArchivoAtencionDTO> CuadroComparativo { get; set; } = new();
         public List<ArchivoAtencionDTO> Anexos { get; set; } = new();
         public List<string> NumPedidos { get; set; } = new();
+        public string? DocumentoFirmado { get; set; }
     }
 
     public class DetalleArticuloDTO

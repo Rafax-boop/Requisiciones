@@ -58,19 +58,20 @@
     var urlDescargarArchivosConsolidadaZip = container
         ? container.getAttribute("data-url-descargar-archivos-consolidada-zip") : "";
 
-    function obtenerDocumentosProveedor(idAdjudicacion) {
+function obtenerDocumentosProveedor(idAdjudicacion) {
         var docs = [
             { clave: "GastosPagar", label: "Formato Gastos por pagar" },
             { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
             { clave: "FormatoEntrega", label: "Formato de Entrega" },
-            { clave: "Requisicion", label: "Requisici\u00f3n" },
             { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
             { clave: "INERepresentante", label: "INE Representante legal" },
-            { clave: "ConstFiscalActualizada", label: "Constancia de situaci\u00f3n fiscal actualizada" }
+            { clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" }
         ];
         if (idAdjudicacion != 1) {
             docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
         }
+        return docs;
+    }
         return docs;
     }
 
@@ -570,16 +571,21 @@
         });
 
         if (data.idPp) {
-            $("#actividadSeleccionada").val(data.idPp).trigger("change");
+            var elAct = document.getElementById("actividadSeleccionada");
+            elAct.value = String(data.idPp);
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elAct);
         }
         if (data.ff) {
-            $("#ffSelect").val(data.ff).trigger("change");
+            var elFf = document.getElementById("ffSelect");
+            elFf.value = String(data.ff);
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFf);
         }
         if (data.tipoPrograma) {
+            var elTp = document.getElementById("tipoProgramaSelect");
             $("#tipoProgramaSelect option").filter(function () {
                 return $(this).text().trim() === data.tipoPrograma;
             }).prop("selected", true);
-            $("#tipoProgramaSelect").trigger("change");
+            if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTp);
         }
 
         $("#actividadSeleccionada, #ffSelect, #tipoProgramaSelect").prop("disabled", true);
@@ -627,9 +633,14 @@
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
 
-        // Mostrar sección selects en ambos casos
+        // Mostrar sección selects en ambos casos (atender y readonly)
         document.querySelectorAll(".seccionAtender").forEach(function (sec) {
             sec.style.display = (isAtender || isReadonly) ? "block" : "none";
+        });
+
+        // Inputs de subida (SIAF, Tabla API, botones) solo en modo atender
+        document.querySelectorAll(".seccionSubidaFinancieros").forEach(function (sec) {
+            sec.style.display = isAtender ? "block" : "none";
         });
 
         // Botones solo visibles en modo atender
@@ -702,39 +713,6 @@
                 });
                 inicializarControlesAtencionFinancieros(data);
 
-                (function () {
-                    var c = document.getElementById("contenedorArchivosReadonly");
-                    if (!c) return;
-                    c.innerHTML = "";
-
-                    // Botón cotizaciones
-                    var btnCot = document.createElement("div");
-                    btnCot.style.cssText = "margin-bottom:12px;";
-                    btnCot.innerHTML =
-                        '<button type="button" class="btn boton-rosa" ' +
-                        'onclick="verCotizaciones(' + idMaestro + ')">' +
-                        '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
-                        '</button>';
-                    c.appendChild(btnCot);
-
-                    // Cuadro comparativo (se mantiene)
-                    if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
-                        var divCuadro = document.createElement("div");
-                        divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
-                        window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
-                        c.appendChild(divCuadro);
-                    }
-
-                    // Anexos
-                    if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
-                        var divAnexos = document.createElement("div");
-                        divAnexos.id = "seccionAnexosDetalle";
-                        divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
-                        window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
-                        c.appendChild(divAnexos);
-                    }
-                })();
-
                 // Diferenciar solo la parte de observaciones y botones
                 if (isReadonly) {
                     $("#txtObservaciones")
@@ -747,6 +725,77 @@
                         .val("");
                 }
             }
+
+            // Archivos ya subidos (siempre visibles)
+            (function () {
+                var c = document.getElementById("contenedorArchivosReadonly");
+                if (!c) return;
+                c.innerHTML = "";
+
+                // Botón cotizaciones
+                var btnCot = document.createElement("div");
+                btnCot.style.cssText = "margin-bottom:12px;";
+                btnCot.innerHTML =
+                    '<button type="button" class="btn boton-rosa" ' +
+                    'onclick="verCotizaciones(' + idMaestro + ')">' +
+                    '<i class="fa-solid fa-file-invoice-dollar"></i> Ver cotizaciones' +
+                    '</button>';
+                c.appendChild(btnCot);
+
+                // Cuadro comparativo
+                if (window.ModalAdjuntos && (data.cuadroComparativo || []).length > 0) {
+                    var divCuadro = document.createElement("div");
+                    divCuadro.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Cuadro comparativo", data.cuadroComparativo);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divCuadro);
+                    c.appendChild(divCuadro);
+                }
+
+                // Anexos
+                if (window.ModalAdjuntos && (data.anexos || []).length > 0) {
+                    var divAnexos = document.createElement("div");
+                    divAnexos.id = "seccionAnexosDetalle";
+                    divAnexos.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documentos Anexos", data.anexos);
+                    window.ModalAdjuntos.enlazarEventosContenedor(divAnexos);
+                    c.appendChild(divAnexos);
+                }
+
+                // Documentos financieros ya subidos (solo en modo readonly/ver, no en atender)
+                if (!isAtender) {
+                    var siaf = data.archivosSiaf || [];
+                    var tablaApi = data.archivosTablaApi || [];
+                    var pedidoCompra = data.archivosPedidoCompra || [];
+                    if (siaf.length || tablaApi.length || pedidoCompra.length) {
+                        if (window.ModalAdjuntos) {
+                            if (siaf.length) {
+                                var divSiaf = document.createElement("div");
+                                divSiaf.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Documento SIAF", siaf);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divSiaf);
+                                c.appendChild(divSiaf);
+                            }
+                            if (tablaApi.length) {
+                                var divTablaApi = document.createElement("div");
+                                divTablaApi.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Tabla de API", tablaApi);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divTablaApi);
+                                c.appendChild(divTablaApi);
+                            }
+                            if (pedidoCompra.length) {
+                                var divPedido = document.createElement("div");
+                                divPedido.innerHTML = window.ModalAdjuntos.renderGrupoHtml("Pedido de Compra", pedidoCompra);
+                                window.ModalAdjuntos.enlazarEventosContenedor(divPedido);
+                                c.appendChild(divPedido);
+                            }
+                        }
+                    }
+                    if (data.numeroApi) {
+                        var divNumApi = document.createElement("div");
+                        divNumApi.innerHTML =
+                            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
+                            '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
+                            '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + data.numeroApi + '</span>';
+                        c.appendChild(divNumApi);
+                    }
+                }
+            })();
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalle")).show();
         }).fail(function () {
@@ -920,21 +969,34 @@
 
                 // Selects
                 ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
-                    var el = $("#" + selId);
-                    if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
+                    var el = document.getElementById(selId);
+                    if (el && window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el); }
                 });
                 ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
                     var domEl = document.getElementById(selId);
                     if (domEl && window.SelectRosaBuscable) {
-                        window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                        window.SelectRosaBuscable.inicializar(domEl, { placeholder: "", defaultText: false });
                     }
                 });
                 $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
-                if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
-                if (data.ff) $("#expFinFf").val(data.ff).trigger("change");
+                ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(el);
+                });
+                if (data.idPp) {
+                    var elActCons = document.getElementById("expFinActividad");
+                    elActCons.value = String(data.idPp);
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elActCons);
+                }
+                if (data.ff) {
+                    var elFfCons = document.getElementById("expFinFf");
+                    elFfCons.value = String(data.ff);
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFfCons);
+                }
                 if (data.tipoPrograma) {
+                    var elTpCons = document.getElementById("expFinTipoPrograma");
                     $("#expFinTipoPrograma option").filter(function () { return $(this).text().trim() === data.tipoPrograma; }).prop("selected", true);
-                    $("#expFinTipoPrograma").trigger("change");
+                    if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTpCons);
                 }
 
                 // Observaciones
@@ -1030,26 +1092,37 @@
 
             // Selects
             ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
-                var el = $("#" + id);
-                if (window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el[0]); }
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) { window.SelectRosaBuscable.destruir(el); }
             });
             ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (selId) {
                 var domEl = document.getElementById(selId);
                 if (domEl && window.SelectRosaBuscable) {
-                    window.SelectRosaBuscable.inicializar(domEl, { placeholder: "" });
+                    window.SelectRosaBuscable.inicializar(domEl, { placeholder: "", defaultText: false });
                 }
             });
             $("#expFinActividad, #expFinFf, #expFinTipoPrograma, #expFinMunicipio").prop("disabled", true);
+            ["expFinActividad", "expFinFf", "expFinTipoPrograma", "expFinMunicipio"].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(el);
+            });
 
-            if (data.idPp) $("#expFinActividad").val(data.idPp).trigger("change");
+            if (data.idPp) {
+                var elActExp = document.getElementById("expFinActividad");
+                elActExp.value = String(data.idPp);
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elActExp);
+            }
             if (data.ff) {
-                $("#expFinFf").val(data.ff).trigger("change");
+                var elFfExp = document.getElementById("expFinFf");
+                elFfExp.value = String(data.ff);
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elFfExp);
             }
             if (data.tipoPrograma) {
+                var elTpExp = document.getElementById("expFinTipoPrograma");
                 $("#expFinTipoPrograma option").filter(function () {
                     return $(this).text().trim() === data.tipoPrograma;
                 }).prop("selected", true);
-                $("#expFinTipoPrograma").trigger("change");
+                if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(elTpExp);
             }
 
             // Cotizaciones / cuadro

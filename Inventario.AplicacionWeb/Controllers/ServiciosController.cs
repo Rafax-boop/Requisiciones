@@ -490,5 +490,22 @@ namespace Inventario.AplicacionWeb.Controllers
             }).ToList();
             return Json(resultado);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SubirDocumentoFirmado([FromForm] int idRequisicion, IFormFile archivo)
+        {
+            if (!User.IsInRole("1")) return Forbid();
+            if (archivo == null || archivo.Length == 0) return BadRequest(new { success = false });
+            var ok = await _requisicionesService.SubirDocumentoFirmado(idRequisicion, archivo, _env.WebRootPath);
+            return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ObtenerDocumentoFirmado(int idRequisicion)
+        {
+            var ruta = await _requisicionesService.ObtenerDocumentoFirmado(idRequisicion);
+            if (ruta == null) return Json(new { firmado = false });
+            return Json(new { firmado = true, ruta = ruta });
+        }
     }
 }
