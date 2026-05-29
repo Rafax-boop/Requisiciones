@@ -22,6 +22,7 @@ void DebugLog(object data)
     catch { }
 }
 // #endregion
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
