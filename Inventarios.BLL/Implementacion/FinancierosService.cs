@@ -1287,6 +1287,416 @@ namespace Inventario.BLL.Implementacion
             return modelo;
         }
 
+        // ───────────────────────────── ORDEN DE PAGO (Gastos por pagar) ─────────────────────────────
+
+        public async Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableAsync(int idRequisicion)
+        {
+            var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
+                ?? throw new Exception($"No se encontró la requisición {idRequisicion}.");
+
+            string nombreDepartamento = "";
+            if (requisicion.IdDepartamento.HasValue)
+            {
+                var depto = await _repoDepartamento.Obtener(d => d.IdDepartamento == requisicion.IdDepartamento.Value);
+                nombreDepartamento = depto?.NombreDepartamento ?? "";
+            }
+
+            var fecha = requisicion.FechaEmision.HasValue
+                ? requisicion.FechaEmision.Value.ToDateTime(TimeOnly.MinValue)
+                : DateTime.Now;
+
+            var conceptos = await ConstruirConceptosOrdenPagoAsync(requisicion);
+
+            var modelo = new OrdenPagoEditableDTO
+            {
+                IdRequisicion = idRequisicion,
+                NumeroRequisicion = S(requisicion.NumRequisicion),
+                Fecha = fecha.ToString("dd/MM/yyyy"),
+                AreaSolicitante = nombreDepartamento,
+                PlenaJustificacion = S(requisicion.Justificacion),
+                NumeroApi = S(requisicion.NumApi),
+                Conceptos = conceptos
+            };
+
+            return modelo;
+        }
+
+        public async Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableConsolidadaAsync(int idConsolidada)
+        {
+            var consolidada = await _repoConsolidada.Obtener(c => c.ConsolidadaId == idConsolidada)
+                ?? throw new Exception($"No se encontró la consolidada {idConsolidada}.");
+
+            var queryDetConsol = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == idConsolidada);
+            var hijas = await queryDetConsol
+                .Include(d => d.IdRequisicionNavigation)
+                    .ThenInclude(r => r.IdDepartamentoNavigation)
+                .Select(d => d.IdRequisicionNavigation)
+                .Distinct()
+                .ToListAsync();
+
+            var conceptos = new List<OrdenPagoConceptoDTO>();
+            foreach (var hija in hijas)
+                conceptos.AddRange(await ConstruirConceptosOrdenPagoAsync(hija));
+
+            var primerHija = hijas.FirstOrDefault();
+            string areaNombre = primerHija?.IdDepartamentoNavigation?.NombreDepartamento ?? "";
+
+            var modelo = new OrdenPagoEditableDTO
+            {
+                IdConsolidada = idConsolidada,
+                IdRequisicion = 0,
+                NumeroRequisicion = S(consolidada.FolioConsolidada),
+                Fecha = DateTime.Now.ToString("dd/MM/yyyy"),
+                AreaSolicitante = areaNombre,
+                PlenaJustificacion = S(primerHija?.Justificacion),
+                NumeroApi = S(consolidada.NumApi),
+                Conceptos = conceptos
+            };
+
+            return modelo;
+        }
+
+        /// <summary>Arma los renglones de conceptos a partir del proveedor ganador y los detalles de la requisición.</summary>
+        private async Task<List<OrdenPagoConceptoDTO>> ConstruirConceptosOrdenPagoAsync(TblRequisicion requisicion)
+        {
+            var idRequisicion = requisicion.IdRequisicion;
+            var detalles = await ObtenerDetallesFiltradosAsync(idRequisicion, requisicion.RequiServicio ?? false);
+            var cotizacionConCantidad = await ObtenerCotizacionConCantidadAsync(idRequisicion);
+            var proveedorNombre = await ObtenerNombreProveedorGanadorAsync(idRequisicion);
+            var ua = S(requisicion.IdDepartamento?.ToString());
+
+            var conceptos = new List<OrdenPagoConceptoDTO>();
+            foreach (var d in detalles)
+            {
+                cotizacionConCantidad.TryGetValue(d.IdRequisicionDetalle, out var cot);
+                var cantidad = cot.Cantidad > 0
+                    ? cot.Cantidad
+                    : (d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+                var subtotal = cot.PrecioUnitario * cantidad;
+                var iva = (cot.IVA == true) ? subtotal * 0.16m : 0m;
+                var total = subtotal + iva;
+
+                conceptos.Add(new OrdenPagoConceptoDTO
+                {
+                    Ff = S(requisicion.Ff),
+                    Ua = ua,
+                    Proyecto = S(requisicion.IdPp?.ToString()),
+                    Cog = S(d.CogEditable?.ToString() ?? d.NumPartida?.ToString()),
+                    Factura = "",
+                    Proveedor = proveedorNombre,
+                    Concepto = S(d.Descripcion),
+                    Subtotal = subtotal > 0 ? FormatearImporte(subtotal) : "",
+                    Iva = iva > 0 ? FormatearImporte(iva) : "",
+                    Total = total > 0 ? FormatearImporte(total) : ""
+                });
+            }
+
+            return conceptos;
+        }
+
+        /// <summary>Devuelve el nombre del proveedor ganador (o el de menor total como respaldo).</summary>
+        private async Task<string> ObtenerNombreProveedorGanadorAsync(int idRequisicion)
+        {
+            var queryGanador = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
+            var ganador = await queryGanador.FirstOrDefaultAsync();
+            int? idProveedor = ganador?.IdProveedor;
+
+            var queryCot = await _repositoryCotizaciones.Consultar(
+                c => c.IdRequisicion == idRequisicion && c.IdProveedor.HasValue);
+
+            if (idProveedor == null || idProveedor <= 0)
+            {
+                idProveedor = await queryCot
+                    .GroupBy(c => c.IdProveedor)
+                    .Select(g => g.Key)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (idProveedor == null || idProveedor <= 0)
+                return "";
+
+            var nombre = await queryCot
+                .Where(c => c.IdProveedor == idProveedor && c.IdProveedorNavigation != null)
+                .Select(c => c.IdProveedorNavigation!.NombreProvedor)
+                .FirstOrDefaultAsync();
+
+            return nombre ?? "";
+        }
+
+        public async Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo)
+        {
+            if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))
+                throw new ArgumentException("La requisición o consolidada es requerida.", nameof(modelo));
+
+            modelo.Conceptos ??= new List<OrdenPagoConceptoDTO>();
+
+            decimal Parsear(string? s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return 0m;
+                var limpio = s.Replace("$", "").Replace(",", "").Trim();
+                return decimal.TryParse(limpio,
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var v) ? v : 0m;
+            }
+
+            var ms = new MemoryStream();
+            var pdfWriter = new PdfWriter(ms);
+            var pdfDoc = new PdfDocument(pdfWriter);
+            var doc = new Document(pdfDoc, PageSize.LETTER.Rotate());
+            doc.SetMargins(20f, 28f, 24f, 28f);
+
+            var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD,
+                              iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+            var regular = PdfFontFactory.CreateFont(StandardFonts.HELVETICA,
+                              iText.IO.Font.PdfEncodings.WINANSI, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+
+            var bordeCelda = new SolidBorder(PdfApiEstiloRequi.Borde, 0.75f);
+
+            Cell CeldaGris(string texto, int colspan = 1, int rowspan = 1, float size = 6.5f,
+                           TextAlignment align = TextAlignment.CENTER, bool textoEstiloColumna = false)
+            {
+                var colorTxt = textoEstiloColumna ? PdfApiEstiloRequi.TextoEncabezadoTabla : PdfApiEstiloRequi.TextoSecundario;
+                var p = new Paragraph(S(texto)).SetFont(bold).SetFontSize(size).SetFontColor(colorTxt);
+                return new Cell(rowspan, colspan)
+                    .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla)
+                    .SetTextAlignment(align)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
+                    .Add(p);
+            }
+
+            Cell CeldaBlanca(string texto, int colspan = 1, float size = 6.5f, bool negrita = false,
+                             TextAlignment align = TextAlignment.CENTER, Color? fondoFila = null)
+            {
+                var p = new Paragraph(S(texto)).SetFont(negrita ? bold : regular).SetFontSize(size)
+                    .SetFontColor(PdfApiEstiloRequi.TextoPrincipal);
+                return new Cell(1, colspan)
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE)
+                    .SetTextAlignment(align)
+                    .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .SetPadding(4f)
+                    .SetBorder(bordeCelda)
+                    .Add(p);
+            }
+
+            Cell CeldaVacia(float height = 12f, Color? fondoFila = null) =>
+                new Cell()
+                    .SetHeight(height)
+                    .SetPadding(0f)
+                    .SetBorder(bordeCelda)
+                    .SetBackgroundColor(fondoFila ?? ColorConstants.WHITE);
+
+            // ── Encabezado institucional ───────────────────────────────────────
+            doc.Add(CrearEncabezadoOrdenPago(bold, regular));
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
+
+            // ── Fecha + Área solicitante + Justificación ───────────────────────
+            var tblDatos = new Table(UnitValue.CreatePointArray(new float[] { 70f, 150f, 110f, 410f })).UseAllAvailableWidth();
+            tblDatos.AddCell(CeldaGris("Fecha:", align: TextAlignment.LEFT));
+            tblDatos.AddCell(CeldaBlanca(modelo.Fecha, negrita: true, align: TextAlignment.LEFT));
+            tblDatos.AddCell(CeldaGris("Área solicitante:", align: TextAlignment.LEFT));
+            tblDatos.AddCell(CeldaBlanca(modelo.AreaSolicitante, align: TextAlignment.LEFT));
+            tblDatos.AddCell(CeldaGris("Plena\nJustificación:", align: TextAlignment.LEFT));
+            tblDatos.AddCell(new Cell(1, 3)
+                .SetBackgroundColor(ColorConstants.WHITE).SetFont(regular).SetFontSize(7f)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE).SetPadding(4f).SetBorder(bordeCelda)
+                .Add(new Paragraph(S(modelo.PlenaJustificacion)).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)));
+            doc.Add(tblDatos);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
+
+            // ── Datos de transferencia (siempre "Gastos por pagar", sin checkboxes) ──
+            var tblTransfer = new Table(UnitValue.CreatePointArray(new float[] { 150f, 250f, 90f, 250f })).UseAllAvailableWidth();
+            tblTransfer.AddCell(CeldaGris("Realizar transferencia\na nombre de:", align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaBlanca(modelo.NombreTransferencia, align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaGris("Número de API:", align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaBlanca(modelo.NumeroApi, negrita: true, align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaGris("Clabe interbancaria:", align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaBlanca(modelo.ClabeInterbancaria, align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaGris("Institución bancaria:", align: TextAlignment.LEFT));
+            tblTransfer.AddCell(CeldaBlanca(modelo.InstitucionBancaria, align: TextAlignment.LEFT));
+            doc.Add(tblTransfer);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
+
+            // ── Tabla principal de conceptos ───────────────────────────────────
+            var colWidths = new float[] { 34f, 34f, 60f, 40f, 42f, 130f, 200f, 80f, 70f, 80f };
+            var tblConceptos = new Table(UnitValue.CreatePointArray(colWidths)).UseAllAvailableWidth();
+            tblConceptos.AddHeaderCell(new Cell(1, 4)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f).SetBorder(bordeCelda)
+                .Add(new Paragraph("Datos programáticos y presupuestales")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+            tblConceptos.AddHeaderCell(new Cell(1, 3)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f).SetBorder(bordeCelda)
+                .Add(new Paragraph("Datos en factura")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+            tblConceptos.AddHeaderCell(new Cell(1, 3)
+                .SetBackgroundColor(PdfApiEstiloRequi.FondoEncabezadoTabla).SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(4f).SetBorder(bordeCelda)
+                .Add(new Paragraph("Importes")
+                    .SetFont(bold).SetFontSize(6f).SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla)));
+            var colTitles = new[] { "F.F.", "U.A.", "Proyecto", "COG", "Factura", "Proveedor", "Concepto en factura", "Subtotal", "I.V.A.", "Total" };
+            foreach (var h in colTitles) tblConceptos.AddHeaderCell(CeldaGris(h, size: 5.5f, textoEstiloColumna: true).SetHeight(16f));
+
+            int numFilas = Math.Max(6, modelo.Conceptos.Count);
+            for (int i = 0; i < numFilas; i++)
+            {
+                Color bg = (i % 2 == 1) ? PdfApiEstiloRequi.FondoEncabezadoTabla : ColorConstants.WHITE;
+                if (i < modelo.Conceptos.Count)
+                {
+                    var c = modelo.Conceptos[i];
+                    tblConceptos.AddCell(CeldaBlanca(c.Ff, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Ua, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Proyecto, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Cog, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Factura, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Proveedor, align: TextAlignment.LEFT, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Concepto, align: TextAlignment.LEFT, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Subtotal, align: TextAlignment.RIGHT, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Iva, align: TextAlignment.RIGHT, fondoFila: bg));
+                    tblConceptos.AddCell(CeldaBlanca(c.Total, align: TextAlignment.RIGHT, fondoFila: bg));
+                }
+                else
+                {
+                    for (int col = 0; col < 10; col++) tblConceptos.AddCell(CeldaVacia(12f, bg));
+                }
+            }
+
+            // Fila de SUMAS
+            var sumaSub = modelo.Conceptos.Sum(c => Parsear(c.Subtotal));
+            var sumaIva = modelo.Conceptos.Sum(c => Parsear(c.Iva));
+            var sumaTot = modelo.Conceptos.Sum(c => Parsear(c.Total));
+            tblConceptos.AddCell(CeldaGris("SUMAS:", colspan: 7, align: TextAlignment.RIGHT));
+            tblConceptos.AddCell(CeldaBlanca(sumaSub > 0 ? FormatearImporte(sumaSub) : "", negrita: true, align: TextAlignment.RIGHT));
+            tblConceptos.AddCell(CeldaBlanca(sumaIva > 0 ? FormatearImporte(sumaIva) : "", negrita: true, align: TextAlignment.RIGHT));
+            tblConceptos.AddCell(CeldaBlanca(sumaTot > 0 ? FormatearImporte(sumaTot) : "", negrita: true, align: TextAlignment.RIGHT));
+            doc.Add(tblConceptos);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
+
+            // ── Contrato + totales / retenciones ───────────────────────────────
+            var tblTot = new Table(UnitValue.CreatePointArray(new float[] { 130f, 180f, 120f, 130f })).UseAllAvailableWidth();
+            tblTot.AddCell(CeldaGris("Número de contrato:", align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(modelo.NumeroContrato, negrita: true, align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaGris("Total:", align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaBlanca(modelo.Total, align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaGris("Monto total del contrato:", align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(modelo.MontoTotalContrato, align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaGris("Retención ISR:", align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaBlanca(modelo.RetencionIsr, align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaGris("Tipo de recurso:", align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(modelo.TipoRecurso, align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaGris("Retención 5 al millar:", align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaBlanca(modelo.RetencionCincoAlMillar, align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaGris("Importe a devengar:", align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaBlanca(modelo.ImporteADevengar, align: TextAlignment.LEFT));
+            tblTot.AddCell(CeldaGris("TOTAL A PAGAR:", align: TextAlignment.RIGHT));
+            tblTot.AddCell(CeldaBlanca(modelo.TotalAPagar, negrita: true, align: TextAlignment.RIGHT));
+            doc.Add(tblTot);
+            doc.Add(new Paragraph("").SetMarginBottom(3f));
+
+            // ── Datos iniciales / Datos de comprobación ────────────────────────
+            var tblComp = new Table(UnitValue.CreatePointArray(new float[] { 90f, 90f, 90f, 100f, 100f, 90f, 200f })).UseAllAvailableWidth();
+            foreach (var h in new[] { "Importe solicitado", "No. Transferencia", "Folio", "Importe comprobado", "Importe reintegrado", "No. Recibo de caja", "Observaciones" })
+                tblComp.AddHeaderCell(CeldaGris(h, size: 5.5f, textoEstiloColumna: true).SetHeight(16f));
+            for (int col = 0; col < 7; col++) tblComp.AddCell(CeldaVacia(16f));
+            doc.Add(tblComp);
+            doc.Add(new Paragraph("").SetMarginBottom(8f));
+
+            // ── Firmas (Elaboró, Revisó, Autorizó, Visto Bueno) ────────────────
+            var tblFirmas = new Table(UnitValue.CreatePercentArray(new float[] { 25f, 25f, 25f, 25f })).UseAllAvailableWidth();
+            var firmantes = new (string Titulo, string Texto)[]
+            {
+                ("Elaboró", modelo.Elaboro),
+                ("Revisó", modelo.Reviso),
+                ("Autorizó", modelo.Autorizo),
+                ("Visto Bueno", modelo.VistoBueno),
+            };
+            foreach (var (titulo, texto) in firmantes)
+            {
+                tblFirmas.AddCell(new Cell()
+                    .SetMinHeight(78f)
+                    .SetBackgroundColor(ColorConstants.WHITE)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetVerticalAlignment(VerticalAlignment.TOP)
+                    .SetPaddingTop(10f).SetPaddingBottom(10f).SetPaddingLeft(6f).SetPaddingRight(6f)
+                    .SetBorder(bordeCelda)
+                    .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(7f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla).SetMarginBottom(10f))
+                    .Add(new Paragraph(" ").SetFontSize(20f))
+                    .Add(new Paragraph("_________________________________________").SetFont(regular).SetFontSize(5f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginBottom(6f))
+                    .Add(new Paragraph(S(texto).Replace("\n", " ")).SetFont(regular).SetFontSize(6f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                        .SetTextAlignment(TextAlignment.CENTER)));
+            }
+            doc.Add(tblFirmas);
+
+            doc.Close();
+            return ms.ToArray();
+        }
+
+        /// <summary>Encabezado institucional para el formato "Gastos por pagar y/o Comprobación de Gastos".</summary>
+        private Table CrearEncabezadoOrdenPago(PdfFont bold, PdfFont regular)
+        {
+            var borde = new SolidBorder(PdfApiEstiloRequi.Borde, 1f);
+
+            var tblEnc = new Table(UnitValue.CreatePointArray(new float[] { 110f, 500f, 130f })).UseAllAvailableWidth();
+            tblEnc.SetBorder(borde);
+            tblEnc.SetBackgroundColor(ColorConstants.WHITE);
+
+            var celdaIzq = new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(8f).SetBorder(borde);
+            if (!IntentarAgregarLogoEnCelda(celdaIzq,
+                    new[] { "corazon.png", "pensargrande.png", "familias-dif.png" }, 64f, 48f))
+            {
+                celdaIzq.Add(new Paragraph("PUEBLA").SetFont(bold).SetFontSize(10f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))
+                    .Add(new Paragraph("Gobierno del Estado").SetFont(regular).SetFontSize(6.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario))
+                    .Add(new Paragraph("2 0 2 4 - 2 0 3 0").SetFont(regular).SetFontSize(5.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario));
+            }
+            tblEnc.AddCell(celdaIzq);
+
+            var centro = new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetPadding(10f).SetBorder(borde);
+            centro.Add(new Paragraph("Formato \"Gastos por pagar y/o Comprobación de Gastos\"")
+                .SetFont(bold).SetFontSize(11f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("Unidad de Planeación, Administración y Finanzas")
+                .SetFont(regular).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER).SetMarginTop(3f));
+            centro.Add(new Paragraph("Dirección de Administración y Finanzas")
+                .SetFont(regular).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("Departamento de Recursos Financieros")
+                .SetFont(regular).SetFontSize(7.5f).SetFontColor(PdfApiEstiloRequi.TextoSecundario)
+                .SetTextAlignment(TextAlignment.CENTER));
+            centro.Add(new Paragraph("EJERCICIO FISCAL 2025")
+                .SetFont(bold).SetFontSize(9f).SetFontColor(PdfApiEstiloRequi.RosaAcento)
+                .SetTextAlignment(TextAlignment.CENTER).SetMarginTop(4f));
+            tblEnc.AddCell(centro);
+
+            var celdaDer = new Cell()
+                .SetBackgroundColor(ColorConstants.WHITE)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(8f).SetBorder(borde);
+            if (!IntentarAgregarLogoEnCelda(celdaDer, new[] { "familias-dif-rosa.png", "familias-dif.png" }, 64f, 48f))
+            {
+                celdaDer.Add(new Paragraph("Familias").SetFont(bold).SetFontSize(11f).SetFontColor(PdfApiEstiloRequi.TextoPrincipal))
+                    .Add(new Paragraph("Sistema Estatal DIF").SetFont(regular).SetFontSize(7f).SetFontColor(PdfApiEstiloRequi.TextoSecundario));
+            }
+            tblEnc.AddCell(celdaDer);
+
+            return tblEnc;
+        }
+
         public async Task<byte[]> GenerarTablaApiAsync(TablaApiEditableDTO modelo)
         {
             if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))

@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   var container = document.querySelector(".tabla-requi-page");
   var esTablaServicios =
     container?.getAttribute("data-tipo-tabla") === "servicios";
