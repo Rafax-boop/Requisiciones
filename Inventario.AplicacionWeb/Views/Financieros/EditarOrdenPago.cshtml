@@ -1,0 +1,261 @@
+@model Inventario.BLL.DTO.OrdenPagoEditableDTO
+@{
+    ViewData["Title"] = "Orden de Pago";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/componentes/form-comun.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/formulario-requisiciones.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/financieros/editar-tabla-api.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+(function () {
+    var MX = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+
+    var idRequisicion = @(Model.IdRequisicion > 0 ? Model.IdRequisicion : 0);
+    var idConsolidada = @((Model.IdConsolidada ?? 0) > 0 ? Model.IdConsolidada.Value : 0);
+
+    var btnPdf = document.querySelector('form.no-loader button[type="submit"]');
+    if (btnPdf) {
+        btnPdf.addEventListener('click', function (e) {
+            var url, params;
+            if (idConsolidada > 0) {
+                url = "/Financieros/ObtenerNumeroApiConsolidada";
+                params = { idConsolidada: idConsolidada };
+            } else if (idRequisicion > 0) {
+                url = "/Financieros/ObtenerNumeroApi";
+                params = { idRequisicion: idRequisicion };
+            }
+            if (url) {
+                $.get(url, params, function (res) {
+                    if (res && res.numApi) {
+                        var input = document.getElementById("inputNumeroApi");
+                        if (input && !input.value) input.value = res.numApi;
+                    }
+                });
+            }
+        });
+
+        btnPdf.closest('form').addEventListener('submit', function () {
+            btnPdf.disabled = true;
+            btnPdf.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...';
+        });
+    }
+
+    function parsearImporte(str) {
+        if (!str) return 0;
+        var limpio = String(str).replace(/\$/, "").replace(/,/g, "").trim();
+        var n = parseFloat(limpio);
+        return isNaN(n) ? 0 : n;
+    }
+
+    function recalcular() {
+        var sumSub = 0, sumIva = 0, sumTot = 0;
+        document.querySelectorAll(".concepto-subtotal").forEach(function (el) { sumSub += parsearImporte(el.value); });
+        document.querySelectorAll(".concepto-iva").forEach(function (el) { sumIva += parsearImporte(el.value); });
+        document.querySelectorAll(".concepto-total").forEach(function (el) { sumTot += parsearImporte(el.value); });
+
+        document.getElementById("inputSumaSubtotal").value = sumSub > 0 ? MX.format(sumSub) : "";
+        document.getElementById("inputSumaIva").value = sumIva > 0 ? MX.format(sumIva) : "";
+        document.getElementById("inputSumaTotal").value = sumTot > 0 ? MX.format(sumTot) : "";
+
+        // Total general = suma de totales por concepto
+        document.getElementById("inputTotal").value = sumTot > 0 ? MX.format(sumTot) : "";
+
+        // Retención 5 al millar = subtotal (sin IVA) x 0.005
+        var ret5 = sumSub * 0.005;
+        document.getElementById("inputRetencion5").value = ret5 > 0 ? MX.format(ret5) : "";
+
+        var retIsr = parsearImporte(document.getElementById("inputRetencionIsr").value);
+        var totalAPagar = sumTot - ret5 - retIsr;
+        document.getElementById("inputTotalAPagar").value = totalAPagar > 0 ? MX.format(totalAPagar) : "";
+    }
+
+    function formatearAlSalir(e) {
+        var n = parsearImporte(e.target.value);
+        e.target.value = n > 0 ? MX.format(n) : "";
+        recalcular();
+    }
+
+    document.querySelectorAll(".concepto-subtotal, .concepto-iva, .concepto-total, #inputRetencionIsr").forEach(function (el) {
+        el.addEventListener("blur", formatearAlSalir);
+    });
+
+    recalcular();
+})();
+</script>
+}
+
+<div class="mt-3 container tabla-api-editor-page">
+    <div class="info-requisicion">
+        <div class="fantasma"></div>
+        <div class="container-info">
+            <p class="info-titulo mt-3">Orden de Pago — Gastos por pagar</p>
+        </div>
+        <div class="requisicion-info">
+            <div class="requisicion">
+                <p class="info-body">Requisición:</p>
+                <label class="info-body">@Model.NumeroRequisicion</label>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="GenerarOrdenPago" asp-controller="Financieros" method="post" class="no-loader">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdRequisicion" />
+        <input type="hidden" asp-for="IdConsolidada" />
+        <input type="hidden" asp-for="NumeroRequisicion" />
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Fecha</label>
+                    <input asp-for="Fecha" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Área solicitante</label>
+                    <input asp-for="AreaSolicitante" type="text" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Plena Justificación</label>
+                    <textarea asp-for="PlenaJustificacion" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Realizar transferencia a nombre de</label>
+                    <input asp-for="NombreTransferencia" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Número de API</label>
+                    <input asp-for="NumeroApi" type="text" id="inputNumeroApi" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Clabe interbancaria</label>
+                    <input asp-for="ClabeInterbancaria" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Institución bancaria</label>
+                    <input asp-for="InstitucionBancaria" type="text" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-completa">
+                <h5 class="mb-3 text-center">Conceptos en factura</h5>
+                <div class="table-responsive-container seccion-completa">
+                    <table class="tabla-api-editor-grid">
+                        <thead>
+                            <tr>
+                                <th>F.F.</th>
+                                <th>U.A.</th>
+                                <th>Proyecto</th>
+                                <th>COG</th>
+                                <th>Factura</th>
+                                <th>Proveedor</th>
+                                <th>Concepto en factura</th>
+                                <th>Subtotal</th>
+                                <th>I.V.A.</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Conceptos.Count; i++)
+                            {
+                                <tr>
+                                    <td><input asp-for="Conceptos[i].Ff" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Ua" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Proyecto" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Cog" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Factura" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Proveedor" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Concepto" type="text" /></td>
+                                    <td><input asp-for="Conceptos[i].Subtotal" type="text" class="concepto-subtotal" /></td>
+                                    <td><input asp-for="Conceptos[i].Iva" type="text" class="concepto-iva" /></td>
+                                    <td><input asp-for="Conceptos[i].Total" type="text" class="concepto-total" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>SUMAS — Subtotal</label>
+                    <input asp-for="Total" type="text" id="inputSumaSubtotal" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="formulario-input">
+                    <label>SUMAS — I.V.A.</label>
+                    <input type="text" id="inputSumaIva" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="formulario-input">
+                    <label>SUMAS — Total</label>
+                    <input type="text" id="inputSumaTotal" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Número de contrato</label>
+                    <input asp-for="NumeroContrato" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Monto total del contrato</label>
+                    <input asp-for="MontoTotalContrato" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Tipo de recurso</label>
+                    <input asp-for="TipoRecurso" type="text" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario">
+            <div class="seccion-1">
+                <div class="formulario-input">
+                    <label>Importe a devengar</label>
+                    <input asp-for="ImporteADevengar" type="text" />
+                </div>
+                <div class="formulario-input">
+                    <label>Total</label>
+                    <input type="text" id="inputTotal" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+            </div>
+            <div class="seccion-2">
+                <div class="formulario-input">
+                    <label>Retención ISR</label>
+                    <input asp-for="RetencionIsr" type="text" id="inputRetencionIsr" />
+                </div>
+                <div class="formulario-input">
+                    <label>Retención 5 al millar</label>
+                    <input asp-for="RetencionCincoAlMillar" type="text" id="inputRetencion5" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="formulario-input">
+                    <label>TOTAL A PAGAR</label>
+                    <input asp-for="TotalAPagar" type="text" id="inputTotalAPagar" readonly style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+            </div>
+        </div>
+
+        <div class="container-formulario mt-4">
+            <div class="seccion-completa text-center editor-actions">
+                <a class="btn boton-gris btn-lg" href="@Url.Action("TablaFinancieros", "Financieros")">Volver</a>
+                <button type="submit" class="btn boton-rosa btn-lg">
+                    Generar PDF
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

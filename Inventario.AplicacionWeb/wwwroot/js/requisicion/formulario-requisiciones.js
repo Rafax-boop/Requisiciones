@@ -1258,9 +1258,7 @@
       btnAgregar.classList.add("disabled");
     }
 
-    $("#tablaArticulos .select-articulo")
-      .prop("disabled", true)
-      .trigger("change");
+    $("#tablaArticulos .select-articulo").prop("disabled", true);
     $("#tablaArticulos .select-unidad")
       .prop("disabled", true)
       .trigger("change");

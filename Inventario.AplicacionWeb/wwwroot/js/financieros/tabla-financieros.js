@@ -19,6 +19,9 @@
     var urlEditarTablaApi = container
         ? container.getAttribute("data-url-editar-tabla-api")
         : "";
+    var urlEditarOrdenPago = container
+        ? container.getAttribute("data-url-editar-orden-pago")
+        : "";
 
     // Variables al inicio del módulo
     var urlObtenerDocsProveedor = container
@@ -41,6 +44,8 @@
         ? container.getAttribute("data-url-detalle-consolidada") : "";
     var urlEditarTablaApiConsolidada = container
         ? container.getAttribute("data-url-editar-tabla-api-consolidada") : "";
+    var urlEditarOrdenPagoConsolidada = container
+        ? container.getAttribute("data-url-editar-orden-pago-consolidada") : "";
     var urlDescargarTablaApiConsolidada = container
         ? container.getAttribute("data-url-descargar-tabla-api-consolidada") : "";
     var urlAtenderConsolidada = container
@@ -493,6 +498,40 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         window.open(url, "_blank");
     };
 
+    window.editarOrdenPago = function () {
+        if (!requisicionActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin requisición",
+                text: "No se pudo identificar la requisición actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        var url = (urlEditarOrdenPago || "").replace(/\/$/, "")
+            + "?idRequisicion=" + requisicionActual;
+        window.open(url, "_blank");
+    };
+
+    window.editarOrdenPagoConsolidada = function () {
+        if (!consolidadaActual) {
+            Swal.fire({
+                icon: "warning",
+                title: "Sin consolidada",
+                text: "No se pudo identificar la consolidada actual.",
+                confirmButtonText: "Ok",
+                confirmButtonColor: "#fe6291"
+            });
+            return;
+        }
+
+        var url = (urlEditarOrdenPagoConsolidada || "").replace(/\/$/, "")
+            + "?idConsolidada=" + consolidadaActual;
+        window.open(url, "_blank");
+    };
+
     window.descargarTablaApiConsolidada = function () {
         if (!consolidadaActual) {
             Swal.fire({
@@ -629,6 +668,12 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         // Restore "Editar Tabla API" button visibility (hidden in consolidada mode)
         var btnEditarTablaApi = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
         if (btnEditarTablaApi) btnEditarTablaApi.style.display = "";
+
+        // Restore "Orden de Pago" button visibility (hidden in consolidada mode)
+        var btnOrdenPago = document.querySelector(".seccionAtender .boton-gris[onclick*='editarOrdenPago']");
+        if (btnOrdenPago) btnOrdenPago.style.display = "";
+        var btnOrdenPagoConsol = document.getElementById("btnOrdenPagoConsolidada");
+        if (btnOrdenPagoConsol) btnOrdenPagoConsol.style.display = "none";
 
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
@@ -2240,6 +2285,11 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         if (btnIndiv) btnIndiv.style.display = "none";
         var btnConsol = document.getElementById("btnEditarApiConsolidada");
         if (btnConsol) btnConsol.style.display = "block";
+        // Orden de pago: ocultar individual, mostrar consolidada
+        var btnOpIndiv = document.querySelector(".seccionAtender .boton-gris[onclick*='editarOrdenPago']");
+        if (btnOpIndiv) btnOpIndiv.style.display = "none";
+        var btnOpConsol = document.getElementById("btnOrdenPagoConsolidada");
+        if (btnOpConsol) btnOpConsol.style.display = "block";
         var botonesAtender = document.getElementById("botonesAtender");
         if (botonesAtender) botonesAtender.style.display = "flex";
 

@@ -23,6 +23,11 @@ namespace Inventario.BLL.Interfaces
         Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiAsync(int idRequisicion);
         Task<List<TablaApiHistorialDTO>> ObtenerHistorialTablaApiPorConsolidadaAsync(int idConsolidada);
 
+        // orden de pago (gastos por pagar)
+        Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableAsync(int idRequisicion);
+        Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableConsolidadaAsync(int idConsolidada);
+        Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo);
+
         Task<PedidoVistaDTO> ObtenerPedidoEditableAsync(int idRequisicion);
         Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath, string tipoRecurso);
         Task GuardarHistorialPedidoAsync(PedidoVistaDTO modelo, int idUsuario, string? observacion = null);
