@@ -232,7 +232,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
                                     }
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                     @if (User.IsInRole("6") && (item.IdEstatus == 1 || item.IdEstatus == 11))
@@ -389,7 +389,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                                     <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                 </div>
@@ -529,7 +529,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                                     <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                 </div>
