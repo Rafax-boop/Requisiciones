@@ -242,10 +242,8 @@ namespace Inventario.BLL.Implementacion
             var detallesQuery = await _repoConsolidadaDetalle.Consultar(d => d.ConsolidadaId == modelo.IdConsolidada);
             var hijas = await detallesQuery.Select(d => d.IdRequisicionNavigation).ToListAsync();
 
-            var idRequisHijas = hijas.Select(h => (int?)h.IdRequisicion).ToList();
-
             var queryApiPartidas = await _repoApiPartidas.Consultar(
-                p => p.IdRequisicion.HasValue && idRequisHijas.Contains(p.IdRequisicion.Value));
+                p => p.IdConsolidada == modelo.IdConsolidada);
             var apiPartidas = await queryApiPartidas.ToListAsync();
             var hayEstatal = apiPartidas.Any(p => p.EsEstatal == true);
             var hayFederal = apiPartidas.Any(p => p.EsEstatal == false);
@@ -265,18 +263,6 @@ namespace Inventario.BLL.Implementacion
                     FechaGeneracion = DateTime.Now,
                     IdUsuario = idUsuario
                 });
-
-                foreach (var hija in hijas)
-                {
-                    await _repoPedido.Crear(new TblPedido
-                    {
-                        IdRequisicion = hija.IdRequisicion,
-                        NumPedido = numPedido,
-                        TipoRecurso = tipo,
-                        FechaGeneracion = DateTime.Now,
-                        IdUsuario = idUsuario
-                    });
-                }
             }
 
             consolidada.IdEstatus = 15;
@@ -1307,6 +1293,11 @@ namespace Inventario.BLL.Implementacion
 
             var conceptos = await ConstruirConceptosOrdenPagoAsync(requisicion);
 
+            bool aplicaRetencion = requisicion.IdAdjudicacion.HasValue && requisicion.IdAdjudicacion.Value > 1;
+            bool hayEstatal = conceptos.Any(c => c.EsEstatal == true);
+            bool hayFederal = conceptos.Any(c => c.EsEstatal == false);
+            bool? esEstatalRecurso = hayEstatal && hayFederal ? null : (hayEstatal ? true : hayFederal ? false : (bool?)true);
+
             var modelo = new OrdenPagoEditableDTO
             {
                 IdRequisicion = idRequisicion,
@@ -1315,8 +1306,12 @@ namespace Inventario.BLL.Implementacion
                 AreaSolicitante = nombreDepartamento,
                 PlenaJustificacion = S(requisicion.Justificacion),
                 NumeroApi = S(requisicion.NumApi),
-                Conceptos = conceptos
+                Conceptos = conceptos,
+                AplicaRetencion = aplicaRetencion,
+                EsEstatalRecurso = esEstatalRecurso
             };
+
+            CalcularSumasDual(modelo);
 
             return modelo;
         }
@@ -1336,10 +1331,15 @@ namespace Inventario.BLL.Implementacion
 
             var conceptos = new List<OrdenPagoConceptoDTO>();
             foreach (var hija in hijas)
-                conceptos.AddRange(await ConstruirConceptosOrdenPagoAsync(hija));
+                conceptos.AddRange(await ConstruirConceptosOrdenPagoAsync(hija, idConsolidada));
 
             var primerHija = hijas.FirstOrDefault();
             string areaNombre = primerHija?.IdDepartamentoNavigation?.NombreDepartamento ?? "";
+
+            bool aplicaRetencion = consolidada.IdAdjudicacion.HasValue && consolidada.IdAdjudicacion.Value > 1;
+            bool hayEstatal = conceptos.Any(c => c.EsEstatal == true);
+            bool hayFederal = conceptos.Any(c => c.EsEstatal == false);
+            bool? esEstatalRecurso = hayEstatal && hayFederal ? null : (hayEstatal ? true : hayFederal ? false : (bool?)true);
 
             var modelo = new OrdenPagoEditableDTO
             {
@@ -1350,14 +1350,42 @@ namespace Inventario.BLL.Implementacion
                 AreaSolicitante = areaNombre,
                 PlenaJustificacion = S(primerHija?.Justificacion),
                 NumeroApi = S(consolidada.NumApi),
-                Conceptos = conceptos
+                Conceptos = conceptos,
+                AplicaRetencion = aplicaRetencion,
+                EsEstatalRecurso = esEstatalRecurso
             };
+
+            CalcularSumasDual(modelo);
 
             return modelo;
         }
 
+        private static decimal ParsearImporteConcepto(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return 0m;
+            var limpio = s.Replace("$", "").Replace(",", "").Trim();
+            return decimal.TryParse(limpio, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0m;
+        }
+
+        private static void CalcularSumasDual(OrdenPagoEditableDTO modelo)
+        {
+            var sumaEstatal = modelo.Conceptos.Where(c => c.EsEstatal == true).Sum(c => ParsearImporteConcepto(c.Subtotal));
+            var sumaFederal = modelo.Conceptos.Where(c => c.EsEstatal == false).Sum(c => ParsearImporteConcepto(c.Subtotal));
+            var ivaEstatal = sumaEstatal * 0.16m;
+            var ivaFederal = sumaFederal * 0.16m;
+            var retEstatal = modelo.AplicaRetencion ? sumaEstatal * 0.005m : 0m;
+
+            modelo.SumaEstatal = sumaEstatal;
+            modelo.SumaFederal = sumaFederal;
+            modelo.IvaEstatal = ivaEstatal;
+            modelo.IvaFederal = ivaFederal;
+            modelo.TotalEstatal = sumaEstatal + ivaEstatal - retEstatal;
+            modelo.TotalFederal = sumaFederal + ivaFederal;
+            modelo.TieneAmbos = sumaEstatal > 0 && sumaFederal > 0;
+        }
+
         /// <summary>Arma los renglones de conceptos a partir del proveedor ganador y los detalles de la requisición.</summary>
-        private async Task<List<OrdenPagoConceptoDTO>> ConstruirConceptosOrdenPagoAsync(TblRequisicion requisicion)
+        private async Task<List<OrdenPagoConceptoDTO>> ConstruirConceptosOrdenPagoAsync(TblRequisicion requisicion, int? idConsolidada = null)
         {
             var idRequisicion = requisicion.IdRequisicion;
             var detalles = await ObtenerDetallesFiltradosAsync(idRequisicion, requisicion.RequiServicio ?? false);
@@ -1365,9 +1393,19 @@ namespace Inventario.BLL.Implementacion
             var proveedorNombre = await ObtenerNombreProveedorGanadorAsync(idRequisicion);
             var ua = S(requisicion.IdDepartamento?.ToString());
 
+            var queryApiPartidas = await _repoApiPartidas.Consultar(
+                idConsolidada.HasValue
+                    ? (System.Linq.Expressions.Expression<Func<TblApiPartida, bool>>)(p => p.IdConsolidada == idConsolidada.Value)
+                    : p => p.IdRequisicion == idRequisicion);
+            var apiPartidas = await queryApiPartidas.ToListAsync();
+            var hayPartidasApi = apiPartidas.Any();
+
             var conceptos = new List<OrdenPagoConceptoDTO>();
-            foreach (var d in detalles)
+            var detalleList = detalles.ToList();
+
+            for (int i = 0; i < detalleList.Count; i++)
             {
+                var d = detalleList[i];
                 cotizacionConCantidad.TryGetValue(d.IdRequisicionDetalle, out var cot);
                 var cantidad = cot.Cantidad > 0
                     ? cot.Cantidad
@@ -1375,6 +1413,17 @@ namespace Inventario.BLL.Implementacion
                 var subtotal = cot.PrecioUnitario * cantidad;
                 var iva = (cot.IVA == true) ? subtotal * 0.16m : 0m;
                 var total = subtotal + iva;
+
+                bool? esEstatal = true;
+                if (hayPartidasApi)
+                {
+                    TblApiPartida? apiPartida = i < apiPartidas.Count ? apiPartidas[i] : null;
+                    if (apiPartida == null)
+                        apiPartida = apiPartidas.FirstOrDefault(p =>
+                            string.Equals(p.ObjetoGasto, d.CogEditable?.ToString() ?? d.NumPartida?.ToString(), StringComparison.OrdinalIgnoreCase));
+                    if (apiPartida != null)
+                        esEstatal = apiPartida.EsEstatal;
+                }
 
                 conceptos.Add(new OrdenPagoConceptoDTO
                 {
@@ -1387,7 +1436,8 @@ namespace Inventario.BLL.Implementacion
                     Concepto = S(d.Descripcion),
                     Subtotal = subtotal > 0 ? FormatearImporte(subtotal) : "",
                     Iva = iva > 0 ? FormatearImporte(iva) : "",
-                    Total = total > 0 ? FormatearImporte(total) : ""
+                    Total = total > 0 ? FormatearImporte(total) : "",
+                    EsEstatal = esEstatal
                 });
             }
 
@@ -1423,12 +1473,18 @@ namespace Inventario.BLL.Implementacion
             return nombre ?? "";
         }
 
-        public async Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo)
+        public async Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo, string? tipoRecurso = null)
         {
             if (modelo.IdRequisicion <= 0 && (modelo.IdConsolidada == null || modelo.IdConsolidada <= 0))
                 throw new ArgumentException("La requisición o consolidada es requerida.", nameof(modelo));
 
             modelo.Conceptos ??= new List<OrdenPagoConceptoDTO>();
+
+            if (!string.IsNullOrWhiteSpace(tipoRecurso))
+            {
+                bool esEstatal = tipoRecurso == "Estatal";
+                modelo.Conceptos = modelo.Conceptos.Where(c => c.EsEstatal == esEstatal).ToList();
+            }
 
             decimal Parsear(string? s)
             {
@@ -1587,7 +1643,12 @@ namespace Inventario.BLL.Implementacion
             tblTot.AddCell(CeldaBlanca(modelo.RetencionIsr, align: TextAlignment.RIGHT));
             tblTot.AddCell(CeldaGris("Tipo de recurso:", align: TextAlignment.LEFT));
             tblTot.AddCell(CeldaBlanca(modelo.TipoRecurso, align: TextAlignment.LEFT));
-            tblTot.AddCell(CeldaGris("Retención 5 al millar:", align: TextAlignment.RIGHT));
+            var labelRet5 = !modelo.AplicaRetencion
+                ? "Retención 5 al millar\n(no aplica)"
+                : (modelo.EsEstatalRecurso == null
+                    ? "Retención 5 al millar\n(solo rec. estatales)"
+                    : "Retención 5 al millar");
+            tblTot.AddCell(CeldaGris(labelRet5, align: TextAlignment.RIGHT));
             tblTot.AddCell(CeldaBlanca(modelo.RetencionCincoAlMillar, align: TextAlignment.RIGHT));
             tblTot.AddCell(CeldaGris("Importe a devengar:", align: TextAlignment.LEFT));
             tblTot.AddCell(CeldaBlanca(modelo.ImporteADevengar, align: TextAlignment.LEFT));
@@ -2450,6 +2511,9 @@ namespace Inventario.BLL.Implementacion
         {
             var requisicion = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                 ?? throw new Exception($"No se encontró la requisición {idRequisicion}.");
+
+            if (requisicion.ConsolidadaId.HasValue)
+                return await ObtenerPedidoEditableConsolidadaAsync(requisicion.ConsolidadaId.Value);
 
             string nombreDepartamento = "";
             if (requisicion.IdDepartamento.HasValue)
@@ -3528,6 +3592,148 @@ namespace Inventario.BLL.Implementacion
                     EsEstatal = esEstatal
                 });
             }
+        }
+
+        public async Task GuardarHistorialOrdenPagoAsync(OrdenPagoEditableDTO modelo, int idUsuario, string? observacion = null)
+        {
+            var vista = modelo.IdConsolidada.HasValue && modelo.IdConsolidada > 0
+                ? await ObtenerOrdenPagoEditableConsolidadaAsync(modelo.IdConsolidada.Value)
+                : await ObtenerOrdenPagoEditableAsync(modelo.IdRequisicion);
+
+            vista.Fecha = modelo.Fecha;
+            vista.AreaSolicitante = modelo.AreaSolicitante;
+            vista.PlenaJustificacion = modelo.PlenaJustificacion;
+            vista.NombreTransferencia = modelo.NombreTransferencia;
+            vista.NumeroApi = modelo.NumeroApi;
+            vista.ClabeInterbancaria = modelo.ClabeInterbancaria;
+            vista.InstitucionBancaria = modelo.InstitucionBancaria;
+            vista.Conceptos = modelo.Conceptos;
+            vista.NumeroContrato = modelo.NumeroContrato;
+            vista.MontoTotalContrato = modelo.MontoTotalContrato;
+            vista.TipoRecurso = modelo.TipoRecurso;
+            vista.ImporteADevengar = modelo.ImporteADevengar;
+            vista.Total = modelo.Total;
+            vista.RetencionIsr = modelo.RetencionIsr;
+            vista.RetencionCincoAlMillar = modelo.RetencionCincoAlMillar;
+            vista.TotalAPagar = modelo.TotalAPagar;
+            vista.AplicaRetencion = modelo.AplicaRetencion;
+            vista.EsEstatalRecurso = modelo.EsEstatalRecurso;
+            vista.Elaboro = modelo.Elaboro;
+            vista.Reviso = modelo.Reviso;
+            vista.Autorizo = modelo.Autorizo;
+            vista.VistoBueno = modelo.VistoBueno;
+
+            var json = System.Text.Json.JsonSerializer.Serialize(vista, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var registro = new TblTablaApiHistorial
+            {
+                IdRequisicion = modelo.IdRequisicion > 0 ? modelo.IdRequisicion : null,
+                IdConsolidada = modelo.IdConsolidada > 0 ? modelo.IdConsolidada : null,
+                IdUsuario = idUsuario,
+                FechaGeneracion = DateTime.Now,
+                DatosJson = json,
+                Observacion = observacion ?? "Orden de Pago"
+            };
+
+            await _repoHistorial.Crear(registro);
+        }
+
+        public async Task<List<OrdenPagoHistorialDTO>> ObtenerHistorialOrdenPagoAsync(int idRequisicion)
+        {
+            var query = await _repoHistorial.Consultar(
+                h => h.IdRequisicion == idRequisicion
+                  && h.Observacion != null
+                  && h.Observacion.StartsWith("Orden de Pago"));
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdRequisicion,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
+            return lista.Select(h => new OrdenPagoHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = h.IdRequisicion ?? 0,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                    .Deserialize<OrdenPagoEditableDTO>(h.DatosJson, opciones)
+            }).ToList();
+        }
+
+        public async Task<List<OrdenPagoHistorialDTO>> ObtenerHistorialOrdenPagoPorConsolidadaAsync(int idConsolidada)
+        {
+            var query = await _repoHistorial.Consultar(
+                h => h.IdConsolidada == idConsolidada
+                  && h.Observacion != null
+                  && h.Observacion.StartsWith("Orden de Pago"));
+
+            var lista = await query
+                .OrderByDescending(h => h.FechaGeneracion)
+                .Include(h => h.IdUsuarioNavigation)
+                .Select(h => new
+                {
+                    h.IdHistorial,
+                    h.IdConsolidada,
+                    h.FechaGeneracion,
+                    h.DatosJson,
+                    h.Observacion,
+                    NombreUsuario = h.IdUsuarioNavigation.Usuario
+                })
+                .ToListAsync();
+
+            var opciones = new System.Text.Json.JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                PropertyNameCaseInsensitive = true
+            };
+
+            return lista.Select(h => new OrdenPagoHistorialDTO
+            {
+                IdHistorial = h.IdHistorial,
+                IdRequisicion = 0,
+                FechaGeneracion = h.FechaGeneracion,
+                NombreUsuario = h.NombreUsuario,
+                Observacion = h.Observacion,
+                Modelo = System.Text.Json.JsonSerializer
+                    .Deserialize<OrdenPagoEditableDTO>(h.DatosJson, opciones)
+            }).ToList();
+        }
+
+        public async Task<bool> ObtenerTieneDualGastosPagar(int idRequisicion)
+        {
+            var query = await _repoApiPartidas.Consultar(p => p.IdRequisicion == idRequisicion);
+            var partidas = await query.ToListAsync();
+            if (!partidas.Any()) return false;
+            return partidas.Any(p => p.EsEstatal == true) && partidas.Any(p => p.EsEstatal == false);
+        }
+
+        public async Task<bool> ObtenerTieneDualGastosPagarConsolidada(int idConsolidada)
+        {
+            var query = await _repoApiPartidas.Consultar(p => p.IdConsolidada == idConsolidada);
+            var partidas = await query.ToListAsync();
+            if (!partidas.Any()) return false;
+            return partidas.Any(p => p.EsEstatal == true) && partidas.Any(p => p.EsEstatal == false);
         }
     }
 }

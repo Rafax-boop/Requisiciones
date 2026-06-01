@@ -652,9 +652,9 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string tipoRecurso)
+        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion = 0, int? idConsolidada = null, IFormFile? archivo = null, string? tipoRecurso = "")
         {
-            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath, tipoRecurso);
+            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath, tipoRecurso ?? "", idConsolidada);
             return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
         }
 
@@ -684,23 +684,12 @@ namespace Inventario.AplicacionWeb.Controllers
 
             List<RequisicionMaestraDTO> listaDTO;
 
-            if (User.IsInRole("7"))
+            if (User.IsInRole("3"))
             {
-                // El analista de materiales (rol 7) solo ve las suyas
-                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-                int.TryParse(idDeptoClaim, out int idDepartamento);
-                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false, idUsuario);
-            }
-            else if (User.IsInRole("1"))
-            {
-                // El usuario final solo ve las de su departamento
-                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-                int.TryParse(idDeptoClaim, out int idDepartamento);
-                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false);
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(null, false, idUsuario);
             }
             else
             {
-                // Roles 3, 4 y otros: sin filtro de departamento
                 listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(null, false);
             }
 
@@ -712,6 +701,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 departamento = r.Departamento,
                 responsable = r.Responsable,
                 cantidadPartidas = r.CantidadPartidas,
+                idEstatus = r.IdEstatus,
                 estatus = r.Estatus
             }).ToList();
 

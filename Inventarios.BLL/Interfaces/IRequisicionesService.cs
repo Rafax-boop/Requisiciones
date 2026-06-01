@@ -49,7 +49,7 @@ namespace Inventario.BLL.Interfaces
         Task<bool> RebotarDocumentos(int idRequisicion, string observaciones,
             List<string> docsObservados, int idUsuario);
 
-        Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath, string tipoRecurso);
+        Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile? archivo, string webRootPath, string tipoRecurso, int? idConsolidada = null);
 
         Task<bool> SubirDocumentoFirmado(int idRequisicion, IFormFile archivo, string webRootPath);
         Task<string?> ObtenerDocumentoFirmado(int idRequisicion);
