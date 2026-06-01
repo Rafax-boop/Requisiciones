@@ -252,7 +252,7 @@
   }
 
   function renderTextoTablaPrincipal(texto, icono, secundaria) {
-    var principal = escapeHtml(texto || "â€”");
+    var principal = escapeHtml(texto || "—");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -270,7 +270,7 @@
   }
 
   function renderFolioTabla(texto, secundaria) {
-    var folio = escapeHtml(texto || "â€”");
+    var folio = escapeHtml(texto || "—");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -643,7 +643,7 @@
     for (var n = 0; n < nums.length; n++) {
       var p = nums[n];
       if (prev !== 0 && p > prev + 1)
-        html += '<span class="almacen-paginacion-ellipsis">â€¦</span>';
+        html += '<span class="almacen-paginacion-ellipsis">…</span>';
       html +=
         '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' +
         (p === paginaRequisicionActual ? "activo" : "") +
@@ -880,11 +880,11 @@
 
             // Solo precargar si el usuario no ha interactuado aún (undefined = intacto)
             if (window._noAplica[idRequi][doc.clave] === undefined) {
-                // No está subido y no está observado â†’ asumir "No aplica"
+                // No está subido y no está observado → asumir "No aplica"
                 window._noAplica[idRequi][doc.clave] = !subido && !observado;
             }
 
-            // Si financieros lo observó pero estaba marcado como "No aplica" â†’ forzar a false
+            // Si financieros lo observó pero estaba marcado como "No aplica" → forzar a false
             if (observado && window._noAplica[idRequi][doc.clave]) {
                 window._noAplica[idRequi][doc.clave] = false;
             }
@@ -1245,7 +1245,7 @@
             document.getElementById("consolidadaTitulo").textContent =
                 data.folioConsolidada;
             document.getElementById("consolidadaSubtitulo").textContent =
-                data.estatus + " Â· Creada el " + data.fechaCreacion + " por " + data.creadoPor;
+                data.estatus + " · Creada el " + data.fechaCreacion + " por " + data.creadoPor;
 
             // â”€â”€ Cards hijas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var hijasHtml = "";
@@ -1280,7 +1280,7 @@
             articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 28
-                    ? textoCompleto.substring(0, 28) + "â€¦"
+                    ? textoCompleto.substring(0, 28) + "…"
                     : textoCompleto || "Sin descripción...";
                 var fullEscapado = textoCompleto.replace(/"/g, "&quot;");
                 var tieneTexto = textoCompleto ? "tiene-texto" : "";
@@ -1361,7 +1361,7 @@
     document.getElementById("pasoModificar").style.display = "block";
   };
 
-  // Abrir modal â€” siempre arranca en paso 1
+  // Abrir modal — siempre arranca en paso 1
   window.abrirModalAsignar = function (idRequi, idEstatus) {
     _idRequiAsignar = idRequi;
     var esDeCompra = idEstatus === 11;
@@ -1801,7 +1801,7 @@
             (data.articulos || []).forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 40
-                    ? textoCompleto.substring(0, 40) + "â€¦"
+                    ? textoCompleto.substring(0, 40) + "…"
                     : textoCompleto || "Sin descripción...";
                 var fullEscapado = escapeHtml(textoCompleto);
                 rows += "<tr>" +
@@ -2118,11 +2118,11 @@
           tr.innerHTML = `
             <td style="text-align:center">${idx + 1}</td>
             <td>${renderFolioTabla(item.numRequi)}</td>
-            <td>${escapeHtml(item.fechaEmision || "â€”")}</td>
-            <td>${renderTextoTablaPrincipal(item.departamento || "â€”", "fa-solid fa-building")}</td>
-            <td>${renderTextoTablaPrincipal(item.responsable || "â€”", "fa-solid fa-user")}</td>
+            <td>${escapeHtml(item.fechaEmision || "—")}</td>
+            <td>${renderTextoTablaPrincipal(item.departamento || "—", "fa-solid fa-building")}</td>
+            <td>${renderTextoTablaPrincipal(item.responsable || "—", "fa-solid fa-user")}</td>
             <td style="text-align:center">${item.cantidadPartidas}</td>
-            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "â€”")}</td>
+            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "—")}</td>
             <td style="text-align:center">
               <button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicion(${item.idRequi})">
                 <i class="fa-solid fa-file"></i>
@@ -2170,12 +2170,12 @@
           tr.setAttribute("data-consolidada-id", c.consolidadaId);
           tr.innerHTML =
             '<td style="text-align:center">' + (idx + 1) + "</td>" +
-            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-            "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
-            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
+            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+            "<td>" + (c.fechaCreacion || "—") + "</td>" +
+            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
             '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
             '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-            "<td>" + (c.estatus || "â€”") + "</td>" +
+            "<td>" + (c.estatus || "—") + "</td>" +
             '<td style="text-align:center">' +
             '<div class="acciones-grupo" style="justify-content:center">' +
             '<button class="btn-accion btn-ver" title="Ver archivos" ' +
@@ -2338,7 +2338,7 @@
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                   <div style="font-weight: 500; color: #333;"><i class="fa-solid fa-file"></i> ${nombre}</div>
-                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} â€¢ ${arch.fechaSubida}</div>
+                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} • ${arch.fechaSubida}</div>
                 </div>
                 <a href="${arch.ruta}" download style="margin-left: 10px; white-space: nowrap; padding: 4px 8px; font-size: 11px; color: #666; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; display: inline-block; transition: all 0.2s; background: #f8f8f8;" onmouseover="this.style.background='#efefef'; this.style.color='#333';" onmouseout="this.style.background='#f8f8f8'; this.style.color='#666';">
                   <i class="fa-solid fa-download" style="font-size: 9px; margin-right: 4px;"></i>Descargar
@@ -2595,11 +2595,13 @@
 
     var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
     var seccionVer = document.getElementById("seccionVerPdfFirmado");
+    var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
 
     if (urlObtenerDocFirmado) {
       var separador = urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&";
       $.get(urlObtenerDocFirmado + separador + "idRequisicion=" + id, function (data) {
         if (data.firmado && data.ruta) {
+          if (btnDescargar) btnDescargar.style.display = "none";
           if (seccionSubir) seccionSubir.style.display = "none";
           if (seccionVer) {
             seccionVer.style.display = "block";
@@ -2607,14 +2609,17 @@
             if (link) link.setAttribute("href", data.ruta);
           }
         } else {
+          if (btnDescargar) btnDescargar.style.display = "block";
           if (seccionSubir) seccionSubir.style.display = "block";
           if (seccionVer) seccionVer.style.display = "none";
         }
       }).fail(function () {
+        if (btnDescargar) btnDescargar.style.display = "block";
         if (seccionSubir) seccionSubir.style.display = "block";
         if (seccionVer) seccionVer.style.display = "none";
       });
     } else {
+      if (btnDescargar) btnDescargar.style.display = "block";
       if (seccionSubir) seccionSubir.style.display = "block";
       if (seccionVer) seccionVer.style.display = "none";
     }
@@ -2661,8 +2666,10 @@
           Swal.fire({ icon: "success", title: "PDF firmado subido correctamente" });
           var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
           var seccionVer = document.getElementById("seccionVerPdfFirmado");
+          var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
           if (seccionSubir) seccionSubir.style.display = "none";
           if (seccionVer) seccionVer.style.display = "block";
+          if (btnDescargar) btnDescargar.style.display = "none";
           $.get(urlObtenerDocFirmado + (urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&") + "idRequisicion=" + id, function (data) {
             if (data.firmado && data.ruta) {
               var link = document.getElementById("linkVerPdfFirmado");
@@ -2705,14 +2712,14 @@
                 var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
 
                 if (idAdquisicion === 1) {
-                    // Adjudicación directa â†’ ReqDirecta
+                    // Adjudicación directa → ReqDirecta
                     var url =
                         (urlDescargarReqDirecta || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
                         requisicionActual;
                     window.open(url, "_blank");
                 } else {
-                    // Cualquier otro â†’ cuadro comparativo
+                    // Cualquier otro → cuadro comparativo
                     var url =
                         (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
@@ -3120,14 +3127,14 @@
                       '</div>' +
                       '<div style="flex:1;min-width:0;">' +
                       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
-                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "â€”") + '</span>' +
+                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "—") + '</span>' +
                       '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
                       'background:#fef9c3;color:#854d0e;font-weight:600;">En proceso</span>' +
                       '</div>' +
                       '<div style="font-size:12px;color:var(--color-text-secondary);">' +
-                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "â€”") +
-                      ' &nbsp;Â·&nbsp; ' +
-                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "â€”") +
+                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "—") +
+                      ' &nbsp;·&nbsp; ' +
+                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "—") +
                       '</div>' +
                       '</div>' +
                       '<div style="text-align:right;flex-shrink:0;">' +
@@ -3180,7 +3187,7 @@
               var esServicio = document.querySelector(".tabla-requi-page")
                   ?.getAttribute("data-tipo-tabla") === "servicios";
               Swal.fire({
-                  title: "Â¿Crear consolidada?",
+                  title: "¿Crear consolidada?",
                   html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
                   icon: "question",
                   showCancelButton: true,
@@ -3361,7 +3368,7 @@
           }),
           success: function () {
             actualizarEstadoProveedoresSeleccionados(true);
-            // Cotizaciones guardadas â†’ ahora cargar opciones ganador desde BD
+            // Cotizaciones guardadas → ahora cargar opciones ganador desde BD
             mostrarPasoGanadorDesdeBD();
           },
           error: function (xhr) {
@@ -3577,7 +3584,7 @@
           partida.descripcionDetallada || partida.nombrePartida || "";
         var descripcionDetalladaCorta =
           descripcionDetallada.length > 28
-            ? descripcionDetallada.substring(0, 28) + "â€¦"
+            ? descripcionDetallada.substring(0, 28) + "…"
             : descripcionDetallada || "Sin descripción...";
         var tieneDescripcionDetallada = descripcionDetallada
           ? "tiene-texto"
@@ -3955,7 +3962,7 @@
               });
 
           } else {
-              // â”€â”€ Modo normal â€” sin cambios â”€â”€
+              // â”€â”€ Modo normal — sin cambios â”€â”€
               $.get(urlObtenerOpcionesGanador, { idRequisicion: _idRequiCotizaciones }, function (opciones) {
                   wizardOpciones = opciones || [];
                   $.get(urlObtenerGanador, { idRequisicion: _idRequiCotizaciones }, function (ganador) {
@@ -4011,16 +4018,16 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi";
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
-                      var folio = escapeHtml(c.folioConsolidada || "â€”");
+                      var folio = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><span class="folio-badge">' + folio + "</span></td>" +
-                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "â€”", "fa-solid fa-user") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "—", "fa-solid fa-user") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -4074,15 +4081,15 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi fila-consolidada";
                       tr.setAttribute("data-consolidada-id", c.consolidadaId);
-                      var folioConsolidado = escapeHtml(c.folioConsolidada || "â€”");
+                      var folioConsolidado = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><div class="tabla-meta-stack"><span class="folio-badge">' + folioConsolidado + '</span><span class="tabla-meta-secundaria"><i class="fa-solid fa-layer-group"></i>Consolidada</span></div></td>' +
-                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequisiciones || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver expediente completo" ' +
@@ -4130,12 +4137,12 @@
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-                          "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
-                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
+                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+                          "<td>" + (c.fechaCreacion || "—") + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + (c.estatus || "â€”") + "</td>" +
+                          "<td>" + (c.estatus || "—") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -4625,7 +4632,7 @@
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "â€¦"
+              ? textoCompleto.substring(0, 28) + "…"
               : textoCompleto || "Sin descripción...";
           var tieneTexto = textoCompleto ? "tiene-texto" : "";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
@@ -4739,7 +4746,7 @@
       );
       if (subtitulo)
         subtitulo.textContent =
-          "Detalle de partidas solicitadas Â· Total: " +
+          "Detalle de partidas solicitadas · Total: " +
           articulos.length +
           " partidas";
 
@@ -4868,7 +4875,7 @@
       // Subtítulo
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente completo Â· " + articulos.length + " partidas";
+        "Expediente completo · " + articulos.length + " partidas";
 
       // Tabla artículos
       var contenido = "";
@@ -4880,7 +4887,7 @@
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "â€¦"
+              ? textoCompleto.substring(0, 28) + "…"
               : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
@@ -5060,7 +5067,7 @@
 
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' +
             numApi +
@@ -5168,7 +5175,7 @@
     $.get(urlExpedienteConsolidada, { idConsolidada: idConsolidada }, function (data) {
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente consolidado Â· " + articulos.length + " partidas | " + data.folioConsolidada;
+        "Expediente consolidado · " + articulos.length + " partidas | " + data.folioConsolidada;
 
       // Agregar columna Requi al inicio del thead
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
@@ -5184,7 +5191,7 @@
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto = textoCompleto.length > 28
-            ? textoCompleto.substring(0, 28) + "â€¦"
+            ? textoCompleto.substring(0, 28) + "…"
             : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
@@ -5292,7 +5299,7 @@
         renderGrupoFin("expGrupoTablaApi", "Tabla de API", tablaApi);
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + "</span>";
         }
@@ -5328,7 +5335,7 @@
 
   window.aceptarExpediente = function () {
     var esConsolidada = window._modoConsolidada && window._idConsolidadaExpediente;
-    var titulo = esConsolidada ? "Â¿Aceptar consolidada?" : "Â¿Aceptar requisición?";
+    var titulo = esConsolidada ? "¿Aceptar consolidada?" : "¿Aceptar requisición?";
     Swal.fire({
       title: titulo,
       text: "Se enviará a proceso de pago.",
@@ -5609,7 +5616,7 @@
           bTxt = "Pendiente";
           break;
       }
-      var tStr = s.time !== "â€”" ? " Â· " + s.time : "";
+      var tStr = s.time !== "—" ? " · " + s.time : "";
 
       var item = document.createElement("div");
       item.className = "mtl-item " + s.state;
@@ -5652,7 +5659,7 @@
     document.getElementById("historialSubtitle").textContent = numRequi;
     configurarDescargaHistorial(idRequi);
     document.getElementById("historialSummary").innerHTML =
-      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historialâ€¦</div>';
+      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial…</div>';
     document.getElementById("historialTl").innerHTML = "";
 
     var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
@@ -5668,10 +5675,10 @@
       var steps = (data || []).map(function (s) {
         return {
           dept: s.dept || s.Dept || "",
-          date: s.date || s.Date || "â€”",
+          date: s.date || s.Date || "—",
           state: s.state || s.State || "pending",
-          by: s.by || s.By || "â€”",
-          time: s.time || s.Time || "â€”",
+          by: s.by || s.By || "—",
+          time: s.time || s.Time || "—",
           action: s.action || s.Action || "",
           comment: s.comment || s.Comment || "",
         };
