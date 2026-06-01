@@ -25,7 +25,7 @@
      data-url-rebotar-documentos="@Url.Action("RebotarDocumentos", "Financieros")"
      data-url-descargar-tabla-api="@Url.Action("DescargarTablaApi", "Financieros")"
      data-url-editar-tabla-api="@Url.Action("EditarTablaApi", "Financieros")"
-     data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
+     
      data-url-obtener-cotizaciones="@Url.Action("ObtenerCotizaciones", "Requisicion")"
       data-url-obtener-archivos="@Url.Action("ObtenerRequisicionesConArchivos", "Financieros")"
       data-url-consolidadas-documentos="@Url.Action("ObtenerConsolidadasConArchivos", "Financieros")"
@@ -36,16 +36,18 @@
      data-url-asignar-consolidada="@Url.Action("AsignarConsolidada", "Financieros")"
      data-url-detalle-consolidada="@Url.Action("ObtenerDetalleConsolidadaFinancieros", "Financieros")"
      data-url-editar-tabla-api-consolidada="@Url.Action("EditarTablaApiConsolidada", "Financieros")"
-     data-url-editar-orden-pago-consolidada="@Url.Action("EditarOrdenPagoConsolidada", "Financieros")"
+     
      data-url-descargar-tabla-api-consolidada="@Url.Action("DescargarTablaApiConsolidada", "Financieros")"
      data-url-atender-consolidada="@Url.Action("AtenderConsolidada", "Financieros")"
      data-url-proceso-pago="@Url.Action("ObtenerProcesoPago", "Financieros")"
       data-url-expediente-consolidada="@Url.Action("ObtenerExpedienteConsolidada", "Consolidada")"
       data-url-obtener-archivos-consolidada="@Url.Action("ObtenerArchivosConsolidada", "Consolidada")"
       data-url-descargar-archivos-consolidada-zip="@Url.Action("DescargarArchivosConsolidadaZip", "Consolidada")"
-      data-url-historial-api="@Url.Action("HistorialTablaApi", "Financieros")"
-      data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
-     data-es-rol9="@(User.IsInRole("9") ? "true" : "false")">
+data-url-historial-api="@Url.Action("HistorialTablaApi", "Financieros")"
+       data-es-rol8="@(User.IsInRole("8") ? "true" : "false")"
+      data-es-rol9="@(User.IsInRole("9") ? "true" : "false")"
+      data-url-tiene-dual-gastos-pagar="@Url.Action("ObtenerTieneDualGastosPagar", "Financieros")"
+      data-url-tiene-dual-gastos-pagar-consolidada="@Url.Action("ObtenerTieneDualGastosPagarConsolidada", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones </h1>
@@ -855,24 +857,6 @@
                                                 title="Abre el editor visual de la Tabla API para la consolidada">
                                             <i class="fa-solid fa-layer-group"></i>
                                             Editar Tabla API (Consolidada)
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn boton-gris mb-2 w-100"
-                                                onclick="editarOrdenPago()"
-                                                title="Abre la orden de pago (Gastos por pagar)">
-                                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                                            Orden de Pago
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn boton-rosa mb-2 w-100"
-                                                id="btnOrdenPagoConsolidada"
-                                                style="display:none;"
-                                                onclick="editarOrdenPagoConsolidada()"
-                                                title="Abre la orden de pago para la consolidada">
-                                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                                            Orden de Pago (Consolidada)
                                         </button>
 
                                         <!-- Input para subir la Tabla API ya firmada (flujo original) -->

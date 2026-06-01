@@ -163,17 +163,33 @@
     var urlEnviarFinancierosDocsConsolidada = container
         ? container.getAttribute("data-url-enviar-financieros-docs-consolidada")
         : "";
-  function obtenerDocumentosProveedor(idAdjudicacion) {
-    var docs = [
-      { clave: "GastosPagar", label: "Formato Gastos por pagar" },
-      { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
-      { clave: "FormatoEntrega", label: "Formato de Entrega" },
-      { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
-      { clave: "INERepresentante", label: "INE Representante legal" },
-      { clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" }
-    ];
+    var urlEditarOrdenPago = container
+        ? container.getAttribute("data-url-editar-orden-pago")
+        : "";
+    var urlEditarOrdenPagoConsolidada = container
+        ? container.getAttribute("data-url-editar-orden-pago-consolidada")
+        : "";
+    var urlTieneDualGastosPagar = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar")
+        : "";
+    var urlTieneDualGastosPagarConsolidada = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar-consolidada")
+        : "";
+  function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
+    var docs = [];
+    if (tieneDualGastosPagar) {
+      docs.push({ clave: "GastosPagar_Estatal", label: "Formato Gastos por pagar (Estatal)" });
+      docs.push({ clave: "GastosPagar_Federal", label: "Formato Gastos por pagar (Federal)" });
+    } else {
+      docs.push({ clave: "GastosPagar", label: "Formato Gastos por pagar" });
+    }
+    docs.push({ clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" });
+    docs.push({ clave: "FormatoEntrega", label: "Formato de Entrega" });
+    docs.push({ clave: "CaratulaBancaria", label: "Caratula Bancaria" });
+    docs.push({ clave: "INERepresentante", label: "INE Representante legal" });
+    docs.push({ clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" });
     if (idAdjudicacion != 1) {
-      docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
+      docs.splice(tieneDualGastosPagar ? 4 : 3, 0, { clave: "Contrato", label: "Contrato" });
     }
     return docs;
   }
@@ -843,8 +859,8 @@
     });
   }
 
-    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada, idAdjudicacion) {
-        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion);
+    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada, idAdjudicacion, tieneDualGastosPagar) {
+        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar);
         esConsolidada = esConsolidada || false;
         var idReal = esConsolidada ? idRequi.replace("cons_", "") : idRequi;
         var idHtml = esConsolidada ? "'" + idRequi + "'" : idRequi;
@@ -1030,14 +1046,15 @@
         var esCons = typeof idRequi === "string" && idRequi.startsWith("cons_");
         var idReal = esCons ? idRequi.replace("cons_", "") : idRequi;
         var idAdq = window._idAdjudicacionExpediente || null;
+        var tieneDual = window._tieneDualGastosPagarExp || false;
 
         if (esCons) {
             $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true, idAdq);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true, idAdq, tieneDual);
             });
         } else {
             $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion, false, idAdq);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, false, idAdq, tieneDual);
             });
         }
     };
@@ -1063,8 +1080,9 @@
         contentType: false,
         success: function () {
           var idAdq = window._idAdjudicacionExpediente || null;
+          var tieneDual = window._tieneDualGastosPagarExp || false;
           $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true, idAdq, tieneDual);
           });
         },
         error: function () {
@@ -1084,8 +1102,9 @@
         contentType: false,
         success: function () {
           var idAdq = window._idAdjudicacionExpediente || null;
+          var tieneDual = window._tieneDualGastosPagarExp || false;
           $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, false, idAdq, tieneDual);
           });
         },
         error: function () {
@@ -1141,7 +1160,11 @@
         if (!archivo) { callback(); return; }
 
         var fd = new FormData();
-        fd.append("idRequisicion", id);
+        if (esConsolidada) {
+            fd.append("idConsolidada", id);
+        } else {
+            fd.append("idRequisicion", id);
+        }
         fd.append("archivo", archivo);
         fd.append("tipoRecurso", tipoRecurso);
         $.ajax({
@@ -1546,13 +1569,11 @@
             data.forEach(function (u) {
                 $select.append('<option value="' + u.id + '">' + u.nombre + "</option>");
             });
-            $select.select2({
-                language: "es",
-                placeholder: "-- Seleccionar responsable --",
-                allowClear: false,
-                minimumResultsForSearch: Infinity,
-                width: "100%",
-            });
+            if (window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.inicializar($select[0], {
+                    placeholder: "-- Seleccionar responsable --"
+                });
+            }
         });
 
         // Reusar el modal de asignar existente, mostrando solo el paso de asignar
@@ -4859,6 +4880,8 @@
     document.getElementById("pedidoSinArchivo").style.display = "none";
     document.getElementById("pedidoModoEdicion").style.display = "none";
     document.getElementById("pedidoModoReadonly").style.display = "none";
+    var seccionOPLimpiar = document.getElementById("seccionOrdenPago");
+    if (seccionOPLimpiar) seccionOPLimpiar.style.display = "none";
     document.getElementById("expGaleriaFotos").innerHTML = "";
     document.getElementById("expSeccionFotos").style.display = "none";
     document.getElementById("tablaExpedienteBody").innerHTML = "";
@@ -5083,8 +5106,13 @@
         var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
         window._idAdjudicacionExpediente = idAdq;
 
-        $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
-          renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
+        $.get(urlTieneDualGastosPagar, { idRequisicion: idRequi }, function (dualData) {
+          var tieneDual = dualData && dualData.tieneDual;
+          window._tieneDualGastosPagarExp = tieneDual;
+
+          $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+            renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual, false, idAdq, tieneDual);
+          });
         });
       });
 
@@ -5141,6 +5169,23 @@
         }
       })();
 
+      (function () {
+        var seccionOP = document.getElementById("seccionOrdenPago");
+        var btnOP = document.getElementById("btnEditarOrdenPago");
+        var idEstatus = data.idEstatus || 0;
+        if (idEstatus === 15 && urlEditarOrdenPago) {
+          seccionOP.style.display = "block";
+          btnOP.textContent = "";
+          btnOP.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago';
+          btnOP.onclick = function () {
+            window.open(urlEditarOrdenPago + "?idRequisicion=" + idRequi, "_blank");
+          };
+        } else {
+          seccionOP.style.display = "none";
+          btnOP.onclick = null;
+        }
+      })();
+
       new bootstrap.Modal(document.getElementById("modalExpediente")).show();
     });
   };
@@ -5160,6 +5205,8 @@
     document.getElementById("pedidoSinArchivo").style.display = "none";
     document.getElementById("pedidoModoEdicion").style.display = "none";
     document.getElementById("pedidoModoReadonly").style.display = "none";
+    var seccionOPLimpiarConsol = document.getElementById("seccionOrdenPago");
+    if (seccionOPLimpiarConsol) seccionOPLimpiarConsol.style.display = "none";
     document.getElementById("expGaleriaFotos").innerHTML = "";
     document.getElementById("expSeccionFotos").style.display = "none";
     document.getElementById("tablaExpedienteBody").innerHTML = "";
@@ -5307,20 +5354,78 @@
         var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
         window._idAdjudicacionExpediente = idAdq;
 
-        $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
-          renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
+        $.get(urlTieneDualGastosPagarConsolidada, { idConsolidada: idConsolidada }, function (dualData) {
+          var tieneDual = dualData && dualData.tieneDual;
+          window._tieneDualGastosPagarExp = tieneDual;
+
+          $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
+            renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true, idAdq, tieneDual);
+          });
         });
       });
 
-      // Pedido de compra consolidado
-      document.getElementById("pedidoModoEdicion").style.display = "flex";
-      document.getElementById("pedidoModoReadonly").style.display = "none";
-        var editarBtn = document.getElementById("btnEditarPedidoCompra");
-        if (editarBtn && urlEditarPedidoConsolidada) {
+// âââ SecciÃ³n Pedido de Compra (consolidada) âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      (function () {
+        var idEstatusConsol = data.idEstatus || 0;
+        var pedidoCompraConsol = data.archivosPedidoCompra || [];
+        var numPedidosConsol = data.numPedidos || [];
+        var esDual = numPedidosConsol.length > 1;
+
+        if (idEstatusConsol === 15 || idEstatusConsol === 18) {
+          document.getElementById("pedidoModoEdicion").style.display = "flex";
+          document.getElementById("pedidoModoReadonly").style.display = "none";
+
+          document.getElementById("pedidoSubirSimple").style.display = esDual ? "none" : "block";
+          document.getElementById("pedidoSubirDual").style.display = esDual ? "block" : "none";
+
+          var inputSimple = document.getElementById("inputSubirPedido");
+          if (inputSimple) inputSimple.value = "";
+          var inputEstatal = document.getElementById("inputSubirPedidoEstatal");
+          if (inputEstatal) inputEstatal.value = "";
+          var inputFederal = document.getElementById("inputSubirPedidoFederal");
+          if (inputFederal) inputFederal.value = "";
+
+          var editarBtn = document.getElementById("btnEditarPedidoCompra");
+          if (editarBtn && urlEditarPedidoConsolidada) {
             editarBtn.onclick = function () {
-                window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
+              window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
             };
+          }
+        } else {
+          document.getElementById("pedidoModoEdicion").style.display = "none";
+          document.getElementById("pedidoModoReadonly").style.display = "block";
+
+          var elGrupoConsol = document.getElementById("expGrupoPedidoCompra");
+          if (pedidoCompraConsol.length && window.ModalAdjuntos) {
+            elGrupoConsol.innerHTML = window.ModalAdjuntos.renderGrupoHtml(
+              "Documento de pedido",
+              pedidoCompraConsol,
+            );
+            window.ModalAdjuntos.enlazarEventosContenedor(elGrupoConsol);
+            document.getElementById("pedidoSinArchivo").style.display = "none";
+          } else {
+            elGrupoConsol.innerHTML = "";
+            document.getElementById("pedidoSinArchivo").style.display = "block";
+          }
         }
+      })();
+
+      // âââ SecciÃ³n Orden de Pago (consolidada) âââââââââââââââââââââââââââââââââââââââââââââââââ
+      (function () {
+        var seccionOP = document.getElementById("seccionOrdenPago");
+        var btnOP = document.getElementById("btnEditarOrdenPago");
+        var idEstatusConsol = data.idEstatus || 0;
+        if (idEstatusConsol === 15 && urlEditarOrdenPagoConsolidada) {
+          seccionOP.style.display = "block";
+          btnOP.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago (Consolidada)';
+          btnOP.onclick = function () {
+            window.open(urlEditarOrdenPagoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
+          };
+        } else {
+          seccionOP.style.display = "none";
+          btnOP.onclick = null;
+        }
+      })();
 
       new bootstrap.Modal(document.getElementById("modalExpediente")).show();
     });
@@ -5697,8 +5802,10 @@
     modalExp.addEventListener("hidden.bs.modal", function () {
       window._modoConsolidada = false;
         window._idConsolidadaExpediente = null;
-        var btnEditar = document.getElementById("btnEditarPedidoCompra");
-        if (btnEditar) btnEditar.onclick = null;
+var btnEditar = document.getElementById("btnEditarPedidoCompra");
+         if (btnEditar) btnEditar.onclick = null;
+         var btnEditarOP = document.getElementById("btnEditarOrdenPago");
+         if (btnEditarOP) btnEditarOP.onclick = null;
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
         theadTr.innerHTML = '<th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>';

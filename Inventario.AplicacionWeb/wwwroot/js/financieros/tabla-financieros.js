@@ -19,9 +19,7 @@
     var urlEditarTablaApi = container
         ? container.getAttribute("data-url-editar-tabla-api")
         : "";
-    var urlEditarOrdenPago = container
-        ? container.getAttribute("data-url-editar-orden-pago")
-        : "";
+    
 
     // Variables al inicio del módulo
     var urlObtenerDocsProveedor = container
@@ -44,8 +42,7 @@
         ? container.getAttribute("data-url-detalle-consolidada") : "";
     var urlEditarTablaApiConsolidada = container
         ? container.getAttribute("data-url-editar-tabla-api-consolidada") : "";
-    var urlEditarOrdenPagoConsolidada = container
-        ? container.getAttribute("data-url-editar-orden-pago-consolidada") : "";
+    
     var urlDescargarTablaApiConsolidada = container
         ? container.getAttribute("data-url-descargar-tabla-api-consolidada") : "";
     var urlAtenderConsolidada = container
@@ -62,31 +59,37 @@
         ? container.getAttribute("data-url-obtener-archivos-consolidada") : "";
     var urlDescargarArchivosConsolidadaZip = container
         ? container.getAttribute("data-url-descargar-archivos-consolidada-zip") : "";
+    var urlTieneDualGastosPagar = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar") : "";
+    var urlTieneDualGastosPagarConsolidada = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar-consolidada") : "";
 
-function obtenerDocumentosProveedor(idAdjudicacion) {
-        var docs = [
-            { clave: "GastosPagar", label: "Formato Gastos por pagar" },
-            { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
-            { clave: "FormatoEntrega", label: "Formato de Entrega" },
-            { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
-            { clave: "INERepresentante", label: "INE Representante legal" },
-            { clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" }
-        ];
+function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
+        var docs = [];
+        if (tieneDualGastosPagar) {
+            docs.push({ clave: "GastosPagar_Estatal", label: "Formato Gastos por pagar (Estatal)" });
+            docs.push({ clave: "GastosPagar_Federal", label: "Formato Gastos por pagar (Federal)" });
+        } else {
+            docs.push({ clave: "GastosPagar", label: "Formato Gastos por pagar" });
+        }
+        docs.push({ clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" });
+        docs.push({ clave: "FormatoEntrega", label: "Formato de Entrega" });
+        docs.push({ clave: "CaratulaBancaria", label: "Caratula Bancaria" });
+        docs.push({ clave: "INERepresentante", label: "INE Representante legal" });
+        docs.push({ clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" });
         if (idAdjudicacion != 1) {
-            docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
+            docs.splice(tieneDualGastosPagar ? 4 : 3, 0, { clave: "Contrato", label: "Contrato" });
         }
         return docs;
     }
-        return docs;
-    }
 
-    function renderDocumentosProveedorFinancieros(docsSubidos, idAdjudicacion) {
+    function renderDocumentosProveedorFinancieros(docsSubidos, idAdjudicacion, tieneDualGastosPagar) {
         var seccion = document.getElementById("expFinDocumentosProveedor");
         var checklist = document.getElementById("expFinChecklistDocs");
         checklist.innerHTML = "";
         if (!docsSubidos.length) { seccion.style.display = "none"; return; }
         seccion.style.display = "block";
-        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion);
+        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar);
         var clavesSubidas = docsSubidos.map(function (d) { return d.nombreArchivo; });
 
         listaDocs.forEach(function (doc) {
@@ -498,40 +501,6 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         window.open(url, "_blank");
     };
 
-    window.editarOrdenPago = function () {
-        if (!requisicionActual) {
-            Swal.fire({
-                icon: "warning",
-                title: "Sin requisición",
-                text: "No se pudo identificar la requisición actual.",
-                confirmButtonText: "Ok",
-                confirmButtonColor: "#fe6291"
-            });
-            return;
-        }
-
-        var url = (urlEditarOrdenPago || "").replace(/\/$/, "")
-            + "?idRequisicion=" + requisicionActual;
-        window.open(url, "_blank");
-    };
-
-    window.editarOrdenPagoConsolidada = function () {
-        if (!consolidadaActual) {
-            Swal.fire({
-                icon: "warning",
-                title: "Sin consolidada",
-                text: "No se pudo identificar la consolidada actual.",
-                confirmButtonText: "Ok",
-                confirmButtonColor: "#fe6291"
-            });
-            return;
-        }
-
-        var url = (urlEditarOrdenPagoConsolidada || "").replace(/\/$/, "")
-            + "?idConsolidada=" + consolidadaActual;
-        window.open(url, "_blank");
-    };
-
     window.descargarTablaApiConsolidada = function () {
         if (!consolidadaActual) {
             Swal.fire({
@@ -669,11 +638,7 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         var btnEditarTablaApi = document.querySelector(".seccionAtender .boton-gris[onclick*='editarTablaApi']");
         if (btnEditarTablaApi) btnEditarTablaApi.style.display = "";
 
-        // Restore "Orden de Pago" button visibility (hidden in consolidada mode)
-        var btnOrdenPago = document.querySelector(".seccionAtender .boton-gris[onclick*='editarOrdenPago']");
-        if (btnOrdenPago) btnOrdenPago.style.display = "";
-        var btnOrdenPagoConsol = document.getElementById("btnOrdenPagoConsolidada");
-        if (btnOrdenPagoConsol) btnOrdenPagoConsol.style.display = "none";
+        
 
         var isAtender = modo === "atender";
         var isReadonly = modo === "readonly";
@@ -1079,7 +1044,12 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
                 $.get(urlObtenerIdAdquisicion, { idConsolidada: id }, function (adqData) {
                     var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
                     window._idAdjudicacionFinancieros = idAdq;
-                    renderDocumentosProveedorFinancieros(data.documentosProveedor || [], idAdq);
+
+                    $.get(urlTieneDualGastosPagarConsolidada, { idConsolidada: id }, function (dualData) {
+                        var tieneDual = dualData && dualData.tieneDual;
+                        window._tieneDualGastosPagarExp = tieneDual;
+                        renderDocumentosProveedorFinancieros(data.documentosProveedor || [], idAdq, tieneDual);
+                    });
                 });
 
                 new bootstrap.Modal(document.getElementById("modalExpedienteFinancieros")).show();
@@ -1243,8 +1213,14 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
             $.get(urlObtenerIdAdquisicion, { idRequisicion: id }, function (adqData) {
                 var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
                 window._idAdjudicacionFinancieros = idAdq;
-                $.get(urlObtenerDocsProveedor, { idRequisicion: id }, function (docs) {
-                    renderDocumentosProveedorFinancieros(docs, idAdq);
+
+                $.get(urlTieneDualGastosPagar, { idRequisicion: id }, function (dualData) {
+                    var tieneDual = dualData && dualData.tieneDual;
+                    window._tieneDualGastosPagarExp = tieneDual;
+
+                    $.get(urlObtenerDocsProveedor, { idRequisicion: id }, function (docs) {
+                        renderDocumentosProveedorFinancieros(docs, idAdq, tieneDual);
+                    });
                 });
             });
 
@@ -2285,11 +2261,7 @@ function obtenerDocumentosProveedor(idAdjudicacion) {
         if (btnIndiv) btnIndiv.style.display = "none";
         var btnConsol = document.getElementById("btnEditarApiConsolidada");
         if (btnConsol) btnConsol.style.display = "block";
-        // Orden de pago: ocultar individual, mostrar consolidada
-        var btnOpIndiv = document.querySelector(".seccionAtender .boton-gris[onclick*='editarOrdenPago']");
-        if (btnOpIndiv) btnOpIndiv.style.display = "none";
-        var btnOpConsol = document.getElementById("btnOrdenPagoConsolidada");
-        if (btnOpConsol) btnOpConsol.style.display = "block";
+        
         var botonesAtender = document.getElementById("botonesAtender");
         if (botonesAtender) botonesAtender.style.display = "flex";
 

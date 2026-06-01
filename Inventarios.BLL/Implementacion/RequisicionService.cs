@@ -1169,11 +1169,15 @@ namespace Inventario.BLL.Implementacion
             return BitConverter.ToString(bytes).Replace("-", "");
         }
     
-        public async Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath, string tipoRecurso)
+        public async Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile? archivo, string webRootPath, string tipoRecurso, int? idConsolidada = null)
         {
             if (archivo == null || archivo.Length == 0) return false;
 
-            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            int? idRequiDest; int? idConsolDest; string carpeta;
+            if (idConsolidada.HasValue)
+                (idRequiDest, idConsolDest, carpeta) = (null, idConsolidada, $"consolidada_{idConsolidada}");
+            else
+                (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
             var rutaBase = Path.Combine(webRootPath, "uploads", "PedidoCompra", carpeta);
             Directory.CreateDirectory(rutaBase);
 

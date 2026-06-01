@@ -129,6 +129,11 @@
                     <span>Pedido de Compra</span>
                     <span class="tab-hist-count">@Model.HistorialPedido.Count</span>
                 </button>
+                <button type="button" class="tab-hist-btn" id="btnTabOrdenPago" onclick="cambiarTab('ordenpago')">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Orden de Pago</span>
+                    <span class="tab-hist-count">@Model.HistorialOrdenPago.Count</span>
+                </button>
             </div>
 
             <div class="tab-hist-panel activo" id="panelApi">
@@ -211,6 +216,51 @@
                                         <td class="text-center">
                                             <button type="button" class="btn boton-rosa btn-sm"
                                                     onclick="verDetallePedido(@h.IdHistorial)"
+                                                    title="Ver detalle">
+                                                <i class="fa-solid fa-eye"></i> Ver
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <div class="tab-hist-panel" id="panelOrdenPago">
+                @if (!Model.HistorialOrdenPago.Any())
+                {
+                    <div class="hist-empty">
+                        <i class="fa-solid fa-folder-open"></i>
+                        No hay órdenes de pago generadas para esta requisición.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive-container">
+                        <table class="tabla-api-editor-grid">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha generación</th>
+                                    <th>Usuario</th>
+                                    <th>Observación</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.HistorialOrdenPago.Count; i++)
+                                {
+                                    var h = Model.HistorialOrdenPago[i];
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td>@h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@h.NombreUsuario</td>
+                                        <td>@(h.Observacion ?? "—")</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn boton-rosa btn-sm"
+                                                    onclick="verDetalleOrdenPago(@h.IdHistorial)"
                                                     title="Ver detalle">
                                                 <i class="fa-solid fa-eye"></i> Ver
                                             </button>
@@ -543,16 +593,220 @@
     </div>
 }
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALES ORDEN DE PAGO                                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+@foreach (var h in Model.HistorialOrdenPago)
+{
+    var m = h.Modelo;
+    if (m == null) continue;
+    var MXop = new System.Globalization.CultureInfo("es-MX");
+
+    <div class="modal fade" id="modal-ordenpago-@h.IdHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content modal-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h5 class="modal-title modal-titulo-premium">
+                            <i class="fa-solid fa-file-invoice"></i> Orden de Pago
+                        </h5>
+                        <p class="modal-subtitulo-premium">
+                            @h.FechaGeneracion?.ToString("dd/MM/yyyy HH:mm") · @h.NombreUsuario
+                        </p>
+                    </div>
+                    <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="modal-body modal-body-premium">
+
+                    <p class="hist-modal-section-title">Datos generales</p>
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Fecha</label>
+                                <input type="text" value="@m.Fecha" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Área solicitante</label>
+                                <input type="text" value="@m.AreaSolicitante" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Plena Justificación</label>
+                                <textarea rows="2" readonly>@m.PlenaJustificacion</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="hist-modal-section-title">Datos de transferencia</p>
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Realizar transferencia a nombre de</label>
+                                <input type="text" value="@m.NombreTransferencia" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Número de API</label>
+                                <input type="text" value="@m.NumeroApi" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Clabe interbancaria</label>
+                                <input type="text" value="@m.ClabeInterbancaria" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Institución bancaria</label>
+                                <input type="text" value="@m.InstitucionBancaria" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="hist-modal-section-title">Conceptos en factura</p>
+                    <div class="container-formulario">
+                        <div class="seccion-completa">
+                            <div class="table-responsive-container">
+                                <table class="tabla-api-editor-grid">
+                                    <thead>
+                                        <tr>
+                                            <th>F.F.</th>
+                                            <th>U.A.</th>
+                                            <th>Proyecto</th>
+                                            <th>COG</th>
+                                            <th>Factura</th>
+                                            <th>Proveedor</th>
+                                            <th>Concepto</th>
+                                            <th>Subtotal</th>
+                                            <th>I.V.A.</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var c in m.Conceptos)
+                                        {
+                                            <tr>
+                                                <td>@c.Ff</td>
+                                                <td>@c.Ua</td>
+                                                <td>@c.Proyecto</td>
+                                                <td>@c.Cog</td>
+                                                <td>@c.Factura</td>
+                                                <td style="text-align:left">@c.Proveedor</td>
+                                                <td style="text-align:left">@c.Concepto</td>
+                                                <td>@c.Subtotal</td>
+                                                <td>@c.Iva</td>
+                                                <td>@c.Total</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="hist-modal-section-title">Contrato y totales</p>
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Importe a devengar</label>
+                                <input type="text" value="@m.ImporteADevengar" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Total</label>
+                                <input type="text" value="@m.Total" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Retención ISR</label>
+                                <input type="text" value="@m.RetencionIsr" readonly />
+                            </div>
+                            @{
+                                var labelRet = !m.AplicaRetencion
+                                    ? "Retención 5 al millar (no aplica)"
+                                    : (m.EsEstatalRecurso == null
+                                        ? "Retención 5 al millar (solo rec. estatales)"
+                                        : "Retención 5 al millar");
+                            }
+                            <div class="formulario-input">
+                                <label>@labelRet</label>
+                                <input type="text" value="@m.RetencionCincoAlMillar" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>TOTAL A PAGAR</label>
+                                <input type="text" value="@m.TotalAPagar" readonly style="font-weight:700;color:var(--rosa-500);" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="hist-modal-section-title">Contrato</p>
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Número de contrato</label>
+                                <input type="text" value="@m.NumeroContrato" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Monto total del contrato</label>
+                                <input type="text" value="@m.MontoTotalContrato" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Tipo de recurso</label>
+                                <input type="text" value="@m.TipoRecurso" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="hist-modal-section-title">Firmas</p>
+                    <div class="container-formulario">
+                        <div class="seccion-1">
+                            <div class="formulario-input">
+                                <label>Elaboró</label>
+                                <input type="text" value="@m.Elaboro" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Revisó</label>
+                                <input type="text" value="@m.Reviso" readonly />
+                            </div>
+                        </div>
+                        <div class="seccion-2">
+                            <div class="formulario-input">
+                                <label>Autorizó</label>
+                                <input type="text" value="@m.Autorizo" readonly />
+                            </div>
+                            <div class="formulario-input">
+                                <label>Visto Bueno</label>
+                                <input type="text" value="@m.VistoBueno" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn boton-gris" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
         (function () {
 
             window.cambiarTab = function (tab) {
                 var esApi = tab === 'api';
+                var esPedido = tab === 'pedido';
+                var esOrdenPago = tab === 'ordenpago';
                 document.getElementById('btnTabApi').classList.toggle('activo', esApi);
-                document.getElementById('btnTabPedido').classList.toggle('activo', !esApi);
+                document.getElementById('btnTabPedido').classList.toggle('activo', esPedido);
+                document.getElementById('btnTabOrdenPago').classList.toggle('activo', esOrdenPago);
                 document.getElementById('panelApi').classList.toggle('activo', esApi);
-                document.getElementById('panelPedido').classList.toggle('activo', !esApi);
+                document.getElementById('panelPedido').classList.toggle('activo', esPedido);
+                document.getElementById('panelOrdenPago').classList.toggle('activo', esOrdenPago);
             };
 
             window.verDetalleApi = function (id) {
@@ -561,6 +815,10 @@
 
             window.verDetallePedido = function (id) {
                 new bootstrap.Modal(document.getElementById('modal-pedido-' + id)).show();
+            };
+
+            window.verDetalleOrdenPago = function (id) {
+                new bootstrap.Modal(document.getElementById('modal-ordenpago-' + id)).show();
             };
 
         })();

@@ -66,8 +66,12 @@
 
      data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")"
      data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")"
-     data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Servicios")"
-     data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Servicios")">
+data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Servicios")"
+      data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Servicios")"
+data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
+       data-url-editar-orden-pago-consolidada="@Url.Action("EditarOrdenPagoConsolidada", "Financieros")"
+       data-url-tiene-dual-gastos-pagar="@Url.Action("ObtenerTieneDualGastosPagar", "Financieros")"
+       data-url-tiene-dual-gastos-pagar-consolidada="@Url.Action("ObtenerTieneDualGastosPagarConsolidada", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -823,6 +827,18 @@
                             Sin documento de pedido subido.
                         </p>
                     </div>
+                </div>
+
+                <!-- Sección Orden de Pago -->
+                <div id="seccionOrdenPago" style="margin-top:12px; display:none;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:10px;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Orden de Pago
+                    </p>
+                    <button type="button" class="btn boton-gris" id="btnEditarOrdenPago"
+                            title="Abre la orden de pago (Gastos por pagar)">
+                        <i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago
+                    </button>
                 </div>
 
                 <div id="expDocumentosProveedor" style="margin-top:20px;">
