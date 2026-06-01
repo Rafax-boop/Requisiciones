@@ -27,7 +27,7 @@ namespace Inventario.BLL.Interfaces
             IFormFile archivo, string webRootPath, int idUsuario);
         Task<List<ArchivoAtencionDTO>> ObtenerDocumentosProveedorConsolidada(int idConsolidada);
         Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null);
-        Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada);
+        Task<List<ArchivoRequisicionDTO>> ObtenerArchivosConsolidada(int idConsolidada);
         Task<bool> AsignarAnalistaConsolidada(int idConsolidada, int idUsuario, int idUsuarioAsignador);
         Task<List<ProgresoPasoDTO>> ObtenerProgresoConsolidada(int idConsolidada);
     }

@@ -58,7 +58,7 @@ namespace Inventario.BLL.Interfaces
 
         Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConArchivos(int? idDepartamento, bool servicio, int? idUsuarioMat = null);
         Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConArchivosTodos(int? idDepartamento, int? idUsuarioFinan = null);
-        Task<List<TblRegistroDiseno>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion);
+        Task<List<ArchivoRequisicionDTO>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion);
         Task<DescargaArchivosRequisicionDTO?> ObtenerDatosDescargaArchivos(int idRequisicion);
     }
 }

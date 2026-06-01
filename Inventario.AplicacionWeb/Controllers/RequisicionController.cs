@@ -750,7 +750,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 tipo = a.Tipo,
                 ruta = a.Ruta,
                 fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
-                nombreArchivo = Path.GetFileName(a.Ruta)
+                nombreArchivo = Path.GetFileName(a.Ruta ?? "")
             }).ToList();
             return Json(resultado);
         }

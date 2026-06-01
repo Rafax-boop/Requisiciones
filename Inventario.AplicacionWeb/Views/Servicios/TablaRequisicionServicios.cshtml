@@ -595,13 +595,16 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             <td>
-                                <div class="acciones-grupo" style="justify-content:center">
-                                    <button class="btn-accion btn-ver" title="Ver expediente completo"
+                                    @if (User.IsInRole("7"))
+                                    {
+                                        <div class="acciones-grupo" style="justify-content:center">
+                                            <button class="btn-accion btn-ver" title="Ver expediente completo"
                                             onclick="verExpediente(@item.IdRequi)">
-                                        <i class="fa-solid fa-folder-open"></i>
-                                    </button>
-                                </div>
-                            </td>
+                                                <i class="fa-solid fa-folder-open"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </td>
                         </tr>
                     }
                     @if (!requisicionesVerificadas.Any())

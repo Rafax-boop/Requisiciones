@@ -680,10 +680,34 @@ namespace Inventario.BLL.Implementacion
             return docs;
         }
 
-        public async Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada)
+        public async Task<List<ArchivoRequisicionDTO>> ObtenerArchivosConsolidada(int idConsolidada)
         {
-            var query = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
-            return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
+            var queryDisenos = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
+            var disenos = await queryDisenos.OrderByDescending(a => a.FechaSubida).ToListAsync();
+
+            var queryFormatos = await _repoFormato.Consultar(f =>
+                f.IdConsolidada == idConsolidada
+                && (f.TipoFormato == "ENTRADA" || f.TipoFormato == "SALIDA")
+                && f.RutaArchivo != "PENDIENTE");
+            var formatos = await queryFormatos.ToListAsync();
+
+            var resultado = new List<ArchivoRequisicionDTO>();
+            resultado.AddRange(disenos.Select(d => new ArchivoRequisicionDTO
+            {
+                Id = d.Id,
+                Tipo = d.Tipo,
+                Ruta = d.Ruta,
+                FechaSubida = d.FechaSubida
+            }));
+            resultado.AddRange(formatos.Select(f => new ArchivoRequisicionDTO
+            {
+                Id = f.IdFormato,
+                Tipo = f.TipoFormato,
+                Ruta = f.RutaArchivo,
+                FechaSubida = f.FechaFormato
+            }));
+
+            return resultado.OrderByDescending(a => a.FechaSubida).ToList();
         }
 
         public async Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null)
