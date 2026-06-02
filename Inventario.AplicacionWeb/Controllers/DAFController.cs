@@ -58,11 +58,11 @@ namespace Inventario.AplicacionWeb.Controllers
 
             var vm = new VMTablaRequisiciones
             {
-                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 16).ToList()),
+                Requisiciones = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 16 && r.ConsolidadaId == null).ToList()),
                 Consolidadas = consolidadas.Where(c => c.IdEstatus == 16).ToList(),
-                RequisicionesAutorizadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 17).ToList()),
-                ConsolidadasAutorizadas = consolidadas.Where(c => c.IdEstatus == 17).ToList(),
-                RequisicionesRechazadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 5).ToList()),
+                RequisicionesAutorizadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => (r.IdEstatus == 17 || r.IdEstatus == 7) && r.ConsolidadaId == null).ToList()),
+                ConsolidadasAutorizadas = consolidadas.Where(c => c.IdEstatus == 17 || c.IdEstatus == 7).ToList(),
+                RequisicionesRechazadas = _mapper.Map<List<VMRequisicionMaestra>>(requisiciones.Where(r => r.IdEstatus == 5 && r.ConsolidadaId == null).ToList()),
                 ConsolidadasRechazadas = consolidadas.Where(c => c.IdEstatus == 5).ToList(),
                 Estatus = await _almacenService.ObtenerEstatus()
             };

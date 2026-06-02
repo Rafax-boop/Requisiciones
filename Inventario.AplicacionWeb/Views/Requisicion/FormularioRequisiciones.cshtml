@@ -291,10 +291,12 @@
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
     <script>
     window.municipiosOpciones = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-        ((List<SelectListItem>)ViewBag.ListaMunicipios).Select(m => new {
-            id = m.Value,
-            nombre = m.Text
-        })
+        ViewBag.ListaMunicipios != null
+            ? ((List<SelectListItem>)ViewBag.ListaMunicipios).Select(m => new {
+                id = m.Value,
+                nombre = m.Text
+            }).Cast<object>()
+            : Enumerable.Empty<object>()
     ));
 </script>
     <script src="~/js/requisicion/formulario-requisiciones.js" asp-append-version="true"></script>

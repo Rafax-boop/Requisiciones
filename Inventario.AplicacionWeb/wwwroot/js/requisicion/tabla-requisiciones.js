@@ -163,17 +163,33 @@
     var urlEnviarFinancierosDocsConsolidada = container
         ? container.getAttribute("data-url-enviar-financieros-docs-consolidada")
         : "";
-  function obtenerDocumentosProveedor(idAdjudicacion) {
-    var docs = [
-      { clave: "GastosPagar", label: "Formato Gastos por pagar" },
-      { clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" },
-      { clave: "FormatoEntrega", label: "Formato de Entrega" },
-      { clave: "CaratulaBancaria", label: "Caratula Bancaria" },
-      { clave: "INERepresentante", label: "INE Representante legal" },
-      { clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" }
-    ];
+    var urlEditarOrdenPago = container
+        ? container.getAttribute("data-url-editar-orden-pago")
+        : "";
+    var urlEditarOrdenPagoConsolidada = container
+        ? container.getAttribute("data-url-editar-orden-pago-consolidada")
+        : "";
+    var urlTieneDualGastosPagar = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar")
+        : "";
+    var urlTieneDualGastosPagarConsolidada = container
+        ? container.getAttribute("data-url-tiene-dual-gastos-pagar-consolidada")
+        : "";
+  function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
+    var docs = [];
+    if (tieneDualGastosPagar) {
+      docs.push({ clave: "GastosPagar_Estatal", label: "Formato Gastos por pagar (Estatal)" });
+      docs.push({ clave: "GastosPagar_Federal", label: "Formato Gastos por pagar (Federal)" });
+    } else {
+      docs.push({ clave: "GastosPagar", label: "Formato Gastos por pagar" });
+    }
+    docs.push({ clave: "CFDI_XML", label: "Comprobante Fiscal Digital (CFDI XML)" });
+    docs.push({ clave: "FormatoEntrega", label: "Formato de Entrega" });
+    docs.push({ clave: "CaratulaBancaria", label: "Caratula Bancaria" });
+    docs.push({ clave: "INERepresentante", label: "INE Representante legal" });
+    docs.push({ clave: "ConstFiscalActualizada", label: "Constancia de situación fiscal actualizada" });
     if (idAdjudicacion != 1) {
-      docs.splice(3, 0, { clave: "Contrato", label: "Contrato" });
+      docs.splice(tieneDualGastosPagar ? 4 : 3, 0, { clave: "Contrato", label: "Contrato" });
     }
     return docs;
   }
@@ -252,7 +268,7 @@
   }
 
   function renderTextoTablaPrincipal(texto, icono, secundaria) {
-    var principal = escapeHtml(texto || "â€”");
+    var principal = escapeHtml(texto || "—");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -270,7 +286,7 @@
   }
 
   function renderFolioTabla(texto, secundaria) {
-    var folio = escapeHtml(texto || "â€”");
+    var folio = escapeHtml(texto || "—");
     var detalle = secundaria ? escapeHtml(secundaria) : "";
 
     return (
@@ -643,7 +659,7 @@
     for (var n = 0; n < nums.length; n++) {
       var p = nums[n];
       if (prev !== 0 && p > prev + 1)
-        html += '<span class="almacen-paginacion-ellipsis">â€¦</span>';
+        html += '<span class="almacen-paginacion-ellipsis">…</span>';
       html +=
         '<button type="button" class="almacen-paginacion-btn almacen-paginacion-num ' +
         (p === paginaRequisicionActual ? "activo" : "") +
@@ -843,8 +859,8 @@
     });
   }
 
-    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada, idAdjudicacion) {
-        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion);
+    function renderChecklist(docsSubidos, idRequi, idEstatus, notaObservacion, esConsolidada, idAdjudicacion, tieneDualGastosPagar) {
+        var listaDocs = obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar);
         esConsolidada = esConsolidada || false;
         var idReal = esConsolidada ? idRequi.replace("cons_", "") : idRequi;
         var idHtml = esConsolidada ? "'" + idRequi + "'" : idRequi;
@@ -880,11 +896,11 @@
 
             // Solo precargar si el usuario no ha interactuado aún (undefined = intacto)
             if (window._noAplica[idRequi][doc.clave] === undefined) {
-                // No está subido y no está observado â†’ asumir "No aplica"
+                // No está subido y no está observado → asumir "No aplica"
                 window._noAplica[idRequi][doc.clave] = !subido && !observado;
             }
 
-            // Si financieros lo observó pero estaba marcado como "No aplica" â†’ forzar a false
+            // Si financieros lo observó pero estaba marcado como "No aplica" → forzar a false
             if (observado && window._noAplica[idRequi][doc.clave]) {
                 window._noAplica[idRequi][doc.clave] = false;
             }
@@ -1030,14 +1046,15 @@
         var esCons = typeof idRequi === "string" && idRequi.startsWith("cons_");
         var idReal = esCons ? idRequi.replace("cons_", "") : idRequi;
         var idAdq = window._idAdjudicacionExpediente || null;
+        var tieneDual = window._tieneDualGastosPagarExp || false;
 
         if (esCons) {
             $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true, idAdq);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, true, idAdq, tieneDual);
             });
         } else {
             $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-                renderChecklist(docs, idRequi, idEstatus, notaObservacion, false, idAdq);
+                renderChecklist(docs, idRequi, idEstatus, notaObservacion, false, idAdq, tieneDual);
             });
         }
     };
@@ -1063,8 +1080,9 @@
         contentType: false,
         success: function () {
           var idAdq = window._idAdjudicacionExpediente || null;
+          var tieneDual = window._tieneDualGastosPagarExp || false;
           $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, true, idAdq, tieneDual);
           });
         },
         error: function () {
@@ -1084,8 +1102,9 @@
         contentType: false,
         success: function () {
           var idAdq = window._idAdjudicacionExpediente || null;
+          var tieneDual = window._tieneDualGastosPagarExp || false;
           $.get(urlObtenerDocsProveedor, { idRequisicion: idReal }, function (docs) {
-            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
+            renderChecklist(docs, idParam, expedienteEstatusActual, expedienteNotaActual, false, idAdq, tieneDual);
           });
         },
         error: function () {
@@ -1141,7 +1160,11 @@
         if (!archivo) { callback(); return; }
 
         var fd = new FormData();
-        fd.append("idRequisicion", id);
+        if (esConsolidada) {
+            fd.append("idConsolidada", id);
+        } else {
+            fd.append("idRequisicion", id);
+        }
         fd.append("archivo", archivo);
         fd.append("tipoRecurso", tipoRecurso);
         $.ajax({
@@ -1245,7 +1268,7 @@
             document.getElementById("consolidadaTitulo").textContent =
                 data.folioConsolidada;
             document.getElementById("consolidadaSubtitulo").textContent =
-                data.estatus + " Â· Creada el " + data.fechaCreacion + " por " + data.creadoPor;
+                data.estatus + " · Creada el " + data.fechaCreacion + " por " + data.creadoPor;
 
             // â”€â”€ Cards hijas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var hijasHtml = "";
@@ -1280,7 +1303,7 @@
             articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 28
-                    ? textoCompleto.substring(0, 28) + "â€¦"
+                    ? textoCompleto.substring(0, 28) + "…"
                     : textoCompleto || "Sin descripción...";
                 var fullEscapado = textoCompleto.replace(/"/g, "&quot;");
                 var tieneTexto = textoCompleto ? "tiene-texto" : "";
@@ -1361,7 +1384,7 @@
     document.getElementById("pasoModificar").style.display = "block";
   };
 
-  // Abrir modal â€” siempre arranca en paso 1
+  // Abrir modal — siempre arranca en paso 1
   window.abrirModalAsignar = function (idRequi, idEstatus) {
     _idRequiAsignar = idRequi;
     var esDeCompra = idEstatus === 11;
@@ -1546,13 +1569,11 @@
             data.forEach(function (u) {
                 $select.append('<option value="' + u.id + '">' + u.nombre + "</option>");
             });
-            $select.select2({
-                language: "es",
-                placeholder: "-- Seleccionar responsable --",
-                allowClear: false,
-                minimumResultsForSearch: Infinity,
-                width: "100%",
-            });
+            if (window.SelectRosaBuscable) {
+                window.SelectRosaBuscable.inicializar($select[0], {
+                    placeholder: "-- Seleccionar responsable --"
+                });
+            }
         });
 
         // Reusar el modal de asignar existente, mostrando solo el paso de asignar
@@ -1801,7 +1822,7 @@
             (data.articulos || []).forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 40
-                    ? textoCompleto.substring(0, 40) + "â€¦"
+                    ? textoCompleto.substring(0, 40) + "…"
                     : textoCompleto || "Sin descripción...";
                 var fullEscapado = escapeHtml(textoCompleto);
                 rows += "<tr>" +
@@ -2118,11 +2139,11 @@
           tr.innerHTML = `
             <td style="text-align:center">${idx + 1}</td>
             <td>${renderFolioTabla(item.numRequi)}</td>
-            <td>${escapeHtml(item.fechaEmision || "â€”")}</td>
-            <td>${renderTextoTablaPrincipal(item.departamento || "â€”", "fa-solid fa-building")}</td>
-            <td>${renderTextoTablaPrincipal(item.responsable || "â€”", "fa-solid fa-user")}</td>
+            <td>${escapeHtml(item.fechaEmision || "—")}</td>
+            <td>${renderTextoTablaPrincipal(item.departamento || "—", "fa-solid fa-building")}</td>
+            <td>${renderTextoTablaPrincipal(item.responsable || "—", "fa-solid fa-user")}</td>
             <td style="text-align:center">${item.cantidadPartidas}</td>
-            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "â€”")}</td>
+            <td>${obtenerBadgeEstatusHtml(item.idEstatus || 0, item.estatus || "—")}</td>
             <td style="text-align:center">
               <button class="btn-accion btn-ver" title="Ver archivos" onclick="verArchivosRequisicion(${item.idRequi})">
                 <i class="fa-solid fa-file"></i>
@@ -2170,12 +2191,12 @@
           tr.setAttribute("data-consolidada-id", c.consolidadaId);
           tr.innerHTML =
             '<td style="text-align:center">' + (idx + 1) + "</td>" +
-            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-            "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
-            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
+            "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+            "<td>" + (c.fechaCreacion || "—") + "</td>" +
+            '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
             '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
             '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-            "<td>" + (c.estatus || "â€”") + "</td>" +
+            "<td>" + (c.estatus || "—") + "</td>" +
             '<td style="text-align:center">' +
             '<div class="acciones-grupo" style="justify-content:center">' +
             '<button class="btn-accion btn-ver" title="Ver archivos" ' +
@@ -2338,7 +2359,7 @@
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                   <div style="font-weight: 500; color: #333;"><i class="fa-solid fa-file"></i> ${nombre}</div>
-                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} â€¢ ${arch.fechaSubida}</div>
+                  <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">${arch.tipo} • ${arch.fechaSubida}</div>
                 </div>
                 <a href="${arch.ruta}" download style="margin-left: 10px; white-space: nowrap; padding: 4px 8px; font-size: 11px; color: #666; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; display: inline-block; transition: all 0.2s; background: #f8f8f8;" onmouseover="this.style.background='#efefef'; this.style.color='#333';" onmouseout="this.style.background='#f8f8f8'; this.style.color='#666';">
                   <i class="fa-solid fa-download" style="font-size: 9px; margin-right: 4px;"></i>Descargar
@@ -2586,8 +2607,9 @@
   if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
   if (filtroEstado) filtroEstado.addEventListener("change", filtrarTabla);
 
-  window.verPdf = function (id) {
+  window.verPdf = function (id, estatus) {
     window._pdfFirmadoIdRequi = id;
+    window._pdfFirmadoEstatus = estatus || 0;
     var inputPdf = document.getElementById("inputPdfFirmado");
     if (inputPdf) inputPdf.value = "";
 
@@ -2595,26 +2617,37 @@
 
     var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
     var seccionVer = document.getElementById("seccionVerPdfFirmado");
+    var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
 
     if (urlObtenerDocFirmado) {
       var separador = urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&";
       $.get(urlObtenerDocFirmado + separador + "idRequisicion=" + id, function (data) {
         if (data.firmado && data.ruta) {
-          if (seccionSubir) seccionSubir.style.display = "none";
           if (seccionVer) {
             seccionVer.style.display = "block";
             var link = document.getElementById("linkVerPdfFirmado");
             if (link) link.setAttribute("href", data.ruta);
           }
+          if (estatus === 3) {
+            // Modificación: mostrar descargar plantilla + ver PDF + subir corregido
+            if (btnDescargar) btnDescargar.style.display = "block";
+            if (seccionSubir) seccionSubir.style.display = "block";
+          } else {
+            if (btnDescargar) btnDescargar.style.display = "none";
+            if (seccionSubir) seccionSubir.style.display = "none";
+          }
         } else {
+          if (btnDescargar) btnDescargar.style.display = "block";
           if (seccionSubir) seccionSubir.style.display = "block";
           if (seccionVer) seccionVer.style.display = "none";
         }
       }).fail(function () {
+        if (btnDescargar) btnDescargar.style.display = "block";
         if (seccionSubir) seccionSubir.style.display = "block";
         if (seccionVer) seccionVer.style.display = "none";
       });
     } else {
+      if (btnDescargar) btnDescargar.style.display = "block";
       if (seccionSubir) seccionSubir.style.display = "block";
       if (seccionVer) seccionVer.style.display = "none";
     }
@@ -2661,8 +2694,15 @@
           Swal.fire({ icon: "success", title: "PDF firmado subido correctamente" });
           var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
           var seccionVer = document.getElementById("seccionVerPdfFirmado");
-          if (seccionSubir) seccionSubir.style.display = "none";
+          var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
           if (seccionVer) seccionVer.style.display = "block";
+          if (btnDescargar) {
+            btnDescargar.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
+          }
+          // Si estatus es 3 (modificación), mantener visible la sección de subir
+          if (seccionSubir) {
+            seccionSubir.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
+          }
           $.get(urlObtenerDocFirmado + (urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&") + "idRequisicion=" + id, function (data) {
             if (data.firmado && data.ruta) {
               var link = document.getElementById("linkVerPdfFirmado");
@@ -2705,14 +2745,14 @@
                 var idAdquisicion = res && res.idAdquisicion ? res.idAdquisicion : null;
 
                 if (idAdquisicion === 1) {
-                    // Adjudicación directa â†’ ReqDirecta
+                    // Adjudicación directa → ReqDirecta
                     var url =
                         (urlDescargarReqDirecta || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
                         requisicionActual;
                     window.open(url, "_blank");
                 } else {
-                    // Cualquier otro â†’ cuadro comparativo
+                    // Cualquier otro → cuadro comparativo
                     var url =
                         (urlDescargarCuadroComparativo || "").replace(/\/$/, "") +
                         "?idRequisicion=" +
@@ -3120,14 +3160,14 @@
                       '</div>' +
                       '<div style="flex:1;min-width:0;">' +
                       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
-                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "â€”") + '</span>' +
+                      '<span style="font-weight:700;font-size:13px;">' + (req.numRequi || "—") + '</span>' +
                       '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' +
                       'background:#fef9c3;color:#854d0e;font-weight:600;">En proceso</span>' +
                       '</div>' +
                       '<div style="font-size:12px;color:var(--color-text-secondary);">' +
-                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "â€”") +
-                      ' &nbsp;Â·&nbsp; ' +
-                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "â€”") +
+                      '<i class="fa-solid fa-building" style="margin-right:4px;"></i>' + (req.departamento || "—") +
+                      ' &nbsp;·&nbsp; ' +
+                      '<i class="fa-solid fa-calendar-days" style="margin-right:4px;"></i>' + (req.fechaEmision || "—") +
                       '</div>' +
                       '</div>' +
                       '<div style="text-align:right;flex-shrink:0;">' +
@@ -3180,7 +3220,7 @@
               var esServicio = document.querySelector(".tabla-requi-page")
                   ?.getAttribute("data-tipo-tabla") === "servicios";
               Swal.fire({
-                  title: "Â¿Crear consolidada?",
+                  title: "¿Crear consolidada?",
                   html: "Se agruparán <strong>" + ids.length + " requisiciones</strong> en una sola.",
                   icon: "question",
                   showCancelButton: true,
@@ -3361,7 +3401,7 @@
           }),
           success: function () {
             actualizarEstadoProveedoresSeleccionados(true);
-            // Cotizaciones guardadas â†’ ahora cargar opciones ganador desde BD
+            // Cotizaciones guardadas → ahora cargar opciones ganador desde BD
             mostrarPasoGanadorDesdeBD();
           },
           error: function (xhr) {
@@ -3577,7 +3617,7 @@
           partida.descripcionDetallada || partida.nombrePartida || "";
         var descripcionDetalladaCorta =
           descripcionDetallada.length > 28
-            ? descripcionDetallada.substring(0, 28) + "â€¦"
+            ? descripcionDetallada.substring(0, 28) + "…"
             : descripcionDetallada || "Sin descripción...";
         var tieneDescripcionDetallada = descripcionDetallada
           ? "tiene-texto"
@@ -3955,7 +3995,7 @@
               });
 
           } else {
-              // â”€â”€ Modo normal â€” sin cambios â”€â”€
+              // â”€â”€ Modo normal — sin cambios â”€â”€
               $.get(urlObtenerOpcionesGanador, { idRequisicion: _idRequiCotizaciones }, function (opciones) {
                   wizardOpciones = opciones || [];
                   $.get(urlObtenerGanador, { idRequisicion: _idRequiCotizaciones }, function (ganador) {
@@ -4011,16 +4051,16 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi";
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
-                      var folio = escapeHtml(c.folioConsolidada || "â€”");
+                      var folio = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><span class="folio-badge">' + folio + "</span></td>" +
-                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "â€”", "fa-solid fa-user") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.creadoPor || "—", "fa-solid fa-user") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -4074,15 +4114,15 @@
                       var tr = document.createElement("tr");
                       tr.className = "fila-requi fila-consolidada";
                       tr.setAttribute("data-consolidada-id", c.consolidadaId);
-                      var folioConsolidado = escapeHtml(c.folioConsolidada || "â€”");
+                      var folioConsolidado = escapeHtml(c.folioConsolidada || "—");
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
                           '<td><div class="tabla-meta-stack"><span class="folio-badge">' + folioConsolidado + '</span><span class="tabla-meta-secundaria"><i class="fa-solid fa-layer-group"></i>Consolidada</span></div></td>' +
-                          "<td>" + escapeHtml(c.fechaCreacion || "â€”") + "</td>" +
-                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "â€”", "fa-solid fa-building") + "</td>" +
+                          "<td>" + escapeHtml(c.fechaCreacion || "—") + "</td>" +
+                          "<td>" + renderTextoTablaPrincipal(c.departamentos || "—", "fa-solid fa-building") + "</td>" +
                           '<td style="text-align:center">' + (c.cantidadRequisiciones || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "â€”") + "</td>" +
+                          "<td>" + obtenerBadgeEstatusHtml(c.idEstatus || 0, c.estatus || "—") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver expediente completo" ' +
@@ -4130,12 +4170,12 @@
                       tr.setAttribute("data-consolidada-id", c.consolidadaID);
                       tr.innerHTML =
                           '<td style="text-align:center">' + (idx + 1) + "</td>" +
-                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "â€”") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
-                          "<td>" + (c.fechaCreacion || "â€”") + "</td>" +
-                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "â€”") + '</span></div></td>' +
+                          "<td><span class=\"folio-badge\">" + (c.folioConsolidada || "—") + "</span> <span style='font-size:10px;color:var(--color-text-secondary);'>(<i class='fa-solid fa-layer-group'></i> Consolidada)</span></td>" +
+                          "<td>" + (c.fechaCreacion || "—") + "</td>" +
+                          '<td><div class="tabla-meta-stack"><span class="tabla-meta-principal"><i class="fa-solid fa-building"></i>' + (c.departamentos || "—") + '</span></div></td>' +
                           '<td style="text-align:center">' + (c.cantidadRequis || 0) + "</td>" +
                           '<td style="text-align:center">' + (c.totalPartidas || 0) + "</td>" +
-                          "<td>" + (c.estatus || "â€”") + "</td>" +
+                          "<td>" + (c.estatus || "—") + "</td>" +
                           '<td style="text-align:center">' +
                           '<div class="acciones-grupo" style="justify-content:center">' +
                           '<button class="btn-accion btn-ver" title="Ver detalle" ' +
@@ -4625,7 +4665,7 @@
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "â€¦"
+              ? textoCompleto.substring(0, 28) + "…"
               : textoCompleto || "Sin descripción...";
           var tieneTexto = textoCompleto ? "tiene-texto" : "";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
@@ -4739,7 +4779,7 @@
       );
       if (subtitulo)
         subtitulo.textContent =
-          "Detalle de partidas solicitadas Â· Total: " +
+          "Detalle de partidas solicitadas · Total: " +
           articulos.length +
           " partidas";
 
@@ -4859,6 +4899,8 @@
     document.getElementById("pedidoSinArchivo").style.display = "none";
     document.getElementById("pedidoModoEdicion").style.display = "none";
     document.getElementById("pedidoModoReadonly").style.display = "none";
+    var seccionOPLimpiar = document.getElementById("seccionOrdenPago");
+    if (seccionOPLimpiar) seccionOPLimpiar.style.display = "none";
     document.getElementById("expGaleriaFotos").innerHTML = "";
     document.getElementById("expSeccionFotos").style.display = "none";
     document.getElementById("tablaExpedienteBody").innerHTML = "";
@@ -4868,7 +4910,7 @@
       // Subtítulo
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente completo Â· " + articulos.length + " partidas";
+        "Expediente completo · " + articulos.length + " partidas";
 
       // Tabla artículos
       var contenido = "";
@@ -4880,7 +4922,7 @@
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto =
             textoCompleto.length > 28
-              ? textoCompleto.substring(0, 28) + "â€¦"
+              ? textoCompleto.substring(0, 28) + "…"
               : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
@@ -5060,7 +5102,7 @@
 
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' +
             numApi +
@@ -5083,8 +5125,13 @@
         var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
         window._idAdjudicacionExpediente = idAdq;
 
-        $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
-          renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual, false, idAdq);
+        $.get(urlTieneDualGastosPagar, { idRequisicion: idRequi }, function (dualData) {
+          var tieneDual = dualData && dualData.tieneDual;
+          window._tieneDualGastosPagarExp = tieneDual;
+
+          $.get(urlObtenerDocsProveedor, { idRequisicion: idRequi }, function (docs) {
+            renderChecklist(docs, idRequi, expedienteEstatusActual, expedienteNotaActual, false, idAdq, tieneDual);
+          });
         });
       });
 
@@ -5141,6 +5188,23 @@
         }
       })();
 
+      (function () {
+        var seccionOP = document.getElementById("seccionOrdenPago");
+        var btnOP = document.getElementById("btnEditarOrdenPago");
+        var idEstatus = data.idEstatus || 0;
+        if (idEstatus === 15 && urlEditarOrdenPago) {
+          seccionOP.style.display = "block";
+          btnOP.textContent = "";
+          btnOP.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago';
+          btnOP.onclick = function () {
+            window.open(urlEditarOrdenPago + "?idRequisicion=" + idRequi, "_blank");
+          };
+        } else {
+          seccionOP.style.display = "none";
+          btnOP.onclick = null;
+        }
+      })();
+
       new bootstrap.Modal(document.getElementById("modalExpediente")).show();
     });
   };
@@ -5160,6 +5224,8 @@
     document.getElementById("pedidoSinArchivo").style.display = "none";
     document.getElementById("pedidoModoEdicion").style.display = "none";
     document.getElementById("pedidoModoReadonly").style.display = "none";
+    var seccionOPLimpiarConsol = document.getElementById("seccionOrdenPago");
+    if (seccionOPLimpiarConsol) seccionOPLimpiarConsol.style.display = "none";
     document.getElementById("expGaleriaFotos").innerHTML = "";
     document.getElementById("expSeccionFotos").style.display = "none";
     document.getElementById("tablaExpedienteBody").innerHTML = "";
@@ -5168,7 +5234,7 @@
     $.get(urlExpedienteConsolidada, { idConsolidada: idConsolidada }, function (data) {
       var articulos = data.articulos || [];
       document.getElementById("expedienteSubtitulo").textContent =
-        "Expediente consolidado Â· " + articulos.length + " partidas | " + data.folioConsolidada;
+        "Expediente consolidado · " + articulos.length + " partidas | " + data.folioConsolidada;
 
       // Agregar columna Requi al inicio del thead
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
@@ -5184,7 +5250,7 @@
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
           var textoCorto = textoCompleto.length > 28
-            ? textoCompleto.substring(0, 28) + "â€¦"
+            ? textoCompleto.substring(0, 28) + "…"
             : textoCompleto || "Sin descripción...";
           var fullEscapado = (textoCompleto || "").replace(/"/g, "&quot;");
           contenido +=
@@ -5292,7 +5358,7 @@
         renderGrupoFin("expGrupoTablaApi", "Tabla de API", tablaApi);
         if (numApi) {
           document.getElementById("expGrupoNumeroApi").innerHTML =
-            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">NÂº API</label>' +
+            '<label style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px;display:block;">Nº API</label>' +
             '<span style="font-size:13px;padding:4px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#166534;">' +
             '<i class="fa-solid fa-hashtag" style="margin-right:4px;"></i>' + numApi + "</span>";
         }
@@ -5307,20 +5373,78 @@
         var idAdq = adqData && adqData.idAdquisicion ? adqData.idAdquisicion : null;
         window._idAdjudicacionExpediente = idAdq;
 
-        $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
-          renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true, idAdq);
+        $.get(urlTieneDualGastosPagarConsolidada, { idConsolidada: idConsolidada }, function (dualData) {
+          var tieneDual = dualData && dualData.tieneDual;
+          window._tieneDualGastosPagarExp = tieneDual;
+
+          $.get(urlObtenerDocsProveedorConsolidada, { idConsolidada: idConsolidada }, function (docs) {
+            renderChecklist(docs, "cons_" + idConsolidada, expedienteEstatusActual, expedienteNotaActual, true, idAdq, tieneDual);
+          });
         });
       });
 
-      // Pedido de compra consolidado
-      document.getElementById("pedidoModoEdicion").style.display = "flex";
-      document.getElementById("pedidoModoReadonly").style.display = "none";
-        var editarBtn = document.getElementById("btnEditarPedidoCompra");
-        if (editarBtn && urlEditarPedidoConsolidada) {
+// âââ SecciÃ³n Pedido de Compra (consolidada) âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      (function () {
+        var idEstatusConsol = data.idEstatus || 0;
+        var pedidoCompraConsol = data.archivosPedidoCompra || [];
+        var numPedidosConsol = data.numPedidos || [];
+        var esDual = numPedidosConsol.length > 1;
+
+        if (idEstatusConsol === 15 || idEstatusConsol === 18) {
+          document.getElementById("pedidoModoEdicion").style.display = "flex";
+          document.getElementById("pedidoModoReadonly").style.display = "none";
+
+          document.getElementById("pedidoSubirSimple").style.display = esDual ? "none" : "block";
+          document.getElementById("pedidoSubirDual").style.display = esDual ? "block" : "none";
+
+          var inputSimple = document.getElementById("inputSubirPedido");
+          if (inputSimple) inputSimple.value = "";
+          var inputEstatal = document.getElementById("inputSubirPedidoEstatal");
+          if (inputEstatal) inputEstatal.value = "";
+          var inputFederal = document.getElementById("inputSubirPedidoFederal");
+          if (inputFederal) inputFederal.value = "";
+
+          var editarBtn = document.getElementById("btnEditarPedidoCompra");
+          if (editarBtn && urlEditarPedidoConsolidada) {
             editarBtn.onclick = function () {
-                window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
+              window.open(urlEditarPedidoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
             };
+          }
+        } else {
+          document.getElementById("pedidoModoEdicion").style.display = "none";
+          document.getElementById("pedidoModoReadonly").style.display = "block";
+
+          var elGrupoConsol = document.getElementById("expGrupoPedidoCompra");
+          if (pedidoCompraConsol.length && window.ModalAdjuntos) {
+            elGrupoConsol.innerHTML = window.ModalAdjuntos.renderGrupoHtml(
+              "Documento de pedido",
+              pedidoCompraConsol,
+            );
+            window.ModalAdjuntos.enlazarEventosContenedor(elGrupoConsol);
+            document.getElementById("pedidoSinArchivo").style.display = "none";
+          } else {
+            elGrupoConsol.innerHTML = "";
+            document.getElementById("pedidoSinArchivo").style.display = "block";
+          }
         }
+      })();
+
+      // âââ SecciÃ³n Orden de Pago (consolidada) âââââââââââââââââââââââââââââââââââââââââââââââââ
+      (function () {
+        var seccionOP = document.getElementById("seccionOrdenPago");
+        var btnOP = document.getElementById("btnEditarOrdenPago");
+        var idEstatusConsol = data.idEstatus || 0;
+        if (idEstatusConsol === 15 && urlEditarOrdenPagoConsolidada) {
+          seccionOP.style.display = "block";
+          btnOP.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago (Consolidada)';
+          btnOP.onclick = function () {
+            window.open(urlEditarOrdenPagoConsolidada + "?idConsolidada=" + idConsolidada, "_blank");
+          };
+        } else {
+          seccionOP.style.display = "none";
+          btnOP.onclick = null;
+        }
+      })();
 
       new bootstrap.Modal(document.getElementById("modalExpediente")).show();
     });
@@ -5328,7 +5452,7 @@
 
   window.aceptarExpediente = function () {
     var esConsolidada = window._modoConsolidada && window._idConsolidadaExpediente;
-    var titulo = esConsolidada ? "Â¿Aceptar consolidada?" : "Â¿Aceptar requisición?";
+    var titulo = esConsolidada ? "¿Aceptar consolidada?" : "¿Aceptar requisición?";
     Swal.fire({
       title: titulo,
       text: "Se enviará a proceso de pago.",
@@ -5609,7 +5733,7 @@
           bTxt = "Pendiente";
           break;
       }
-      var tStr = s.time !== "â€”" ? " Â· " + s.time : "";
+      var tStr = s.time !== "—" ? " · " + s.time : "";
 
       var item = document.createElement("div");
       item.className = "mtl-item " + s.state;
@@ -5652,7 +5776,7 @@
     document.getElementById("historialSubtitle").textContent = numRequi;
     configurarDescargaHistorial(idRequi);
     document.getElementById("historialSummary").innerHTML =
-      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historialâ€¦</div>';
+      '<div style="text-align:center;color:#888;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial…</div>';
     document.getElementById("historialTl").innerHTML = "";
 
     var modal = new bootstrap.Modal(document.getElementById("modalHistorial"));
@@ -5668,10 +5792,10 @@
       var steps = (data || []).map(function (s) {
         return {
           dept: s.dept || s.Dept || "",
-          date: s.date || s.Date || "â€”",
+          date: s.date || s.Date || "—",
           state: s.state || s.State || "pending",
-          by: s.by || s.By || "â€”",
-          time: s.time || s.Time || "â€”",
+          by: s.by || s.By || "—",
+          time: s.time || s.Time || "—",
           action: s.action || s.Action || "",
           comment: s.comment || s.Comment || "",
         };
@@ -5697,8 +5821,10 @@
     modalExp.addEventListener("hidden.bs.modal", function () {
       window._modoConsolidada = false;
         window._idConsolidadaExpediente = null;
-        var btnEditar = document.getElementById("btnEditarPedidoCompra");
-        if (btnEditar) btnEditar.onclick = null;
+var btnEditar = document.getElementById("btnEditarPedidoCompra");
+         if (btnEditar) btnEditar.onclick = null;
+         var btnEditarOP = document.getElementById("btnEditarOrdenPago");
+         if (btnEditarOP) btnEditarOP.onclick = null;
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
         theadTr.innerHTML = '<th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripci\u00f3n</th><th>Descripci\u00f3n Detallada</th>';

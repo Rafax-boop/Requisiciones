@@ -22,6 +22,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblRegistroDiseno> _repoDiseno;
         private readonly IGenericRepository<TblFormato> _repoFormato;
         private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repoMovimiento;
+        private readonly IGenericRepository<TblPedido> _repoPedido;
 
         public ConsolidadaService(
             IGenericRepository<TblRequisicion> repoRequisicion,
@@ -31,7 +32,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblEstatus> repoEstatus,
             IGenericRepository<TblRegistroDiseno> repoDiseno,
             IGenericRepository<TblFormato> repoFormato,
-            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento)
+            IGenericRepository<TblRequisicionDetalleMovimiento> repoMovimiento,
+            IGenericRepository<TblPedido> repoPedido)
         {
             _repoRequisicion = repoRequisicion;
             _repoConsolidada = repoConsolidada;
@@ -41,6 +43,7 @@ namespace Inventario.BLL.Implementacion
             _repoDiseno = repoDiseno;
             _repoFormato = repoFormato;
             _repoMovimiento = repoMovimiento;
+            _repoPedido = repoPedido;
         }
 
         public async Task<List<RequisicionMaestraDTO>> ObtenerRequisicionesConsolidables()
@@ -564,6 +567,9 @@ namespace Inventario.BLL.Implementacion
             var docsQuery = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
             var docs = await docsQuery.ToListAsync();
 
+            var queryPedidos = await _repoPedido.Consultar(p => p.IdConsolidada == idConsolidada);
+            var numPedidos = await queryPedidos.Select(p => p.TipoRecurso).Distinct().ToListAsync();
+
             return new ConsolidadaExpedienteDTO
             {
                 ConsolidadaId = consolidada.ConsolidadaId,
@@ -601,7 +607,8 @@ namespace Inventario.BLL.Implementacion
                 DocumentosProveedor = docs
                     .Where(f => f.Tipo.StartsWith("proveedor_"))
                     .Select(f => new ArchivoAtencionDTO { Ruta = f.Ruta, NombreArchivo = f.Tipo.Replace("proveedor_", "") })
-                    .ToList()
+                    .ToList(),
+                NumPedidos = numPedidos
             };
         }
 
@@ -673,10 +680,34 @@ namespace Inventario.BLL.Implementacion
             return docs;
         }
 
-        public async Task<List<TblRegistroDiseno>> ObtenerArchivosConsolidada(int idConsolidada)
+        public async Task<List<ArchivoRequisicionDTO>> ObtenerArchivosConsolidada(int idConsolidada)
         {
-            var query = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
-            return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
+            var queryDisenos = await _repoDiseno.Consultar(f => f.IdConsolidada == idConsolidada);
+            var disenos = await queryDisenos.OrderByDescending(a => a.FechaSubida).ToListAsync();
+
+            var queryFormatos = await _repoFormato.Consultar(f =>
+                f.IdConsolidada == idConsolidada
+                && (f.TipoFormato == "ENTRADA" || f.TipoFormato == "SALIDA")
+                && f.RutaArchivo != "PENDIENTE");
+            var formatos = await queryFormatos.ToListAsync();
+
+            var resultado = new List<ArchivoRequisicionDTO>();
+            resultado.AddRange(disenos.Select(d => new ArchivoRequisicionDTO
+            {
+                Id = d.Id,
+                Tipo = d.Tipo,
+                Ruta = d.Ruta,
+                FechaSubida = d.FechaSubida
+            }));
+            resultado.AddRange(formatos.Select(f => new ArchivoRequisicionDTO
+            {
+                Id = f.IdFormato,
+                Tipo = f.TipoFormato,
+                Ruta = f.RutaArchivo,
+                FechaSubida = f.FechaFormato
+            }));
+
+            return resultado.OrderByDescending(a => a.FechaSubida).ToList();
         }
 
         public async Task<List<ConsolidadaDTO>> ObtenerConsolidadasConArchivos(bool? servicio = null, int? idUsuarioMat = null, int? idUsuarioFinan = null)

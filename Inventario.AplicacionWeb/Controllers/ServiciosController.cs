@@ -200,6 +200,12 @@ namespace Inventario.AplicacionWeb.Controllers
 
             vm.ObservacionesBitacora = await _requisicionesService.ObtenerObservacionesModificacion(id);
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisicionServicios", vm);
         }
@@ -221,6 +227,12 @@ namespace Inventario.AplicacionWeb.Controllers
                 return RedirectToAction("TablaRequisicionServicios", "Servicios");
             }
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             return View("FormularioRequisicionServicios", modelo);
         }
 
@@ -411,10 +423,6 @@ namespace Inventario.AplicacionWeb.Controllers
         [HttpGet]
         public async Task<JsonResult> ObtenerRequisicionesConArchivos()
         {
-            var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-            if (string.IsNullOrEmpty(idDeptoClaim) || !int.TryParse(idDeptoClaim, out int idDepartamento))
-                return Json(new { requisiciones = new List<object>() });
-
             var idUsuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(idUsuarioClaim) || !int.TryParse(idUsuarioClaim, out int idUsuario))
                 return Json(new { requisiciones = new List<object>() });
@@ -423,11 +431,11 @@ namespace Inventario.AplicacionWeb.Controllers
 
             if (User.IsInRole("7"))
             {
-                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(idDepartamento, true, idUsuario);
+                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(null, true, idUsuario);
             }
             else
             {
-                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(idDepartamento, true);
+                listaDTO = await _requisicionesService.ObtenerRequisicionesConArchivos(null, true);
             }
 
             var requisiciones = listaDTO.Select(r => new
@@ -438,6 +446,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 departamento = r.Departamento,
                 responsable = r.Responsable,
                 cantidadPartidas = r.CantidadPartidas,
+                idEstatus = r.IdEstatus,
                 estatus = r.Estatus
             }).ToList();
 

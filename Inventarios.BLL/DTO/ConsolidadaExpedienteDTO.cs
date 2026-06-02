@@ -23,6 +23,8 @@ namespace Inventario.BLL.DTO
         public List<ArchivoAtencionDTO> ArchivosPedidoCompra { get; set; } = new();
 
         public List<ArchivoAtencionDTO> DocumentosProveedor { get; set; } = new();
+
+        public List<string> NumPedidos { get; set; } = new();
         public string? Observaciones { get; set; }
     }
 }

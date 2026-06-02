@@ -1169,11 +1169,15 @@ namespace Inventario.BLL.Implementacion
             return BitConverter.ToString(bytes).Replace("-", "");
         }
     
-        public async Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string webRootPath, string tipoRecurso)
+        public async Task<bool> SubirDocumentoPedido(int idRequisicion, IFormFile? archivo, string webRootPath, string tipoRecurso, int? idConsolidada = null)
         {
             if (archivo == null || archivo.Length == 0) return false;
 
-            var (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
+            int? idRequiDest; int? idConsolDest; string carpeta;
+            if (idConsolidada.HasValue)
+                (idRequiDest, idConsolDest, carpeta) = (null, idConsolidada, $"consolidada_{idConsolidada}");
+            else
+                (idRequiDest, idConsolDest, carpeta) = await ResolverDestino(idRequisicion);
             var rutaBase = Path.Combine(webRootPath, "uploads", "PedidoCompra", carpeta);
             Directory.CreateDirectory(rutaBase);
 
@@ -1346,15 +1350,50 @@ namespace Inventario.BLL.Implementacion
             return resultado;
         }
 
-        public async Task<List<TblRegistroDiseno>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion)
+        public async Task<List<ArchivoRequisicionDTO>> ObtenerTodosLosArchivosDeRequisicion(int idRequisicion)
         {
             var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion);
-            IQueryable<TblRegistroDiseno> query;
-            if (req?.ConsolidadaId != null)
-                query = await _repositoryDisenos.Consultar(a => a.IdConsolidada == req.ConsolidadaId);
+            var consolidadaId = req?.ConsolidadaId;
+
+            IQueryable<TblRegistroDiseno> queryDisenos;
+            if (consolidadaId != null)
+                queryDisenos = await _repositoryDisenos.Consultar(a => a.IdConsolidada == consolidadaId);
             else
-                query = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
-            return await query.OrderByDescending(a => a.FechaSubida).ToListAsync();
+                queryDisenos = await _repositoryDisenos.Consultar(a => a.IdRequisicion == idRequisicion);
+
+            var disenos = await queryDisenos.OrderByDescending(a => a.FechaSubida).ToListAsync();
+
+            IQueryable<TblFormato> queryFormatos;
+            if (consolidadaId != null)
+                queryFormatos = await _repoFormato.Consultar(f =>
+                    f.IdConsolidada == consolidadaId
+                    && (f.TipoFormato == "ENTRADA" || f.TipoFormato == "SALIDA")
+                    && f.RutaArchivo != "PENDIENTE");
+            else
+                queryFormatos = await _repoFormato.Consultar(f =>
+                    f.IdRequisicion == idRequisicion
+                    && (f.TipoFormato == "ENTRADA" || f.TipoFormato == "SALIDA")
+                    && f.RutaArchivo != "PENDIENTE");
+
+            var formatos = await queryFormatos.ToListAsync();
+
+            var resultado = new List<ArchivoRequisicionDTO>();
+            resultado.AddRange(disenos.Select(d => new ArchivoRequisicionDTO
+            {
+                Id = d.Id,
+                Tipo = d.Tipo,
+                Ruta = d.Ruta,
+                FechaSubida = d.FechaSubida
+            }));
+            resultado.AddRange(formatos.Select(f => new ArchivoRequisicionDTO
+            {
+                Id = f.IdFormato,
+                Tipo = f.TipoFormato,
+                Ruta = f.RutaArchivo,
+                FechaSubida = f.FechaFormato
+            }));
+
+            return resultado.OrderByDescending(a => a.FechaSubida).ToList();
         }
 
         public async Task<DescargaArchivosRequisicionDTO?> ObtenerDatosDescargaArchivos(int idRequisicion)

@@ -428,7 +428,7 @@ namespace Inventario.AplicacionWeb.Controllers
             }
         }
 
-        [HttpPost]
+[HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GenerarOrdenPago([FromForm] OrdenPagoEditableDTO modelo)
         {
@@ -442,19 +442,27 @@ namespace Inventario.AplicacionWeb.Controllers
                 else
                     await _financierosService.AsegurarNumeroApiAsync(modelo.IdRequisicion);
 
-                var bytes = await _financierosService.GenerarOrdenPagoAsync(modelo);
+                var tipoRecurso = modelo.TipoRecurso ?? "";
+                var bytes = await _financierosService.GenerarOrdenPagoAsync(modelo, tipoRecurso);
+
+                int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var obs = string.IsNullOrWhiteSpace(tipoRecurso)
+                    ? $"Orden de Pago generada el {DateTime.Now:dd/MM/yyyy HH:mm}"
+                    : $"Orden de Pago {tipoRecurso} generada el {DateTime.Now:dd/MM/yyyy HH:mm}";
+                await _financierosService.GuardarHistorialOrdenPagoAsync(modelo, idUsuario, obs);
 
                 var sufijo = modelo.IdConsolidada > 0
                     ? $"Consolidada_{modelo.IdConsolidada}"
                     : $"{modelo.IdRequisicion}";
-                var nombreArchivo = $"OrdenPago_{sufijo}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                var sufijoTipo = string.IsNullOrWhiteSpace(tipoRecurso) ? "" : $"_{tipoRecurso}";
+                var nombreArchivo = $"OrdenPago_{sufijo}{sufijoTipo}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(bytes, "application/pdf", nombreArchivo);
             }
             catch (Exception ex)
             {
                 var inner = ex.InnerException?.Message ?? "sin inner";
                 return StatusCode(500, $"Error: {ex.Message} | Inner: {inner}");
-            }
+}
         }
 
         [HttpGet]
@@ -468,7 +476,8 @@ namespace Inventario.AplicacionWeb.Controllers
                     IdConsolidada = idConsolidada,
                     NumRequisicion = consolidada?.FolioConsolidada ?? "",
                     HistorialTablaApi = await _financierosService.ObtenerHistorialTablaApiPorConsolidadaAsync(idConsolidada),
-                    HistorialPedido = await _financierosService.ObtenerHistorialPedidoPorConsolidadaAsync(idConsolidada)
+                    HistorialPedido = await _financierosService.ObtenerHistorialPedidoPorConsolidadaAsync(idConsolidada),
+                    HistorialOrdenPago = await _financierosService.ObtenerHistorialOrdenPagoPorConsolidadaAsync(idConsolidada)
                 };
                 return View(vm);
             }
@@ -479,7 +488,8 @@ namespace Inventario.AplicacionWeb.Controllers
                 IdRequisicion = idRequisicion,
                 NumRequisicion = requi?.NumRequisicion ?? "",
                 HistorialTablaApi = await _financierosService.ObtenerHistorialTablaApiAsync(idRequisicion),
-                HistorialPedido = await _financierosService.ObtenerHistorialPedidoAsync(idRequisicion)
+                HistorialPedido = await _financierosService.ObtenerHistorialPedidoAsync(idRequisicion),
+                HistorialOrdenPago = await _financierosService.ObtenerHistorialOrdenPagoAsync(idRequisicion)
             };
             return View(vm2);
         }
@@ -722,6 +732,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 departamento = r.Departamento,
                 responsable = r.Responsable,
                 cantidadPartidas = r.CantidadPartidas,
+                idEstatus = r.IdEstatus,
                 estatus = r.Estatus
             }).ToList();
 
@@ -777,7 +788,7 @@ namespace Inventario.AplicacionWeb.Controllers
             return $"Requi-{idRequisicion}-{tipoAbreviado}{extension}";
         }
 
-        private string ObtenerAbreviaturaTipo(string tipo)
+private string ObtenerAbreviaturaTipo(string tipo)
         {
             if (string.IsNullOrEmpty(tipo)) return "Doc";
 
@@ -788,11 +799,25 @@ namespace Inventario.AplicacionWeb.Controllers
                 var t when t.Contains("memo") || t.Contains("pago") => "Memo",
                 var t when t.Contains("domicilio") => "CompDom",
                 var t when t.Contains("acta") => "Acta",
-                var t when t.Contains("factura") => "Fact",
+                var t when t.Contains("factura") => "Factura",
                 var t when t.Contains("pedido") => "Pedido",
                 var t when t.Contains("cotizacion") || t.Contains("cotización") => "Cotiz",
                 _ => tipo.Replace("proveedor_", "").Substring(0, Math.Min(5, tipo.Length))
             };
+        }
+
+[HttpGet]
+        public async Task<IActionResult> ObtenerTieneDualGastosPagar(int idRequisicion)
+        {
+            var tieneDual = await _financierosService.ObtenerTieneDualGastosPagar(idRequisicion);
+            return Ok(new { tieneDual });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerTieneDualGastosPagarConsolidada(int idConsolidada)
+        {
+            var tieneDual = await _financierosService.ObtenerTieneDualGastosPagarConsolidada(idConsolidada);
+            return Ok(new { tieneDual });
         }
     }
 }

@@ -350,6 +350,12 @@ namespace Inventario.AplicacionWeb.Controllers
 
             vm.ObservacionesBitacora = await _requisicionService.ObtenerObservacionesModificacion(id);
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisiciones", vm);
         }
@@ -368,6 +374,12 @@ namespace Inventario.AplicacionWeb.Controllers
                 return RedirectToAction("TablaRequisiciones", "Requisicion");
             }
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisiciones", modelo);
         }
@@ -652,9 +664,9 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion, IFormFile archivo, string tipoRecurso)
+        public async Task<IActionResult> SubirDocumentoPedido(int idRequisicion = 0, int? idConsolidada = null, IFormFile? archivo = null, string? tipoRecurso = "")
         {
-            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath, tipoRecurso);
+            var ok = await _requisicionService.SubirDocumentoPedido(idRequisicion, archivo, _webHostEnvironment.WebRootPath, tipoRecurso ?? "", idConsolidada);
             return ok ? Ok(new { success = true }) : BadRequest(new { success = false });
         }
 
@@ -684,23 +696,12 @@ namespace Inventario.AplicacionWeb.Controllers
 
             List<RequisicionMaestraDTO> listaDTO;
 
-            if (User.IsInRole("7"))
+            if (User.IsInRole("3"))
             {
-                // El analista de materiales (rol 7) solo ve las suyas
-                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-                int.TryParse(idDeptoClaim, out int idDepartamento);
-                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false, idUsuario);
-            }
-            else if (User.IsInRole("1"))
-            {
-                // El usuario final solo ve las de su departamento
-                var idDeptoClaim = User.FindFirst("IdDepartamento")?.Value;
-                int.TryParse(idDeptoClaim, out int idDepartamento);
-                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(idDepartamento, false);
+                listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(null, false, idUsuario);
             }
             else
             {
-                // Roles 3, 4 y otros: sin filtro de departamento
                 listaDTO = await _requisicionService.ObtenerRequisicionesConArchivos(null, false);
             }
 
@@ -712,6 +713,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 departamento = r.Departamento,
                 responsable = r.Responsable,
                 cantidadPartidas = r.CantidadPartidas,
+                idEstatus = r.IdEstatus,
                 estatus = r.Estatus
             }).ToList();
 
@@ -760,7 +762,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 tipo = a.Tipo,
                 ruta = a.Ruta,
                 fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
-                nombreArchivo = Path.GetFileName(a.Ruta)
+                nombreArchivo = Path.GetFileName(a.Ruta ?? "")
             }).ToList();
             return Json(resultado);
         }

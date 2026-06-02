@@ -26,13 +26,18 @@ namespace Inventario.BLL.Interfaces
         // orden de pago (gastos por pagar)
         Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableAsync(int idRequisicion);
         Task<OrdenPagoEditableDTO> ObtenerOrdenPagoEditableConsolidadaAsync(int idConsolidada);
-        Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo);
+        Task<byte[]> GenerarOrdenPagoAsync(OrdenPagoEditableDTO modelo, string? tipoRecurso = null);
 
         Task<PedidoVistaDTO> ObtenerPedidoEditableAsync(int idRequisicion);
         Task<byte[]> GenerarPedidoPdfAsync(PedidoVistaDTO form, string webRootPath, string tipoRecurso);
         Task GuardarHistorialPedidoAsync(PedidoVistaDTO modelo, int idUsuario, string? observacion = null);
         Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoAsync(int idRequisicion);
         Task<List<PedidoHistorialDTO>> ObtenerHistorialPedidoPorConsolidadaAsync(int idConsolidada);
+
+        // orden de pago
+        Task GuardarHistorialOrdenPagoAsync(OrdenPagoEditableDTO modelo, int idUsuario, string? observacion = null);
+        Task<List<OrdenPagoHistorialDTO>> ObtenerHistorialOrdenPagoAsync(int idRequisicion);
+        Task<List<OrdenPagoHistorialDTO>> ObtenerHistorialOrdenPagoPorConsolidadaAsync(int idConsolidada);
 
         // consolidada
         Task<List<ConsolidadaFinancierosDTO>> ListarConsolidadasFinancieros(int? idUsuario = null, List<int>? estatusPermitidos = null);
@@ -48,5 +53,8 @@ namespace Inventario.BLL.Interfaces
         Task<string> AsegurarNumeroApiAsync(int idRequisicion);
         Task<string> AsegurarNumeroApiConsolidadaAsync(int idConsolidada);
         Task PoblarApiPartidasAsync(int idHistorial, TablaApiEditableDTO modelo);
+
+        Task<bool> ObtenerTieneDualGastosPagar(int idRequisicion);
+        Task<bool> ObtenerTieneDualGastosPagarConsolidada(int idConsolidada);
     }
 }

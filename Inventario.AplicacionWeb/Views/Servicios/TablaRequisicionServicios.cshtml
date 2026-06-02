@@ -66,8 +66,12 @@
 
      data-url-descargar-req-directa="@Url.Action("DescargarReqDirecta", "Requisicion")"
      data-url-asignar-analista-consolidada="@Url.Action("AsignarAnalistaConsolidada", "Consolidada")"
-     data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Servicios")"
-     data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Servicios")">
+data-url-subir-doc-firmado="@Url.Action("SubirDocumentoFirmado", "Servicios")"
+      data-url-obtener-doc-firmado="@Url.Action("ObtenerDocumentoFirmado", "Servicios")"
+data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
+       data-url-editar-orden-pago-consolidada="@Url.Action("EditarOrdenPagoConsolidada", "Financieros")"
+       data-url-tiene-dual-gastos-pagar="@Url.Action("ObtenerTieneDualGastosPagar", "Financieros")"
+       data-url-tiene-dual-gastos-pagar-consolidada="@Url.Action("ObtenerTieneDualGastosPagarConsolidada", "Financieros")">
     <div class="tabla-requi-header">
         <div>
             <h1 class="info-titulo">Requisiciones de Servicios</h1>
@@ -228,7 +232,7 @@
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
                                     }
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                     @if (User.IsInRole("6") && (item.IdEstatus == 1 || item.IdEstatus == 11))
@@ -385,7 +389,7 @@
                                     <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                 </div>
@@ -525,7 +529,7 @@
                                     <button class="btn-accion btn-ver" title="Ver detalle" onclick="verDetalle(@item.IdRequi)">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
-                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi)">
+                                    <button class="btn-accion btn-pdf" title="Exportar a PDF" onclick="verPdf(@item.IdRequi, @item.IdEstatus)">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </button>
                                 </div>
@@ -591,13 +595,16 @@
                             <td style="text-align:center">@item.CantidadPartidas</td>
                             <td>@Html.Raw(EstatusBadgeHelper.ObtenerBadge(item.IdEstatus, item.Estatus))</td>
                             <td>
-                                <div class="acciones-grupo" style="justify-content:center">
-                                    <button class="btn-accion btn-ver" title="Ver expediente completo"
+                                    @if (User.IsInRole("7"))
+                                    {
+                                        <div class="acciones-grupo" style="justify-content:center">
+                                            <button class="btn-accion btn-ver" title="Ver expediente completo"
                                             onclick="verExpediente(@item.IdRequi)">
-                                        <i class="fa-solid fa-folder-open"></i>
-                                    </button>
-                                </div>
-                            </td>
+                                                <i class="fa-solid fa-folder-open"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </td>
                         </tr>
                     }
                     @if (!requisicionesVerificadas.Any())
@@ -823,6 +830,18 @@
                             Sin documento de pedido subido.
                         </p>
                     </div>
+                </div>
+
+                <!-- Sección Orden de Pago -->
+                <div id="seccionOrdenPago" style="margin-top:12px; display:none;">
+                    <hr />
+                    <p style="font-weight:600; margin-bottom:10px;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Orden de Pago
+                    </p>
+                    <button type="button" class="btn boton-gris" id="btnEditarOrdenPago"
+                            title="Abre la orden de pago (Gastos por pagar)">
+                        <i class="fa-solid fa-pen-to-square"></i> Editar Orden de Pago
+                    </button>
                 </div>
 
                 <div id="expDocumentosProveedor" style="margin-top:20px;">

@@ -110,6 +110,7 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string NumRequisicion { get; set; } = "";
         public List<TablaApiHistorialDTO> HistorialTablaApi { get; set; } = new();
         public List<PedidoHistorialDTO> HistorialPedido { get; set; } = new();
+        public List<OrdenPagoHistorialDTO> HistorialOrdenPago { get; set; } = new();
     }
 
     public class CrearConsolidadaRequest
