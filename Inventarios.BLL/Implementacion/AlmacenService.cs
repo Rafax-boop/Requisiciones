@@ -346,8 +346,8 @@ namespace Inventario.BLL.Implementacion
                     bool todoConfirmado = todosEntregas.Any() && todosEntregas.All(m => m.Confirmado == true);
 
                     var mensaje = todoConfirmado
-                        ? "AlmacÃ©n confirmÃ³ entrega fÃ­sica de todos los artÃ­culos."
-                        : $"AlmacÃ©n confirmÃ³ entrega parcial: {idsMovimientos.Count} artÃ­culo(s) entregado(s).";
+                        ? "Almacén confirmó entrega física de todos los artículos."
+                        : $"Almacén confirmó entrega parcial: {idsMovimientos.Count} artículo(s) entregado(s).";
                     await RegistrarBitacoraAsync(idRequisicion, req.IdEstatus ?? 0, idUsuario, mensaje);
                 }
 
@@ -575,8 +575,8 @@ namespace Inventario.BLL.Implementacion
                     bool todoConfirmado = todosEntregas.Any() && todosEntregas.All(m => m.Confirmado == true);
 
                     var mensaje = todoConfirmado
-                        ? "AlmacÃ©n confirmÃ³ entrega fÃ­sica de todos los artÃ­culos (consolidada)."
-                        : $"AlmacÃ©n confirmÃ³ entrega parcial en consolidada: {childMovs.Count} artÃ­culo(s) entregado(s).";
+                        ? "Almacén confirmó entrega física de todos los artículos (consolidada)."
+                        : $"Almacén confirmó entrega parcial en consolidada: {childMovs.Count} artículo(s) entregado(s).";
                     await RegistrarBitacoraAsync(child.IdRequisicion, req.IdEstatus ?? 0, idUsuario, mensaje);
                 }
 
@@ -713,7 +713,7 @@ namespace Inventario.BLL.Implementacion
                 await _repositoryRequisicion.Editar(req);
 
                 await RegistrarBitacoraAsync(req.IdRequisicion, ESTATUS_RECHAZADA_ALMACEN, idUsuario,
-                    $"AlmacÃ©n rechazÃ³ requisiciÃ³n. Motivo: {motivo}");
+                    $"Almacén rechazó requisición. Motivo: {motivo}");
 
                 await _uow.CommitAsync();
                 return true;
@@ -789,7 +789,7 @@ namespace Inventario.BLL.Implementacion
                         Confirmado = false
                     });
 
-                    resumenEntregas.Add($"{desc} â€” {cantAprobada} {unidad}");
+                    resumenEntregas.Add($”{desc} — {cantAprobada} {unidad}”);
                 }
 
                 foreach (var (idDetalle, cantComprar) in listaCompras)
@@ -820,7 +820,7 @@ namespace Inventario.BLL.Implementacion
                 req.FechaModificacion = DateTime.Now;
                 await _repositoryRequisicion.Editar(req);
 
-                var obs = new StringBuilder("AlmacÃ©n procesÃ³ requisiciÃ³n.");
+                var obs = new StringBuilder("Almacén procesó requisición.");
                 if (resumenEntregas.Count > 0) obs.Append($" Preparados para entrega: {string.Join(", ", resumenEntregas)}.");
                 if (resumenCompras.Count > 0) obs.Append($" Enviados a compra: {string.Join(", ", resumenCompras)}.");
 
@@ -975,7 +975,7 @@ namespace Inventario.BLL.Implementacion
                         FechaMovimiento = DateTime.Now,
                         IdUsuario = idUsuario,
                         Confirmado = false,
-                        Observacion = "Borrador â€” pendiente de confirmar con formato firmado"
+                        Observacion = “Borrador — pendiente de confirmar con formato firmado”
                     });
                 }
 
@@ -1107,7 +1107,7 @@ namespace Inventario.BLL.Implementacion
                             IdUsuario = idUsuario,
                             Confirmado = false
                         });
-                        resumenEntregas.Add($"{desc} â€” {cantRecibida} {unidad}");
+                        resumenEntregas.Add($”{desc} — {cantRecibida} {unidad}”);
 
                         // â”€â”€ Actualizar o crear en inventario â”€â”€
                         if (!string.IsNullOrWhiteSpace(clave))
@@ -1150,7 +1150,7 @@ namespace Inventario.BLL.Implementacion
                             FechaMovimiento = DateTime.Now,
                             IdUsuario = idUsuario,
                             Confirmado = false,
-                            Observacion = $"Faltante del proveedor â€” entrega anterior: {cantRecibida}"
+                            Observacion = $”Faltante del proveedor — entrega anterior: {cantRecibida}”
                         });
                         resumenFaltantes.Add($"{desc} faltante: x{cantFaltante}");
                     }
@@ -1163,7 +1163,7 @@ namespace Inventario.BLL.Implementacion
                 var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == idRequisicion)
                           ?? throw new Exception("No se encontrÃ³ la requisiciÃ³n.");
 
-                var obs = new StringBuilder("AlmacÃ©n registrÃ³ ingreso de material del proveedor.");
+                var obs = new StringBuilder("Almacén registró ingreso de material del proveedor.");
                 if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
                 if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
 
@@ -1294,7 +1294,7 @@ namespace Inventario.BLL.Implementacion
                             FechaMovimiento = DateTime.Now,
                             IdUsuario = idUsuario,
                             Confirmado = false,
-                            Observacion = "Borrador consolidado â€” pendiente de confirmar con formato firmado"
+                            Observacion = “Borrador consolidado — pendiente de confirmar con formato firmado”
                         });
                     }
                 }
@@ -1461,7 +1461,7 @@ namespace Inventario.BLL.Implementacion
                                 IdUsuario = idUsuario,
                                 Confirmado = false
                             });
-                            resumenEntregas.Add($"{desc} â€” {cantRecibida} {unidad}");
+                            resumenEntregas.Add($”{desc} — {cantRecibida} {unidad}”);
 
                             if (!string.IsNullOrWhiteSpace(clave))
                             {
@@ -1502,7 +1502,7 @@ namespace Inventario.BLL.Implementacion
                                 FechaMovimiento = DateTime.Now,
                                 IdUsuario = idUsuario,
                                 Confirmado = false,
-                                Observacion = $"Faltante del proveedor â€” entrega anterior: {cantRecibida}"
+                                Observacion = $”Faltante del proveedor — entrega anterior: {cantRecibida}”
                             });
                             resumenFaltantes.Add($"{desc} faltante: x{cantFaltante}");
                         }
@@ -1514,7 +1514,7 @@ namespace Inventario.BLL.Implementacion
                     var req = await _repositoryRequisicion.Obtener(r => r.IdRequisicion == childId);
                     if (req != null)
                     {
-                        var obs = new StringBuilder("AlmacÃ©n registrÃ³ ingreso de material del proveedor (consolidada).");
+                        var obs = new StringBuilder("Almacén registró ingreso de material del proveedor (consolidada).");
                         if (resumenEntregas.Count > 0) obs.Append($" Preparado para entrega: {string.Join(", ", resumenEntregas)}.");
                         if (resumenFaltantes.Count > 0) obs.Append($" Pendiente del proveedor: {string.Join(", ", resumenFaltantes)}.");
 

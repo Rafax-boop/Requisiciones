@@ -588,7 +588,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = requisicion.IdRequisicion,
                 IdEstatus = requisicion.IdEstatus,
                 FechaEstatus = DateTime.Now,
-                Observacion = "ModificaciÃ³nRequisiciones",
+                Observacion = "ModificaciónRequisiciones",
                 IdUsuario = idUsuario
             };
             var bitacoraCreada = await _repositoryBitacora.Crear(bitacora);
@@ -797,7 +797,7 @@ namespace Inventario.BLL.Implementacion
                 else
                     state = "active";
 
-                string date = "â€”", time = "â€”";
+                string date = “—“, time = “—“;
                 if (ev.FechaEstatus.HasValue)
                 {
                     var dt = ev.FechaEstatus.Value;
@@ -810,7 +810,7 @@ namespace Inventario.BLL.Implementacion
                     Dept = nombresEstatus.GetValueOrDefault(idEst, $"Estatus {idEst}") ?? $"Estatus {idEst}",
                     Date = date,
                     State = state,
-                    By = string.IsNullOrWhiteSpace(ev.Usuario) ? "â€”" : ev.Usuario,
+                    By = string.IsNullOrWhiteSpace(ev.Usuario) ? “—“ : ev.Usuario,
                     Time = time,
                     Action = ev.Observacion ?? "",
                     Comment = ev.Observacion ?? ""
@@ -824,7 +824,7 @@ namespace Inventario.BLL.Implementacion
                     : EstatusFlow.TerminalPositivos.Contains(idEstatusActual) ? "completed"
                     : "active";
 
-                string synDate = "â€”", synTime = "â€”";
+                string synDate = “—“, synTime = “—“;
                 if (requisicion.FechaModificacion.HasValue)
                 {
                     var dt = requisicion.FechaModificacion.Value;
@@ -861,7 +861,7 @@ namespace Inventario.BLL.Implementacion
                 IdRequisicion = requisicion.IdRequisicion,
                 IdEstatus = 9,
                 FechaEstatus = DateTime.Now,
-                Observacion = "Enviada a AlmacÃ©n",
+                Observacion = "Enviada a Almacén",
                 IdUsuario = idUsuario
             };
             await _repositoryBitacora.Crear(bitacora);
