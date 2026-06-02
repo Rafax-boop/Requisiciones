@@ -2607,8 +2607,9 @@
   if (filtroDepto) filtroDepto.addEventListener("input", filtrarTabla);
   if (filtroEstado) filtroEstado.addEventListener("change", filtrarTabla);
 
-  window.verPdf = function (id) {
+  window.verPdf = function (id, estatus) {
     window._pdfFirmadoIdRequi = id;
+    window._pdfFirmadoEstatus = estatus || 0;
     var inputPdf = document.getElementById("inputPdfFirmado");
     if (inputPdf) inputPdf.value = "";
 
@@ -2622,12 +2623,18 @@
       var separador = urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&";
       $.get(urlObtenerDocFirmado + separador + "idRequisicion=" + id, function (data) {
         if (data.firmado && data.ruta) {
-          if (btnDescargar) btnDescargar.style.display = "none";
-          if (seccionSubir) seccionSubir.style.display = "none";
           if (seccionVer) {
             seccionVer.style.display = "block";
             var link = document.getElementById("linkVerPdfFirmado");
             if (link) link.setAttribute("href", data.ruta);
+          }
+          if (estatus === 3) {
+            // Modificación: mostrar descargar plantilla + ver PDF + subir corregido
+            if (btnDescargar) btnDescargar.style.display = "block";
+            if (seccionSubir) seccionSubir.style.display = "block";
+          } else {
+            if (btnDescargar) btnDescargar.style.display = "none";
+            if (seccionSubir) seccionSubir.style.display = "none";
           }
         } else {
           if (btnDescargar) btnDescargar.style.display = "block";
@@ -2688,9 +2695,14 @@
           var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
           var seccionVer = document.getElementById("seccionVerPdfFirmado");
           var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
-          if (seccionSubir) seccionSubir.style.display = "none";
           if (seccionVer) seccionVer.style.display = "block";
-          if (btnDescargar) btnDescargar.style.display = "none";
+          if (btnDescargar) {
+            btnDescargar.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
+          }
+          // Si estatus es 3 (modificación), mantener visible la sección de subir
+          if (seccionSubir) {
+            seccionSubir.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
+          }
           $.get(urlObtenerDocFirmado + (urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&") + "idRequisicion=" + id, function (data) {
             if (data.firmado && data.ruta) {
               var link = document.getElementById("linkVerPdfFirmado");

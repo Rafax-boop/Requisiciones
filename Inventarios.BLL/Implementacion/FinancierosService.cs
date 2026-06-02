@@ -137,7 +137,7 @@ namespace Inventario.BLL.Implementacion
             if (estatusPermitidos == null || estatusPermitidos.Count == 0)
             {
                 // Mostrar todas las consolidadas en flujo financiero (estatus 13-18) + estados finales
-                query = query.Where(c => c.IdEstatus >= 13 && c.IdEstatus <= 18 || c.IdEstatus == 7 || c.IdEstatus == 5 || c.IdEstatus == 12);
+                query = query.Where(c => c.IdEstatus >= 13 && c.IdEstatus <= 18 || c.IdEstatus == 5 || c.IdEstatus == 12);
             }
             else
             {
@@ -2017,7 +2017,7 @@ namespace Inventario.BLL.Implementacion
         {
             var query = await _repoHistorial.Consultar(
                 h => h.IdRequisicion == idRequisicion
-                  && (h.Observacion == null || !h.Observacion.StartsWith("Pedido")));
+                  && (h.Observacion == null || (!h.Observacion.StartsWith("Pedido") && !h.Observacion.StartsWith("Orden de Pago"))));
 
             var lista = await query
                 .OrderByDescending(h => h.FechaGeneracion)
@@ -2055,7 +2055,7 @@ namespace Inventario.BLL.Implementacion
         {
             var query = await _repoHistorial.Consultar(
                 h => h.IdConsolidada == idConsolidada
-                  && (h.Observacion == null || !h.Observacion.StartsWith("Pedido")));
+                  && (h.Observacion == null || (!h.Observacion.StartsWith("Pedido") && !h.Observacion.StartsWith("Orden de Pago"))));
 
             var lista = await query
                 .OrderByDescending(h => h.FechaGeneracion)

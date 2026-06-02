@@ -100,7 +100,7 @@ data-url-historial-api="@Url.Action("HistorialTablaApi", "Financieros")"
         var numColsReq = 8;
         if (User.IsInRole("8")) numColsReq++;
         if (User.IsInRole("9") || User.IsInRole("8")) numColsReq++;
-        var requisicionesPrincipal = Model.Requisiciones.ToList();
+        var requisicionesPrincipal = Model.Requisiciones.Where(r => r.IdEstatus != 7).ToList();
         var requisicionesAutorizadas = Model.Requisiciones.Where(r => r.IdEstatus == 15 || r.IdEstatus == 7 || r.IdEstatus == 12).ToList();
         var requisicionesRechazadas = Model.Requisiciones.Where(r => r.IdEstatus == 5).ToList();
         var requisicionesProcesoPago = Model.Requisiciones.Where(r => r.IdEstatus == 17).ToList();

@@ -350,6 +350,12 @@ namespace Inventario.AplicacionWeb.Controllers
 
             vm.ObservacionesBitacora = await _requisicionService.ObtenerObservacionesModificacion(id);
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisiciones", vm);
         }
@@ -368,6 +374,12 @@ namespace Inventario.AplicacionWeb.Controllers
                 return RedirectToAction("TablaRequisiciones", "Requisicion");
             }
 
+            var municipios = await _catalogoService.ObtenerMunicipios();
+            ViewBag.ListaMunicipios = municipios.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre
+            }).ToList();
             ViewBag.ModoEdicion = true;
             return View("FormularioRequisiciones", modelo);
         }
@@ -750,7 +762,7 @@ namespace Inventario.AplicacionWeb.Controllers
                 tipo = a.Tipo,
                 ruta = a.Ruta,
                 fechaSubida = a.FechaSubida?.ToString("dd/MM/yyyy HH:mm") ?? "",
-                nombreArchivo = Path.GetFileName(a.Ruta)
+                nombreArchivo = Path.GetFileName(a.Ruta ?? "")
             }).ToList();
             return Json(resultado);
         }
