@@ -533,13 +533,19 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicion.Editar(requisicion);
 
-            // Eliminar artÃ­culos anteriores
+            // Eliminar municipios primero (FK hacia TblRequisicionDetalle)
+            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => m.IdRequisicion == idRequisicion);
+            var municipiosActuales = await queryMunis.ToListAsync();
+            foreach (var muni in municipiosActuales)
+                await _repoMunicipiosDetalle.Eliminar(muni);
+
+            // Eliminar artículos anteriores
             var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
             var detallesActuales = await queryDetalles.ToListAsync();
             foreach (var detalle in detallesActuales)
                 await _repositoryRequisicionDetalle.Eliminar(detalle);
 
-            // Insertar los nuevos artÃ­culos 
+            // Insertar los nuevos artículos
             var nuevosDetalles = modelo.Articulos.Select(item => new TblRequisicionDetalle
             {
                 IdRequisicion = idRequisicion,
@@ -553,12 +559,6 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
 
             await _repositoryRequisicionDetalle.CrearRango(nuevosDetalles);
-
-            // Eliminar municipios anteriores y reinsertar con los nuevos IdRequisicionDetalle
-            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => m.IdRequisicion == idRequisicion);
-            var municipiosActuales = await queryMunis.ToListAsync();
-            foreach (var muni in municipiosActuales)
-                await _repoMunicipiosDetalle.Eliminar(muni);
 
             var listaMunicipios = new List<TblRequisicionDetalleMunicipio>();
             for (int i = 0; i < modelo.Articulos.Count; i++)
