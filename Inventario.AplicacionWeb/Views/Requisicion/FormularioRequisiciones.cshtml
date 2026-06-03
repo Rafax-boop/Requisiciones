@@ -91,7 +91,7 @@
         <div class="container-formulario">
             <div class="seccion-completa text-center">
                 <div class="formulario-input">
-                    <label>Â¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
+                    <label>¿Se encuentra programado en su presupuesto y su programa de adquisiciones?</label>
                     <div class="formulario-opciones-presupuesto">
                         <label class="opcion">
                             <input asp-for="CuentaProgramaPresupuestario" type="radio" value="true" required />
@@ -186,7 +186,7 @@
             <div class="seccion-completa text-center">
                 @if (modoEdicion)
                 {
-                    <button type="submit" class="btn boton-rosa btn-lg">Guardar cambios</button>
+                    <button type="button" class="btn boton-rosa btn-lg" id="btnGuardarEdicion">Guardar cambios</button>
                 }
                 else
                 {

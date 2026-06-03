@@ -761,6 +761,20 @@
     }
   }
 
+  var btnGuardarEdicion = document.getElementById("btnGuardarEdicion");
+  if (btnGuardarEdicion) {
+    btnGuardarEdicion.addEventListener("click", function () {
+      var resultado = validarFormulario();
+      if (!resultado.valido) {
+        mostrarErroresValidacion(resultado.mensajes);
+        return;
+      }
+      iniciarWizardMunicipios(function () {
+        document.querySelector("form.no-loader").submit();
+      });
+    });
+  }
+
   function preguntarProgramacion() {
     Swal.fire({
       title: "\u00bfProgramar requisici\u00f3n?",

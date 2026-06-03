@@ -500,7 +500,7 @@
           break;
       }
 
-      var tStr = s.time !== "â€”" ? " Â· " + s.time : "";
+      var tStr = s.time !== “—“ ? “ · “ + s.time : “”;
       var item = document.createElement("div");
       item.className = "mtl-item " + s.state;
       item.innerHTML =
