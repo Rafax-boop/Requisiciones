@@ -770,8 +770,51 @@
         return;
       }
       iniciarWizardMunicipios(function () {
-        document.querySelector("form.no-loader").submit();
+        preguntarProgramacionEdicion();
       });
+    });
+  }
+
+  function preguntarProgramacionEdicion() {
+    Swal.fire({
+      title: "¿Programar requisición?",
+      icon: "question",
+      iconColor: "var(--rosa-400)",
+      showDenyButton: true,
+      showCancelButton: false,
+      confirmButtonText: "Sí",
+      denyButtonText: "No",
+      confirmButtonColor: "var(--rosa-400)",
+      denyButtonColor: "var(--slate-500)",
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        iniciarWizardProgramacion(function () {
+          completarFlujoEdicion();
+        });
+      } else if (result.isDenied) {
+        completarFlujoEdicion();
+      }
+    });
+  }
+
+  function completarFlujoEdicion() {
+    programacionFinalizada = true;
+    bloquearSeccionArticulos();
+
+    Swal.fire({
+      title: "¿Seguro que quieres guardar?",
+      text: "Se guardarán los datos de la requisición.",
+      icon: "question",
+      iconColor: "var(--rosa-400)",
+      showCancelButton: true,
+      confirmButtonColor: "var(--rosa-400)",
+      cancelButtonColor: "var(--slate-500)",
+      confirmButtonText: "Sí, guardar",
+      cancelButtonText: "No, cancelar",
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        enviarFormulario();
+      }
     });
   }
 
@@ -818,7 +861,7 @@
     return articulos;
   }
 
-  function iniciarWizardProgramacion() {
+  function iniciarWizardProgramacion(onComplete) {
     var articulos = obtenerSnapshotArticulos();
     if (articulos.length === 0) return;
     mostrarPasoArticulo({
@@ -827,6 +870,7 @@
       lastTipo: null,
       lastWasChanged: false,
       omitidos: 0,
+      onComplete: onComplete || completarFlujoContinuar,
     });
   }
 
@@ -1289,7 +1333,7 @@
   function finalizarWizard(state) {
     reindexarArticulos();
     serializarProgramacion();
-    completarFlujoContinuar();
+    (state.onComplete || completarFlujoContinuar)();
   }
 
   // ── Wizard distribución por municipio ──────────────────────────────────
