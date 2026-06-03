@@ -1999,6 +1999,23 @@ namespace Inventario.BLL.Implementacion
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });
 
+            // Obtener el último historial para esta requisición/consolidada
+            TblTablaApiHistorial? ultimo = null;
+            if (modelo.IdRequisicion > 0)
+            {
+                var query = await _repoHistorial.Consultar(h => h.IdRequisicion == modelo.IdRequisicion);
+                ultimo = await query.OrderByDescending(h => h.FechaGeneracion).FirstOrDefaultAsync();
+            }
+            else if (modelo.IdConsolidada.GetValueOrDefault() > 0)
+            {
+                var query = await _repoHistorial.Consultar(h => h.IdConsolidada == modelo.IdConsolidada);
+                ultimo = await query.OrderByDescending(h => h.FechaGeneracion).FirstOrDefaultAsync();
+            }
+
+            // Si los datos no cambiaron, no duplicar historial
+            if (ultimo?.DatosJson == json)
+                return;
+
             var registro = new TblTablaApiHistorial
             {
                 IdRequisicion = modelo.IdRequisicion > 0 ? modelo.IdRequisicion : null,

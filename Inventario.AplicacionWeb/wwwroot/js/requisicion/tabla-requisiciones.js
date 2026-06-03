@@ -2617,36 +2617,43 @@
 
     var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
     var seccionVer = document.getElementById("seccionVerPdfFirmado");
+    var seccionNoSubido = document.getElementById("seccionPdfNoSubido");
     var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
 
     if (urlObtenerDocFirmado) {
       var separador = urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&";
       $.get(urlObtenerDocFirmado + separador + "idRequisicion=" + id, function (data) {
         if (data.firmado && data.ruta) {
+          if (seccionNoSubido) seccionNoSubido.style.display = "none";
           if (seccionVer) {
             seccionVer.style.display = "block";
             var link = document.getElementById("linkVerPdfFirmado");
             if (link) link.setAttribute("href", data.ruta);
           }
-          if (estatus === 3) {
-            // Modificación: mostrar descargar plantilla + ver PDF + subir corregido
+          if (estatus === 1) {
             if (btnDescargar) btnDescargar.style.display = "block";
             if (seccionSubir) seccionSubir.style.display = "block";
+          } else if (estatus === 3) {
+            if (btnDescargar) btnDescargar.style.display = "block";
+            if (seccionSubir) seccionSubir.style.display = "none";
           } else {
             if (btnDescargar) btnDescargar.style.display = "none";
             if (seccionSubir) seccionSubir.style.display = "none";
           }
         } else {
+          if (seccionNoSubido) seccionNoSubido.style.display = "block";
           if (btnDescargar) btnDescargar.style.display = "block";
           if (seccionSubir) seccionSubir.style.display = "block";
           if (seccionVer) seccionVer.style.display = "none";
         }
       }).fail(function () {
+        if (seccionNoSubido) seccionNoSubido.style.display = "block";
         if (btnDescargar) btnDescargar.style.display = "block";
         if (seccionSubir) seccionSubir.style.display = "block";
         if (seccionVer) seccionVer.style.display = "none";
       });
     } else {
+      if (seccionNoSubido) seccionNoSubido.style.display = "block";
       if (btnDescargar) btnDescargar.style.display = "block";
       if (seccionSubir) seccionSubir.style.display = "block";
       if (seccionVer) seccionVer.style.display = "none";
@@ -2691,24 +2698,10 @@
       success: function (res) {
         if (btn) btn.disabled = false;
         if (res.success) {
-          Swal.fire({ icon: "success", title: "PDF firmado subido correctamente" });
-          var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
-          var seccionVer = document.getElementById("seccionVerPdfFirmado");
-          var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
-          if (seccionVer) seccionVer.style.display = "block";
-          if (btnDescargar) {
-            btnDescargar.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
-          }
-          // Si estatus es 3 (modificación), mantener visible la sección de subir
-          if (seccionSubir) {
-            seccionSubir.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
-          }
-          $.get(urlObtenerDocFirmado + (urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&") + "idRequisicion=" + id, function (data) {
-            if (data.firmado && data.ruta) {
-              var link = document.getElementById("linkVerPdfFirmado");
-              if (link) link.setAttribute("href", data.ruta);
-            }
-          });
+          var modalEl = document.getElementById("modalPdfFirmado");
+          var modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+          location.reload();
         } else {
           Swal.fire({ icon: "error", title: "Error al subir el archivo" });
         }
