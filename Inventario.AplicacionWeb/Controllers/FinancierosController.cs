@@ -316,12 +316,6 @@ namespace Inventario.AplicacionWeb.Controllers
                 var modelo = await _financierosService.ObtenerTablaApiEditableConsolidadaAsync(idConsolidada);
                 var bytes = await _financierosService.GenerarTablaApiAsync(modelo);
 
-                int idUsuario = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-                await _financierosService.GuardarHistorialTablaApiAsync(
-                    modelo,
-                    idUsuario,
-                    observacion: $"PDF generado (descarga directa) el {DateTime.Now:dd/MM/yyyy HH:mm}");
-
                 var nombreArchivo = $"TablaAPI_Consolidada_{idConsolidada}_{DateTime.Now:yyyyMMdd}.pdf";
                 return File(bytes, "application/pdf", nombreArchivo);
             }
