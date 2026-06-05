@@ -675,28 +675,132 @@
     color: var(--rosa-500);
 }
 
-#modalRegistrarIngreso .formulario-input input:hover,
-#modalRegistrarIngreso .formulario-input textarea:hover,
-#modalRegistrarIngreso .rosa-select__input:hover {
-    border-color: var(--slate-200);
+/* ── Sección radio tipo-producto ── */
+.ingreso-tipo-selector {
+    display: flex;
+    gap: 16px;
+    padding: 14px 16px;
+    background: var(--rosa-50);
+    border: 1px solid var(--rosa-100);
+    border-radius: var(--radius-md);
+    margin-bottom: 18px;
+}
+
+/* ── Resumen producto seleccionado ── */
+.ingreso-resumen {
+    margin-top: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--rosa-200);
+    border-radius: var(--radius-sm);
+    background: var(--rosa-50);
+}
+
+.ingreso-resumen-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rosa-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.ingreso-resumen-texto {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-700);
+}
+
+/* ── Grid de detalle producto ── */
+.ingreso-detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.ingreso-detalle-item {
+    padding: 10px 14px;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
     background: var(--slate-50);
+    transition: border-color 0.2s var(--ease-premium);
 }
 
-#modalRegistrarIngreso .formulario-input input:focus,
-#modalRegistrarIngreso .formulario-input textarea:focus {
-    border-color: var(--rosa-400);
-    background: #fff;
+.ingreso-detalle-item:hover {
+    border-color: var(--rosa-100);
 }
 
-/* Quitar hover a inputs específicos del formulario de ingreso */
-#modalRegistrarIngreso #ingresoClave:hover,
-#modalRegistrarIngreso #ingresoDescripcion:hover,
-#modalRegistrarIngreso #ingresoCantidad:hover,
-#modalRegistrarIngreso #ingresoMotivo:hover {
-    box-shadow: var(--shadow-rosa);
-    transform: none;
-    border-color: transparent;
-    background: white;
+.ingreso-detalle-item--full {
+    grid-column: 1 / -1;
+}
+
+.ingreso-detalle-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate-400);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.ingreso-detalle-valor {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-800);
+}
+
+/* ── Separador sección cantidad/motivo ── */
+.ingreso-seccion-comun {
+    border-top: 1px solid var(--slate-100);
+    padding-top: 16px;
+    margin-top: 4px;
+}
+
+.ingreso-obligatorio {
+    color: var(--rosa-500);
+}
+
+/* ── Fila cantidad + botón Agregar ── */
+.ingreso-add-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.ingreso-add-row .formulario-input {
+    flex: 1;
+}
+
+.ingreso-add-row .almacen-btn {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    height: 44px;
+}
+
+/* ── Tabla de artículos agregados (compacta, dentro del modal) ── */
+.ingreso-tabla-items {
+    table-layout: fixed !important;
+    width: 100% !important;
+    min-width: unset !important;
+}
+
+.ingreso-tabla-items th,
+.ingreso-tabla-items td {
+    padding: 7px 10px !important;
+    font-size: 13px !important;
+    vertical-align: middle !important;
+}
+
+/* Modal body con scroll si hay muchos artículos */
+.ingreso-modal-body {
+    max-height: 72vh;
+    overflow-y: auto;
 }
 
 @media (max-width: 768px) {
@@ -840,6 +944,30 @@
 .tabla-expedientes-compacta th:nth-child(4) { /* Acción */
     width: 60px !important;
     text-align: center !important;
+}
+
+/* ──────────────────────────────────────────
+   BOTÓN REGISTRAR INGRESO (Inventario)
+────────────────────────────────────────── */
+@keyframes btnIngresoEntrada {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.btn-registrar-ingreso-inventario {
+    animation: btnIngresoEntrada 0.4s ease-out both;
+}
+
+.btn-registrar-ingreso-inventario:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.32);
+    background: linear-gradient(135deg, #047857, #059669);
+}
+
+.btn-registrar-ingreso-inventario:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+    transition-duration: 0.08s;
 }
 
 /* ──────────────────────────────────────────

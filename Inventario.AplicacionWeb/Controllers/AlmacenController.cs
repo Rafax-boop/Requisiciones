@@ -381,7 +381,7 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioRequest request)
+        public async Task<IActionResult> RegistrarIngreso([FromBody] IngresoInventarioLoteRequest request)
         {
             var userId = GetUserId();
             if (userId == null)
@@ -389,19 +389,54 @@ namespace Inventario.AplicacionWeb.Controllers
 
             try
             {
-                await _almacenService.RegistrarIngresoInventario(new IngresoInventarioDTO
+                var dtos = (request.Items ?? new()).Select(i => new IngresoInventarioDTO
                 {
-                    Clave = request.Clave,
-                    Descripcion = request.Descripcion,
-                    UnidadMedida = request.UnidadMedida,
-                    Cantidad = request.Cantidad,
-                    Motivo = request.Motivo
-                });
-                return Json(new { ok = true, mensaje = "Ingreso registrado correctamente." });
+                    Clave        = i.Clave,
+                    Descripcion  = i.Descripcion ?? "",
+                    UnidadMedida = i.UnidadMedida ?? "",
+                    Cantidad     = i.Cantidad,
+                    Motivo       = request.Motivo ?? ""
+                }).ToList();
+
+                await _almacenService.RegistrarIngresoInventarioLote(dtos);
+                return Json(new { ok = true, mensaje = "Ingreso registrado correctamente.", folio = 0 });
             }
             catch (Exception ex)
             {
-                return Json(new { ok = false, error = ex.Message });
+                var detalle = ex.InnerException?.InnerException?.Message
+                           ?? ex.InnerException?.Message
+                           ?? ex.Message;
+                return Json(new { ok = false, error = detalle });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult IngresoInventarioPdf([FromForm] string payload)
+        {
+            try
+            {
+                var data = System.Text.Json.JsonSerializer.Deserialize<IngresoInventarioPdfPayload>(
+                    payload, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var vm = new VMIngresoInventarioPdf
+                {
+                    Folio  = data?.Folio ?? 0,
+                    Motivo = data?.Motivo,
+                    Fecha  = DateTime.Now,
+                    Items  = (data?.Items ?? new()).Select(i => new VMIngresoItemPdf
+                    {
+                        Clave        = i.Clave,
+                        Descripcion  = i.Descripcion ?? "",
+                        UnidadMedida = i.UnidadMedida ?? "",
+                        Cantidad     = i.Cantidad
+                    }).ToList()
+                };
+                return View(vm);
+            }
+            catch
+            {
+                return BadRequest("Payload inválido.");
             }
         }
 
@@ -638,6 +673,43 @@ namespace Inventario.AplicacionWeb.Controllers
             {
                 return Json(new { ok = false, error = ex.Message });
             }
+        }
+
+        // ─── Registro de Ingresos de Inventario ────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> RegistroIngresos()
+        {
+            var userId = GetUserId();
+            if (userId == null) return RedirectToAction("Index");
+
+            var inventarioDto  = await _almacenService.ObtenerInventario();
+            var inventario     = _mapper.Map<List<VMInventarioItem>>(inventarioDto);
+
+            var vm = new VMRegistroIngresosIndex
+            {
+                Ingresos       = new List<VMIngresoResumen>(), // se conectará cuando el colega agregue las relaciones
+                Inventario     = inventario,
+                UnidadesMedida = inventario
+                    .Select(i => i.UnidadMedida)
+                    .Where(u => !string.IsNullOrEmpty(u))
+                    .Distinct()
+                    .OrderBy(u => u)
+                    .ToList()
+            };
+            return View(vm);
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerDetalleIngreso(int primerIdIngreso)
+        {
+            return Json(new List<object>()); // pendiente de relaciones BD
+        }
+
+        [HttpPost]
+        public IActionResult SubirPdfFirmadoIngreso([FromForm] SubirPdfIngresoRequest request)
+        {
+            return Json(new { ok = false, error = "Funcionalidad pendiente de configuración de BD." });
         }
     }
 }

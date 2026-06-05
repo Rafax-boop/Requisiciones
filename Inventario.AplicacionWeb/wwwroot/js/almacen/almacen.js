@@ -25,6 +25,7 @@
     var urlConfirmarIngresoPedido = container ? container.getAttribute("data-url-confirmar-ingreso-pedido") : "";
     var urlObtenerPartidasCompra = container ? container.getAttribute("data-url-obtener-partidas-compra") : "";
     var urlObtenerPartidasCompraConsolidada = container ? container.getAttribute("data-url-obtener-partidas-compra-consolidada") : "";
+    var urlIngresoInventarioPdf = container ? container.getAttribute("data-url-ingreso-inventario-pdf") : "";
     var urlVerPdfSalidaConsolidada = container
       ? container.getAttribute("data-url-ver-pdf-salida-consolidada")
       : "";
@@ -121,6 +122,15 @@
         if (p.id === "tab-" + tab) p.classList.add("activo");
       });
       this.classList.add("activo");
+
+      if (tab === "inventario") {
+        var btnIngreso = document.getElementById("btnAbrirRegistrarIngreso");
+        if (btnIngreso) {
+          btnIngreso.classList.remove("btn-registrar-ingreso-inventario");
+          void btnIngreso.offsetWidth;
+          btnIngreso.classList.add("btn-registrar-ingreso-inventario");
+        }
+      }
 
       window.requestAnimationFrame(function () {
         if (window.TabsNotificacionesRequi) {
@@ -1452,235 +1462,250 @@
 
   /* ========== INGRESO DE INVENTARIO ========== */
 
-  var btnIngreso = document.getElementById("btnRegistrarIngreso");
-  if (btnIngreso) {
-    btnIngreso.addEventListener("click", function () {
-      if (!urlRegistrarIngreso) {
-        swalError("URL de ingreso no configurada.");
-        return;
-      }
-
-      var clave = (
-        document.getElementById("ingresoClave")
-          ? document.getElementById("ingresoClave").value
-          : ""
-      ).trim();
-      var descripcion = (
-        document.getElementById("ingresoDescripcion")
-          ? document.getElementById("ingresoDescripcion").value
-          : ""
-      ).trim();
-      var unidadMedida = (
-        document.getElementById("ingresoUnidad")
-          ? document.getElementById("ingresoUnidad").value
-          : ""
-      ).trim();
-      var cantidad = parseInt(
-        document.getElementById("ingresoCantidad")
-          ? document.getElementById("ingresoCantidad").value
-          : "0",
-        10,
-      );
-      var motivo = (
-        document.getElementById("ingresoMotivo")
-          ? document.getElementById("ingresoMotivo").value
-          : ""
-      ).trim();
-      var esProductoNuevo = !!(
-        document.getElementById("prodNuevoSi") &&
-        document.getElementById("prodNuevoSi").checked
-      );
-      var productoExistente = document.getElementById(
-        "selectProductoExistente",
-      );
-
-      if (!esProductoNuevo && (!productoExistente || !productoExistente.value)) {
-        swalWarning(
-          "Selecciona un artículo existente para registrar el ingreso.",
-        );
-        return;
-      }
-
-      if (!descripcion) {
-        swalWarning("La descripción es obligatoria.");
-        return;
-      }
-      if (!unidadMedida) {
-        swalWarning("La unidad de medida es obligatoria.");
-        return;
-      }
-      if (!cantidad || cantidad <= 0) {
-        swalWarning("La cantidad debe ser mayor a 0.");
-        return;
-      }
-      if (!motivo) {
-        swalWarning("El motivo es obligatorio.");
-        return;
-      }
-
-      swalConfirmar(
-        "Registrar ingreso",
-        "Se registrará: " +
-          descripcion +
-          " (" +
-          unidadMedida +
-          ") x" +
-          cantidad +
-          ". ¿Continuar?",
-        "Sí, registrar",
-      ).then(function (result) {
-        if (!result.isConfirmed) return;
-        Swal.fire({
-          title: "Procesando...",
-          allowOutsideClick: false,
-          didOpen: function () {
-            Swal.showLoading();
-          },
-        });
-        postJson(urlRegistrarIngreso, {
-          clave: clave,
-          descripcion: descripcion,
-          unidadMedida: unidadMedida,
-          cantidad: cantidad,
-          motivo: motivo,
-        })
-          .then(function (r) {
-            if (r.ok) {
-              swalExito(r.mensaje || "Ingreso registrado correctamente.").then(
-                function () {
-                  location.reload();
-                },
-              );
-            } else {
-              swalError(r.error || "No se pudo registrar el ingreso.");
-            }
-          })
-          .catch(function (err) {
-            swalError(
-              typeof err === "string"
-                ? err
-                : "No se pudo registrar el ingreso.",
-            );
-          });
-      });
-    });
-  }
-
-  /* ========== MODAL INGRESO INVENTARIO: LIFECYCLE ========== */
-
   (function () {
-    var radNo = document.getElementById("prodNuevoNo");
-    var radSi = document.getElementById("prodNuevoSi");
-    var seccionNuevo = document.getElementById("seccionProductoNuevo");
-    var seccionExistente = document.getElementById("seccionProductoExistente");
-    var selectExistente = document.getElementById("selectProductoExistente");
-    var selectUnidad = document.getElementById("ingresoUnidad");
-    var modalRegIngreso = document.getElementById("modalRegistrarIngreso");
-    var resumenExistente = document.getElementById("resumenProductoExistente");
-    var resumenTexto = document.getElementById("resumenProductoTexto");
-    var detalleExistente = document.getElementById("detalleProductoExistente");
-    var detalleClave = document.getElementById("detalleProductoClave");
-    var detalleUnidad = document.getElementById("detalleProductoUnidad");
-    var detalleDescripcion = document.getElementById("detalleProductoDescripcion");
+    var itemsIngreso = [];
 
-    function actualizarDetalleExistente(opt) {
+    var btnIngreso       = document.getElementById("btnRegistrarIngreso");
+    var btnAgregar       = document.getElementById("btnAgregarItem");
+    var radNo            = document.getElementById("prodNuevoNo");
+    var radSi            = document.getElementById("prodNuevoSi");
+    var seccionNuevo     = document.getElementById("seccionProductoNuevo");
+    var seccionExistente = document.getElementById("seccionProductoExistente");
+    var selectExistente  = document.getElementById("selectProductoExistente");
+    var selectUnidad     = document.getElementById("ingresoUnidad");
+    var modalRegIngreso  = document.getElementById("modalRegistrarIngreso");
+    var resumenExistente = document.getElementById("resumenProductoExistente");
+    var resumenTexto     = document.getElementById("resumenProductoTexto");
+    var detalleExistente = document.getElementById("detalleProductoExistente");
+    var detalleClave     = document.getElementById("detalleProductoClave");
+    var detalleUnidad    = document.getElementById("detalleProductoUnidad");
+    var detalleDescripcion = document.getElementById("detalleProductoDescripcion");
+    var tablaBody        = document.getElementById("tablaIngresoItemsBody");
+    var itemsWrap        = document.getElementById("ingresoItemsWrap");
+
+    /* ── Render tabla de artículos ── */
+    function renderTabla() {
+      if (!tablaBody) return;
+      if (itemsIngreso.length === 0) {
+        if (itemsWrap) itemsWrap.style.display = "none";
+        if (btnIngreso) btnIngreso.disabled = true;
+        tablaBody.innerHTML = "";
+        return;
+      }
+      if (itemsWrap) itemsWrap.style.display = "block";
+      if (btnIngreso) btnIngreso.disabled = false;
+
+      tablaBody.innerHTML = itemsIngreso.map(function (item, idx) {
+        return "<tr>" +
+          "<td>" + (item.clave || "—") + "</td>" +
+          "<td>" + item.descripcion + "</td>" +
+          "<td>" + item.unidadMedida + "</td>" +
+          '<td style="text-align:center;font-weight:600;">' + item.cantidad + "</td>" +
+          '<td style="text-align:center;">' +
+            '<button type="button" class="btn-accion" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" data-del="' + idx + '" title="Quitar">' +
+              '<i class="fa-solid fa-trash-can" style="font-size:12px;pointer-events:none;"></i>' +
+            "</button>" +
+          "</td>" +
+        "</tr>";
+      }).join("");
+
+      tablaBody.querySelectorAll("[data-del]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          itemsIngreso.splice(parseInt(this.getAttribute("data-del")), 1);
+          renderTabla();
+        });
+      });
+    }
+
+    /* ── Detalle producto existente ── */
+    function actualizarDetalle(opt) {
       if (!detalleExistente) return;
       if (opt && opt.value) {
         detalleExistente.hidden = false;
-        if (detalleClave)
-          detalleClave.textContent = opt.getAttribute("data-clave") || "-";
-        if (detalleUnidad)
-          detalleUnidad.textContent = opt.getAttribute("data-unidad") || "-";
-        if (detalleDescripcion)
-          detalleDescripcion.textContent =
-            opt.getAttribute("data-descripcion") || "-";
-        return;
+        if (detalleClave)       detalleClave.textContent       = opt.getAttribute("data-clave") || "-";
+        if (detalleUnidad)      detalleUnidad.textContent      = opt.getAttribute("data-unidad") || "-";
+        if (detalleDescripcion) detalleDescripcion.textContent = opt.getAttribute("data-descripcion") || "-";
+      } else {
+        detalleExistente.hidden = true;
+        if (detalleClave)       detalleClave.textContent       = "-";
+        if (detalleUnidad)      detalleUnidad.textContent      = "-";
+        if (detalleDescripcion) detalleDescripcion.textContent = "-";
       }
-      detalleExistente.hidden = true;
-      if (detalleClave) detalleClave.textContent = "-";
-      if (detalleUnidad) detalleUnidad.textContent = "-";
-      if (detalleDescripcion) detalleDescripcion.textContent = "-";
     }
 
-    function toggleModoProducto() {
+    /* ── Toggle existente / nuevo ── */
+    function toggleModo() {
       var esNuevo = radSi && radSi.checked;
-      if (seccionNuevo) {
-        seccionNuevo.style.display = esNuevo ? "block" : "none";
-      }
-      if (seccionExistente) {
-        seccionExistente.hidden = esNuevo;
-      }
+      if (seccionNuevo)     seccionNuevo.style.display = esNuevo ? "block" : "none";
+      if (seccionExistente) seccionExistente.hidden    = esNuevo;
     }
 
-    function limpiarFormularioIngreso() {
-      var ids = ["ingresoClave", "ingresoDescripcion", "ingresoUnidad", "ingresoMotivo"];
-      ids.forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.value = "";
+    /* ── Leer artículo del selector actual ── */
+    function leerArticulo() {
+      var esNuevo = radSi && radSi.checked;
+      var sel = document.getElementById("selectProductoExistente");
+      var clave, descripcion, unidadMedida;
+      if (!esNuevo && sel && sel.value) {
+        var opt      = sel.options[sel.selectedIndex];
+        clave        = (opt.getAttribute("data-clave") || "").trim();
+        descripcion  = (opt.getAttribute("data-descripcion") || "").trim();
+        unidadMedida = (opt.getAttribute("data-unidad") || "").trim();
+      } else {
+        clave        = (document.getElementById("ingresoClave")       ? document.getElementById("ingresoClave").value       : "").trim();
+        descripcion  = (document.getElementById("ingresoDescripcion") ? document.getElementById("ingresoDescripcion").value : "").trim();
+        unidadMedida = (document.getElementById("ingresoUnidad")      ? document.getElementById("ingresoUnidad").value      : "").trim();
+      }
+      var cantidad = parseInt(document.getElementById("ingresoCantidad") ? document.getElementById("ingresoCantidad").value : "0", 10);
+      return { esNuevo: esNuevo, clave: clave, descripcion: descripcion, unidadMedida: unidadMedida, cantidad: cantidad, sel: sel };
+    }
+
+    /* ── Limpiar selector de artículo (sin tocar tabla ni motivo) ── */
+    function limpiarSelector() {
+      ["ingresoClave", "ingresoDescripcion", "ingresoUnidad"].forEach(function (id) {
+        var el = document.getElementById(id); if (el) el.value = "";
       });
       var cant = document.getElementById("ingresoCantidad");
       if (cant) cant.value = "1";
-      if (selectExistente) selectExistente.value = "";
-      if (selectUnidad) selectUnidad.value = "";
-      if (resumenExistente) { resumenExistente.hidden = true; }
-      if (resumenTexto) resumenTexto.textContent = "";
-      actualizarDetalleExistente(null);
-      if (selectUnidad && window.SelectRosaBuscable) {
-        window.SelectRosaBuscable.actualizar(selectUnidad);
+      if (selectExistente) {
+        selectExistente.value = "";
+        if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(selectExistente);
       }
+      if (selectUnidad) {
+        selectUnidad.value = "";
+        if (window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(selectUnidad);
+      }
+      if (resumenExistente) resumenExistente.hidden = true;
+      if (resumenTexto) resumenTexto.textContent = "";
+      actualizarDetalle(null);
       if (radNo) radNo.checked = true;
-      toggleModoProducto();
+      toggleModo();
     }
 
-    if (radSi) radSi.addEventListener("change", toggleModoProducto);
-    if (radNo) radNo.addEventListener("change", toggleModoProducto);
+    /* ── Limpiar modal completo ── */
+    function limpiarModal() {
+      limpiarSelector();
+      var motivo = document.getElementById("ingresoMotivo");
+      if (motivo) motivo.value = "";
+      itemsIngreso = [];
+      renderTabla();
+    }
 
+    /* ── Botón Agregar ── */
+    if (btnAgregar) {
+      btnAgregar.addEventListener("click", function () {
+        var d = leerArticulo();
+        if (!d.esNuevo && (!d.sel || !d.sel.value)) {
+          swalWarning("Selecciona un artículo existente."); return;
+        }
+        if (!d.descripcion)  { swalWarning("La descripción es obligatoria."); return; }
+        if (!d.unidadMedida) { swalWarning("La unidad de medida es obligatoria."); return; }
+        if (!d.cantidad || d.cantidad <= 0) { swalWarning("La cantidad debe ser mayor a 0."); return; }
+
+        itemsIngreso.push({ clave: d.clave, descripcion: d.descripcion, unidadMedida: d.unidadMedida, cantidad: d.cantidad });
+        renderTabla();
+        limpiarSelector();
+      });
+    }
+
+    /* ── Botón Registrar Ingreso ── */
+    if (btnIngreso) {
+      btnIngreso.addEventListener("click", function () {
+        if (!urlRegistrarIngreso) { swalError("URL de ingreso no configurada."); return; }
+        if (itemsIngreso.length === 0) { swalWarning("Agrega al menos un artículo."); return; }
+        var motivo = (document.getElementById("ingresoMotivo") ? document.getElementById("ingresoMotivo").value : "").trim();
+        if (!motivo) { swalWarning("El motivo es obligatorio."); return; }
+
+        swalConfirmar(
+          "Registrar ingreso",
+          "Se registrarán " + itemsIngreso.length + " artículo(s). ¿Continuar?",
+          "Sí, registrar"
+        ).then(function (result) {
+          if (!result.isConfirmed) return;
+          Swal.fire({ title: "Procesando...", allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
+
+          var snapshot = itemsIngreso.slice();
+
+          postJson(urlRegistrarIngreso, { items: snapshot, motivo: motivo })
+            .then(function (r) {
+              if (r.ok) {
+                Swal.fire({
+                  icon: "success",
+                  title: "Ingreso registrado",
+                  text: r.mensaje || "El ingreso se guardó correctamente.",
+                  showCancelButton: true,
+                  confirmButtonText: '<i class="fa-solid fa-file-pdf"></i> Ver PDF',
+                  cancelButtonText: "Cerrar",
+                  confirmButtonColor: "#e11d48",
+                  cancelButtonColor: "#64748b",
+                }).then(function (res) {
+                  if (res.isConfirmed && urlIngresoInventarioPdf) {
+                    var form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = urlIngresoInventarioPdf;
+                    form.target = "_blank";
+                    var inp = document.createElement("input");
+                    inp.type = "hidden"; inp.name = "payload";
+                    inp.value = JSON.stringify({ folio: r.folio || 0, motivo: motivo, items: snapshot });
+                    form.appendChild(inp);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                  }
+                  location.reload();
+                });
+              } else {
+                swalError(r.error || "No se pudo registrar el ingreso.");
+              }
+            })
+            .catch(function (err) {
+              swalError(typeof err === "string" ? err : "No se pudo registrar el ingreso.");
+            });
+        });
+      });
+    }
+
+    /* ── Select existente change ── */
     if (selectExistente) {
       selectExistente.addEventListener("change", function () {
         var opt = this.options[this.selectedIndex];
         if (opt && opt.value) {
           var claveEl = document.getElementById("ingresoClave");
-          var descEl = document.getElementById("ingresoDescripcion");
-          var unidEl = document.getElementById("ingresoUnidad");
+          var descEl  = document.getElementById("ingresoDescripcion");
+          var unidEl  = document.getElementById("ingresoUnidad");
           if (claveEl) claveEl.value = opt.getAttribute("data-clave") || "";
-          if (descEl) descEl.value = opt.getAttribute("data-descripcion") || "";
-          if (unidEl) unidEl.value = opt.getAttribute("data-unidad") || "";
-          if (selectUnidad && window.SelectRosaBuscable) {
-            window.SelectRosaBuscable.actualizar(selectUnidad);
-          }
+          if (descEl)  descEl.value  = opt.getAttribute("data-descripcion") || "";
+          if (unidEl)  unidEl.value  = opt.getAttribute("data-unidad") || "";
+          if (selectUnidad && window.SelectRosaBuscable) window.SelectRosaBuscable.actualizar(selectUnidad);
           if (resumenExistente) resumenExistente.hidden = false;
           if (resumenTexto) resumenTexto.textContent = opt.text;
-          actualizarDetalleExistente(opt);
+          actualizarDetalle(opt);
         } else {
           if (resumenExistente) resumenExistente.hidden = true;
           if (resumenTexto) resumenTexto.textContent = "";
-          actualizarDetalleExistente(null);
+          actualizarDetalle(null);
         }
       });
     }
 
+    if (radSi) radSi.addEventListener("change", toggleModo);
+    if (radNo) radNo.addEventListener("change", toggleModo);
+
+    /* ── Lifecycle modal ── */
     if (modalRegIngreso) {
       modalRegIngreso.addEventListener("show.bs.modal", function () {
-        limpiarFormularioIngreso();
+        limpiarModal();
         if (selectExistente && window.SelectRosaBuscable) {
           window.SelectRosaBuscable.destruir(selectExistente);
           window.SelectRosaBuscable.inicializar(selectExistente, { placeholder: "-- Buscar artículo existente --" });
         }
         if (selectUnidad && window.SelectRosaBuscable) {
           window.SelectRosaBuscable.destruir(selectUnidad);
-          window.SelectRosaBuscable.inicializar(selectUnidad, {
-            placeholder: "-- Seleccionar unidad --",
-            defaultText: false,
-          });
+          window.SelectRosaBuscable.inicializar(selectUnidad, { placeholder: "-- Seleccionar unidad --", defaultText: false });
         }
       });
       modalRegIngreso.addEventListener("hidden.bs.modal", function () {
-        if (selectExistente && window.SelectRosaBuscable) {
-          window.SelectRosaBuscable.destruir(selectExistente);
-        }
-        if (selectUnidad && window.SelectRosaBuscable) {
-          window.SelectRosaBuscable.destruir(selectUnidad);
-        }
+        if (selectExistente && window.SelectRosaBuscable) window.SelectRosaBuscable.destruir(selectExistente);
+        if (selectUnidad    && window.SelectRosaBuscable) window.SelectRosaBuscable.destruir(selectUnidad);
       });
     }
   })();

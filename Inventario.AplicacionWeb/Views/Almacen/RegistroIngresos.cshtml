@@ -1,0 +1,352 @@
+@using Inventario.AplicacionWeb.Models.ViewModels
+@model VMRegistroIngresosIndex
+@{
+    ViewData["Title"] = "Registro de Ingresos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/almacen/almacen.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/requisicion/tabla-requisiciones.css" asp-append-version="true" />
+}
+
+<div class="tabla-requi-page"
+     data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
+     data-url-ingreso-inventario-pdf="@Url.Action("IngresoInventarioPdf", "Almacen")"
+     data-url-obtener-detalle-ingreso="@Url.Action("ObtenerDetalleIngreso", "Almacen")"
+     data-url-subir-pdf-ingreso="@Url.Action("SubirPdfFirmadoIngreso", "Almacen")"
+     data-url-inventario="@Url.Action("Index", "Almacen")">
+
+    <div class="tabla-requi-header">
+        <div>
+            <h1 class="info-titulo">Registro de Ingresos de Inventario</h1>
+            <p class="tabla-requi-subtitulo">DIF Puebla · Historial de entradas al almacén</p>
+        </div>
+    </div>
+
+    <!-- Acciones superiores -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <a href="@Url.Action("Index", "Almacen")" class="almacen-btn almacen-btn-cerrar">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Almacén
+        </a>
+        <button type="button" class="almacen-btn almacen-btn-completa"
+                data-bs-toggle="modal" data-bs-target="#modalRegistrarIngreso">
+            <i class="fa-solid fa-plus"></i> Registrar Ingreso
+        </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="container-formulario filtros-container">
+        <div class="filtro-grupo" style="flex:2;">
+            <label>Buscar</label>
+            <input type="text" id="filtroBuscarIngresos" placeholder="Buscar por folio o motivo..." />
+        </div>
+        <div class="filtro-grupo">
+            <label>Estado PDF</label>
+            <select id="filtroEstadoPdf" class="filtro-select-almacen">
+                <option value="">Todos</option>
+                <option value="sin">Sin firmar</option>
+                <option value="con">Firmado</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tabla de ingresos -->
+    <div class="container-formulario tabla-container">
+        <table class="tabla-requisiciones" id="tablaIngresos">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Folio</th>
+                    <th>Fecha</th>
+                    <th style="text-align:center">Artículos</th>
+                    <th>Motivo</th>
+                    <th style="text-align:center">Estado PDF</th>
+                    <th style="text-align:center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{var idx = 0;}
+                @foreach (var r in Model.Ingresos)
+                {
+                    idx++;
+                    <tr class="fila-requi"
+                        data-num-ingreso="@r.PrimerIdIngreso"
+                        data-motivo="@(r.Motivo ?? "")"
+                        data-tiene-pdf="@(r.TienePdfFirmado ? "si" : "no")">
+                        <td style="text-align:center">@idx</td>
+                        <td><span class="folio-badge">@r.PrimerIdIngreso.ToString().PadLeft(4,'0')</span></td>
+                        <td>@r.FechaIngreso.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="text-align:center;font-weight:600;">@r.CantidadArticulos</td>
+                        <td>@r.Motivo</td>
+                        <td style="text-align:center">
+                            @if (r.TienePdfFirmado)
+                            {
+                                <span class="badge-estado-premium badge-estado-success">
+                                    <i class="fa-solid fa-circle-check"></i> Firmado
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-estado-premium badge-estado-warning">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Sin firmar
+                                </span>
+                            }
+                        </td>
+                        <td style="text-align:center">
+                            <div class="acciones-grupo" style="justify-content:center">
+                                <button type="button"
+                                        class="btn-accion btn-ver"
+                                        title="Ver detalle del ingreso"
+                                        data-ver-detalle-ingreso
+                                        data-num-ingreso="@r.PrimerIdIngreso">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                @if (r.TienePdfFirmado)
+                                {
+                                    <a href="@r.RutaFirmado"
+                                       target="_blank"
+                                       class="btn-accion btn-pdf"
+                                       title="Ver PDF firmado">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn-accion btn-editar"
+                                            title="Subir PDF firmado"
+                                            data-subir-pdf-ingreso
+                                            data-num-ingreso="@r.PrimerIdIngreso">
+                                        <i class="fa-solid fa-upload"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Ingresos.Any())
+                {
+                    <tr class="fila-vacia">
+                        <td colspan="7" class="text-center">No hay registros de ingreso</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div id="paginacionIngresos" class="almacen-paginacion"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- Modal: Ver Detalle Ingreso                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modalDetalleIngreso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium" id="modalDetalleIngresoTitulo">Detalle de Ingreso</h5>
+                    <p class="modal-subtitulo-premium" id="modalDetalleIngresoSubtitulo">Artículos ingresados</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="table-responsive-container">
+                    <table class="tabla-requisiciones ingreso-tabla-items" id="tablaDetalleIngreso">
+                        <thead>
+                            <tr>
+                                <th>Clave</th>
+                                <th>Material</th>
+                                <th>Unidad</th>
+                                <th style="text-align:center">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDetalleIngresoBody">
+                            <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- Modal: Subir PDF Firmado                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modalSubirPdfIngreso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Subir PDF Firmado</h5>
+                    <p class="modal-subtitulo-premium" id="modalSubirPdfSubtitulo">Formato de ingreso firmado</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                <div class="formulario-input">
+                    <label for="inputPdfFirmadoIngreso">Selecciona el PDF firmado</label>
+                    <input type="file" id="inputPdfFirmadoIngreso" accept=".pdf,application/pdf"
+                           class="input-file-rosa" />
+                    <small class="text-muted" style="font-size:11px;">Solo se aceptan archivos PDF.</small>
+                </div>
+            </div>
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-completa" id="btnConfirmarSubirPdf">
+                    <i class="fa-solid fa-upload"></i> Subir PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- Modal: Registrar Ingreso (registro nuevo)                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modalRegistrarIngreso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title modal-titulo-premium">Registrar Ingreso de Inventario</h5>
+                    <p class="modal-subtitulo-premium">Agrega uno o más artículos al stock</p>
+                </div>
+                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body modal-body-premium ingreso-modal-body">
+
+                <div class="ingreso-tipo-selector">
+                    @await Html.PartialAsync("_CheckAnimado", new VMCheckAnimado {
+                        Type = "radio", Name = "tipoProducto", Id = "prodNuevoNo", Text = "Producto existente",
+                        InputClass = "radio-tipo-producto", Checked = true
+                    })
+                    @await Html.PartialAsync("_CheckAnimado", new VMCheckAnimado {
+                        Type = "radio", Name = "tipoProducto", Id = "prodNuevoSi", Text = "Producto nuevo",
+                        InputClass = "radio-tipo-producto"
+                    })
+                </div>
+
+                <div id="seccionProductoExistente">
+                    <div class="formulario-input">
+                        <label for="selectProductoExistente">Buscar artículo existente</label>
+                        <select id="selectProductoExistente" class="filtro-select-almacen">
+                            <option value="">-- Buscar artículo existente --</option>
+                            @foreach (var item in Model.Inventario)
+                            {
+                                <option value="@item.Descripcion"
+                                        data-clave="@item.Clave"
+                                        data-unidad="@item.UnidadMedida"
+                                        data-descripcion="@item.Descripcion">
+                                    @item.Descripcion — @item.UnidadMedida (Stock: @item.Existencia)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div id="resumenProductoExistente" hidden class="ingreso-resumen">
+                        <span class="ingreso-resumen-label">Seleccionado</span>
+                        <span id="resumenProductoTexto" class="ingreso-resumen-texto"></span>
+                    </div>
+                    <div id="detalleProductoExistente" hidden class="ingreso-detalle-grid">
+                        <div class="ingreso-detalle-item">
+                            <span class="ingreso-detalle-label">Clave</span>
+                            <strong id="detalleProductoClave" class="ingreso-detalle-valor">-</strong>
+                        </div>
+                        <div class="ingreso-detalle-item">
+                            <span class="ingreso-detalle-label">Unidad</span>
+                            <strong id="detalleProductoUnidad" class="ingreso-detalle-valor">-</strong>
+                        </div>
+                        <div class="ingreso-detalle-item ingreso-detalle-item--full">
+                            <span class="ingreso-detalle-label">Descripción</span>
+                            <strong id="detalleProductoDescripcion" class="ingreso-detalle-valor">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="seccionProductoNuevo" style="display:none;">
+                    <div class="formulario-input" style="margin-bottom:12px;">
+                        <label for="ingresoClave">Clave del artículo</label>
+                        <input type="text" id="ingresoClave" placeholder="Clave del material" />
+                    </div>
+                    <div class="formulario-input" style="margin-bottom:12px;">
+                        <label for="ingresoUnidad">Unidad de medida <span class="ingreso-obligatorio">*</span></label>
+                        <select id="ingresoUnidad" class="filtro-select-almacen">
+                            <option value="">-- Seleccionar --</option>
+                            @foreach (var u in Model.UnidadesMedida)
+                            {
+                                <option value="@u">@u</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="formulario-input">
+                        <label for="ingresoDescripcion">Descripción <span class="ingreso-obligatorio">*</span></label>
+                        <input type="text" id="ingresoDescripcion" placeholder="Nombre del material" />
+                    </div>
+                </div>
+
+                <div class="ingreso-add-row">
+                    <div class="formulario-input">
+                        <label for="ingresoCantidad">Cantidad <span class="ingreso-obligatorio">*</span></label>
+                        <input type="number" id="ingresoCantidad" min="1" step="1" value="1" />
+                    </div>
+                    <button type="button" id="btnAgregarItem" class="almacen-btn almacen-btn-parcial">
+                        <i class="fa-solid fa-plus"></i> Agregar
+                    </button>
+                </div>
+
+                <div id="ingresoItemsWrap" style="display:none; margin-top:14px;">
+                    <div class="table-responsive-container" style="margin-bottom:0;">
+                        <table class="tabla-requisiciones ingreso-tabla-items" id="tablaIngresoItems">
+                            <thead>
+                                <tr>
+                                    <th>Clave</th>
+                                    <th>Material</th>
+                                    <th>Unidad</th>
+                                    <th style="text-align:center;">Cant.</th>
+                                    <th style="width:44px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaIngresoItemsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ingreso-seccion-comun">
+                    <div class="formulario-input">
+                        <label for="ingresoMotivo">Motivo del ingreso <span class="ingreso-obligatorio">*</span></label>
+                        <textarea id="ingresoMotivo" rows="2" placeholder="Ej: Compra directa, donación, ajuste de inventario..."></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="almacen-modal-footer">
+                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="almacen-btn almacen-btn-completa" id="btnRegistrarIngreso" disabled>
+                    <i class="fa-solid fa-boxes-stacked"></i> Registrar Ingreso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>
+    <script src="~/js/almacen/registro-ingresos.js" asp-append-version="true"></script>
+}

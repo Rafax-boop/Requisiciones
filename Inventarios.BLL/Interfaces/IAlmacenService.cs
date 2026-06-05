@@ -16,6 +16,7 @@ namespace Inventario.BLL.Interfaces
 
         // ─── Operaciones ─────────────────────────────────────────
         Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto);
+        Task<bool> RegistrarIngresoInventarioLote(List<IngresoInventarioDTO> items);
         Task<bool> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
         Task<bool> ProcesarRequisicion(
             int idRequisicion,

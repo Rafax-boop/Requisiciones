@@ -15,7 +15,6 @@
      data-url-obtener-requisicion="@Url.Action("ObtenerRequisicionCompleta", "Almacen")"
      data-url-ver-pdf="@Url.Action("VerSalidaParaPdf", "Almacen")"
      data-url-rechazar="@Url.Action("Rechazar", "Almacen")"
-     data-url-registrar-ingreso="@Url.Action("RegistrarIngreso", "Almacen")"
      data-url-consultar-stock="@Url.Action("ConsultarStock", "Almacen")"
      data-url-procesar-requisicion="@Url.Action("ProcesarRequisicion", "Almacen")"
      data-url-confirmar-entrega="@Url.Action("ConfirmarEntrega", "Almacen")"
@@ -409,9 +408,9 @@
         </div>
 
         <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
-            <button type="button" class="almacen-btn almacen-btn-completa" data-bs-toggle="modal" data-bs-target="#modalRegistrarIngreso">
-                <i class="fa-solid fa-boxes-stacked"></i> Registrar Ingreso
-            </button>
+            <a href="@Url.Action("RegistroIngresos", "Almacen")" id="btnAbrirRegistrarIngreso" class="almacen-btn almacen-btn-completa btn-registrar-ingreso-inventario">
+                <i class="fa-solid fa-boxes-stacked"></i> Registro de Ingresos
+            </a>
         </div>
 
         <div class="container-formulario tabla-container">
@@ -730,126 +729,6 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- Modal: Registrar Ingreso de Inventario                            -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="modal" id="modalRegistrarIngreso" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content modal-premium">
-            <div class="modal-header modal-header-premium">
-                <div>
-                    <h5 class="modal-title modal-titulo-premium">Registrar Ingreso de Inventario</h5>
-                    <p class="modal-subtitulo-premium">Aumenta el stock de los materiales</p>
-                </div>
-                <button type="button" class="modal-btn-cerrar" data-bs-dismiss="modal" aria-label="Cerrar">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="modal-body modal-body-premium">
-
-                <!-- Tipo de registro -->
-                <div style="margin-bottom:18px;">
-                    <div style="display:flex; gap:16px; padding:14px 16px; background:#fdf2f8; border:1px solid #fbcfe8; border-radius:12px;">
-                        @await Html.PartialAsync("_CheckAnimado", new VMCheckAnimado {
-                            Type = "radio", Name = "tipoProducto", Id = "prodNuevoNo", Text = "Producto existente",
-                            InputClass = "radio-tipo-producto", Checked = true
-                        })
-                        @await Html.PartialAsync("_CheckAnimado", new VMCheckAnimado {
-                            Type = "radio", Name = "tipoProducto", Id = "prodNuevoSi", Text = "Producto nuevo",
-                            InputClass = "radio-tipo-producto"
-                        })
-                    </div>
-                </div>
-
-                <!-- Producto existente -->
-                <div id="seccionProductoExistente" style="margin-bottom:16px;">
-                    <div class="formulario-input">
-                        <label for="selectProductoExistente">Buscar artículo existente</label>
-                        <select id="selectProductoExistente" class="filtro-select-almacen">
-                            <option value="">-- Buscar artículo existente --</option>
-                            @foreach (var item in Model.Inventario)
-                            {
-                                <option value="@item.Descripcion"
-                                        data-clave="@item.Clave"
-                                        data-unidad="@item.UnidadMedida"
-                                        data-descripcion="@item.Descripcion">
-                                    @item.Descripcion — @item.UnidadMedida (Stock: @item.Existencia)
-                                </option>
-                            }
-                        </select>
-                    </div>
-
-                    <div id="resumenProductoExistente" hidden style="margin-top:8px;padding:10px 14px;border:1px solid #fbcfe8;border-radius:8px;background:#fdf2f8;">
-                        <span style="font-size:11px;font-weight:700;color:#be185d;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Seleccionado</span>
-                        <span id="resumenProductoTexto" style="font-size:13px;font-weight:600;color:#334155;"></span>
-                    </div>
-
-                    <div id="detalleProductoExistente" hidden style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;">
-                        <div style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;">
-                            <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Clave</span>
-                            <strong id="detalleProductoClave" style="font-size:14px;font-weight:600;color:#1e293b;">-</strong>
-                        </div>
-                        <div style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;">
-                            <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Unidad</span>
-                            <strong id="detalleProductoUnidad" style="font-size:14px;font-weight:600;color:#1e293b;">-</strong>
-                        </div>
-                        <div style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;grid-column:1/-1;">
-                            <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Descripción</span>
-                            <strong id="detalleProductoDescripcion" style="font-size:14px;font-weight:600;color:#1e293b;">-</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Producto nuevo -->
-                <div id="seccionProductoNuevo" style="display:none;margin-bottom:16px;">
-                    <div style="padding:8px 0;">
-                        <div class="formulario-input" style="margin-bottom:12px;">
-                            <label for="ingresoClave">Clave del artículo</label>
-                            <input type="text" id="ingresoClave" class="input-file-rosa" placeholder="Clave del material" />
-                        </div>
-                        <div class="formulario-input" style="margin-bottom:12px;">
-                            <label for="ingresoUnidad">Unidad de medida <span style="color:#e11d48;">*</span></label>
-                            <select id="ingresoUnidad" class="filtro-select-almacen">
-                                <option value="">-- Seleccionar --</option>
-                                @foreach (var u in Model.UnidadesMedida)
-                                {
-                                    <option value="@u">@u</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="formulario-input">
-                            <label for="ingresoDescripcion">Descripción <span style="color:#e11d48;">*</span></label>
-                            <input type="text" id="ingresoDescripcion" class="input-file-rosa" placeholder="Nombre del material" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cantidad y motivo -->
-                <div style="border-top:1px solid #e2e8f0;padding-top:16px;">
-                    <div class="formulario-input" style="margin-bottom:12px;">
-                        <label for="ingresoCantidad">Cantidad a aumentar <span style="color:#e11d48;">*</span></label>
-                        <input type="number" id="ingresoCantidad" class="input-file-rosa" min="1" step="1" value="1" />
-                    </div>
-                    <div class="formulario-input">
-                        <label for="ingresoMotivo">Motivo del ingreso <span style="color:#e11d48;">*</span></label>
-                        <textarea id="ingresoMotivo" rows="3" class="input-file-rosa" placeholder="Ej: Compra directa, donación, ajuste de inventario..."></textarea>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="almacen-modal-footer">
-                <button type="button" class="almacen-btn almacen-btn-cerrar" data-bs-dismiss="modal">
-                    <i class="fa-solid fa-xmark"></i> Cancelar
-                </button>
-                <button type="button" class="almacen-btn almacen-btn-completa" id="btnRegistrarIngreso">
-                    <i class="fa-solid fa-boxes-stacked"></i> Registrar Ingreso
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
     <script src="~/js/shared/select-rosa-buscable.js" asp-append-version="true"></script>

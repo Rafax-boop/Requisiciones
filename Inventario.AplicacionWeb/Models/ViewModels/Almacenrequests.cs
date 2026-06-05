@@ -61,6 +61,27 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
         public string? Motivo { get; set; }
     }
 
+    public class IngresoItemRequest
+    {
+        public string? Clave { get; set; }
+        public string? Descripcion { get; set; }
+        public string? UnidadMedida { get; set; }
+        public int Cantidad { get; set; }
+    }
+
+    public class IngresoInventarioLoteRequest
+    {
+        public List<IngresoItemRequest> Items { get; set; } = new();
+        public string? Motivo { get; set; }
+    }
+
+    public class IngresoInventarioPdfPayload
+    {
+        public int Folio { get; set; }
+        public string? Motivo { get; set; }
+        public List<IngresoItemRequest> Items { get; set; } = new();
+    }
+
     public class PartidaEntrega
     {
         public int IdRequisicionDetalle { get; set; }
@@ -116,5 +137,28 @@ namespace Inventario.AplicacionWeb.Models.ViewModels
     public class CrearConsolidadaRequest
     {
         public List<int> IdsRequisiciones { get; set; } = new();
+    }
+
+    public class VMIngresoItemPdf
+    {
+        public string? Clave { get; set; }
+        public string Descripcion { get; set; } = "";
+        public string UnidadMedida { get; set; } = "";
+        public int Cantidad { get; set; }
+    }
+
+    public class VMIngresoInventarioPdf
+    {
+        public int Folio { get; set; }
+        public string? Motivo { get; set; }
+        public DateTime Fecha { get; set; }
+        public List<VMIngresoItemPdf> Items { get; set; } = new();
+    }
+
+    // SubirPdfIngresoRequest: pendiente de relaciones BD — se reactivará cuando el colega configure la tabla
+    public class SubirPdfIngresoRequest
+    {
+        public int NumIngreso { get; set; }
+        public IFormFile? Pdf { get; set; }
     }
 }
