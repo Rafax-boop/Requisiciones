@@ -1313,6 +1313,18 @@ namespace Inventario.BLL.Implementacion
 
             CalcularSumasDual(modelo);
 
+            // ── Auto-poblar firmas desde TblDepartamento ───────────────────
+            var deptoRecursos = await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
+            var deptoFinanzas = await _repoDepartamento.Obtener(
+                d => d.NombreDepartamento == "DIRECCIÓN DE ADMINISTRACIÓN Y FINANZAS");
+            modelo.Reviso = deptoRecursos?.NombreJefe ?? "";
+            modelo.CargoReviso = deptoRecursos?.CargoJefe ?? "";
+            modelo.Autorizo = deptoFinanzas?.NombreJefe ?? "";
+            modelo.CargoAutorizo = deptoFinanzas?.CargoJefe ?? "";
+            modelo.VistoBueno = deptoFinanzas?.NombreDirector ?? "";
+            modelo.CargoVistoBueno = deptoFinanzas?.CargoDirector ?? "";
+            modelo.CargoElaboro = "Analista del Departamento de Recursos Materiales y Servicios Generales";
+
             return modelo;
         }
 
@@ -1356,6 +1368,18 @@ namespace Inventario.BLL.Implementacion
             };
 
             CalcularSumasDual(modelo);
+
+            // ── Auto-poblar firmas desde TblDepartamento ───────────────────
+            var deptoRecursos = await _repoDepartamento.Obtener(d => d.IdDepartamento == 19);
+            var deptoFinanzas = await _repoDepartamento.Obtener(
+                d => d.NombreDepartamento == "DIRECCIÓN DE ADMINISTRACIÓN Y FINANZAS");
+            modelo.Reviso = deptoRecursos?.NombreJefe ?? "";
+            modelo.CargoReviso = deptoRecursos?.CargoJefe ?? "";
+            modelo.Autorizo = deptoFinanzas?.NombreJefe ?? "";
+            modelo.CargoAutorizo = deptoFinanzas?.CargoJefe ?? "";
+            modelo.VistoBueno = deptoFinanzas?.NombreDirector ?? "";
+            modelo.CargoVistoBueno = deptoFinanzas?.CargoDirector ?? "";
+            modelo.CargoElaboro = "Analista del Departamento de Recursos Materiales y Servicios Generales";
 
             return modelo;
         }
@@ -1667,14 +1691,14 @@ namespace Inventario.BLL.Implementacion
 
             // ── Firmas (Elaboró, Revisó, Autorizó, Visto Bueno) ────────────────
             var tblFirmas = new Table(UnitValue.CreatePercentArray(new float[] { 25f, 25f, 25f, 25f })).UseAllAvailableWidth();
-            var firmantes = new (string Titulo, string Texto)[]
+            var firmantes = new (string Titulo, string Nombre, string Cargo)[]
             {
-                ("Elaboró", modelo.Elaboro),
-                ("Revisó", modelo.Reviso),
-                ("Autorizó", modelo.Autorizo),
-                ("Visto Bueno", modelo.VistoBueno),
+                ("Elaboró", "C. " + modelo.Elaboro, modelo.CargoElaboro),
+                ("Revisó", "C. " + modelo.Reviso, modelo.CargoReviso),
+                ("Autorizó", "C. " + modelo.Autorizo, modelo.CargoAutorizo),
+                ("Visto Bueno", "C. " + modelo.VistoBueno, modelo.CargoVistoBueno),
             };
-            foreach (var (titulo, texto) in firmantes)
+            foreach (var (titulo, nombre, cargo) in firmantes)
             {
                 tblFirmas.AddCell(new Cell()
                     .SetMinHeight(78f)
@@ -1684,11 +1708,14 @@ namespace Inventario.BLL.Implementacion
                     .SetPaddingTop(10f).SetPaddingBottom(10f).SetPaddingLeft(6f).SetPaddingRight(6f)
                     .SetBorder(bordeCelda)
                     .Add(new Paragraph(titulo).SetFont(bold).SetFontSize(7f)
-                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla).SetMarginBottom(10f))
-                    .Add(new Paragraph(" ").SetFontSize(20f))
+                        .SetFontColor(PdfApiEstiloRequi.TextoEncabezadoTabla).SetMarginBottom(6f))
+                    .Add(new Paragraph(" ").SetFontSize(14f))
                     .Add(new Paragraph("_________________________________________").SetFont(regular).SetFontSize(5f)
-                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginBottom(6f))
-                    .Add(new Paragraph(S(texto).Replace("\n", " ")).SetFont(regular).SetFontSize(6f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal).SetMarginBottom(3f))
+                    .Add(new Paragraph(S(nombre).Replace("\n", " ")).SetFont(regular).SetFontSize(6f)
+                        .SetFontColor(PdfApiEstiloRequi.TextoPrincipal)
+                        .SetTextAlignment(TextAlignment.CENTER))
+                    .Add(new Paragraph(S(cargo).Replace("\n", " ")).SetFont(regular).SetFontSize(5.5f)
                         .SetFontColor(PdfApiEstiloRequi.TextoSecundario)
                         .SetTextAlignment(TextAlignment.CENTER)));
             }
@@ -1998,6 +2025,23 @@ namespace Inventario.BLL.Implementacion
                 WriteIndented = false,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });
+
+            // Obtener el último historial para esta requisición/consolidada
+            TblTablaApiHistorial? ultimo = null;
+            if (modelo.IdRequisicion > 0)
+            {
+                var query = await _repoHistorial.Consultar(h => h.IdRequisicion == modelo.IdRequisicion);
+                ultimo = await query.OrderByDescending(h => h.FechaGeneracion).FirstOrDefaultAsync();
+            }
+            else if (modelo.IdConsolidada.GetValueOrDefault() > 0)
+            {
+                var query = await _repoHistorial.Consultar(h => h.IdConsolidada == modelo.IdConsolidada);
+                ultimo = await query.OrderByDescending(h => h.FechaGeneracion).FirstOrDefaultAsync();
+            }
+
+            // Si los datos no cambiaron, no duplicar historial
+            if (ultimo?.DatosJson == json)
+                return;
 
             var registro = new TblTablaApiHistorial
             {
@@ -2429,9 +2473,20 @@ namespace Inventario.BLL.Implementacion
             var queryDet = await _repoDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
 
+            // Cargar movimientos COMPRA para preferir CantidadAlmacen
+            var queryMov = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+            var movimientos = await queryMov.ToListAsync();
+            var cantidadAlmacenPorDetalle = movimientos
+                .Where(m => m.CantidadMovimiento != m.CantidadOriginal)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => (decimal)g.OrderByDescending(m => m.FechaMovimiento).First().CantidadMovimiento);
+
             var cantidadPorPartida = detalles.ToDictionary(
                 d => d.IdRequisicionDetalle,
-                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+                d => cantidadAlmacenPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var cantAlm)
+                    ? cantAlm
+                    : d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
 
             // ── Jalar el proveedor ganador desde BD ──
             var queryGanador = await _repositoryGanador.Consultar(
@@ -2553,9 +2608,28 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
+            // Cargar movimientos COMPRA para preferir CantidadAlmacen
+            var queryMovPedido = await _repoMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+            var movimientosPedido = await queryMovPedido.ToListAsync();
+            var cantidadAlmacenPorDetalle = movimientosPedido
+                .Where(m => m.CantidadMovimiento != m.CantidadOriginal)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => (decimal)g.OrderByDescending(m => m.FechaMovimiento).First().CantidadMovimiento);
+
+            // Filtrar solo artículos con movimiento COMPRA (excluir ENTREGA)
+            // Las requisiciones de servicio no usan movimientos y se incluyen todas
+            if (requisicion.RequiServicio != true)
+            {
+                var idsCompra = movimientosPedido.Select(m => m.IdRequisicionDetalle).ToHashSet();
+                detalles = detalles.Where(d => idsCompra.Contains(d.IdRequisicionDetalle)).ToList();
+            }
+
             var cantidadPorPartida = detalles.ToDictionary(
                 d => d.IdRequisicionDetalle,
-                d => d.Cantidad ?? 1m);
+                d => cantidadAlmacenPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var cantAlm)
+                    ? cantAlm
+                    : d.Cantidad ?? 1m);
 
             var queryGanador = await _repositoryGanador.Consultar(g => g.IdRequisicion == idRequisicion);
             var ganador = await queryGanador.FirstOrDefaultAsync();
@@ -2658,7 +2732,9 @@ namespace Inventario.BLL.Implementacion
                 var det = detalles[i];
                 cotGanadora.TryGetValue(det.IdRequisicionDetalle, out var cot);
                 bool tieneIva = cot?.Iva ?? false;
-                decimal cantidad = det.Cantidad ?? 1m;
+                decimal cantidad = cantidadAlmacenPorDetalle.TryGetValue(det.IdRequisicionDetalle, out var cantAlm)
+                    ? cantAlm
+                    : det.Cantidad ?? 1m;
                 decimal precioUnitario = cot?.Importe ?? 0m;
 
                 if (importesAutorizadosPorIndice.TryGetValue(i, out var totalAutorizadoConIva))
@@ -3310,15 +3386,30 @@ namespace Inventario.BLL.Implementacion
             var nombreDepartamento = depto19?.NombreDepartamento ?? "DEPARTAMENTO DE RECURSOS MATERIALES Y SERVICIOS GENERALES";
             var responsableDepto = depto19?.NombreJefe ?? "";
 
+            // Cargar movimientos COMPRA para preferir CantidadAlmacen
+            var queryMovCons = await _repoMovimiento.Consultar(
+                m => idsHijas.Contains(m.IdRequisicion) && m.TipoMovimiento == "COMPRA");
+            var movimientosCons = await queryMovCons.ToListAsync();
+            var cantidadAlmacenPorDetalleCons = movimientosCons
+                .Where(m => m.CantidadMovimiento != m.CantidadOriginal)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => (decimal?)g.OrderByDescending(m => m.FechaMovimiento).First().CantidadMovimiento);
+
+            var idsCompraCons = movimientosCons.Select(m => m.IdRequisicionDetalle).ToHashSet();
+
             var todasPartidas = hijas
-                .SelectMany(r => r.TblRequisicionDetalles.Where(a => a.Activo != false))
+                .SelectMany(r => r.TblRequisicionDetalles
+                    .Where(a => a.Activo != false)
+                    .Where(a => r.RequiServicio == true || idsCompraCons.Contains(a.IdRequisicionDetalle)))
                 .Select(a => new
                 {
                     a.IdRequisicionDetalle,
                     a.IdRequisicion,
                     IdArticulo = a.IdArticulo ?? 0,
                     a.Descripcion,
-                    a.Cantidad,
+                    Cantidad = cantidadAlmacenPorDetalleCons.TryGetValue(a.IdRequisicionDetalle, out var cantAlm)
+                        ? cantAlm.Value
+                        : a.Cantidad,
                     a.UnidadMedida,
                     Clave = a.IdArticuloNavigation != null ? a.IdArticuloNavigation.Clave : null,
                     ClaveMaterial = a.IdArticuloNavigation != null ? (int?)a.IdArticuloNavigation.ClaveMaterial : null,

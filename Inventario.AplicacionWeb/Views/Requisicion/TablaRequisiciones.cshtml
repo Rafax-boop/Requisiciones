@@ -106,7 +106,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
 
     <div class="container-formulario filtros-container">
         <div class="filtro-grupo">
-            <label>NÂº Requisición</label>
+            <label>Nº Requisición</label>
             <input type="text" id="filtroNumReq" placeholder="REC-000000" />
         </div>
         <div class="filtro-grupo">
@@ -1294,7 +1294,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                                cursor:pointer; color:#888; font-size:13px; padding:0; margin-bottom:1rem;">
                         <i class="fa-solid fa-arrow-left" style="font-size:11px;"></i> Volver
                     </button>
-                    <p style="font-size:14px; font-weight:500; margin:0 0 6px;">Â¿Enviar a almacén?</p>
+                    <p style="font-size:14px; font-weight:500; margin:0 0 6px;">¿Enviar a almacén?</p>
                     <p style="font-size:13px; color:#888; margin:0 0 1.5rem;">
                         La requisición será turnada directamente al área de almacén sin asignación previa.
                     </p>
@@ -1741,6 +1741,10 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                     <a id="linkVerPdfFirmado" href="#" target="_blank" class="btn boton-rosa w-100" style="text-decoration:none;">
                         <i class="fa-solid fa-eye"></i> Ver PDF firmado
                     </a>
+                </div>
+                <div id="seccionPdfNoSubido" style="display:none;margin-top:12px;text-align:center;padding:20px 10px;">
+                    <i class="fa-solid fa-file-circle-exclamation" style="font-size:2rem;color:var(--slate-400);margin-bottom:8px;"></i>
+                    <p style="font-size:14px;color:var(--slate-500);margin:0;">Aún no se ha subido el documento PDF firmado</p>
                 </div>
             </div>
         </div>

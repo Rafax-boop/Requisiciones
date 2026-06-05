@@ -284,7 +284,7 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
-            // Calcular EstatusPartida por cada artÃ­culo
+            // Calcular EstatusPartida y CantidadAlmacen por cada artÃ­culo
             bool requiEntregada = maestra?.IdEstatus == 12;
             foreach (var art in lista)
             {
@@ -296,6 +296,9 @@ namespace Inventario.BLL.Implementacion
                         "ENTREGA" => (mov.Confirmado.GetValueOrDefault()) ? "Entregado" : "En entrega",
                         _ => "En compra"
                     };
+
+                    if (mov.TipoMovimiento == "COMPRA" && mov.CantidadMovimiento != mov.CantidadOriginal)
+                        art.CantidadAlmacen = mov.CantidadMovimiento;
                 }
                 else
                 {
@@ -482,6 +485,25 @@ namespace Inventario.BLL.Implementacion
                 art.Mes = prog.Mes;
             }
 
+            // Cargar movimientos para determinar CantidadAlmacen
+            var queryMov = await _repoMovimiento.Consultar(m => m.IdRequisicion == idRequisicion);
+            var movimientos = await queryMov.ToListAsync();
+            var movimientoPorPartida = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(m => m.FechaMovimiento).First()
+                );
+            foreach (var art in articulos)
+            {
+                if (movimientoPorPartida.TryGetValue(art.IdRequisicionDetalle, out var mov)
+                    && mov.TipoMovimiento == "COMPRA"
+                    && mov.CantidadMovimiento != mov.CantidadOriginal)
+                {
+                    art.CantidadAlmacen = mov.CantidadMovimiento;
+                }
+            }
+
             var pedidosReq = await _repoPedido.Consultar(p => p.IdRequisicion == idRequisicion);
             var pedidosReqList = await pedidosReq.ToListAsync();
 
@@ -533,13 +555,19 @@ namespace Inventario.BLL.Implementacion
 
             await _repositoryRequisicion.Editar(requisicion);
 
-            // Eliminar artÃ­culos anteriores
+            // Eliminar municipios primero (FK hacia TblRequisicionDetalle)
+            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => m.IdRequisicion == idRequisicion);
+            var municipiosActuales = await queryMunis.ToListAsync();
+            foreach (var muni in municipiosActuales)
+                await _repoMunicipiosDetalle.Eliminar(muni);
+
+            // Eliminar artículos anteriores
             var queryDetalles = await _repositoryRequisicionDetalle.Consultar(r => r.IdRequisicion == idRequisicion);
             var detallesActuales = await queryDetalles.ToListAsync();
             foreach (var detalle in detallesActuales)
                 await _repositoryRequisicionDetalle.Eliminar(detalle);
 
-            // Insertar los nuevos artÃ­culos 
+            // Insertar los nuevos artículos
             var nuevosDetalles = modelo.Articulos.Select(item => new TblRequisicionDetalle
             {
                 IdRequisicion = idRequisicion,
@@ -553,12 +581,6 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
 
             await _repositoryRequisicionDetalle.CrearRango(nuevosDetalles);
-
-            // Eliminar municipios anteriores y reinsertar con los nuevos IdRequisicionDetalle
-            var queryMunis = await _repoMunicipiosDetalle.Consultar(m => m.IdRequisicion == idRequisicion);
-            var municipiosActuales = await queryMunis.ToListAsync();
-            foreach (var muni in municipiosActuales)
-                await _repoMunicipiosDetalle.Eliminar(muni);
 
             var listaMunicipios = new List<TblRequisicionDetalleMunicipio>();
             for (int i = 0; i < modelo.Articulos.Count; i++)

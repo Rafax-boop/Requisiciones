@@ -31,6 +31,7 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblConsolidada> _repositoryConsolidada;
         private readonly IGenericRepository<TblConsolidadasDetalle> _repositoryConsolidadaDetalle;
         private readonly IGenericRepository<TblRequisicionDetalle> _repositoryRequisicionDetalle;
+        private readonly IGenericRepository<TblRequisicionDetalleMovimiento> _repositoryMovimiento;
 
         public CuadroComparativoPdfService(
             IRequisicionesService requisicionesService,
@@ -38,7 +39,8 @@ namespace Inventario.BLL.Implementacion
             IGenericRepository<TblAdjudicacion> repositoryAdquisicion,
             IGenericRepository<TblConsolidada> repositoryConsolidada,
             IGenericRepository<TblConsolidadasDetalle> repositoryConsolidadaDetalle,
-            IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle)
+            IGenericRepository<TblRequisicionDetalle> repositoryRequisicionDetalle,
+            IGenericRepository<TblRequisicionDetalleMovimiento> repositoryMovimiento)
         {
             _requisicionesService = requisicionesService;
             _cotizacionesService = cotizacionesService;
@@ -46,6 +48,7 @@ namespace Inventario.BLL.Implementacion
             _repositoryConsolidada = repositoryConsolidada;
             _repositoryConsolidadaDetalle = repositoryConsolidadaDetalle;
             _repositoryRequisicionDetalle = repositoryRequisicionDetalle;
+            _repositoryMovimiento = repositoryMovimiento;
         }
 
         public async Task<(byte[] PdfBytes, string FileName)?> GenerarAsync(
@@ -105,10 +108,11 @@ namespace Inventario.BLL.Implementacion
             var filas = dto.Articulos?
                 .Select(a =>
                 {
-                    var cantidadTexto = a.Cantidad.HasValue
-                        ? decimal.Truncate(a.Cantidad.Value) == a.Cantidad.Value
-                            ? ((int)a.Cantidad.Value).ToString(CultureInfo.InvariantCulture)
-                            : a.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
+                    var cantidadEfectiva = a.CantidadAlmacen ?? a.Cantidad;
+                    var cantidadTexto = cantidadEfectiva.HasValue
+                        ? decimal.Truncate(cantidadEfectiva.Value) == cantidadEfectiva.Value
+                            ? ((int)cantidadEfectiva.Value).ToString(CultureInfo.InvariantCulture)
+                            : cantidadEfectiva.Value.ToString("0.##", CultureInfo.InvariantCulture)
                         : "";
 
                     // Busca las cotizaciones de esta partida usando el Id real (no se muestra)
@@ -126,7 +130,7 @@ namespace Inventario.BLL.Implementacion
                     {
                         Partida = a.NumPartida?.ToString() ?? "",
                         Descripcion = a.DescripcionDetallada ?? a.Descripcion ?? "",
-                        Cantidad = a.Cantidad ?? 0m,
+                        Cantidad = cantidadEfectiva ?? 0m,
                         CantidadTxt = cantidadTexto,
                         Unidad = a.UnidadMedida ?? "",
                         PrecioP1 = precios.ElementAtOrDefault(0)?.Importe,
@@ -547,12 +551,13 @@ namespace Inventario.BLL.Implementacion
             var filas = articulos.Select((a, idx) =>
             {
                 var precioUnitario = cotizacionesGanador.TryGetValue(a.IdRequisicionDetalle, out var p) ? p : 0m;
-                var cantidad = a.Cantidad ?? 0m;
+                var cantidadEfectiva = a.CantidadAlmacen ?? a.Cantidad;
+                var cantidad = cantidadEfectiva ?? 0m;
 
-                var cantidadTxt = a.Cantidad.HasValue
-                    ? (decimal.Truncate(a.Cantidad.Value) == a.Cantidad.Value
-                        ? ((int)a.Cantidad.Value).ToString(CultureInfo.InvariantCulture)
-                        : a.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture))
+                var cantidadTxt = cantidadEfectiva.HasValue
+                    ? (decimal.Truncate(cantidadEfectiva.Value) == cantidadEfectiva.Value
+                        ? ((int)cantidadEfectiva.Value).ToString(CultureInfo.InvariantCulture)
+                        : cantidadEfectiva.Value.ToString("0.##", CultureInfo.InvariantCulture))
                     : "";
 
                 return new ReqDirectaFila
@@ -866,18 +871,29 @@ namespace Inventario.BLL.Implementacion
                 .Consultar(d => idsRequisiciones.Contains(d.IdRequisicion));
             var todosLosArticulos = await qArticulos.ToListAsync();
 
-            // 4. Agrupar por IdArticulo sumando cantidades
+            // Cargar movimientos COMPRA para usar CantidadAlmacen
+            var qMovConsPdf = await _repositoryMovimiento.Consultar(
+                m => idsRequisiciones.Contains(m.IdRequisicion) && m.TipoMovimiento == "COMPRA");
+            var movimientosConsPdf = await qMovConsPdf.ToListAsync();
+            var cantAlmacenDetallePdf = movimientosConsPdf
+                .Where(m => m.CantidadMovimiento != m.CantidadOriginal)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => (decimal?)g.OrderByDescending(m => m.FechaMovimiento).First().CantidadMovimiento);
+
+            // 4. Agrupar por IdArticulo sumando cantidades efectivas (CantidadAlmacen ?? Cantidad)
             var articulosAgrupados = todosLosArticulos
                 .GroupBy(a => a.IdArticulo)
                 .Select(g =>
                 {
                     var primero = g.First();
+                    var primerDetalle = g.First();
                     return new DetalleArticuloDTO
                     {
                         IdRequisicionDetalle = primero.IdRequisicionDetalle, // referencia para cotizaciones
                         NumPartida = primero.NumPartida,
                         IdArticulo = primero.IdArticulo,
-                        Cantidad = g.Sum(x => x.Cantidad),
+                        Cantidad = g.Sum(x => cantAlmacenDetallePdf.TryGetValue(x.IdRequisicionDetalle, out var ca) ? ca.Value : (x.Cantidad ?? 0m)),
+                        CantidadAlmacen = cantAlmacenDetallePdf.TryGetValue(primerDetalle.IdRequisicionDetalle, out var ca2) ? ca2 : null,
                         UnidadMedida = primero.UnidadMedida,
                         Descripcion = primero.Descripcion,
                         DescripcionDetallada = primero.DescripcionDetallada
@@ -963,10 +979,11 @@ namespace Inventario.BLL.Implementacion
             // 9. Construir filas usando articulosAgrupados
             var filas = articulosAgrupados.Select(a =>
             {
-                var cantidadTexto = a.Cantidad.HasValue
-                    ? decimal.Truncate(a.Cantidad.Value) == a.Cantidad.Value
-                        ? ((int)a.Cantidad.Value).ToString(CultureInfo.InvariantCulture)
-                        : a.Cantidad.Value.ToString("0.##", CultureInfo.InvariantCulture)
+                var cantidadEfectiva = a.CantidadAlmacen ?? a.Cantidad;
+                var cantidadTexto = cantidadEfectiva.HasValue
+                    ? decimal.Truncate(cantidadEfectiva.Value) == cantidadEfectiva.Value
+                        ? ((int)cantidadEfectiva.Value).ToString(CultureInfo.InvariantCulture)
+                        : cantidadEfectiva.Value.ToString("0.##", CultureInfo.InvariantCulture)
                     : "";
 
                 var cotsDeLaPartida = cotsPorPartidaConsolidada
@@ -981,7 +998,7 @@ namespace Inventario.BLL.Implementacion
                 {
                     Partida = a.NumPartida?.ToString() ?? "",
                     Descripcion = a.DescripcionDetallada ?? a.Descripcion ?? "",
-                    Cantidad = a.Cantidad ?? 0m,
+                    Cantidad = cantidadEfectiva ?? 0m,
                     CantidadTxt = cantidadTexto,
                     Unidad = a.UnidadMedida ?? "",
                     PrecioP1 = precios.ElementAtOrDefault(0)?.Importe,
@@ -1062,12 +1079,20 @@ namespace Inventario.BLL.Implementacion
                 .GroupBy(c => c.IdArticulo)
                 .ToDictionary(g => g.Key, g => g.First().Importe);
 
+            var qMovDirPdf = await _repositoryMovimiento.Consultar(
+                m => idsRequisiciones.Contains(m.IdRequisicion) && m.TipoMovimiento == "COMPRA");
+            var movimientosDirPdf = await qMovDirPdf.ToListAsync();
+            var cantAlmacenDirPdf = movimientosDirPdf
+                .Where(m => m.CantidadMovimiento != m.CantidadOriginal)
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => (decimal?)g.OrderByDescending(m => m.FechaMovimiento).First().CantidadMovimiento);
+
             var articulosAgrupados = todosLosArticulos
                 .GroupBy(a => a.IdArticulo)
                 .Select((g, idx) =>
                 {
                     var primero = g.First();
-                    var cantidad = g.Sum(x => x.Cantidad) ?? 0m;
+                    var cantidad = g.Sum(x => cantAlmacenDirPdf.TryGetValue(x.IdRequisicionDetalle, out var ca) ? ca.Value : (x.Cantidad ?? 0m));
                     var cantidadTxt = decimal.Truncate(cantidad) == cantidad
                         ? ((int)cantidad).ToString(CultureInfo.InvariantCulture)
                         : cantidad.ToString("0.##", CultureInfo.InvariantCulture);

@@ -96,7 +96,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
 
     <div class="container-formulario filtros-container">
         <div class="filtro-grupo">
-            <label>NÂº Requisición</label>
+            <label>Nº Requisición</label>
             <input type="text" id="filtroNumReq" placeholder="REC-000000" />
         </div>
         <div class="filtro-grupo">
@@ -742,7 +742,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                     <table class="tabla-requisiciones" id="tablaExpedienteDetalle">
                         <thead>
                             <tr>
-                                <th>NÂº Partida</th>
+                                <th>Nº Partida</th>
                                 <th>Cantidad</th>
                                 <th>Unidad Medida</th>
                                 <th>Descripción</th>
@@ -925,7 +925,7 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                     <table class="tabla-requisiciones" id="tablaModalDetalle">
                         <thead>
                             <tr>
-                                <th>NÂº Partida</th>
+                                <th>Nº Partida</th>
                                 <th>Cantidad</th>
                                 <th>Unidad Medida</th>
                                 <th>Descripción</th>
@@ -1653,6 +1653,10 @@ data-url-editar-orden-pago="@Url.Action("EditarOrdenPago", "Financieros")"
                     <a id="linkVerPdfFirmado" href="#" target="_blank" class="btn boton-rosa w-100" style="text-decoration:none;">
                         <i class="fa-solid fa-eye"></i> Ver PDF firmado
                     </a>
+                </div>
+                <div id="seccionPdfNoSubido" style="display:none;margin-top:12px;text-align:center;padding:20px 10px;">
+                    <i class="fa-solid fa-file-circle-exclamation" style="font-size:2rem;color:var(--slate-400);margin-bottom:8px;"></i>
+                    <p style="font-size:14px;color:var(--slate-500);margin:0;">Aún no se ha subido el documento PDF firmado</p>
                 </div>
             </div>
         </div>

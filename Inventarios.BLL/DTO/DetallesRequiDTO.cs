@@ -40,6 +40,7 @@ namespace Inventario.BLL.DTO
         public string? DescripcionDetallada { get; set; }
         public string? NumRequiOrigen { get; set; }
         public string? EstatusPartida { get; set; }
+        public decimal? CantidadAlmacen { get; set; }
         public string? TipoProgramacion { get; set; }
         public int? Llenado1 { get; set; }
         public int? Llenado2 { get; set; }

@@ -1293,9 +1293,21 @@
 
             // â”€â”€ Tabla de artículos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var articulos = data.articulos || [];
+            var hayColumnaAlmacen = articulos.some(function(a) { return a.cantidadAlmacen != null; });
+
+            // Agregar columna Cant. Almacén dinámicamente
+            var theadTr = document.querySelector("#tablaArticulosConsolidada thead tr");
+            if (theadTr && hayColumnaAlmacen) {
+                var th = document.createElement("th");
+                th.style.textAlign = "center";
+                th.textContent = "Cant. Almacén";
+                theadTr.appendChild(th);
+            }
+
+            var colspanBase = hayColumnaAlmacen ? 7 : 6;
             if (!articulos.length) {
                 document.getElementById("consolidadaArticulosBody").innerHTML =
-                    '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+                    '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
                 return;
             }
 
@@ -1315,6 +1327,7 @@
                     a.numRequi + "</span></td>" +
                     '<td style="text-align:center">' + (a.numPartida || "") + "</td>" +
                     '<td style="text-align:center">' + (a.cantidad || "") + "</td>" +
+                    (hayColumnaAlmacen ? '<td style="text-align:center">' + (a.cantidadAlmacen != null ? a.cantidadAlmacen : '—') + '</td>' : '') +
                     "<td>" + (a.unidadMedida || "") + "</td>" +
                     "<td>" + (a.descripcion || "") + "</td>" +
                     '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" ' +
@@ -1817,9 +1830,23 @@
             document.getElementById("atenderConsolidadaSubtitulo").textContent =
                 data.folioConsolidada;
 
+            var articulos = data.articulos || [];
+            var hayColumnaAlmacen = articulos.some(function(a) { return a.cantidadAlmacen != null; });
+            var theadTr = document.querySelector("#tablaModalAtenderConsolidada thead tr");
+            if (theadTr && hayColumnaAlmacen) {
+                var th = document.createElement("th");
+                th.style.textAlign = "center";
+                th.textContent = "Cant. Almacén";
+                theadTr.appendChild(th);
+            }
+
+            var colspanBase = hayColumnaAlmacen ? 7 : 6;
             // Tabla artículos
             var rows = "";
-            (data.articulos || []).forEach(function (a) {
+            if (!articulos.length) {
+                rows = '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
+            }
+            articulos.forEach(function (a) {
                 var textoCompleto = a.descripcionDetallada || "";
                 var textoCorto = textoCompleto.length > 40
                     ? textoCompleto.substring(0, 40) + "…"
@@ -1831,6 +1858,7 @@
                     a.numRequi + "</span></td>" +
                     '<td style="text-align:center">' + (a.numPartida || "") + "</td>" +
                     '<td style="text-align:center">' + (a.cantidad || "") + "</td>" +
+                    (hayColumnaAlmacen ? '<td style="text-align:center">' + (a.cantidadAlmacen != null ? a.cantidadAlmacen : '—') + '</td>' : '') +
                     "<td>" + (a.unidadMedida || "") + "</td>" +
                     "<td>" + (a.descripcion || "") + "</td>" +
                     '<td><div class="desc-preview-modal" data-full="' +
@@ -1843,7 +1871,7 @@
                     "</tr>";
             });
             document.getElementById("atenderConsArticulosBody").innerHTML =
-                rows || '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+                rows || '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
 
             // Verificar si ya existen cotizaciones guardadas
             var primeraRequi = data.requisiciones && data.requisiciones.length
@@ -2617,36 +2645,43 @@
 
     var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
     var seccionVer = document.getElementById("seccionVerPdfFirmado");
+    var seccionNoSubido = document.getElementById("seccionPdfNoSubido");
     var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
 
     if (urlObtenerDocFirmado) {
       var separador = urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&";
       $.get(urlObtenerDocFirmado + separador + "idRequisicion=" + id, function (data) {
         if (data.firmado && data.ruta) {
+          if (seccionNoSubido) seccionNoSubido.style.display = "none";
           if (seccionVer) {
             seccionVer.style.display = "block";
             var link = document.getElementById("linkVerPdfFirmado");
             if (link) link.setAttribute("href", data.ruta);
           }
-          if (estatus === 3) {
-            // Modificación: mostrar descargar plantilla + ver PDF + subir corregido
+          if (estatus === 1) {
             if (btnDescargar) btnDescargar.style.display = "block";
             if (seccionSubir) seccionSubir.style.display = "block";
+          } else if (estatus === 3) {
+            if (btnDescargar) btnDescargar.style.display = "block";
+            if (seccionSubir) seccionSubir.style.display = "none";
           } else {
             if (btnDescargar) btnDescargar.style.display = "none";
             if (seccionSubir) seccionSubir.style.display = "none";
           }
         } else {
+          if (seccionNoSubido) seccionNoSubido.style.display = "block";
           if (btnDescargar) btnDescargar.style.display = "block";
           if (seccionSubir) seccionSubir.style.display = "block";
           if (seccionVer) seccionVer.style.display = "none";
         }
       }).fail(function () {
+        if (seccionNoSubido) seccionNoSubido.style.display = "block";
         if (btnDescargar) btnDescargar.style.display = "block";
         if (seccionSubir) seccionSubir.style.display = "block";
         if (seccionVer) seccionVer.style.display = "none";
       });
     } else {
+      if (seccionNoSubido) seccionNoSubido.style.display = "block";
       if (btnDescargar) btnDescargar.style.display = "block";
       if (seccionSubir) seccionSubir.style.display = "block";
       if (seccionVer) seccionVer.style.display = "none";
@@ -2691,24 +2726,10 @@
       success: function (res) {
         if (btn) btn.disabled = false;
         if (res.success) {
-          Swal.fire({ icon: "success", title: "PDF firmado subido correctamente" });
-          var seccionSubir = document.getElementById("seccionSubirPdfFirmado");
-          var seccionVer = document.getElementById("seccionVerPdfFirmado");
-          var btnDescargar = document.getElementById("btnDescargarPdfFirmado");
-          if (seccionVer) seccionVer.style.display = "block";
-          if (btnDescargar) {
-            btnDescargar.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
-          }
-          // Si estatus es 3 (modificación), mantener visible la sección de subir
-          if (seccionSubir) {
-            seccionSubir.style.display = (window._pdfFirmadoEstatus === 3) ? "block" : "none";
-          }
-          $.get(urlObtenerDocFirmado + (urlObtenerDocFirmado.indexOf("?") === -1 ? "?" : "&") + "idRequisicion=" + id, function (data) {
-            if (data.firmado && data.ruta) {
-              var link = document.getElementById("linkVerPdfFirmado");
-              if (link) link.setAttribute("href", data.ruta);
-            }
-          });
+          var modalEl = document.getElementById("modalPdfFirmado");
+          var modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+          location.reload();
         } else {
           Swal.fire({ icon: "error", title: "Error al subir el archivo" });
         }
@@ -4647,6 +4668,7 @@
       cargarEstadoProveedoresSeleccionados(idMaestro);
       var articulos = data.articulos || [];
       var esDonativo = data.donativo === true;
+      var hayColumnaAlmacen = articulos.some(function(a) { return a.cantidadAlmacen != null; });
 
       // Tabla de artículos
       var thCog = document.querySelector(
@@ -4654,11 +4676,26 @@
       );
       if (thCog) thCog.style.display = esDonativo ? "" : "none";
 
+      if (hayColumnaAlmacen) {
+        var thAlmacen = document.querySelector("#tablaModalDetalle thead tr th.almacen-header");
+        if (!thAlmacen) {
+          var thRef = document.querySelector("#tablaModalDetalle thead tr th:nth-child(2)");
+          if (thRef) {
+            var th = document.createElement("th");
+            th.className = "almacen-header";
+            th.style.textAlign = "center";
+            th.textContent = "Cant. Almacén";
+            thRef.parentNode.insertBefore(th, thRef.nextSibling);
+          }
+        }
+      }
+
+      var cantidadColumnas = (hayColumnaAlmacen ? 1 : 0) + (esDonativo ? 6 : 5);
       var contenido = "";
       if (articulos.length === 0) {
         contenido =
           '<tr><td colspan="' +
-          (esDonativo ? 6 : 5) +
+          cantidadColumnas +
           '" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
@@ -4701,6 +4738,7 @@
             "<td>" +
             (item.cantidad || "") +
             "</td>" +
+            (hayColumnaAlmacen ? '<td>' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
             "<td>" +
             (item.unidadMedida || "") +
             "</td>" +
@@ -4913,10 +4951,23 @@
         "Expediente completo · " + articulos.length + " partidas";
 
       // Tabla artículos
+      var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
+      var theadTrAlm = document.querySelector("#tablaExpedienteDetalle thead tr");
+      if (theadTrAlm && hayColumnaAlmacen && !theadTrAlm.querySelector("th.almacen-header")) {
+        var thAlm = document.createElement("th");
+        thAlm.className = "almacen-header";
+        thAlm.style.textAlign = "center";
+        thAlm.textContent = "Cant. Almacén";
+        var thRef = theadTrAlm.querySelector("th:nth-child(2)");
+        if (thRef) {
+          thRef.parentNode.insertBefore(thAlm, thRef.nextSibling);
+        }
+      }
+      var colspanBase = hayColumnaAlmacen ? 6 : 5;
       var contenido = "";
       if (!articulos.length) {
         contenido =
-          '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+          '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
@@ -4933,6 +4984,7 @@
             "<td>" +
             (item.cantidad || "") +
             "</td>" +
+            (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
             "<td>" +
             (item.unidadMedida || "") +
             "</td>" +
@@ -5236,16 +5288,20 @@
       document.getElementById("expedienteSubtitulo").textContent =
         "Expediente consolidado · " + articulos.length + " partidas | " + data.folioConsolidada;
 
+      var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
+      var theadAlmacenHtml = hayColumnaAlmacen ? '<th style="text-align:center">Cant. Almacén</th>' : '';
+
       // Agregar columna Requi al inicio del thead
       var theadTr = document.querySelector("#tablaExpedienteDetalle thead tr");
       if (theadTr) {
-        theadTr.innerHTML = '<th>Requi</th><th>No. de partida</th><th>Cantidad</th><th>Unidad Medida</th><th>Descripción</th><th>Descripción Detallada</th>';
+        theadTr.innerHTML = '<th>Requi</th><th>No. de partida</th><th>Cantidad</th>' + theadAlmacenHtml + '<th>Unidad Medida</th><th>Descripción</th><th>Descripción Detallada</th>';
       }
 
+      var colspanBase = hayColumnaAlmacen ? 7 : 6;
       // Tabla artículos con columna Requi al inicio
       var contenido = "";
       if (!articulos.length) {
-        contenido = '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>';
+        contenido = '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
       } else {
         articulos.forEach(function (item) {
           var textoCompleto = item.descripcionDetallada || "";
@@ -5258,6 +5314,7 @@
             "<td>" + (item.numRequiOrigen || "") + "</td>" +
             "<td>" + (item.numPartida || "") + "</td>" +
             "<td>" + (item.cantidad || "") + "</td>" +
+            (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
             "<td>" + (item.unidadMedida || "") + "</td>" +
             "<td>" + (item.descripcion || "") + "</td>" +
             '<td><div class="desc-preview-modal" data-full="' +

@@ -36,7 +36,8 @@ namespace Inventario.DAL.Implementacion
                     .MaxAsync(r => (int?)r.Consecutivo) ?? 0;
 
                 requisicion.Consecutivo = ultimoConsecutivo + 1;
-                requisicion.NumRequisicion = $"REQ-{anio}-{(ultimoConsecutivo + 1):D4}";
+                var tipo = requisicion.RequiServicio == true ? "SER" : "ADQ";
+                requisicion.NumRequisicion = $"REQ-{tipo}-{anio}-{(ultimoConsecutivo + 1):D4}";
 
                 _dbContext.TblRequisicions.Add(requisicion);
                 await _dbContext.SaveChangesAsync();

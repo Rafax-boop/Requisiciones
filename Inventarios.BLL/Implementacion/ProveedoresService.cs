@@ -167,7 +167,7 @@ namespace Inventario.BLL.Implementacion
                     query = query.Where(r => idsParaCompra.Contains(r.IdRequisicionDetalle));
             }
 
-            return await query.Select(r => new DetalleArticuloDTO
+            var lista = await query.Select(r => new DetalleArticuloDTO
             {
                 IdRequisicionDetalle = r.IdRequisicionDetalle,
                 NumPartida = r.NumPartida,
@@ -177,6 +177,25 @@ namespace Inventario.BLL.Implementacion
                 Descripcion = r.Descripcion,
                 DescripcionDetallada = r.DescripcionDetallada
             }).ToListAsync();
+
+            if (!esServicio)
+            {
+                var movimientos = await (await _repositoryMovimiento.Consultar(
+                    m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA")).ToListAsync();
+                var movimientoPorDetalle = movimientos
+                    .GroupBy(m => m.IdRequisicionDetalle)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.FechaMovimiento).First());
+                foreach (var art in lista)
+                {
+                    if (movimientoPorDetalle.TryGetValue(art.IdRequisicionDetalle, out var mov)
+                        && mov.CantidadMovimiento != mov.CantidadOriginal)
+                    {
+                        art.CantidadAlmacen = mov.CantidadMovimiento;
+                    }
+                }
+            }
+
+            return lista;
         }
 
         public async Task<List<OpcionProveedorDTO>> ObtenerOpcionesGanador(int idRequisicion)
@@ -184,9 +203,22 @@ namespace Inventario.BLL.Implementacion
             var queryDet = await _repositoryDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
 
+            var queryMov = await _repositoryMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+            var movimientos = await queryMov.ToListAsync();
+            var movsPorDetalle = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => g.First());
+
             var cantidadPorPartida = detalles.ToDictionary(
                 d => d.IdRequisicionDetalle,
-                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+                d =>
+                {
+                    if (movsPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var mov)
+                        && mov.CantidadMovimiento != mov.CantidadOriginal)
+                        return (decimal)mov.CantidadMovimiento;
+                    return d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m;
+                });
 
             // ── Proyectar en BD (incluye join con proveedor) antes de ToListAsync ──
             var queryCot = await _repositoryCotizaciones.Consultar(
@@ -257,9 +289,23 @@ namespace Inventario.BLL.Implementacion
 
             var queryDet = await _repositoryDetalle.Consultar(d => d.IdRequisicion == idRequisicion);
             var detalles = await queryDet.ToListAsync();
+
+            var queryMov = await _repositoryMovimiento.Consultar(
+                m => m.IdRequisicion == idRequisicion && m.TipoMovimiento == "COMPRA");
+            var movimientos = await queryMov.ToListAsync();
+            var movsPorDetalle = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => g.First());
+
             var cantidadPorPartida = detalles.ToDictionary(
                 d => d.IdRequisicionDetalle,
-                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+                d =>
+                {
+                    if (movsPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var mov)
+                        && mov.CantidadMovimiento != mov.CantidadOriginal)
+                        return (decimal)mov.CantidadMovimiento;
+                    return d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m;
+                });
 
             var subtotal = cotizaciones.Sum(c =>
             {
@@ -366,10 +412,25 @@ namespace Inventario.BLL.Implementacion
                 d => idsRequisiciones.Contains(d.IdRequisicion));
             var detalles = await queryDet.ToListAsync();
 
-            // Cantidad total por idRequisicionDetalle
+            // Cargar movimientos COMPRA de todas las requisiciones
+            var movIds = idsRequisiciones.Where(x => x.HasValue).Select(x => x!.Value).ToList();
+            var queryMov = await _repositoryMovimiento.Consultar(
+                m => movIds.Contains(m.IdRequisicion) && m.TipoMovimiento == "COMPRA");
+            var movimientos = await queryMov.ToListAsync();
+            var movsPorDetalle = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            // Cantidad total por idRequisicionDetalle (usando almacén si cambió)
             var cantidadPorPartida = detalles.ToDictionary(
                 d => d.IdRequisicionDetalle,
-                d => d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m);
+                d =>
+                {
+                    if (movsPorDetalle.TryGetValue(d.IdRequisicionDetalle, out var mov)
+                        && mov.CantidadMovimiento != mov.CantidadOriginal)
+                        return (decimal)mov.CantidadMovimiento;
+                    return d.Cantidad.HasValue ? (decimal)d.Cantidad.Value : 1m;
+                });
 
             // Cotizaciones de TODAS las requisiciones
             var queryCot = await _repositoryCotizaciones.Consultar(

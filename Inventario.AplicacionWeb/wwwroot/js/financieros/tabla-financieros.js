@@ -661,11 +661,24 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
 
         $.get(obtenerDetallesUrl, { idMaestro: idMaestro, soloCompra: true }, function (data) {
             var articulos = data.articulos || [];
+            var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
+            var theadTr = document.querySelector("#tablaModalDetalle thead tr");
+            if (theadTr && hayColumnaAlmacen && !theadTr.querySelector("th.almacen-header")) {
+                var th = document.createElement("th");
+                th.className = "almacen-header";
+                th.style.textAlign = "center";
+                th.textContent = "Cant. Almacén";
+                var thRef = theadTr.querySelector("th:nth-child(3)");
+                if (thRef) {
+                    thRef.parentNode.insertBefore(th, thRef.nextSibling);
+                }
+            }
+            var colspanBase = hayColumnaAlmacen ? 6 : 5;
 
             // Tabla artículos
             var contenido = "";
             if (articulos.length === 0) {
-                contenido = '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>';
+                contenido = '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>';
             } else {
                 articulos.forEach(function (item) {
                     var textoCompleto = item.descripcionDetallada || "";
@@ -678,6 +691,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         "<tr>" +
                         "<td>" + (item.numPartida || "") + "</td>" +
                         "<td>" + (item.cantidad || "") + "</td>" +
+                        (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
                         "<td>" + (item.unidadMedida || "") + "</td>" +
                         "<td>" + (item.descripcion || "") + "</td>" +
                         '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
@@ -956,8 +970,22 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                 var articulos = data.articulos || [];
                 document.getElementById("expFinSubtitulo").textContent = "Expediente consolidado · " + articulos.length + " partidas";
 
+                var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
+                var expFinTbody = document.getElementById("expFinTablaBody");
+                var expFinTheadTr = expFinTbody && expFinTbody.closest("table").querySelector("thead tr");
+                if (expFinTheadTr && hayColumnaAlmacen && !expFinTheadTr.querySelector("th.almacen-header")) {
+                    var th = document.createElement("th");
+                    th.className = "almacen-header";
+                    th.style.textAlign = "center";
+                    th.textContent = "Cant. Almacén";
+                    var thRef = expFinTheadTr.querySelector("th:nth-child(3)");
+                    if (thRef) {
+                        thRef.parentNode.insertBefore(th, thRef.nextSibling);
+                    }
+                }
+                var colspanBase = hayColumnaAlmacen ? 7 : 6;
                 var contenido = !articulos.length
-                    ? '<tr><td colspan="6" class="text-center">Sin artículos</td></tr>'
+                    ? '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>'
                     : "";
                 articulos.forEach(function (item) {
                     var txtCompleto = item.descripcionDetallada || "";
@@ -968,6 +996,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         "<td>" + (item.numRequiOrigen || "") + "</td>" +
                         "<td>" + (item.numPartida || "") + "</td>" +
                         "<td>" + (item.cantidad || "") + "</td>" +
+                        (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
                         "<td>" + (item.unidadMedida || "") + "</td>" +
                         "<td>" + (item.descripcion || "") + "</td>" +
                         '<td><div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)">' +
@@ -1062,9 +1091,24 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
             document.getElementById("expFinSubtitulo").textContent =
                 "Expediente completo · " + articulos.length + " partidas";
 
+            var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
+            var expFinTbody = document.getElementById("expFinTablaBody");
+            var expFinTheadTr = expFinTbody && expFinTbody.closest("table").querySelector("thead tr");
+            if (expFinTheadTr && hayColumnaAlmacen && !expFinTheadTr.querySelector("th.almacen-header")) {
+                var th = document.createElement("th");
+                th.className = "almacen-header";
+                th.style.textAlign = "center";
+                th.textContent = "Cant. Almacén";
+                var thRef = expFinTheadTr.querySelector("th:nth-child(3)");
+                if (thRef) {
+                    thRef.parentNode.insertBefore(th, thRef.nextSibling);
+                }
+            }
+            var colspanBase = hayColumnaAlmacen ? 6 : 5;
+
             // Tabla artículos
             var contenido = !articulos.length
-                ? '<tr><td colspan="5" class="text-center">Sin artículos</td></tr>'
+                ? '<tr><td colspan="' + colspanBase + '" class="text-center">Sin artículos</td></tr>'
                 : "";
             articulos.forEach(function (item) {
                 var textoCompleto = item.descripcionDetallada || "";
@@ -1076,6 +1120,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                     "<tr>" +
                     "<td>" + (item.numPartida || "") + "</td>" +
                     "<td>" + (item.cantidad || "") + "</td>" +
+                    (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
                     "<td>" + (item.unidadMedida || "") + "</td>" +
                     "<td>" + (item.descripcion || "") + "</td>" +
                     '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
@@ -2147,9 +2192,12 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
             if (subtitle) subtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " · " + data.articulos.length + " partidas" : "");
 
             // ── Articles table ─────────────────────────────────────────────
+            var hayColumnaAlmacen = data.articulos && data.articulos.some(function (a) { return a.cantidadAlmacen != null; });
             var articulosHtml = '<div class="consolidada-articulos-section"><h6 class="consolidada-section-title"><i class="fa-solid fa-layer-group"></i> Artículos consolidados</h6>' +
                 '<div class="table-responsive-container"><table class="tabla-requisiciones" id="tablaDetalleConsolidada"><thead><tr>' +
-                '<th>Requisición</th><th>Partida</th><th style="width:100px;">Cantidad</th><th style="width:135px;">Unidad</th><th>Descripción</th>' +
+                '<th>Requisición</th><th>Partida</th><th style="width:100px;">Cantidad</th>' +
+                (hayColumnaAlmacen ? '<th style="text-align:center">Cant. Almacén</th>' : '') +
+                '<th style="width:135px;">Unidad</th><th>Descripción</th>' +
                 '</tr></thead><tbody>';
             if (data.articulos && data.articulos.length) {
                 data.articulos.forEach(function (a) {
@@ -2160,6 +2208,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         '<td>' + (a.numRequi || "") + '</td>' +
                         '<td>' + (a.numPartida || "") + '</td>' +
                         '<td>' + (a.cantidad || "") + '</td>' +
+                        (hayColumnaAlmacen ? '<td style="text-align:center">' + (a.cantidadAlmacen != null ? a.cantidadAlmacen : '—') + '</td>' : '') +
                         '<td>' + (a.unidadMedida || "") + '</td>' +
                         '<td>' + (a.descripcion || "") +
                         '<div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)" style="margin-top:2px;">' +
@@ -2168,7 +2217,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         '</tr>';
                 });
             } else {
-                articulosHtml += '<tr class="fila-vacia"><td colspan="5" class="text-center">Sin artículos</td></tr>';
+                articulosHtml += '<tr class="fila-vacia"><td colspan="' + (hayColumnaAlmacen ? 6 : 5) + '" class="text-center">Sin artículos</td></tr>';
             }
             articulosHtml += '</tbody></table></div></div>';
 
@@ -2270,6 +2319,19 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
             modalSubtitle.textContent = "Detalle de la consolidada" + (data.articulos ? " \u00B7 " + data.articulos.length + " partidas" : "");
 
             // ── Articles table with "Req." column ──────────────────────────
+            var hayColumnaAlmacen = data.articulos && data.articulos.some(function (a) { return a.cantidadAlmacen != null; });
+            var theadTr = document.querySelector("#tablaModalDetalle thead tr");
+            if (theadTr && hayColumnaAlmacen && !theadTr.querySelector("th.almacen-header")) {
+                var th = document.createElement("th");
+                th.className = "almacen-header";
+                th.style.textAlign = "center";
+                th.textContent = "Cant. Almacén";
+                var thRef = theadTr.querySelector("th:nth-child(3)");
+                if (thRef) {
+                    thRef.parentNode.insertBefore(th, thRef.nextSibling);
+                }
+            }
+            var colspanBase = hayColumnaAlmacen ? 7 : 6;
             var articulosHtml = "";
             if (data.articulos && data.articulos.length) {
                 data.articulos.forEach(function (a) {
@@ -2280,6 +2342,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         '<td>' + (a.numRequi || "") + '</td>' +
                         '<td>' + (a.numPartida || "") + '</td>' +
                         '<td>' + (a.cantidad || "") + '</td>' +
+                        (hayColumnaAlmacen ? '<td style="text-align:center">' + (a.cantidadAlmacen != null ? a.cantidadAlmacen : '—') + '</td>' : '') +
                         '<td>' + (a.unidadMedida || "") + '</td>' +
                         '<td>' + (a.descripcion || "") + '</td>' +
                         '<td><div class="desc-preview-modal" data-full="' + fullEsc + '" onclick="verDescDetalleModal(this)">' +
@@ -2288,7 +2351,7 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         '</tr>';
                 });
             } else {
-                articulosHtml = '<tr class="fila-vacia"><td colspan="6" class="text-center">Sin art\u00edculos</td></tr>';
+                articulosHtml = '<tr class="fila-vacia"><td colspan="' + colspanBase + '" class="text-center">Sin art\u00edculos</td></tr>';
             }
             $("#tablaDetalle").html(articulosHtml);
 
