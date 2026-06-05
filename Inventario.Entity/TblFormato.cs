@@ -23,5 +23,7 @@ public partial class TblFormato
 
     public virtual TblRequisicion? IdRequisicionNavigation { get; set; }
 
+    public virtual ICollection<TblDonacion> TblDonacions { get; set; } = new List<TblDonacion>();
+
     public virtual ICollection<TblRequisicionDetalleMovimiento> TblRequisicionDetalleMovimientos { get; set; } = new List<TblRequisicionDetalleMovimiento>();
 }
