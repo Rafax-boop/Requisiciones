@@ -31,5 +31,6 @@ namespace Inventario.BLL.DTO
         public decimal? CantidadOriginal { get; set; }
         public decimal? CantidadMovimiento { get; set; }
         public bool Confirmado { get; set; }
+        public bool EsDeCompra { get; set; }
     }
 }

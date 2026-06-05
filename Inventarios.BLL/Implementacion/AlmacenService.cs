@@ -373,6 +373,13 @@ namespace Inventario.BLL.Implementacion
                     .ThenInclude(d => d.IdArticuloNavigation)
                 .ToListAsync();
 
+            var idsRequiEntregas = movimientos.Select(m => m.IdRequisicion).Distinct().ToList();
+            var compraQuery = await _repoMovimiento.Consultar(
+                m => m.TipoMovimiento == "COMPRA" && idsRequiEntregas.Contains(m.IdRequisicion));
+            var compraSet = (await compraQuery.ToListAsync())
+                .Select(m => (m.IdRequisicion, m.IdRequisicionDetalle))
+                .ToHashSet();
+
             var gruposPorRequi = movimientos
                 .GroupBy(m => m.IdRequisicion)
                 .ToList();
@@ -402,9 +409,10 @@ namespace Inventario.BLL.Implementacion
                             ClaveMaterial = m.IdRequisicionDetalleNavigation?.IdArticuloNavigation?.Clave ?? "",
                             Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
                             UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
-                            CantidadOriginal = m.CantidadOriginal,
+                            CantidadOriginal = m.IdRequisicionDetalleNavigation?.Cantidad ?? m.CantidadOriginal,
                             CantidadMovimiento = m.CantidadMovimiento,
-                            Confirmado = m.Confirmado ?? false
+                            Confirmado = m.Confirmado ?? false,
+                            EsDeCompra = compraSet.Contains((m.IdRequisicion, m.IdRequisicionDetalle))
                         }).ToList()
                     });
                 }
@@ -461,9 +469,10 @@ namespace Inventario.BLL.Implementacion
                         ClaveMaterial = m.IdRequisicionDetalleNavigation?.IdArticuloNavigation?.Clave ?? "",
                         Descripcion = m.IdRequisicionDetalleNavigation?.Descripcion ?? "",
                         UnidadMedida = m.IdRequisicionDetalleNavigation?.UnidadMedida ?? "",
-                        CantidadOriginal = m.CantidadOriginal,
+                        CantidadOriginal = m.IdRequisicionDetalleNavigation?.Cantidad ?? m.CantidadOriginal,
                         CantidadMovimiento = m.CantidadMovimiento,
-                        Confirmado = m.Confirmado ?? false
+                        Confirmado = m.Confirmado ?? false,
+                        EsDeCompra = compraSet.Contains((m.IdRequisicion, m.IdRequisicionDetalle))
                     }).ToList()
                 });
             }
@@ -789,7 +798,7 @@ namespace Inventario.BLL.Implementacion
                         Confirmado = false
                     });
 
-                    resumenEntregas.Add($"{desc} â€” {cantAprobada} {unidad}");
+                    resumenEntregas.Add($"{desc} â€” {cantSolicitada} {unidad}");
                 }
 
                 foreach (var (idDetalle, cantComprar) in listaCompras)

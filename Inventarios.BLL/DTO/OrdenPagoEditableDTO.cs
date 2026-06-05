@@ -47,11 +47,17 @@ namespace Inventario.BLL.DTO
         public decimal TotalEstatal { get; set; }
         public decimal TotalFederal { get; set; }
 
-        // Firmas (nombre + cargo)
+        // Firmas (nombre)
         public string Elaboro { get; set; } = "";
         public string Reviso { get; set; } = "";
         public string Autorizo { get; set; } = "";
         public string VistoBueno { get; set; } = "";
+
+        // Cargos (auto-poblados desde TblDepartamento)
+        public string CargoElaboro { get; set; } = "";
+        public string CargoReviso { get; set; } = "";
+        public string CargoAutorizo { get; set; } = "";
+        public string CargoVistoBueno { get; set; } = "";
     }
 
     public class OrdenPagoConceptoDTO

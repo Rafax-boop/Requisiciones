@@ -66,6 +66,14 @@
             var hidden = form.querySelector('[name="' + name + '"]');
             if (hidden) hidden.value = src.value;
         });
+
+        // Copiar cargos desde hidden fields compartidos
+        ["CargoElaboro","CargoReviso","CargoAutorizo","CargoVistoBueno"].forEach(function(name) {
+            var src = document.getElementById("shared" + name);
+            if (!src) return;
+            var hidden = form.querySelector('[name="' + name + '"]');
+            if (hidden) hidden.value = src.value;
+        });
     }
 
     document.querySelectorAll(".form-op-dual").forEach(function(form) {
@@ -361,23 +369,31 @@ else
                     <div class="formulario-input">
                         <label>Elaboró</label>
                         <input type="text" id="sharedElaboro" value="@Model.Elaboro" />
+                        <small style="color:#94a3b8;font-size:11px;">@Model.CargoElaboro</small>
                     </div>
                     <div class="formulario-input">
                         <label>Revisó</label>
-                        <input type="text" id="sharedReviso" value="@Model.Reviso" />
+                        <input type="text" id="sharedReviso" value="@Model.Reviso" class="op-readonly" readonly />
+                        <small style="color:#94a3b8;font-size:11px;">@Model.CargoReviso</small>
                     </div>
                 </div>
                 <div class="seccion-2">
                     <div class="formulario-input">
                         <label>Autorizó</label>
-                        <input type="text" id="sharedAutorizo" value="@Model.Autorizo" />
+                        <input type="text" id="sharedAutorizo" value="@Model.Autorizo" class="op-readonly" readonly />
+                        <small style="color:#94a3b8;font-size:11px;">@Model.CargoAutorizo</small>
                     </div>
                     <div class="formulario-input">
                         <label>Visto Bueno</label>
-                        <input type="text" id="sharedVistoBueno" value="@Model.VistoBueno" />
+                        <input type="text" id="sharedVistoBueno" value="@Model.VistoBueno" class="op-readonly" readonly />
+                        <small style="color:#94a3b8;font-size:11px;">@Model.CargoVistoBueno</small>
                     </div>
                 </div>
             </div>
+            <input type="hidden" id="sharedCargoElaboro" value="@Model.CargoElaboro" />
+            <input type="hidden" id="sharedCargoReviso" value="@Model.CargoReviso" />
+            <input type="hidden" id="sharedCargoAutorizo" value="@Model.CargoAutorizo" />
+            <input type="hidden" id="sharedCargoVistoBueno" value="@Model.CargoVistoBueno" />
             <div class="container-formulario">
                 <div class="seccion-1">
                     <div class="formulario-input">
@@ -411,6 +427,10 @@ else
             <input type="hidden" name="Reviso" value="" />
             <input type="hidden" name="Autorizo" value="" />
             <input type="hidden" name="VistoBueno" value="" />
+            <input type="hidden" name="CargoElaboro" value="" />
+            <input type="hidden" name="CargoReviso" value="" />
+            <input type="hidden" name="CargoAutorizo" value="" />
+            <input type="hidden" name="CargoVistoBueno" value="" />
             <input type="hidden" name="RetencionIsr" value="" />
 
             <input type="hidden" id="opSumSub_Estatal" name="Total" value="@Model.SumaEstatal.ToString("F2")" />
@@ -519,6 +539,10 @@ else
             <input type="hidden" name="Reviso" value="" />
             <input type="hidden" name="Autorizo" value="" />
             <input type="hidden" name="VistoBueno" value="" />
+            <input type="hidden" name="CargoElaboro" value="" />
+            <input type="hidden" name="CargoReviso" value="" />
+            <input type="hidden" name="CargoAutorizo" value="" />
+            <input type="hidden" name="CargoVistoBueno" value="" />
             <input type="hidden" name="RetencionIsr" value="" />
 
             <input type="hidden" id="opSumSub_Federal" name="Total" value="@Model.SumaFederal.ToString("F2")" />
@@ -755,6 +779,41 @@ else
                     </div>
                 </div>
             </div>
+
+            @* ── Firmas — modo simple ─────────────────────────────────────── *@
+            <div class="op-section">
+                <p class="op-section-title" style="color:#475569;"><i class="fa-solid fa-user-pen"></i> Firmas</p>
+                <div class="container-formulario">
+                    <div class="seccion-1">
+                        <div class="formulario-input">
+                            <label>Elaboró</label>
+                            <input asp-for="Elaboro" type="text" />
+                            <small style="color:#94a3b8;font-size:11px;">@Model.CargoElaboro</small>
+                        </div>
+                        <div class="formulario-input">
+                            <label>Revisó</label>
+                            <input asp-for="Reviso" type="text" class="op-readonly" readonly />
+                            <small style="color:#94a3b8;font-size:11px;">@Model.CargoReviso</small>
+                        </div>
+                    </div>
+                    <div class="seccion-2">
+                        <div class="formulario-input">
+                            <label>Autorizó</label>
+                            <input asp-for="Autorizo" type="text" class="op-readonly" readonly />
+                            <small style="color:#94a3b8;font-size:11px;">@Model.CargoAutorizo</small>
+                        </div>
+                        <div class="formulario-input">
+                            <label>Visto Bueno</label>
+                            <input asp-for="VistoBueno" type="text" class="op-readonly" readonly />
+                            <small style="color:#94a3b8;font-size:11px;">@Model.CargoVistoBueno</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" asp-for="CargoElaboro" />
+            <input type="hidden" asp-for="CargoReviso" />
+            <input type="hidden" asp-for="CargoAutorizo" />
+            <input type="hidden" asp-for="CargoVistoBueno" />
 
             <div class="container-formulario mt-4">
                 <div class="seccion-completa text-center editor-actions">
