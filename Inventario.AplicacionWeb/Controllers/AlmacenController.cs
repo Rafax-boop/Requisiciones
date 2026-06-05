@@ -398,8 +398,8 @@ namespace Inventario.AplicacionWeb.Controllers
                     Motivo       = request.Motivo ?? ""
                 }).ToList();
 
-                await _almacenService.RegistrarIngresoInventarioLote(dtos);
-                return Json(new { ok = true, mensaje = "Ingreso registrado correctamente.", folio = 0 });
+                var (idDonacion, numFormato) = await _almacenService.RegistrarIngresoInventarioLote(dtos, userId.Value);
+                return Json(new { ok = true, mensaje = "Ingreso registrado correctamente.", folio = numFormato, idDonacion });
             }
             catch (Exception ex)
             {
@@ -686,9 +686,18 @@ namespace Inventario.AplicacionWeb.Controllers
             var inventarioDto  = await _almacenService.ObtenerInventario();
             var inventario     = _mapper.Map<List<VMInventarioItem>>(inventarioDto);
 
+            var donaciones = await _almacenService.ListarDonaciones();
+
             var vm = new VMRegistroIngresosIndex
             {
-                Ingresos       = new List<VMIngresoResumen>(), // se conectará cuando el colega agregue las relaciones
+                Ingresos = donaciones.Select(d => new VMIngresoResumen
+                {
+                    PrimerIdIngreso   = d.IdDonacion,
+                    FechaIngreso      = d.FechaIngreso,
+                    Motivo            = d.Motivo,
+                    CantidadArticulos = d.CantidadArticulos,
+                    RutaFirmado       = string.IsNullOrEmpty(d.RutaFirmado) ? null : d.RutaFirmado
+                }).ToList(),
                 Inventario     = inventario,
                 UnidadesMedida = inventario
                     .Select(i => i.UnidadMedida)
@@ -701,15 +710,49 @@ namespace Inventario.AplicacionWeb.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerDetalleIngreso(int primerIdIngreso)
+        public async Task<IActionResult> ObtenerDetalleIngreso(int primerIdIngreso)
         {
-            return Json(new List<object>()); // pendiente de relaciones BD
+            try
+            {
+                var detalle = await _almacenService.ObtenerDetalleDonacion(primerIdIngreso);
+                return Json(detalle);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
 
         [HttpPost]
-        public IActionResult SubirPdfFirmadoIngreso([FromForm] SubirPdfIngresoRequest request)
+        public async Task<IActionResult> SubirPdfFirmadoIngreso([FromForm] SubirPdfIngresoRequest request)
         {
-            return Json(new { ok = false, error = "Funcionalidad pendiente de configuración de BD." });
+            if (request.Pdf == null || request.Pdf.Length == 0)
+                return Json(new { ok = false, error = "Selecciona un archivo PDF." });
+
+            var ext = Path.GetExtension(request.Pdf.FileName).ToLowerInvariant();
+            if (ext != ".pdf")
+                return Json(new { ok = false, error = "Solo se permiten archivos PDF." });
+
+            try
+            {
+                var carpeta = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "ingreso-inventario", request.NumIngreso.ToString());
+                Directory.CreateDirectory(carpeta);
+
+                var nombreArchivo = $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{Guid.NewGuid():N}.pdf";
+                var rutaFisica    = Path.Combine(carpeta, nombreArchivo);
+
+                using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                    await request.Pdf.CopyToAsync(stream);
+
+                var rutaDb = $"/uploads/ingreso-inventario/{request.NumIngreso}/{nombreArchivo}";
+                await _almacenService.SubirPdfDonacion(request.NumIngreso, rutaDb);
+
+                return Json(new { ok = true, rutaFirmado = rutaDb });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, error = ex.Message });
+            }
         }
     }
 }

@@ -16,7 +16,12 @@ namespace Inventario.BLL.Interfaces
 
         // ─── Operaciones ─────────────────────────────────────────
         Task<bool> RegistrarIngresoInventario(IngresoInventarioDTO dto);
-        Task<bool> RegistrarIngresoInventarioLote(List<IngresoInventarioDTO> items);
+        Task<(int idDonacion, int numFormato)> RegistrarIngresoInventarioLote(List<IngresoInventarioDTO> items, int idUsuario);
+
+        // ─── Donaciones (registro de ingresos de inventario) ─────
+        Task<List<DonacionResumenDTO>> ListarDonaciones();
+        Task<List<DonacionDetalleItemDTO>> ObtenerDetalleDonacion(int idDonacion);
+        Task SubirPdfDonacion(int idDonacion, string ruta);
         Task<bool> RechazarRequisicionAlmacen(int idRequisicion, int idUsuario, string motivo);
         Task<bool> ProcesarRequisicion(
             int idRequisicion,

@@ -21,6 +21,8 @@ namespace Inventario.BLL.Implementacion
         private readonly IGenericRepository<TblUsuario> _repoUsuario;
         private readonly IGenericRepository<TblConsolidada> _repoConsolidada;
         private readonly IGenericRepository<TblDepartamento> _repoDepartamento;
+        private readonly IGenericRepository<TblDonacion> _repoDonacion;
+        private readonly IGenericRepository<TblDonacionDetalle> _repoDonacionDetalle;
 
         private const int ESTATUS_EN_ALMACEN = 9;
         private const int ESTATUS_APROBADA_ALMACEN = 4;
@@ -42,7 +44,9 @@ namespace Inventario.BLL.Implementacion
             IEmailService emailService,
             IGenericRepository<TblUsuario> repoUsuario,
             IGenericRepository<TblConsolidada> repoConsolidada,
-            IGenericRepository<TblDepartamento> repoDepartamento)
+            IGenericRepository<TblDepartamento> repoDepartamento,
+            IGenericRepository<TblDonacion> repoDonacion,
+            IGenericRepository<TblDonacionDetalle> repoDonacionDetalle)
         {
             _repositoryRequisicion = requisicionRepository;
             _repoInventario = repoInventario;
@@ -56,6 +60,8 @@ namespace Inventario.BLL.Implementacion
             _repoUsuario = repoUsuario;
             _repoConsolidada = repoConsolidada;
             _repoDepartamento = repoDepartamento;
+            _repoDonacion = repoDonacion;
+            _repoDonacionDetalle = repoDonacionDetalle;
         }
 
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -624,7 +630,7 @@ namespace Inventario.BLL.Implementacion
             }).ToList();
         }
 
-        public async Task<bool> RegistrarIngresoInventarioLote(List<IngresoInventarioDTO> items)
+        public async Task<(int idDonacion, int numFormato)> RegistrarIngresoInventarioLote(List<IngresoInventarioDTO> items, int idUsuario)
         {
             if (items == null || !items.Any())
                 throw new Exception("Debe agregar al menos un artículo.");
@@ -632,6 +638,32 @@ namespace Inventario.BLL.Implementacion
             await _uow.BeginTransactionAsync();
             try
             {
+                // 1. Folio compartido con otras ENTRADAS
+                var queryFormatos = await _repoFormato.Consultar(f => f.TipoFormato == "ENTRADA");
+                var listaFormatos = await queryFormatos.ToListAsync();
+                var nuevoNumero   = (listaFormatos.Any() ? listaFormatos.Max(f => f.NumeroFormato) : 0) + 1;
+
+                var formato = await _repoFormato.Crear(new TblFormato
+                {
+                    NumeroFormato = nuevoNumero,
+                    TipoFormato   = "ENTRADA",
+                    IdRequisicion = null,
+                    FechaFormato  = DateTime.Now,
+                    IdUsuario     = idUsuario,
+                    RutaArchivo   = "PENDIENTE"
+                });
+
+                // 2. Header de la donación
+                var motivo   = items.FirstOrDefault()?.Motivo ?? "";
+                var donacion = await _repoDonacion.Crear(new TblDonacion
+                {
+                    IdFormato   = formato.IdFormato,
+                    Motivo      = motivo,
+                    FechaIngreso = DateTime.Now,
+                    IdUsuario   = idUsuario
+                });
+
+                // 3. Artículos
                 foreach (var dto in items)
                 {
                     var descripcion  = (dto.Descripcion ?? "").Trim();
@@ -662,18 +694,93 @@ namespace Inventario.BLL.Implementacion
                         });
                     }
 
+                    inv!.Entrada    += dto.Cantidad;
                     inv!.Existencia += dto.Cantidad;
                     await _repoInventario.Editar(inv);
+
+                    await _repoDonacionDetalle.Crear(new TblDonacionDetalle
+                    {
+                        IdDonacion   = donacion.IdDonacion,
+                        IdInventario = inv.Id,
+                        Cantidad     = dto.Cantidad
+                    });
                 }
 
                 await _uow.CommitAsync();
-                return true;
+                return (donacion.IdDonacion, formato.NumeroFormato);
             }
             catch
             {
                 await _uow.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<List<DonacionResumenDTO>> ListarDonaciones()
+        {
+            var queryDonaciones = await _repoDonacion.Consultar();
+            var donaciones = await queryDonaciones.ToListAsync();
+
+            var idFormatos  = donaciones.Select(d => d.IdFormato).Distinct().ToList();
+            var queryFormatos = await _repoFormato.Consultar(f => idFormatos.Contains(f.IdFormato));
+            var formatos    = (await queryFormatos.ToListAsync()).ToDictionary(f => f.IdFormato);
+
+            var idDonaciones = donaciones.Select(d => d.IdDonacion).ToList();
+            var queryDetalles = await _repoDonacionDetalle.Consultar(dd => idDonaciones.Contains(dd.IdDonacion));
+            var detalles    = await queryDetalles.ToListAsync();
+            var countByDon  = detalles.GroupBy(dd => dd.IdDonacion).ToDictionary(g => g.Key, g => g.Count());
+
+            return donaciones
+                .OrderByDescending(d => d.FechaIngreso)
+                .Select(d =>
+                {
+                    formatos.TryGetValue(d.IdFormato, out var fmt);
+                    var ruta = fmt?.RutaArchivo;
+                    return new DonacionResumenDTO
+                    {
+                        IdDonacion        = d.IdDonacion,
+                        NumFormato        = fmt?.NumeroFormato ?? 0,
+                        FechaIngreso      = d.FechaIngreso,
+                        Motivo            = d.Motivo ?? "",
+                        CantidadArticulos = countByDon.TryGetValue(d.IdDonacion, out var c) ? c : 0,
+                        RutaFirmado       = (ruta == null || ruta == "PENDIENTE") ? "" : ruta
+                    };
+                })
+                .ToList();
+        }
+
+        public async Task<List<DonacionDetalleItemDTO>> ObtenerDetalleDonacion(int idDonacion)
+        {
+            var queryDetalles = await _repoDonacionDetalle.Consultar(dd => dd.IdDonacion == idDonacion);
+            var detalles      = await queryDetalles.ToListAsync();
+
+            var idsInv   = detalles.Select(dd => dd.IdInventario).ToList();
+            var queryInv = await _repoInventario.Consultar(i => idsInv.Contains(i.Id));
+            var invDict  = (await queryInv.ToListAsync()).ToDictionary(i => i.Id);
+
+            return detalles.Select(dd =>
+            {
+                invDict.TryGetValue(dd.IdInventario, out var inv);
+                return new DonacionDetalleItemDTO
+                {
+                    Clave        = inv?.Clave,
+                    Descripcion  = inv?.Descripcion ?? "",
+                    UnidadMedida = inv?.UnidadMedida ?? "",
+                    Cantidad     = dd.Cantidad
+                };
+            }).ToList();
+        }
+
+        public async Task SubirPdfDonacion(int idDonacion, string ruta)
+        {
+            var donacion = await _repoDonacion.Obtener(d => d.IdDonacion == idDonacion)
+                ?? throw new Exception($"No se encontró la donación {idDonacion}.");
+
+            var formato = await _repoFormato.Obtener(f => f.IdFormato == donacion.IdFormato)
+                ?? throw new Exception($"No se encontró el formato asociado.");
+
+            formato.RutaArchivo = ruta;
+            await _repoFormato.Editar(formato);
         }
 
         public async Task<List<StockPartidasDTO>> ConsultarStockParaRequisicion(int idRequisicion)
