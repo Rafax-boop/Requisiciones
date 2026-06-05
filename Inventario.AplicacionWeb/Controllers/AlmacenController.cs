@@ -167,7 +167,7 @@ namespace Inventario.AplicacionWeb.Controllers
                         IdArticulo = det?.IdArticulo,
                         Cog = det?.NumPartida,
                         ClaveMaterial = det?.ClaveMaterial,
-                        Cantidad = a.CantidadMovimiento,
+                        Cantidad = a.EsDeCompra ? a.CantidadOriginal : a.CantidadMovimiento,
                         UnidadMedida = a.UnidadMedida,
                         Descripcion = a.Descripcion,
                         DescripcionDetallada = a.Descripcion
@@ -215,7 +215,7 @@ namespace Inventario.AplicacionWeb.Controllers
                     IdArticulo = a.IdArticulo,
                     Cog = a.NumPartida,
                     ClaveMaterial = a.ClaveMaterial,
-                    Cantidad = a.CantidadMovimiento,
+                    Cantidad = a.EsDeCompra ? a.CantidadOriginal : a.CantidadMovimiento,
                     UnidadMedida = a.UnidadMedida,
                     Descripcion = a.Descripcion,
                     DescripcionDetallada = a.Descripcion

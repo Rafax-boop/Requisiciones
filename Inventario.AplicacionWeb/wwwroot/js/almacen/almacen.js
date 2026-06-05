@@ -1123,7 +1123,10 @@
     articulos.forEach(function (a) {
       var idMov = a.idMovimiento || a.IdMovimiento;
       var desc = a.descripcion || a.Descripcion || "";
-      var cant = a.cantidadMovimiento || a.CantidadMovimiento || 0;
+      var esCompra = a.esDeCompra || a.EsDeCompra || false;
+      var cant = esCompra
+        ? (a.cantidadOriginal || a.CantidadOriginal || 0)
+        : (a.cantidadMovimiento || a.CantidadMovimiento || 0);
       var unidad = a.unidadMedida || a.UnidadMedida || "";
 
       html += '<tr data-id-mov="' + idMov + '">';
@@ -1713,20 +1716,22 @@
   /* ========== SELECT2 ========== */
 
   $(function () {
-    $("#filtroEstado").select2({
-      width: "100%",
-      language: "es",
-      minimumResultsForSearch: Infinity,
-      placeholder: "Todos los estados",
-    });
-    $("#filtroUnidadMedida").select2({
-      width: "100%",
-      language: "es",
-      minimumResultsForSearch: 10,
-      placeholder: "Todas las unidades",
-      allowClear: true,
-    });
-    $("#filtroUnidadMedida").on("change select2:select", function () {
+    var elEstado = document.getElementById("filtroEstado");
+    if (elEstado && window.SelectRosaBuscable) {
+      window.SelectRosaBuscable.inicializar(elEstado, {
+        placeholder: "Todos los estados",
+        minimumResultsForSearch: Infinity
+      });
+    }
+    var elUnidad = document.getElementById("filtroUnidadMedida");
+    if (elUnidad && window.SelectRosaBuscable) {
+      window.SelectRosaBuscable.inicializar(elUnidad, {
+        placeholder: "Todas las unidades",
+        minimumResultsForSearch: 10,
+        allowClear: true
+      });
+    }
+    $("#filtroUnidadMedida").on("change", function () {
       filtrarTablaInventario();
     });
   });

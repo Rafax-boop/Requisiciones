@@ -48,6 +48,7 @@ namespace Inventario.BLL.DTO
         public string UnidadMedida { get; set; }
         public string Descripcion { get; set; }
         public string DescripcionDetallada { get; set; }
+        public decimal? CantidadAlmacen { get; set; }
     }
 
     public class AtenderConsolidadaDTO

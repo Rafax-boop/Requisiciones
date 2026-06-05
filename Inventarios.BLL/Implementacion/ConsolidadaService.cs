@@ -73,10 +73,11 @@ namespace Inventario.BLL.Implementacion
             if (requis.Any(r => r.ConsolidadaId != null))
                 return null;
 
-            // Generar folio: CONS-YYYY-NNN
+            // Generar folio: CONS-TIPO-YYYY-NNN
             var totalQuery = await _repoConsolidada.Consultar();
             var total = await totalQuery.CountAsync();
-            var folio = $"CONS-{DateTime.Now.Year}-{(total + 1):D3}";
+            var tipoFolio = servicio ? "SER" : "ADQ";
+            var folio = $"CONS-{tipoFolio}-{DateTime.Now.Year}-{(total + 1):D3}";
             var hash = BitConverter.ToString(
                 System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)
             ).Replace("-", "");
@@ -552,6 +553,19 @@ namespace Inventario.BLL.Implementacion
                     }))
                 .OrderBy(a => a.NumPartida)
                 .ToList();
+
+            // Poblar CantidadAlmacen desde movimientos COMPRA
+            var idsDetalles = articulos.Select(a => a.IdRequisicionDetalle).ToList();
+            var queryMov = await _repoMovimiento.Consultar(m => idsDetalles.Contains(m.IdRequisicionDetalle)
+                && m.TipoMovimiento == "COMPRA"
+                && m.CantidadMovimiento != m.CantidadOriginal);
+            var movimientos = await queryMov.ToListAsync();
+            foreach (var art in articulos)
+            {
+                var mov = movimientos.FirstOrDefault(m => m.IdRequisicionDetalle == art.IdRequisicionDetalle);
+                if (mov != null)
+                    art.CantidadAlmacen = mov.CantidadMovimiento;
+            }
 
             var observaciones = hijas
                 .SelectMany(r => r.TblBitacoraEstatuses

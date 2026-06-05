@@ -284,7 +284,7 @@ namespace Inventario.BLL.Implementacion
                 })
                 .ToListAsync();
 
-            // Calcular EstatusPartida por cada artÃ­culo
+            // Calcular EstatusPartida y CantidadAlmacen por cada artÃ­culo
             bool requiEntregada = maestra?.IdEstatus == 12;
             foreach (var art in lista)
             {
@@ -296,6 +296,9 @@ namespace Inventario.BLL.Implementacion
                         "ENTREGA" => (mov.Confirmado.GetValueOrDefault()) ? "Entregado" : "En entrega",
                         _ => "En compra"
                     };
+
+                    if (mov.TipoMovimiento == "COMPRA" && mov.CantidadMovimiento != mov.CantidadOriginal)
+                        art.CantidadAlmacen = mov.CantidadMovimiento;
                 }
                 else
                 {
@@ -480,6 +483,25 @@ namespace Inventario.BLL.Implementacion
                 art.Llenado11 = prog.Llenado11;
                 art.Llenado12 = prog.Llenado12;
                 art.Mes = prog.Mes;
+            }
+
+            // Cargar movimientos para determinar CantidadAlmacen
+            var queryMov = await _repoMovimiento.Consultar(m => m.IdRequisicion == idRequisicion);
+            var movimientos = await queryMov.ToListAsync();
+            var movimientoPorPartida = movimientos
+                .GroupBy(m => m.IdRequisicionDetalle)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(m => m.FechaMovimiento).First()
+                );
+            foreach (var art in articulos)
+            {
+                if (movimientoPorPartida.TryGetValue(art.IdRequisicionDetalle, out var mov)
+                    && mov.TipoMovimiento == "COMPRA"
+                    && mov.CantidadMovimiento != mov.CantidadOriginal)
+                {
+                    art.CantidadAlmacen = mov.CantidadMovimiento;
+                }
             }
 
             var pedidosReq = await _repoPedido.Consultar(p => p.IdRequisicion == idRequisicion);
