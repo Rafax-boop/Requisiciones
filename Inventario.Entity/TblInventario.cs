@@ -24,4 +24,6 @@ public partial class TblInventario
     public decimal CostoUnitario { get; set; }
 
     public decimal Total { get; set; }
+
+    public virtual ICollection<TblDonacionDetalle> TblDonacionDetalles { get; set; } = new List<TblDonacionDetalle>();
 }

@@ -34,6 +34,10 @@ public partial class DbSigereContext : DbContext
 
     public virtual DbSet<TblDepartamento> TblDepartamentos { get; set; }
 
+    public virtual DbSet<TblDonacion> TblDonacions { get; set; }
+
+    public virtual DbSet<TblDonacionDetalle> TblDonacionDetalles { get; set; }
+
     public virtual DbSet<TblEstatus> TblEstatuses { get; set; }
 
     public virtual DbSet<TblFormato> TblFormatos { get; set; }
@@ -316,6 +320,40 @@ public partial class DbSigereContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("telefono");
+        });
+
+        modelBuilder.Entity<TblDonacion>(entity =>
+        {
+            entity.HasKey(e => e.IdDonacion).HasName("PK__TblDonac__D7181B1CCDD3C0FD");
+
+            entity.ToTable("TblDonacion");
+
+            entity.Property(e => e.FechaIngreso)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Motivo).HasMaxLength(500);
+
+            entity.HasOne(d => d.IdFormatoNavigation).WithMany(p => p.TblDonacions)
+                .HasForeignKey(d => d.IdFormato)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Donacion_Formato");
+        });
+
+        modelBuilder.Entity<TblDonacionDetalle>(entity =>
+        {
+            entity.HasKey(e => e.IdDetalle).HasName("PK__TblDonac__E43646A515705F88");
+
+            entity.ToTable("TblDonacionDetalle");
+
+            entity.HasOne(d => d.IdDonacionNavigation).WithMany(p => p.TblDonacionDetalles)
+                .HasForeignKey(d => d.IdDonacion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DonacionDetalle_Donacion");
+
+            entity.HasOne(d => d.IdInventarioNavigation).WithMany(p => p.TblDonacionDetalles)
+                .HasForeignKey(d => d.IdInventario)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DonacionDetalle_Inventario");
         });
 
         modelBuilder.Entity<TblEstatus>(entity =>
