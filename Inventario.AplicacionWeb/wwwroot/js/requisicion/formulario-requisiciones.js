@@ -215,9 +215,12 @@
         index +
         '" />',
       "</td>",
-      "<td>",
-      construirSelectUnidad(index, unidadMedida, !art.idArticulo),
-      "</td>",
+      // SERVICIO: oculto - unidad de medida
+      ...(esServicio ? [] : [
+        "<td>",
+        construirSelectUnidad(index, unidadMedida, !art.idArticulo),
+        "</td>",
+      ]),
       '<td><input type="number" name="Articulos[' +
         index +
         '].Cantidad" class="form-control cantidad-input" min="1" step="1" inputmode="numeric" value="' +
@@ -295,9 +298,12 @@
         index +
         '" />',
       "</td>",
-      "<td>",
-      construirSelectUnidad(index, "", true),
-      "</td>",
+      // SERVICIO: oculto - unidad de medida
+      ...(esServicio ? [] : [
+        "<td>",
+        construirSelectUnidad(index, "", true),
+        "</td>",
+      ]),
       '<td><input type="number" name="Articulos[' +
         index +
         '].Cantidad" class="form-control cantidad-input" min="1" step="1" inputmode="numeric" value="1" required /></td>',
@@ -545,7 +551,8 @@
         mensajes.push("Debe seleccionar un artículo en todas las filas.");
         return false;
       }
-      if (!unidad.val()) {
+      // SERVICIO: oculto - validación de unidad de medida
+      if (!esServicio && !unidad.val()) {
         valido = false;
         mensajes.push(
           "Debe seleccionar la unidad de medida en todas las filas.",
@@ -652,7 +659,8 @@
           "Partida " + numeroPartida + ": falta seleccionar el artículo.",
         );
       }
-      if (!unidad.val()) {
+      // SERVICIO: oculto - validación de unidad de medida
+      if (!esServicio && !unidad.val()) {
         agregarDetalle(
           "Partida " + numeroPartida + ": falta seleccionar la unidad de medida.",
         );
@@ -1093,7 +1101,8 @@
     }
 
     var h = '<div class="wizard-tabla-scroll"><table class="wizard-tabla">';
-    h += "<thead><tr><th>No.</th><th>Descripción Detallada</th><th>Unidad</th>";
+    // SERVICIO: oculto - columna unidad en wizard de programación
+    h += "<thead><tr><th>No.</th><th>Descripción Detallada</th>" + (esServicio ? "" : "<th>Unidad</th>");
     for (var i = 0; i < encabezados.length; i++)
       h += "<th>" + encabezados[i] + "</th>";
     h += "<th>Total</th></tr></thead>";
@@ -1107,7 +1116,8 @@
     h += "<td>" + art.numero + "</td>";
     h +=
       '<td class="wizard-desc-cell">' + escapeHtmlWizard(descCorta) + "</td>";
-    h += "<td>" + escapeHtmlWizard(art.unidadMedida) + "</td>";
+    // SERVICIO: oculto - celda unidad en wizard de programación
+    if (!esServicio) h += "<td>" + escapeHtmlWizard(art.unidadMedida) + "</td>";
     for (var j = 0; j < claves.length; j++) {
       h +=
         '<td><input type="number" class="wizard-periodo-input" data-clave="' +

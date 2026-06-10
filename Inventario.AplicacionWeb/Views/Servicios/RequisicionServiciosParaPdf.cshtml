@@ -132,7 +132,7 @@
                         <th>Nº Partida</th>
                         <th>ID</th>
                         <th>Descripción</th>
-                        <th>Unidad</th>
+                        @* SERVICIO: oculto - unidad de medida <th>Unidad</th> *@
                         <th>Cantidad</th>
                         <th>Descripción detallada</th>
                     </tr>
@@ -146,7 +146,7 @@
                                 <td>@(a.Cog?.ToString() ?? "—")</td>
                                 <td>@(a.IdArticulo?.ToString() ?? "—")</td>
                                 <td>@(a.Descripcion ?? "—")</td>
-                                <td>@(a.UnidadMedida ?? "—")</td>
+                                @* SERVICIO: oculto - unidad de medida <td>@(a.UnidadMedida ?? "—")</td> *@
                                 <td>@(a.Cantidad.HasValue ? ((int)a.Cantidad.Value).ToString() : "—")</td>
                                 <td>@(a.DescripcionDetallada ?? "—")</td>
                             </tr>
@@ -155,7 +155,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="6" class="text-center text-muted">Sin artículos registrados</td>
+                            <td colspan="5" class="text-center text-muted">Sin artículos registrados</td>
                         </tr>
                     }
                 </tbody>
@@ -220,7 +220,7 @@
                                 <tr>
                                     <th>No.</th>
                                     <th>Descripción detallada</th>
-                                    <th>Unidad de medida</th>
+                                    @* SERVICIO: oculto - unidad de medida <th>Unidad de medida</th> *@
                                     <th>Mes</th>
                                     <th>Sem 1</th>
                                     <th>Sem 2</th>
@@ -237,7 +237,7 @@
                                     <tr>
                                         <td>@n</td>
                                         <td>@(a.DescripcionDetallada ?? "—")</td>
-                                        <td>@(a.UnidadMedida ?? "—")</td>
+                                        @* SERVICIO: oculto - unidad de medida <td>@(a.UnidadMedida ?? "—")</td> *@
                                         <td>@(a.Mes.HasValue ? a.Mes.Value + " - " + NombreMes(a.Mes) : "—")</td>
                                         <td>@PdfQty(a.Llenado1)</td>
                                         <td>@PdfQty(a.Llenado2)</td>
@@ -257,7 +257,7 @@
                                 <tr>
                                     <th>No.</th>
                                     <th>Descripción detallada</th>
-                                    <th>U. med.</th>
+                                    @* SERVICIO: oculto - unidad de medida <th>U. med.</th> *@
                                     <th>Ene</th>
                                     <th>Feb</th>
                                     <th>Mar</th>
@@ -281,7 +281,7 @@
                                     <tr>
                                         <td>@na</td>
                                         <td>@(a.DescripcionDetallada ?? "—")</td>
-                                        <td>@(a.UnidadMedida ?? "—")</td>
+                                        @* SERVICIO: oculto - unidad de medida <td>@(a.UnidadMedida ?? "—")</td> *@
                                         <td>@PdfQty(a.Llenado1)</td>
                                         <td>@PdfQty(a.Llenado2)</td>
                                         <td>@PdfQty(a.Llenado3)</td>

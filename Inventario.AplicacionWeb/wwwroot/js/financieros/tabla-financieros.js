@@ -661,6 +661,8 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
 
         $.get(obtenerDetallesUrl, { idMaestro: idMaestro, soloCompra: true }, function (data) {
             var articulos = data.articulos || [];
+            // SERVICIO: oculto - unidad de medida cuando es requisición de servicios
+            var esServicio = !!data.tipoServicio;
             var hayColumnaAlmacen = articulos.some(function (a) { return a.cantidadAlmacen != null; });
             var theadTr = document.querySelector("#tablaModalDetalle thead tr");
             if (theadTr && hayColumnaAlmacen && !theadTr.querySelector("th.almacen-header")) {
@@ -673,7 +675,11 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                     thRef.parentNode.insertBefore(th, thRef.nextSibling);
                 }
             }
+            // SERVICIO: oculto - columna unidad en encabezado
+            var thUnidad = theadTr && theadTr.querySelector(".th-unidad-fin");
+            if (thUnidad) thUnidad.style.display = esServicio ? "none" : "";
             var colspanBase = hayColumnaAlmacen ? 6 : 5;
+            if (esServicio) colspanBase--;
 
             // Tabla artículos
             var contenido = "";
@@ -692,7 +698,8 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                         "<td>" + (item.numPartida || "") + "</td>" +
                         "<td>" + (item.cantidad || "") + "</td>" +
                         (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
-                        "<td>" + (item.unidadMedida || "") + "</td>" +
+                        // SERVICIO: oculto - celda unidad de medida
+                        (esServicio ? "" : "<td>" + (item.unidadMedida || "") + "</td>") +
                         "<td>" + (item.descripcion || "") + "</td>" +
                         '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
                         '<span class="desc-texto-preview ' + tieneTexto + '">' + textoCorto + "</span>" +
@@ -1088,6 +1095,8 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
 
         $.get(obtenerDetallesUrl, { idMaestro: id, soloCompra: true }, function (data) {
             var articulos = data.articulos || [];
+            // SERVICIO: oculto - unidad de medida cuando es requisición de servicios
+            var esServicio = !!data.tipoServicio;
             document.getElementById("expFinSubtitulo").textContent =
                 "Expediente completo · " + articulos.length + " partidas";
 
@@ -1104,7 +1113,11 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                     thRef.parentNode.insertBefore(th, thRef.nextSibling);
                 }
             }
+            // SERVICIO: oculto - columna unidad en encabezado
+            var thUnidadExp = expFinTheadTr && expFinTheadTr.querySelector(".th-unidad-fin");
+            if (thUnidadExp) thUnidadExp.style.display = esServicio ? "none" : "";
             var colspanBase = hayColumnaAlmacen ? 6 : 5;
+            if (esServicio) colspanBase--;
 
             // Tabla artículos
             var contenido = !articulos.length
@@ -1121,7 +1134,8 @@ function obtenerDocumentosProveedor(idAdjudicacion, tieneDualGastosPagar) {
                     "<td>" + (item.numPartida || "") + "</td>" +
                     "<td>" + (item.cantidad || "") + "</td>" +
                     (hayColumnaAlmacen ? '<td style="text-align:center">' + (item.cantidadAlmacen != null ? item.cantidadAlmacen : '—') + '</td>' : '') +
-                    "<td>" + (item.unidadMedida || "") + "</td>" +
+                    // SERVICIO: oculto - celda unidad de medida
+                    (esServicio ? "" : "<td>" + (item.unidadMedida || "") + "</td>") +
                     "<td>" + (item.descripcion || "") + "</td>" +
                     '<td><div class="desc-preview-modal" data-full="' + fullEscapado + '" onclick="verDescDetalleModal(this)">' +
                     '<span class="desc-texto-preview' + (textoCompleto ? " tiene-texto" : "") + '">' + textoCorto + '</span>' +
